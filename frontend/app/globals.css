@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* —— Estils base perquè tot es vegi net sense tocar components —— */
+@layer base {
+  html, body {
+     @apply min-h-screen;
+  }
+
+  /* Tipografia i color de text base */
+  body {
+    @apply antialiased text-zinc-900 dark:text-zinc-100;
+  }
+
+  h1 { @apply text-2xl md:text-3xl font-semibold tracking-tight; }
+  h2 { @apply text-xl md:text-2xl font-semibold tracking-tight; }
+  p  { @apply text-sm md:text-base text-zinc-600 dark:text-zinc-300; }
+
+  /* Inputs comuns (afecta el LoginForm i qualsevol formulari) */
+  input[type="email"],
+  input[type="text"],
+  input[type="password"],
+  input[type="time"],
+  input[type="date"] {
+    @apply h-11 w-full rounded-md border border-zinc-300 bg-white/90 px-3
+           text-zinc-900 placeholder:text-zinc-400 shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-zinc-400
+           dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:placeholder:text-zinc-400
+           dark:focus:ring-zinc-600;
+  }
+
+  /* Botó principal (submit) */
+  button[type="submit"] {
+    @apply h-11 w-full rounded-md bg-zinc-900 text-white font-medium
+           hover:bg-zinc-800 active:bg-zinc-900/90 disabled:opacity-50
+           dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200;
+  }
+
+  /* Enfasi d’accessibilitat */
+  :focus-visible {
+    @apply outline-none ring-2 ring-zinc-400 dark:ring-zinc-600 rounded-md;
+  }
+
+  /* Scrollbar suau (opcional) */
+  * { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.25) transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 9999px; }
+}
+
+/* —— Res: cap gradient aquí. El fons el posarem des del layout amb classes —— */
+
+@reference "tailwindcss";
+
+@layer base {
+  html, body { height: 100%; width: 100%; }
+}
+
+@layer components {
+  /* Evita que algun max-w intern del LoginForm l’estrenyi */
+  .login-wide * { max-width: none !important; }
+}

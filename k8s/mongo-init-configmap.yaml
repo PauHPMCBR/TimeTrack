@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init-script
+data:
+  mongo-init.js: |
+    sleep(1000);
+
+    print('Starting database initialization...');
+
+    db = db.getSiblingDB('admin');
+
+    try {
+      db.createUser({
+        user: 'root',
+        pwd: '09nwp43dFpFyBI3h4LmM',
+        roles: [{ role: 'root', db: 'admin' }]
+      });
+      print('Root user created in admin database');
+    } catch (error) {
+      print('Root user already exists: ' + error.message);
+    }
+
+    // Creem la base de dades de l'aplicació
+    db = db.getSiblingDB('myapp');
+    print('myapp database created');
+
+    // Create collections
+    db.createCollection('users');
+    print('users collection created');
+
+    // Creem el usuari de l'aplicació
+    try {
+      db.createUser({
+        user: 'alumne',
+        pwd: 'XGmHckQJzwzFKwBo14YA',
+        roles: [
+          { role: 'readWrite', db: 'myapp' }
+        ]               
+      });
+      print('alumne user created in myapp database');
+    } catch (error) {
+      print('alumne user already exists: ' + error.message);
+    }
+
+    // Creem el usuari administrador de prova
+    try {
+      
+      db.users.insertOne({
+        name: 'System Administrator',
+        email: 'admin@company.com',
+        password: '$2b$12$CqmY1PBDB4XYX4XVaxxiz.fVWYVKK9RlzfqWPZETE9dH0FMlxyYHW', // hashed 'admin123'
+        registrationToken: crypto.randomBytes(32).toString('hex'),
+        registered: true,
+        role: 'admin',
+        groups: [],
+        failedLoginAttempts: 0,
+        blocked: false,
+        blockedSince: undefined
+      });
+      print('Test data inserted');
+    } catch (error) {
+      print('Test data already exists: ' + error.message);
+    }
+
+    // Insert work session reasons as separate documents
+    try {
+      // Check-in reasons
+      db.worksessionreasons.insertMany([
+        {
+          type: 'check_in',
+          reasonId: 'work',
+          englishText: 'Start work',
+          spanishText: 'Inicio de trabajo',
+          catalanText: 'Inici de treball'
+        },
+        {
+          type: 'check_in',
+          reasonId: 'extra_hours',
+          englishText: 'Extra hours',
+          spanishText: 'Horas extra',
+          catalanText: 'Hores extra'
+        },
+        // Check-out reasons
+        {
+          type: 'check_out',
+          reasonId: 'end_work',
+          englishText: 'End work',
+          spanishText: 'Fin de trabajo',
+          catalanText: 'Fi de treball'
+        },
+        {
+          type: 'check_out',
+          reasonId: 'lunch',
+          englishText: 'Lunch break',
+          spanishText: 'Pausa para comer',
+          catalanText: 'Pausa per dinar'
+        },
+        {
+          type: 'check_out',
+          reasonId: 'break',
+          englishText: 'Break',
+          spanishText: 'Descanso',
+          catalanText: 'Descans'
+        },
+        {
+          type: 'check_out',
+          reasonId: 'other',
+          englishText: 'Other',
+          spanishText: 'Otro',
+          catalanText: 'Altres'
+        }
+      ]);
+      print('Work session reasons inserted');
+    } catch (error) {
+      print('Work session reasons already exist: ' + error.message);
+    }
+
+    print('Database initialization completed successfully!');
+
+    function sleep(milliseconds) {
+      var start = new Date().getTime();
+      for (var i = 0; i < 1e7; i++) {
+        if ((new Date().getTime() - start) > milliseconds) {
+          break;
+        }
+      }
+    }

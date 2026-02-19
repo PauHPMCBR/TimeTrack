@@ -1,0 +1,14 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "typescript.referencesCodeLens.enabled": true,
+  "editor.rulers": [100],
+  "editor.codeActionsOnSave": [
+    "addMissingImports",
+    "source.formatDocument",
+    "source.fixAll.eslint"
+  ]
+}

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: frontend
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: frontend
+  template:
+    metadata:
+      labels:
+        io.kompose.service: frontend
+    spec:
+      containers:
+        - env:
+            - name: NEXT_PUBLIC_BACKEND_URL
+              value: "http://backend:3001"
+            - name: NODE_ENV
+              value: "development"
+          image: godack/registre-jornada-frontend:1.0
+          imagePullPolicy: Always
+          name: frontend
+          ports:
+            - containerPort: 3000
+          resources: {}
+      restartPolicy: Always

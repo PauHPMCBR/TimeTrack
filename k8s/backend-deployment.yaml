@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: backend
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: backend
+  template:
+    metadata:
+      labels:
+        io.kompose.service: backend
+    spec:
+      containers:
+        - env:
+            - name: DATABASE_URL
+              value: "mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSource=myapp"
+            - name: MONGODB_URI
+              value: "mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSource=myapp"
+            - name: FRONTEND_URL
+              value: "http://10.4.41.75:30000"
+            - name: NODE_ENV
+              value: "development"
+            - name: USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: user-password
+          image: godack/registre-jornada-backend:1.0
+          imagePullPolicy: Always
+          name: backend
+          ports:
+            - containerPort: 3001
+          resources: {}
+      restartPolicy: Always
