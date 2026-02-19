@@ -1,0 +1,16 @@
+**/node_modules
+**/.git
+**/.next
+**/dist
+*.log
+*.md
+*.lock
+Dockerfile*
+.dockerignore
+.gitignore
+.eslintrc.json
+tsconfig.json
+.vscode
+.idea
+.env*
+docker-compose*.yml
