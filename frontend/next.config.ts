@@ -13,6 +13,7 @@ const nextConfig = {
     };
     return config;
   },
+  transpilePackages: ["@registre-jornada/shared"],
   env: {
     NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
   },

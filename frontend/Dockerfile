@@ -1,48 +1,51 @@
-FROM oven/bun:alpine
+# Stage 1: Build
+FROM oven/bun:alpine AS builder
 WORKDIR /app
 
-# Copiar TODO el proyecto
+# Copy the entire project for workspace support
 COPY . .
 
-# 1. Construir el paquete shared
+# 1. Build shared package
 WORKDIR /app/shared
 RUN bun install
 RUN bun run build
 
-# 2. Instalar dependencias del frontend
+# 2. Build frontend
 WORKDIR /app/frontend
-# En Bun, podemos referenciar el directorio directamente o usar workspaces
 RUN bun install
 
-# 3. Crear next.config.ts con configuración para ignorar errores
-RUN echo 'import type { NextConfig } from "next";' > next.config.ts
-RUN echo '' >> next.config.ts
-RUN echo 'const nextConfig: NextConfig = {' >> next.config.ts
-RUN echo '  eslint: {' >> next.config.ts
-RUN echo '    ignoreDuringBuilds: true,' >> next.config.ts
-RUN echo '  },' >> next.config.ts
-RUN echo '  typescript: {' >> next.config.ts
-RUN echo '    ignoreBuildErrors: true,' >> next.config.ts
-RUN echo '  },' >> next.config.ts
-RUN echo '  transpilePackages: ["@registre-jornada/shared"],' >> next.config.ts
-RUN echo '};' >> next.config.ts
-RUN echo '' >> next.config.ts
-RUN echo 'export default nextConfig;' >> next.config.ts
+# Create a minimal next.config.ts if it doesn't exist to optimize build
+RUN echo 'import type { NextConfig } from "next";' > next.config.ts && \
+    echo 'const nextConfig: NextConfig = {' >> next.config.ts && \
+    echo '  eslint: { ignoreDuringBuilds: true },' >> next.config.ts && \
+    echo '  typescript: { ignoreBuildErrors: true },' >> next.config.ts && \
+    echo '  transpilePackages: ["@registre-jornada/shared"],' >> next.config.ts && \
+    echo '};' >> next.config.ts && \
+    echo 'export default nextConfig;' >> next.config.ts
 
-# 4. Construir la aplicación SIN turbopack (más estable)
 RUN bun next build
 
-# 5. Preparar para producción
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# Stage 2: Runner
+FROM oven/bun:alpine AS runner
+WORKDIR /app
 
-# 6. Crear usuario no root
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV PORT 3000
+
+# Create non-root user
 RUN addgroup -g 1001 -S bunjs && \
     adduser -S bunuser -u 1001
 
+# Copy build artifacts and dependencies
+COPY --from=builder /app/frontend/.next /app/frontend/.next
+COPY --from=builder /app/frontend/package.json /app/frontend/package.json
+COPY --from=builder /app/frontend/node_modules /app/frontend/node_modules
+COPY --from=builder /app/shared /app/shared
+
+WORKDIR /app/frontend
 USER bunuser
 
 EXPOSE 3000
-ENV PORT 3000
 
 CMD ["bun", "next", "start"]

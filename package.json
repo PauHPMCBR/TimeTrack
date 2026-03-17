@@ -6,10 +6,12 @@
     "frontend",
     "backend"
   ],
-  "scripts": {},
-  "devDependencies": {
-    "concurrently": "^8.2.0"
+  "scripts": {
+    "dev": "bun run --filter \"*\" --parallel dev",
+    "build": "bun run --filter \"*\" build",
+    "lint": "bun run --filter \"*\" lint"
   },
+  "devDependencies": {},
   "dependencies": {
     "next-themes": "^0.4.6"
   }
