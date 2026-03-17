@@ -1,12 +1,14 @@
 "use client"; // TODO update to new look
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useI18n } from "@/app/i18n";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { apiClient } from "@/lib/api";
 import { WorkSession } from "@/types";
+import * as XLSX from "xlsx";
+import { Download } from "lucide-react";
 
 // Helpers
 function hoursBetween(a: Date, b: Date) {
@@ -177,6 +179,19 @@ export default function HistoryAndStatsPage() {
     return totalThisWeek / days;
   }, [totalThisWeek]);
 
+  const handleExport = useCallback(() => {
+    const data = perDay.map(day => ({
+      [t('history.export.date')]: day.date,
+      [t('history.export.hours')]: day.hrs.toFixed(2),
+      [t('history.export.formatted')]: fmtHM(day.hrs)
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "History");
+    XLSX.writeFile(workbook, `history_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }, [perDay, t]);
+
   if (loading) {
     return (
       <section className="space-y-6">
@@ -196,6 +211,17 @@ export default function HistoryAndStatsPage() {
 
   return (
     <section className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{t('tabs.history')}</h2>
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30 transition-colors"
+        >
+          <Download size={16} />
+          {t('history.export')}
+        </button>
+      </div>
+
       {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

@@ -67,7 +67,7 @@ export function Calendar({
     const dateStr = ymd(date);
     const events: VacationEvent[] = [];
 
-    const isObligatory = vacations.yearlyVacationDays.obligatoryDays.some(obligatoryDate => {
+    const isObligatory = vacations.yearlyVacationDays?.obligatoryDays?.some(obligatoryDate => {
       const obligatoryDateObj = new Date(obligatoryDate);
       obligatoryDateObj.setHours(0, 0, 0, 0);
       const dateToCheck = new Date(date);

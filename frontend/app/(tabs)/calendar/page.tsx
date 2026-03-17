@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/api";
 import { YearlyVacationResponse, MonthlyWorkRecordResponse } from "@/schemas/api";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/calendar/Calendar";
+import { Alert } from "@/components/ui/Alert";
 
 function toLocale(lang: "ca" | "es" | "en"): string {
   return lang === "ca" ? "ca-ES" : lang === "es" ? "es-ES" : "en-US";
@@ -23,6 +24,7 @@ export default function CalendarPage() {
   const [workSessions, setWorkSessions] = useState<MonthlyWorkRecordResponse | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleMonthChange = (newCursor: Date) => {
     setCursor(newCursor);
@@ -34,27 +36,37 @@ export default function CalendarPage() {
       if (!currentUser) return;
       
       setLoading(true);
+      setErrorMsg(null);
       try {
         const year = cursor.getFullYear();
         const month = cursor.getMonth() + 1;
         
         const vacationsResponse = await apiClient.getUserVacations(currentUser._id, year);
         console.log(vacationsResponse);
-        setVacations(vacationsResponse.data!);
+        if (vacationsResponse.error) {
+           setErrorMsg(t(`error.${vacationsResponse.error}`));
+        } else {
+           setVacations(vacationsResponse.data!);
+        }
 
         const workSessionsResponse = await apiClient.getMonthlyRecords(currentUser._id, month, year);
         console.log(workSessionsResponse);
-        setWorkSessions(workSessionsResponse.data!);
+        if (workSessionsResponse.error) {
+           setErrorMsg(t(`error.${workSessionsResponse.error}`));
+        } else {
+           setWorkSessions(workSessionsResponse.data!);
+        }
 
       } catch (error) {
         console.error('Failed to fetch calendar data:', error);
+        setErrorMsg(t('error.GetError'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [cursor, currentUser]);
+  }, [cursor, currentUser, t]);
 
   // Fetch current user on mount
   useEffect(() => {
@@ -77,6 +89,21 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-4">
+      {errorMsg && (
+        <Alert 
+          variant="destructive" 
+          onClose={() => setErrorMsg(null)} 
+        >
+          {errorMsg}
+        </Alert>
+      )}
+      {vacations && !vacations.yearlyVacationDays && (
+        <Alert 
+          variant="warning" 
+        >
+          {t('calendar.notConfigured')}
+        </Alert>
+      )}
       <Calendar
         cursor={cursor}
         onMonthChange={handleMonthChange}

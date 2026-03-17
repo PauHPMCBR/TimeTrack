@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     usersCount: 0,
     groupsCount: 0,
     pendingVacations: 0,
+    currentlyWorking: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -20,10 +21,11 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [usersRes, groupsRes, vacationsRes] = await Promise.all([
+        const [usersRes, groupsRes, vacationsRes, workingRes] = await Promise.all([
           apiClient.getCompanyUsers(),
           apiClient.getAllGroups(),
-          apiClient.getAllPendingVacations()
+          apiClient.getAllPendingVacations(),
+          apiClient.getCurrentlyWorking()
         ]);
 
         const usersCount = (usersRes.data as any)?.users?.length || (Array.isArray(usersRes.data) ? usersRes.data.length : 0);
@@ -32,7 +34,9 @@ export default function AdminDashboard() {
         const vacationsList = (vacationsRes.data as any)?.vacations || [];
         const pendingVacations = vacationsList.filter((v: any) => v.status === 'pending').length;
 
-        setStats({ usersCount, groupsCount, pendingVacations });
+        const currentlyWorking = (workingRes.data as any)?.count || 0;
+
+        setStats({ usersCount, groupsCount, pendingVacations, currentlyWorking });
 
       } catch (error) {
         console.error("Error carregant dashboard:", error);
@@ -124,7 +128,7 @@ export default function AdminDashboard() {
           <p className="text-zinc-500 text-sm">{t("admin.dashboard.summaryDesc")}</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-10">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-10">
             
             {/* KPI: EMPLEATS */}
             <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -132,12 +136,26 @@ export default function AdminDashboard() {
                     <div className="absolute rounded-md bg-blue-500 p-3">
                         <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                     </div>
-                    {/* TRADUÏT */}
                     <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("admin.stats.totalUsers")}</p>
                 </dt>
                 <dd className="ml-16 flex items-baseline">
                     <p className="text-2xl font-semibold text-zinc-900 dark:text-white">
                         {loading ? "-" : stats.usersCount}
+                    </p>
+                </dd>
+            </div>
+
+            {/* KPI: WORKING NOW */}
+            <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <dt>
+                    <div className="absolute rounded-md bg-indigo-500 p-3">
+                        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("admin.stats.workingNow")}</p>
+                </dt>
+                <dd className="ml-16 flex items-baseline">
+                    <p className="text-2xl font-semibold text-zinc-900 dark:text-white">
+                        {loading ? "-" : stats.currentlyWorking}
                     </p>
                 </dd>
             </div>
@@ -148,7 +166,6 @@ export default function AdminDashboard() {
                     <div className={`absolute rounded-md p-3 ${stats.pendingVacations > 0 ? 'bg-orange-500' : 'bg-green-500'}`}>
                         <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
-                    {/* TRADUÏT */}
                     <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("admin.stats.pendingVacations")}</p>
                 </dt>
                 <dd className="ml-16 flex items-baseline">
@@ -156,7 +173,6 @@ export default function AdminDashboard() {
                         {loading ? "-" : stats.pendingVacations}
                     </p>
                     {stats.pendingVacations > 0 && (
-                        /* TRADUÏT */
                         <span className="ml-2 text-sm font-medium text-orange-600">{t("admin.stats.review")}</span>
                     )}
                 </dd>
@@ -168,7 +184,6 @@ export default function AdminDashboard() {
                     <div className="absolute rounded-md bg-purple-500 p-3">
                         <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     </div>
-                    {/* TRADUÏT */}
                     <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("admin.stats.departments")}</p>
                 </dt>
                 <dd className="ml-16 flex items-baseline">
