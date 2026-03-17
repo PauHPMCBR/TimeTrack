@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API for time record application",
   "scripts": {
-    "dev": "bun next dev -p 3001 --turbopack",
-    "build": "bun next build --turbopack",
-    "start": "bun next start -p 3001 --turbopack",
+    "dev": "bun next dev -p 3001",
+    "build": "bun next build",
+    "start": "bun next start -p 3001",
     "lint": "bun eslint"
   },
   "dependencies": {
@@ -13,7 +13,6 @@
     "@zodyac/zod-mongoose": "^4.2.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
@@ -33,9 +32,6 @@
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
     "react-dom": "^19.2.0",
-    "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

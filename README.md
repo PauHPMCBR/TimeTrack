@@ -45,8 +45,8 @@ Before you begin, ensure you have the following installed on your machine:
 - Docker
 - Docker compose
 - kubectl (Kubernetes command-line tool)
-- A Kubernetes cluster (e.g., Minikube for local development, Docker Desktop with Kubernetes enabled, or a cloud-based cluster)
-- A MongoDB database (You can use a local installation or create a free cluster on MongoDB Atlas)
+- A Kubernetes cluster (e.g., Minikube for local development)
+- A MongoDB database
 
 ## Setup & Installation Guide
 
@@ -101,6 +101,13 @@ The frontend application should now be running on http://localhost:3000.
 The database should now be running on the port 27018 (to avoid the conventional 27017 mongodb port)
 #### 3.2. Without docker-compose
 You will have to use MongoDB Atlas or the local mongodb
+
+Start all services from the root:
+```bash
+bun run dev
+```
+
+Or start individually:
 Start the Backend Server:
 ```bash
 cd backend
@@ -161,14 +168,14 @@ kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Doc
 sudo kubeadm join 10.4.41.75:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 ```
 
-#### 1.4. Build images an push into Docker-Hub
+#### 1.4. Build images and push into Docker-Hub
 
-```
+```bash
 docker-compose build
-tag registre-jornada-frontend:latest godack/registre-jornada-frontend:1.0 
-tag registre-jornada-backend:latest godack/registre-jornada-backend:1.0 
-push godack/registre-jornada-frontend:1.0
-push godack/registre-jornada-backend:1.0
+docker tag registre-jornada-frontend:latest godack/registre-jornada-frontend:1.0 
+docker tag registre-jornada-backend:latest godack/registre-jornada-backend:1.0 
+docker push godack/registre-jornada-frontend:1.0
+docker push godack/registre-jornada-backend:1.0
 ```
 
 

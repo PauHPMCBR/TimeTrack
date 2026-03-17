@@ -13,6 +13,7 @@ const nextConfig = {
     };
     return config;
   },
+  transpilePackages: ["@registre-jornada/shared"],
 };
 
 export default nextConfig;
