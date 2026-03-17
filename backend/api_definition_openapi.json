@@ -1,0 +1,639 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Time Record Application API",
+    "version": "1.0.0",
+    "description": "API per al sistema de registre de temps laboral"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Servidor de desenvolupament"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticació",
+      "description": "Endpoints per a l'autenticació d'usuaris"
+    },
+    {
+      "name": "Perfil",
+      "description": "Gestió de perfils d'usuari"
+    },
+    {
+      "name": "Administració",
+      "description": "Funcions d'administració del sistema"
+    },
+    {
+      "name": "Sessions de treball",
+      "description": "Gestió de fitxatges i registres laborals"
+    },
+    {
+      "name": "Vacances",
+      "description": "Gestió de vacances i sol·licituds"
+    },
+    {
+      "name": "Grups",
+      "description": "Gestió de grups d'usuaris"
+    },
+    {
+      "name": "Xat",
+      "description": "Chatbot per a consultes naturals"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Autenticació"],
+        "summary": "Inici de sessió",
+        "description": "Autentica un usuari i retorna un token JWT",
+        "responses": {
+          "200": {
+            "description": "Autenticació exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "Token JWT per a autenticació"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Autenticació"],
+        "summary": "Completar registre",
+        "description": "Completa el registre d'un usuari amb token de registre",
+        "responses": {
+          "200": {
+            "description": "Registre completat correctament"
+          }
+        }
+      }
+    },
+    "/auth/logoff": {
+      "post": {
+        "tags": ["Autenticació"],
+        "summary": "Tancar sessió",
+        "description": "Invalida el token d'autenticació actual",
+        "responses": {
+          "200": {
+            "description": "Sessió tancada correctament"
+          }
+        }
+      }
+    },
+    "/profile/me": {
+      "get": {
+        "tags": ["Perfil"],
+        "summary": "Obtenir perfil actual",
+        "description": "Retorna el perfil de l'usuari autenticat",
+        "responses": {
+          "200": {
+            "description": "Perfil obtingut correctament",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/{userId}": {
+      "get": {
+        "tags": ["Perfil"],
+        "summary": "Obtenir perfil d'usuari",
+        "description": "Retorna el perfil d'un usuari específic (mateix grup o admin)",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil obtingut correctamente"
+          }
+        }
+      }
+    },
+    "/profile/create": {
+      "post": {
+        "tags": ["Perfil"],
+        "summary": "Crear nou usuari",
+        "description": "Crea un nou usuari (només administradors)",
+        "responses": {
+          "201": {
+            "description": "Usuari creat correctament"
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Administració"],
+        "summary": "Llistar tots els usuaris",
+        "description": "Retorna una llista de tots els usuaris del sistema (admin)",
+        "responses": {
+          "200": {
+            "description": "Llista d'usuaris"
+          }
+        }
+      }
+    },
+    "/admin/groups": {
+      "get": {
+        "tags": ["Administració"],
+        "summary": "Llistar tots els grups",
+        "description": "Retorna una llista de tots els grups del sistema (admin)",
+        "responses": {
+          "200": {
+            "description": "Llista de grups"
+          }
+        }
+      }
+    },
+    "/admin/vacations/pending-vacations": {
+      "get": {
+        "tags": ["Administració"],
+        "summary": "Sol·licituds de vacances pendents",
+        "description": "Retorna totes les sol·licituds de vacances pendents (admin)",
+        "responses": {
+          "200": {
+            "description": "Llista de sol·licituds pendents"
+          }
+        }
+      }
+    },
+    "/admin/vacations/{year}": {
+      "get": {
+        "tags": ["Administració"],
+        "summary": "Vacances per any",
+        "description": "Retorna totes les vacances d'un any específic (admin)",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Llista de vacances per any"
+          }
+        }
+      }
+    },
+    "/admin/vacations/set-yearly": {
+      "post": {
+        "tags": ["Administració"],
+        "summary": "Establir vacances anuals",
+        "description": "Defineix els dies de vacances per a un any (admin)",
+        "responses": {
+          "200": {
+            "description": "Vacances anuals establertes"
+          }
+        }
+      }
+    },
+    "/admin/vacations/resolve/{vacationId}": {
+      "post": {
+        "tags": ["Administració"],
+        "summary": "Resoldre sol·licitud de vacances",
+        "description": "Aprova o rebutja una sol·licitud de vacances (admin)",
+        "parameters": [
+          {
+            "name": "vacationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sol·licitud resolta"
+          }
+        }
+      }
+    },
+    "/work-sessions/add-timestamp": {
+      "post": {
+        "tags": ["Sessions de treball"],
+        "summary": "Afegir fitxatge",
+        "description": "Registra una entrada o sortida (check-in/check-out)",
+        "responses": {
+          "201": {
+            "description": "Fitxatge registrat correctament"
+          }
+        }
+      }
+    },
+    "/work-sessions/reasons": {
+      "get": {
+        "tags": ["Sessions de treball"],
+        "summary": "Obtenir motius",
+        "description": "Retorna la llista de motius predefinits per a fitxatges",
+        "responses": {
+          "200": {
+            "description": "Llista de motius"
+          }
+        }
+      }
+    },
+    "/work-sessions/{userId}/day/{date}": {
+      "get": {
+        "tags": ["Sessions de treball"],
+        "summary": "Sessions per dia",
+        "description": "Retorna les sessions de treball d'un usuari en un dia específic",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Llista de sessions del dia"
+          }
+        }
+      }
+    },
+    "/work-sessions/{userId}/month/{year}/{month}": {
+      "get": {
+        "tags": ["Sessions de treball"],
+        "summary": "Sessions per mes",
+        "description": "Retorna les sessions de treball d'un usuari en un mes específic",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Llista de sessions del mes"
+          }
+        }
+      }
+    },
+    "/vacations/create": {
+      "post": {
+        "tags": ["Vacances"],
+        "summary": "Sol·licitar vacances",
+        "description": "Crea una nova sol·licitud de vacances",
+        "responses": {
+          "201": {
+            "description": "Sol·licitud creada correctament"
+          }
+        }
+      }
+    },
+    "/vacations/yearly/{year}": {
+      "get": {
+        "tags": ["Vacances"],
+        "summary": "Vacances anuals",
+        "description": "Retorna les vacances anuals (per defecte o per any)",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vacances anuals"
+          }
+        }
+      }
+    },
+    "/vacations/{vacationId}/cancel": {
+      "post": {
+        "tags": ["Vacances"],
+        "summary": "Cancel·lar vacances",
+        "description": "Cancel·la una sol·licitud de vacances pròpia",
+        "parameters": [
+          {
+            "name": "vacationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vacances cancel·lades"
+          }
+        }
+      }
+    },
+    "/vacations/user/{userId}/{year}": {
+      "get": {
+        "tags": ["Vacances"],
+        "summary": "Vacances d'usuari per any",
+        "description": "Retorna les vacances d'un usuari específic en un any",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vacances de l'usuari"
+          }
+        }
+      }
+    },
+    "/groups/create": {
+      "post": {
+        "tags": ["Grups"],
+        "summary": "Crear grup",
+        "description": "Crea un nou grup (només administradors)",
+        "responses": {
+          "201": {
+            "description": "Grup creat correctament"
+          }
+        }
+      }
+    },
+    "/groups/{groupId}": {
+      "get": {
+        "tags": ["Grups"],
+        "summary": "Obtenir grup",
+        "description": "Retorna la informació d'un grup específic",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Informació del grup"
+          }
+        }
+      }
+    },
+    "/groups/update/{groupId}": {
+      "put": {
+        "tags": ["Grups"],
+        "summary": "Actualitzar grup",
+        "description": "Actualitza la informació d'un grup (admin)",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grup actualitzat"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Grups"],
+        "summary": "Esborrar grup",
+        "description": "Esborra el grup especificat (admin)",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grup esborrat"
+          }
+        }
+      }
+    },
+    "/groups/user/{userId}": {
+      "get": {
+        "tags": ["Grups"],
+        "summary": "Grups d'usuari",
+        "description": "Retorna els grups als quals pertany un usuari",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Llista de grups de l'usuari"
+          }
+        }
+      }
+    },
+    "/chat": {
+      "post": {
+        "tags": ["Xat"],
+        "summary": "Consultar chatbot",
+        "description": "Processa una consulta en llenguatge natural (català/castellà)",
+        "responses": {
+          "200": {
+            "description": "Resposta del chatbot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "response": {
+                      "type": "string",
+                      "description": "Resposta del chatbot en text"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["employee", "manager", "admin"]
+          },
+          "registered": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Group"
+            }
+          },
+          "vacationBalance": {
+            "$ref": "#/components/schemas/VacationBalance"
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "VacationBalance": {
+        "type": "object",
+        "properties": {
+          "obligatoryDays": {
+            "type": "integer"
+          },
+          "electiveDays": {
+            "type": "integer"
+          },
+          "freeDays": {
+            "type": "integer"
+          },
+          "usedObligatoryDays": {
+            "type": "integer"
+          },
+          "usedElectiveDays": {
+            "type": "integer"
+          },
+          "usedFreeDays": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}
