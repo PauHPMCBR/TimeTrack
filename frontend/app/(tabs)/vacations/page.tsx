@@ -206,7 +206,7 @@ export default function MyVacationsPage() {
       closeCancelModal(); 
     } catch (error) {
       console.error(error);
-      alert("Error al cancel·lar");
+      setErrorMsg(t("error.DeleteError"));
     } finally {
       setIsCancelling(false);
     }
@@ -335,7 +335,7 @@ export default function MyVacationsPage() {
                         type="text" 
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
-                        placeholder="Ex: Assumptes personals..."
+                        placeholder={t("vacations.reasonPlaceholder")}
                         className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white transition-all"
                     />
                 </div>

@@ -22,6 +22,7 @@ export default function CalendarPage() {
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [vacations, setVacations] = useState<YearlyVacationResponse | null>(null);
   const [workSessions, setWorkSessions] = useState<MonthlyWorkRecordResponse | null>(null);
+  const [teamVacations, setTeamVacations] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -55,6 +56,16 @@ export default function CalendarPage() {
            setErrorMsg(t(`error.${workSessionsResponse.error}`));
         } else {
            setWorkSessions(workSessionsResponse.data!);
+        }
+
+        const teamVacationsRes = await apiClient.getTeamVacations(year);
+        if (teamVacationsRes.data && teamVacationsRes.data.vacations) {
+            // Filter out self to not duplicate
+            const others = teamVacationsRes.data.vacations.filter((v: any) => {
+                const vUserId = typeof v.userId === 'object' ? v.userId._id : v.userId;
+                return vUserId !== currentUser._id;
+            });
+            setTeamVacations(others);
         }
 
       } catch (error) {
@@ -109,6 +120,7 @@ export default function CalendarPage() {
         onMonthChange={handleMonthChange}
         vacations={vacations}
         workSessions={workSessions}
+        teamVacations={teamVacations}
         loading={loading}
         showWorkSessions={true}
         showVacations={true}
@@ -151,6 +163,12 @@ export default function CalendarPage() {
               <div className="w-3 h-3 rounded outline-2 outline-indigo-500"></div>
               <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                 {t('calendar.legend.today')}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-purple-100 border border-purple-200 dark:bg-purple-900/30 dark:border-purple-800/50"></div>
+              <span className="text-zinc-600 dark:text-zinc-300 text-sm">
+                {t('calendar.teamVacation')}
               </span>
             </div>
           </div>

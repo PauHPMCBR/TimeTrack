@@ -197,6 +197,10 @@ class ApiClient {
     return this.request(`/api/vacations/user/${userId}/${year}`);
   }
 
+  async getTeamVacations(year: number | string): Promise<ApiResponse<{ vacations: any[] }>> {
+    return this.request(`/api/groups/team-vacations?year=${year}`);
+  }
+
   // Work session methods
   async getWorkSessionReasons(): Promise<ApiResponse<{ reasons: WorksessionReason[] }>> {
     return this.request(`/api/work-sessions/reasons`);

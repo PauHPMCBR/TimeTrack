@@ -28,6 +28,8 @@ export function getVacationClass(type: VacationEvent['type']): string {
       return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
     case 'elective-rejected':
       return 'bg-red-100 text-red-800 border border-red-200';
+    case 'team':
+      return 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50';
     default:
       return 'bg-gray-100 text-gray-800';
   }

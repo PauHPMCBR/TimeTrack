@@ -142,10 +142,10 @@ export default function CreateUserPage() {
             </div>
             
             <h3 className="text-lg font-medium text-green-900 dark:text-green-300">
-              User created!
+              {t("admin.success.title")}
             </h3>
             <p className="mt-1 text-sm text-green-800/80 dark:text-green-200/70 mb-6">
-              Share this link with the employee to complete registration.
+              {t("admin.success.desc")}
             </p>
 
             <div className="relative mb-4">
@@ -160,14 +160,14 @@ export default function CreateUserPage() {
               onClick={copyToClipboard}
               className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors shadow-sm"
             >
-              {copied ? "Copied!" : "Copy link"}
+              {copied ? t("admin.copied") : t("admin.copy")}
             </button>
             
             <button 
               onClick={handleReset}
               className="mt-4 text-xs font-medium text-green-700 hover:underline dark:text-green-400"
             >
-              Create another user
+              {t("admin.createAnother")}
             </button>
           </div>
         ) : (

@@ -60,15 +60,19 @@ export default function CreateGroupPage() {
       // Convertim el Set a Array i l'afegim a les dades
       const membersArray = Array.from(selectedUserIds);
       
-      await apiClient.createGroup({
+      const res = await apiClient.createGroup({
         ...formData,
         members: membersArray as any // Enviem els IDs seleccionats
       });
 
-      router.push("/admin/groups");
+      if (res.error) {
+        // Here we could set an error state instead of alert
+        console.error("Error creating group:", res.error);
+      } else {
+        router.push("/admin/groups");
+      }
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Error creant el grup.");
     } finally {
       setLoading(false);
     }
@@ -101,7 +105,7 @@ export default function CreateGroupPage() {
                 value={formData.name} 
                 onChange={e => setFormData({...formData, name: e.target.value})} 
                 className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white" 
-                placeholder="Ex: Oficina Barcelona" 
+                placeholder={t("admin.groups.namePlaceholder")} 
               />
             </div>
 
@@ -113,19 +117,19 @@ export default function CreateGroupPage() {
                 value={formData.description} 
                 onChange={e => setFormData({...formData, description: e.target.value})} 
                 className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white" 
-                placeholder="Ex: Equip de desenvolupament..." 
+                placeholder={t("admin.groups.descPlaceholder")} 
               />
             </div>
 
             {/* SELECCIÓ D'USUARIS (NOU) */}
             <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-3">
-                    Afegir membres ({allUsers.length})
+                    {t("admin.groups.addMembers")} ({allUsers.length})
                 </h3>
                 
                 {allUsers.length === 0 ? (
                     <div className="p-4 bg-zinc-50 rounded text-sm text-zinc-500 italic text-center border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-                        No s'han trobat usuaris disponibles.
+                        {t("admin.groups.noUsers")}
                     </div>
                 ) : (
                     <div className="max-h-60 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-2 space-y-1">

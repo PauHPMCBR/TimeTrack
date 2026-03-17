@@ -21,7 +21,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const userId = req.query.userId as string;
 
     const groups = await Group.find({
-        userId: userId,
+        members: userId,
     }).sort({ name: 1 });
 
     res.status(200).json({ groups: groups });

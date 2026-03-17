@@ -91,7 +91,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 
     res.status(201).json({
-      message: type === 'check_in' ? 'Entrada registrada' : 'Sortida registrada',
+      message: type === 'check_in' ? 'CheckInRegistered' : 'CheckOutRegistered',
       session: workSession,
       hoursWorked
     });

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireSameGroupOrAdmin } from '@/lib/auth';
+import { AuthRequest, requireInGroupOrAdmin } from '@/lib/auth';
 import { Group } from '@/models';
 import { responseErrorEntryNotFound, responseErrorGet, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
 import { validateQueryParams } from '@/lib/validation';
@@ -20,7 +20,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     await dbConnect();
     const groupId = req.query.groupId as string;
 
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).populate('members', 'name email role registered');
 
     if (!group) {
       return responseErrorEntryNotFound(res, "Group");
@@ -33,4 +33,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   }
 }
 
-export default requireSameGroupOrAdmin(handler);
+export default requireInGroupOrAdmin(handler);

@@ -2,6 +2,7 @@ import { NextApiResponse } from "next";
 import type { ErrorCode, IllegalAction, IncorrectParameter, IncorrectParameterReason } from "shared/src/types/response-errors";
 
 export function responseError(res: NextApiResponse, code: number, error: ErrorCode, details?: any) {
+    console.log(`returning response error for: ${res}, code: ${code}, error: ${error}, details: ${details}`);
     return res.status(code).json({
         error: error,
         details: details || {}

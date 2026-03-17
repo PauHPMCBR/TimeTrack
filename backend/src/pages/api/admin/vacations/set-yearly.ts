@@ -76,7 +76,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     res.status(200).json({ 
       success: true,
-      message: `Yearly vacation settings for ${year} saved successfully`
+      message: 'YearlyVacationSaved',
+      year
     });
   } catch (error) {
     console.error('Set yearly vacations error:', error);

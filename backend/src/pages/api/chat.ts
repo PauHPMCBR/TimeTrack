@@ -31,19 +31,21 @@ function getTimeContext(): string {
   return `Data actual: ${now.toLocaleDateString('ca-ES', { timeZone: 'Europe/Madrid' })} (${now.toLocaleTimeString('ca-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}).`;
 }
 
+import { responseError } from '@/lib/response-error-generator';
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return responseError(res, 405, 'MethodNotAllowed');
 
   try {
-    if (!GROQ_API_KEY) return res.status(500).json({ error: "Falta API KEY" });
+    if (!GROQ_API_KEY) return responseError(res, 500, 'GroqApiKeyMissing');
     
     const { message, lang = "ca", email, history = [] } = req.body;
-    if (!message) return res.status(400).json({ error: "Falta el missatge" });
+    if (!message) return responseError(res, 400, 'MessageMissing');
 
     let dbContext = "No tinc dades.";
     
@@ -270,7 +272,7 @@ INSTRUCCIONS:
       }),
     });
 
-    if (!response.ok) return res.status(502).json({ error: "Error AI" });
+    if (!response.ok) return responseError(res, 502, 'AiError');
 
     const data = await response.json();
     const reply = data?.choices?.[0]?.message?.content?.trim() || "No he entès la resposta.";
@@ -279,6 +281,6 @@ INSTRUCCIONS:
 
   } catch (error: any) {
     console.error("Error:", error);
-    res.status(500).json({ error: "Error intern" });
+    return responseError(res, 500, 'InternalError');
   }
 }

@@ -69,7 +69,6 @@ export default function EditGroupPage() {
 
       } catch (error: any) {
         console.error("Error loading data:", error);
-        alert(t("error.GetError")); // Usem traducció d'error
       } finally {
         setLoading(false);
       }
@@ -99,14 +98,13 @@ export default function EditGroupPage() {
       });
 
       if (res.error) {
-        // Mostrem l'error traduït si és possible, o el missatge del server
-        alert(t("error.PutError") + ": " + (t(`error.${res.error}`) || res.error));
+        // No alert, just log or handle in UI if needed
+        console.error("Error updating group:", res.error);
       } else {
         router.push("/admin/groups");
       }
     } catch (error) {
       console.error(error);
-      alert(t("error.PutError"));
     } finally {
       setSaving(false);
     }
