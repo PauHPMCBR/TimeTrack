@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Backend API for time record application",
   "scripts": {
-    "dev": "next dev -p 3001 --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start -p 3001 --turbopack",
-    "lint": "eslint"
+    "dev": "bun next dev -p 3001 --turbopack",
+    "build": "bun next build --turbopack",
+    "start": "bun next start -p 3001 --turbopack",
+    "lint": "bun eslint"
   },
   "dependencies": {
     "@registre-jornada/shared": "file:../shared",

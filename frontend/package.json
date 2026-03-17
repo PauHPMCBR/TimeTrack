@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "bun next dev --turbopack",
+    "build": "bun next build --turbopack",
+    "start": "bun next start",
+    "lint": "bun eslint"
   },
   "dependencies": {
     "@registre-jornada/shared": "*",

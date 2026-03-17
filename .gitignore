@@ -52,3 +52,5 @@ next-env.d.ts
 frontend/.next/
 frontend/.turbo/
 frontend/node_modules/
+
+minikube-linux-amd64

@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM oven/bun:alpine
 WORKDIR /app
 
 COPY . .
@@ -8,7 +8,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN apk add --no-cache libc6-compat
 
-RUN npm install --include=dev
+RUN bun install
 
 RUN echo 'import type { NextConfig } from "next";' > next.config.ts
 RUN echo '' >> next.config.ts
@@ -20,12 +20,12 @@ RUN echo '};' >> next.config.ts
 RUN echo '' >> next.config.ts
 RUN echo 'export default nextConfig;' >> next.config.ts
 
-RUN npx next build
+RUN bun next build
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup -g 1001 -S nodejs
+RUN addgroup -g 1001 -S bunjs
 RUN adduser -S api -u 1001
 
 USER api
@@ -33,4 +33,4 @@ USER api
 EXPOSE 3001
 ENV PORT 3001
 
-CMD ["sh", "-c", "NODE_ENV=production npx next start -p 3001"]
+CMD ["sh", "-c", "NODE_ENV=production bun next start -p 3001"]

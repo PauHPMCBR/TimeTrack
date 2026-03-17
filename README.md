@@ -41,7 +41,7 @@ They are managed by Deployments, which ensure the desired number of pod replicas
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your machine:
-- Node.js (version 18 or higher) and npm
+- Bun (version 1.0 or higher)
 - Docker
 - Docker compose
 - kubectl (Kubernetes command-line tool)
@@ -59,18 +59,9 @@ git clone <your-repository-url>
 cd time-record-app
 ```
 
-Install Frontend Dependencies
+Install Dependencies
 ```bash
-cd frontend
-npm install
-cd ..
-```
-
-Install Backend Dependencies
-```bash
-cd backend
-npm install
-cd ..
+bun install
 ```
 
 #### Environment Configuration
@@ -94,8 +85,8 @@ NEXTAUTH_SECRET=your-secret-here-at-least-32-characters-long
 The project uses Mongoose to manage the connection to MongoDB. The application uses a connection utility to cache the database connection, which optimizes performance in environments like Kubernetes by reusing connections across requests.
 
 You can use MongoDB for managing the database easily. The connexion is within the proper url:
-- Using the local mongodb: mongodb://\<username\>:\<password\>@localhost:27017/\<dbname\>?authSource=myapp
-- Using MongoDB Atlas: mongodb+srv://\<username\>:\<password\>@cluster0.mongodb.net/\<dbname\>?retryWrites=true&w=majority
+- Using the local mongodb: mongodb://<username>:<password>@localhost:27017/<dbname>?authSource=myapp
+- Using MongoDB Atlas: mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority
 - Using the database created by the docker-compose: mongodb://alumne:XGmHckQJzwzFKwBo14YA@localhost:27018/myapp?authSource=myapp
 
 ### Phase 3: Running the Application Locally
@@ -113,7 +104,7 @@ You will have to use MongoDB Atlas or the local mongodb
 Start the Backend Server:
 ```bash
 cd backend
-npm run dev
+bun run dev
 ```
 
 The backend API should now be running on http://localhost:3001.
@@ -122,7 +113,7 @@ Start the Frontend Development Server:
 Open a new terminal window.
 ```bash
 cd frontend
-npm run dev
+bun run dev
 ```
 
 The frontend application should now be running on http://localhost:3000.
