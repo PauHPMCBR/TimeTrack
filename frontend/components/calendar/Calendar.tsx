@@ -34,6 +34,7 @@ export function Calendar({
   onDayClick,
   vacations,
   workSessions,
+  teamVacations = [],
   loading = false,
   showWorkSessions = true,
   showVacations = true,
@@ -113,6 +114,32 @@ export function Calendar({
         });
       }
     });
+    
+    // Add team vacations
+    if (teamVacations && teamVacations.length > 0) {
+        teamVacations.forEach(vac => {
+            const vacDate = new Date(vac.date);
+            vacDate.setHours(0, 0, 0, 0);
+            const dateToCheck = new Date(date);
+            dateToCheck.setHours(0, 0, 0, 0);
+            
+            if (vacDate.getTime() === dateToCheck.getTime()) {
+                // Check if it's not the same as one we already have (own elective)
+                // Actually, own approved elective will already be in events.
+                // But for team vacations, we want to show other users.
+                
+                // Assuming vacations from API are populated with userId
+                const vacUser = vac.userId;
+                const vacUserName = typeof vacUser === 'object' ? vacUser.name : null;
+                
+                events.push({
+                    type: 'team',
+                    label: vacUserName || t('calendar.electiveVacation'),
+                    userName: vacUserName
+                });
+            }
+        });
+    }
 
     return events;
   };

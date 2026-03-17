@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
-import { User } from '@/models';
+import { User, Group } from '@/models';
+import { responseError } from './response-error-generator';
 
 export interface AuthRequest extends NextApiRequest {
   user?: {
@@ -16,7 +17,7 @@ export const authenticateToken = (handler: Function) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json({ error: 'Token d\'accés requerit' });
+      return responseError(res, 401, 'TokenRequired');
     }
 
     try {
@@ -25,7 +26,7 @@ export const authenticateToken = (handler: Function) => {
       req.user = user;
       return handler(req, res);
     } catch (error) {
-      return res.status(403).json({ error: 'Token invàlid o expirat' });
+      return responseError(res, 403, 'InvalidToken');
     }
   };
 };
@@ -33,7 +34,7 @@ export const authenticateToken = (handler: Function) => {
 export const requireRole = (roles: string[], handler: Function) => {
   return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Permisos insuficients' });
+      return responseError(res, 403, 'InsufficientPermissions');
     }
     return handler(req, res);
   });
@@ -48,15 +49,11 @@ export const requireSameGroupOrAdmin = (handler: Function) => {
 
       const targetUserId = req.query.userId as string;
 
-      if (req.user?.userId === targetUserId) {
-        return handler(req, res);
-      }
-
-      const currentUser = await User.findById(req.user?.userId).populate('groups');
-      const targetUser = await User.findById(targetUserId).populate('groups');
+      const currentUser = await User.findById(req.user?.userId);
+      const targetUser = await User.findById(targetUserId);
 
       if (!currentUser || !targetUser) {
-        return res.status(404).json({ error: 'Usuari no trobat' });
+        return responseError(res, 404, 'UserNotFound');
       }
 
       const currentUserGroups = currentUser.groups.map((g: any) => g.toString());
@@ -64,12 +61,38 @@ export const requireSameGroupOrAdmin = (handler: Function) => {
       const sharedGroups = currentUserGroups.filter((groupId: any) => targetUserGroups.includes(groupId));
 
       if (sharedGroups.length === 0) {
-        return res.status(403).json({ error: 'No tens accés a aquest usuari' });
+        return responseError(res, 403, 'NoAccessToUser');
       }
 
       return handler(req, res);
     } catch (error) {
-      return res.status(500).json({ error: 'Error verificant permisos' });
+      return responseError(res, 500, 'PermissionVerificationError');
+    }
+  });
+};
+
+export const requireInGroupOrAdmin = (handler: Function) => {
+  return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
+    try {
+      if (req.user?.role === 'admin') {
+        return handler(req, res);
+      }
+
+      const groupId = req.query.groupId as string;
+
+      const user = await User.findById(req.user?.userId);
+      if (!user) {
+        return responseError(res, 404, 'UserNotFound');
+      }
+
+      const group = await Group.findById(groupId);
+      if (!req.user?.userId || !group.members.includes(req.user.userId)) {
+        return responseError(res, 403, 'NoAccessToGroup');
+      }
+
+      return handler(req, res);
+    } catch (error) {
+      return responseError(res, 500, 'PermissionVerificationError');
     }
   });
 };

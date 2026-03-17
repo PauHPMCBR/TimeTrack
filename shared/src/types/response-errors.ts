@@ -12,6 +12,22 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'IllegalAction'
     | 'ValidationError'
     | 'NetworkError' // when frontend fails to get a proper backend response
+    | 'TokenRequired'
+    | 'InvalidToken'
+    | 'InsufficientPermissions'
+    | 'UserNotFound'
+    | 'NoAccessToUser'
+    | 'NoAccessToGroup'
+    | 'PermissionVerificationError'
+    | 'GroqApiKeyMissing'
+    | 'MessageMissing'
+    | 'AiError'
+    | 'InternalError'
+    | 'Success'
+    | 'GroupDeleted'
+    | 'CheckInRegistered'
+    | 'CheckOutRegistered'
+    | 'YearlyVacationSaved'
     ;
 
 export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status';

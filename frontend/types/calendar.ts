@@ -2,9 +2,10 @@ import { YearlyVacationResponse, MonthlyWorkRecordResponse } from "@/schemas/api
 import { ElectiveVacation, WorkSession } from ".";
 
 export type VacationEvent = {
-  type: 'obligatory' | 'elective-approved' | 'elective-pending' | 'elective-rejected';
+  type: 'obligatory' | 'elective-approved' | 'elective-pending' | 'elective-rejected' | 'team';
   label: string;
   elective?: ElectiveVacation;
+  userName?: string;
 };
 
 export type WorkSessionEvent = {
@@ -27,6 +28,7 @@ export interface CalendarProps {
   onDayClick?: (date: Date) => void;
   vacations: YearlyVacationResponse | null;
   workSessions: MonthlyWorkRecordResponse | null;
+  teamVacations?: any[];
   loading?: boolean;
   showWorkSessions?: boolean;
   showVacations?: boolean;

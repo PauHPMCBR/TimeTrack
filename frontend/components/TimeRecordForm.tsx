@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiClient } from '@/lib/api';
+import { useI18n } from '@/app/i18n';
 
 interface TimeRecordFormProps {
   onRecordUpdate: () => void;
@@ -9,26 +10,34 @@ interface TimeRecordFormProps {
 }
 
 export default function TimeRecordForm({ onRecordUpdate, currentStatus }: TimeRecordFormProps) {
+  const { t } = useI18n();
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
   const handleCheckIn = async () => {
     setIsLoading(true);
     setMessage('');
+    setIsError(false);
     
     try {
-      const result = await apiClient.checkIn(notes);
+      const result = await apiClient.addWorkRecordTimestamp({
+        type: 'check_in',
+        notes
+      });
       
       if (result.error) {
-        setMessage(`Error: ${result.error}`);
+        setMessage(t(`error.${result.error}`));
+        setIsError(true);
       } else {
-        setMessage('Successfully checked in!');
+        setMessage(t('error.CheckInRegistered'));
         setNotes('');
         onRecordUpdate();
       }
     } catch (error) {
-      setMessage('Check-in failed');
+      setMessage(t('error.PostError'));
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -37,19 +46,25 @@ export default function TimeRecordForm({ onRecordUpdate, currentStatus }: TimeRe
   const handleCheckOut = async () => {
     setIsLoading(true);
     setMessage('');
+    setIsError(false);
     
     try {
-      const result = await apiClient.checkOut(notes);
+      const result = await apiClient.addWorkRecordTimestamp({
+        type: 'check_out',
+        notes
+      });
       
       if (result.error) {
-        setMessage(`Error: ${result.error}`);
+        setMessage(t(`error.${result.error}`));
+        setIsError(true);
       } else {
-        setMessage('Successfully checked out!');
+        setMessage(t('error.CheckOutRegistered'));
         setNotes('');
         onRecordUpdate();
       }
     } catch (error) {
-      setMessage('Check-out failed');
+      setMessage(t('error.PostError'));
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -57,17 +72,17 @@ export default function TimeRecordForm({ onRecordUpdate, currentStatus }: TimeRe
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Time Record</h2>
+      <h2 className="text-xl font-semibold mb-4">{t('checkin.title')}</h2>
       
       <div className="mb-4">
         <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-          Notes (optional)
+          {t('checkin.notesLabel')} {t('common.optional')}
         </label>
         <textarea
           id="notes"
           rows={3}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="Add any notes about your work session..."
+          placeholder={t('checkin.notesPlaceholder')}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -79,7 +94,7 @@ export default function TimeRecordForm({ onRecordUpdate, currentStatus }: TimeRe
           disabled={isLoading || currentStatus === 'checked-in'}
           className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Check In
+          {t('checkin.btnIn')}
         </button>
         
         <button
@@ -87,13 +102,13 @@ export default function TimeRecordForm({ onRecordUpdate, currentStatus }: TimeRe
           disabled={isLoading || currentStatus === 'checked-out'}
           className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Check Out
+          {t('checkin.btnOut')}
         </button>
       </div>
 
       {message && (
         <div className={`mt-4 p-3 rounded-md ${
-          message.includes('Error') 
+          isError 
             ? 'bg-red-100 text-red-700' 
             : 'bg-green-100 text-green-700'
         }`}>
@@ -102,7 +117,7 @@ export default function TimeRecordForm({ onRecordUpdate, currentStatus }: TimeRe
       )}
 
       <div className="mt-4 text-sm text-gray-600">
-        <p>Current status: {currentStatus || 'Not checked in'}</p>
+        <p>{t('profile.status')}: {currentStatus ? (currentStatus === 'checked-in' ? t('profile.statusActive') : t('profile.statusInactive')) : t('checkin.notIn')}</p>
       </div>
     </div>
   );

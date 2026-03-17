@@ -67,7 +67,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         { $pull: { groups: groupId } }
       );
 
-      res.status(200).json({ message: 'Grup eliminat' });
+      res.status(200).json({ message: 'GroupDeleted' });
     } catch (error) {
       console.error('Delete group error:', error);
       return responseErrorDelete(res);

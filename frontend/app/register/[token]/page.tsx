@@ -91,7 +91,7 @@ export default function CompleteRegistrationPage() {
       
       if (res.data && res.data.token) {
         localStorage.setItem('auth_token', res.data.token);
-        alert(t("register.success"));
+        // Use a non-blocking way to show success or just redirect
         window.location.href = "/profile";
       } else {
         router.push("/login");
