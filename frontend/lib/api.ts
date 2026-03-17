@@ -1,11 +1,27 @@
-import type { CreateGroupRequest, CreateUserRequest, ElectiveVacationRequest, LoginRequest, RegisterRequest, UserLoginResponse, YearlyVacationResponse, WorkSessionRequest, MonthlyWorkRecordResponse, YearlyVacationAdminRequest } from "@/schemas/api";
-import { ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from "@/types";
-import { ApiResponse } from "@/types/apiErrors";
+import type {
+  CreateGroupRequest,
+  CreateUserRequest,
+  ElectiveVacationRequest,
+  LoginRequest,
+  MonthlyWorkRecordResponse,
+  RegisterRequest,
+  UserLoginResponse,
+  WorkSessionRequest,
+  YearlyVacationAdminRequest,
+  YearlyVacationResponse,
+} from '@/schemas/api'
+import { ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
+import { ApiResponse } from '@/types/apiErrors'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 class ApiClient {
   private currentUser: User | undefined = undefined;
+  private errorListener: ((error: string, details?: any) => void) | null = null;
+
+  setErrorListener(listener: ((error: string, details?: any) => void) | null) {
+    this.errorListener = listener;
+  }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const token = localStorage.getItem('auth_token');
@@ -21,13 +37,24 @@ class ApiClient {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-      const data = await response.json();
+      
+      let data: any;
+      try {
+        data = await response.json();
+      } catch (e) {
+        data = { error: 'InvalidJsonResponse' };
+      }
 
       if (!response.ok) {
-        return { 
-          error: data.error || 'Request failed',
+        const error = data.error || response.statusText || 'Request failed';
+        const result = { 
+          error,
           details: data 
         };
+        if (this.errorListener) {
+          this.errorListener(result.error, result.details);
+        }
+        return result;
       }
 
       if (data.data) {
@@ -36,7 +63,11 @@ class ApiClient {
 
       return { data };
     } catch (error) {
-      return { error: 'NetworkError' };
+      const result: ApiResponse<any> = { error: 'NetworkError' };
+      if (this.errorListener && result.error) {
+        this.errorListener(result.error);
+      }
+      return result;
     }
   }
 
@@ -50,14 +81,10 @@ class ApiClient {
 
   // Auth methods
   async login(credentials: LoginRequest): Promise<ApiResponse<UserLoginResponse>> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    return await this.request<UserLoginResponse>(`/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    
-    const data = await response.json();
-    return data;
   }
 
   async logoff() {
@@ -67,14 +94,10 @@ class ApiClient {
   }
 
   async register(credentials: RegisterRequest): Promise<ApiResponse<UserLoginResponse>> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    return this.request<UserLoginResponse>(`/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    
-    const data = await response.json();
-    return data;
   }
 
   // Group methods
@@ -131,6 +154,10 @@ class ApiClient {
 
   async getAllPendingVacations(): Promise<ApiResponse<{ vacations: ElectiveVacation[] }>> {
     return this.request(`/api/admin/vacations/pending-vacations`);
+  }
+
+  async getCurrentlyWorking(): Promise<ApiResponse<{ count: number, users: any[] }>> {
+    return this.request(`/api/admin/currently-working`);
   }
 
   async resolveVacation(vacationId: string, status: 'approved' | 'rejected'): Promise<ApiResponse<{ success: boolean }>> {

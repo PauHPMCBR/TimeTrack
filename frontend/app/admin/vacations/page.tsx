@@ -6,6 +6,7 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 import { ElectiveVacation, User } from "@/types";
+import { Alert } from "@/components/ui/Alert";
 
 // 1. DEFINIM EL TIPUS PER A LES VACANCES AGRUPADES
 type GroupedRequest = {
@@ -51,9 +52,9 @@ export default function AdminVacationsPage() {
         apiClient.getCompanyUsers()
       ]);
 
-      if (resVacations.status === 'fulfilled' && resVacations.value.data?.electives) {
+      if (resVacations.status === 'fulfilled' && resVacations.value.data) {
         setRequests(resVacations.value.data.electives || []);
-        setObligatoryDays(resVacations.value.data.yearlyVacationDays.obligatoryDays || []);
+        setObligatoryDays(resVacations.value.data.yearlyVacationDays?.obligatoryDays || []);
       } else if (resVacations.status === 'rejected') {
         console.error("Error loading vacations:", resVacations.reason);
         setError(t("error.GetError") || "Error loading vacations");
@@ -268,15 +269,12 @@ export default function AdminVacationsPage() {
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <Alert 
+            variant="destructive" 
+            onClose={() => setError(null)} 
+          >
             {error}
-            <button 
-              onClick={() => setError(null)}
-              className="ml-2 text-sm underline"
-            >
-              {t("common.close")}
-            </button>
-          </div>
+          </Alert>
         )}
 
         {loading ? (
@@ -288,7 +286,7 @@ export default function AdminVacationsPage() {
              <section>
                 <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-orange-400"></span>
-                    {t("admin.vacations.pending")} ({pendingGroups.length} sol·licituds)
+                    {t("admin.vacations.pending")} ({pendingGroups.length})
                 </h2>
                 
                 {pendingGroups.length === 0 ? (
@@ -329,7 +327,7 @@ export default function AdminVacationsPage() {
                                         </div>
                                         {group.daysCount > 1 && (
                                             <span className="text-xs font-semibold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full dark:bg-orange-900/30 dark:text-orange-400">
-                                                {group.daysCount} dies
+                                                {group.daysCount} {t("vacations.days")}
                                             </span>
                                         )}
                                         {group.reason && (
@@ -407,7 +405,7 @@ export default function AdminVacationsPage() {
              {/* --- REJECTED (AGRUPAT) --- */}
              {rejectedGroups.length > 0 && (
                  <section>
-                    <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">{t("admin.vacations.history")} (Rebutjades)</h2>
+                    <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">{t("admin.vacations.history")}</h2>
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
                         {rejectedGroups.map((group, idx) => {
                           const user = getUserInfo(group.userId);
@@ -457,7 +455,7 @@ export default function AdminVacationsPage() {
                        ))}
                        {obligatoryDays.length > 10 && (
                          <div className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                           +{obligatoryDays.length - 10} more
+                           +{obligatoryDays.length - 10} {t("common.more")}
                          </div>
                        )}
                      </div>

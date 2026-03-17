@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import I18nProvider from "./i18n";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ApiNotificationManager } from "@/components/ApiNotificationManager";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "TimeTrack App",
+  title: "TimeTrack360",
   description: "Employee time tracking application",
 };
 
@@ -24,13 +27,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ca" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+          <title></title>
       </head>
       <body
         className={`${inter.className} min-h-dvh antialiased
         bg-gradient-to-b from-zinc-50 to-white text-zinc-900
         dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100`}
       >
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider>
+          <NotificationProvider>
+            <ApiNotificationManager />
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </NotificationProvider>
+        </I18nProvider>
       </body>
     </html>
   );

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useI18n } from "../app/i18n";
+import { useI18n } from '@/app/i18n';
 import { apiClient } from "@/lib/api";
+import { Alert } from "./ui/Alert";
+import { LoginRequestSchema } from "@/schemas/api";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -21,6 +23,9 @@ export default function LoginForm() {
     setError(null);
     setLoading(true);
     try {
+      // Validate with Zod
+      LoginRequestSchema.parse({ email, password });
+
       const res = await apiClient.login({ email, password });
       if (res.error) throw new Error(res.error);
 
@@ -31,10 +36,16 @@ export default function LoginForm() {
         }
         router.push("/dashboard");
       } else {
-        throw new Error("Unknown error");
+        throw new Error("UnknownError");
       }
     } catch (err: any) {
-      setError(err.message || "Network error");
+      if (err.errors && err.errors.length > 0) {
+        setError(err.errors[0].message);
+      } else {
+        const translationKey = `error.${err.message}`;
+        const translated = t(translationKey);
+        setError(translated !== translationKey ? translated : (err.message || t("error.NetworkError")));
+      }
     } finally {
       setLoading(false);
     }
@@ -95,7 +106,11 @@ export default function LoginForm() {
           {t("login.remember")}
         </label>
 
-        {error && <div className="text-center text-sm text-red-600">{error}</div>}
+        {error && (
+          <Alert variant="destructive" className="py-2">
+            {error}
+          </Alert>
+        )}
 
         <button
           type="submit"
