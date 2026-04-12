@@ -20,11 +20,13 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     await dbConnect();
     const groupId = req.query.groupId as string;
 
-    const group = await Group.findById(groupId).populate('members', 'name email role registered');
+    let group = await Group.findById(groupId);
 
     if (!group) {
       return responseErrorEntryNotFound(res, "Group");
     }
+
+    group = await Group.findById(groupId).populate('members', 'name email role registered');
 
     res.status(200).json({ group: group });
   } catch (error) {

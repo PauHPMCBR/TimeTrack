@@ -20,13 +20,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     await dbConnect();
     const { name, description, members } = req.body;
 
-    const group = new Group({
+    const group = await Group.create({
       name,
       description,
       members: members || [],
     });
-
-    await group.save();
 
     if (members && members.length > 0) {
       await User.updateMany(

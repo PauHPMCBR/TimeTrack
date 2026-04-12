@@ -6,13 +6,16 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "exit 0"
+    "dev": "exit 0",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@zodyac/zod-mongoose": "^4.2.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^4.1.4"
   }
 }

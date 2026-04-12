@@ -45,39 +45,34 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     // --- NOVA LÒGICA DE SINCRONITZACIÓ ---
     
     if (!yearlyVacationDays) {
-      // CAS A: L'usuari és nou o no té dades per aquest any.
-      // Creem el registre copiant la plantilla global.
       if (globalSettings) {
-        yearlyVacationDays = new YearlyVacationDays({
+        yearlyVacationDays = await YearlyVacationDays.create({
           userId: userId,
           year: year,
           obligatoryDays: globalSettings.obligatoryDays,
-          electiveDaysTotalCount: globalSettings.electiveDaysTotalCount, // Agafa el valor actual (22)
+          electiveDaysTotalCount: globalSettings.electiveDaysTotalCount,
           selectedElectiveDays: [],
         });
-        await yearlyVacationDays.save();
       }
     } else {
-      // CAS B: L'usuari JA té dades (té el '8'), però la plantilla global ha canviat (a '22').
-      // Hem de sincronitzar el total sense perdre els dies que ja ha gastat.
       if (globalSettings) {
         let hasChanges = false;
 
-        // Comprovem si el límit total ha canviat
         if (yearlyVacationDays.electiveDaysTotalCount !== globalSettings.electiveDaysTotalCount) {
           yearlyVacationDays.electiveDaysTotalCount = globalSettings.electiveDaysTotalCount;
           hasChanges = true;
         }
 
-        // Opcional: També sincronitzem els dies obligatoris per si han canviat
         if (JSON.stringify(yearlyVacationDays.obligatoryDays) !== JSON.stringify(globalSettings.obligatoryDays)) {
            yearlyVacationDays.obligatoryDays = globalSettings.obligatoryDays;
            hasChanges = true;
         }
 
-        // Si hem detectat canvis, guardem a la base de dades
         if (hasChanges) {
-          await yearlyVacationDays.save();
+          await YearlyVacationDays.findByIdAndUpdate(yearlyVacationDays._id, {
+            electiveDaysTotalCount: yearlyVacationDays.electiveDaysTotalCount,
+            obligatoryDays: yearlyVacationDays.obligatoryDays,
+          });
         }
       }
     }
