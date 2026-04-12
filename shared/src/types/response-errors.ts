@@ -49,9 +49,10 @@ export type EmailIncorrectParameterReason = 'AlreadyExists'
 export type IncorrectParameterReason = PasswordIncorrectParameterReason 
     | CheckInIncorrectParameterReason
     | EmailIncorrectParameterReason
-    | 'ShouldNotBeSet' | 'DatesNotInYear'; // TODO translation
+    | 'ShouldNotBeSet' | 'DatesNotInYear' | 'SomeUsersNotFound'; // TODO translation
 
 export type IllegalAction = 'DuplicateVacationRequest'
     | 'AllVacationsUsed'
     | 'AlreadyObligatoryVacation'
-    | 'ModifyingFromAnotherUser'; // TODO translations
+    | 'ModifyingFromAnotherUser'
+    | 'NoVacationConfig'; // TODO translations

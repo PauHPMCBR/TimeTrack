@@ -37,12 +37,6 @@ export default async function handler(
       return responseErrorIncorrectParameter(res, 'email');
     }
 
-    user.name = name;
-    user.failedLoginAttempts = 0;
-    user.blocked = false;
-    user.blockedSince = undefined as any;
-    user.registered = true;
-
     if (!password) {
       return responseErrorMissingParameter(res, 'password');
     }
@@ -81,10 +75,29 @@ export default async function handler(
       return responseErrorIncorrectParameter(res, 'password', errors);
     }
 
+    const existingUser = await User.findOne({ 
+      email: email.toLowerCase(),
+      registered: true,
+      _id: { $ne: user._id }
+    });
+
+    if (existingUser) {
+      return responseErrorIncorrectParameter(res, 'email', ['AlreadyExists']);
+    }
+
+    user.name = name;
+    user.failedLoginAttempts = 0;
+    user.blocked = false;
+    user.blockedSince = undefined as any;
+    user.registered = true;
     user.password = password;
     await user.save();
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set');
+      return responseErrorPost(res);
+    }
     const token = jwt.sign(
       { 
         userId: user._id, 

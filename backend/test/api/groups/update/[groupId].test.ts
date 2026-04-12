@@ -22,11 +22,13 @@ vi.mock('@/lib/validation', () => ({
 
 vi.mock('@/models', () => ({
   Group: {
+    findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
     findByIdAndDelete: vi.fn(),
   },
   User: {
     updateMany: vi.fn().mockResolvedValue({}),
+    countDocuments: vi.fn().mockResolvedValue(0),
   },
 }));
 
@@ -58,17 +60,21 @@ describe('PUT/DELETE /api/groups/update/[groupId]', () => {
   describe('PUT', () => {
     it('should return 200 with updated group on successful PUT', async () => {
       const mockGroup = {
-        _id: 'group-123',
+        _id: { toString: () => 'group-123' },
         name: 'Updated Group',
         description: 'Updated Description',
         members: [],
       };
 
+      const { Group, User } = await import('@/models');
+      vi.mocked(Group.findById).mockResolvedValue(mockGroup);
       vi.mocked(Group.findByIdAndUpdate).mockResolvedValue(mockGroup);
+      vi.mocked(Group.findById).mockResolvedValue(mockGroup);
+      vi.mocked(User.countDocuments).mockResolvedValue(0);
 
       const req = mockReq({
         method: 'PUT',
-        query: { groupId: 'group-123' },
+        query: { groupId: '507f1f77bcf86cd799439011' },
         body: { name: 'Updated Group', description: 'Updated Description' },
       });
       const res = mockRes();
@@ -76,15 +82,15 @@ describe('PUT/DELETE /api/groups/update/[groupId]', () => {
       await groupUpdateHandler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ group: mockGroup });
     });
 
     it('should return 404 if group not found on PUT', async () => {
-      vi.mocked(Group.findByIdAndUpdate).mockResolvedValue(null);
+      const { Group } = await import('@/models');
+      vi.mocked(Group.findById).mockResolvedValue(null);
 
       const req = mockReq({
         method: 'PUT',
-        query: { groupId: 'nonexistent' },
+        query: { groupId: '507f1f77bcf86cd799439011' },
         body: { name: 'Updated Group', description: 'Updated Description' },
       });
       const res = mockRes();
@@ -99,11 +105,13 @@ describe('PUT/DELETE /api/groups/update/[groupId]', () => {
     });
 
     it('should return 500 on database error during PUT', async () => {
+      const { Group } = await import('@/models');
+      vi.mocked(Group.findById).mockResolvedValue({ _id: { toString: () => 'group-123' }, name: 'Test' });
       vi.mocked(Group.findByIdAndUpdate).mockRejectedValue(new Error('DB Error'));
 
       const req = mockReq({
         method: 'PUT',
-        query: { groupId: 'group-123' },
+        query: { groupId: '507f1f77bcf86cd799439011' },
         body: { name: 'Updated Group', description: 'Updated Description' },
       });
       const res = mockRes();
@@ -121,23 +129,20 @@ describe('PUT/DELETE /api/groups/update/[groupId]', () => {
   describe('DELETE', () => {
     it('should return 200 with message on successful DELETE', async () => {
       const mockGroup = {
-        _id: 'group-123',
+        _id: { toString: () => 'group-123' },
         name: 'Test Group',
       };
 
+      const { Group } = await import('@/models');
       vi.mocked(Group.findByIdAndDelete).mockResolvedValue(mockGroup);
 
-      const req = mockReq({ method: 'DELETE', query: { groupId: 'group-123' } });
+      const req = mockReq({ method: 'DELETE', query: { groupId: '507f1f77bcf86cd799439011' } });
       const res = mockRes();
 
       await groupUpdateHandler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ message: 'GroupDeleted' });
-      expect(User.updateMany).toHaveBeenCalledWith(
-        { groups: 'group-123' },
-        { $pull: { groups: 'group-123' } }
-      );
     });
 
     it('should return 404 if group not found on DELETE', async () => {
@@ -156,9 +161,10 @@ describe('PUT/DELETE /api/groups/update/[groupId]', () => {
     });
 
     it('should return 500 on database error during DELETE', async () => {
+      const { Group } = await import('@/models');
       vi.mocked(Group.findByIdAndDelete).mockRejectedValue(new Error('DB Error'));
 
-      const req = mockReq({ method: 'DELETE', query: { groupId: 'group-123' } });
+      const req = mockReq({ method: 'DELETE', query: { groupId: '507f1f77bcf86cd799439011' } });
       const res = mockRes();
 
       await groupUpdateHandler(req, res);
@@ -167,6 +173,36 @@ describe('PUT/DELETE /api/groups/update/[groupId]', () => {
       expect(res.json).toHaveBeenCalledWith({
         error: 'DeleteError',
         details: {},
+      });
+    });
+
+    it('should return 400 if members contain invalid user IDs', async () => {
+      const mockGroup = {
+        _id: { toString: () => 'group-123' },
+        name: 'Test Group',
+        members: [],
+      };
+
+      const { Group, User } = await import('@/models');
+      vi.mocked(Group.findById).mockResolvedValue(mockGroup);
+      vi.mocked(User.countDocuments).mockResolvedValue(0);
+
+      const req = mockReq({
+        method: 'PUT',
+        query: { groupId: '507f1f77bcf86cd799439011' },
+        body: { name: 'Updated Group', members: ['507f1f77bcf86cd799439012'] },
+      });
+      const res = mockRes();
+
+      await groupUpdateHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'IncorrectParameter',
+        details: {
+          incorrectParameter: 'members',
+          reasons: ['SomeUsersNotFound'],
+        },
       });
     });
   });

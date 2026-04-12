@@ -365,7 +365,9 @@ describe('POST /api/auth/register', () => {
     };
 
     const { User } = await import('@/models');
-    vi.mocked(User.findOne).mockResolvedValue(user);
+    vi.mocked(User.findOne)
+      .mockResolvedValueOnce(user)
+      .mockResolvedValueOnce(null);
 
     const req = mockReq({
       method: 'POST',

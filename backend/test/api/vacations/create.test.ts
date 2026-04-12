@@ -189,4 +189,72 @@ describe('POST /api/vacations/create', () => {
       details: {},
     });
   });
+
+  it('should return 400 if no vacation config exists for the year', async () => {
+    vi.mocked(YearlyVacationDays.findOne)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+
+    const req = mockReq({
+      method: 'POST',
+      body: { date: '2024-06-15', reason: 'Doctor appointment' },
+    });
+    const res = mockRes();
+
+    await vacationCreateHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'IllegalAction',
+      details: {
+        illegalAction: 'NoVacationConfig',
+      },
+    });
+  });
+
+  it('should create user config from global config if user config does not exist', async () => {
+    vi.mocked(YearlyVacationDays.findOne)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        year: 2024,
+        userId: undefined,
+        obligatoryDays: ['2024-01-01'],
+        electiveDaysTotalCount: 22,
+        selectedElectiveDays: [],
+      });
+
+    vi.mocked(YearlyVacationDays.create).mockResolvedValue({
+      year: 2024,
+      userId: 'user-123',
+      obligatoryDays: ['2024-01-01'],
+      electiveDaysTotalCount: 22,
+      selectedElectiveDays: [],
+    });
+
+    vi.mocked(ElectiveVacation.find).mockResolvedValue([]);
+    vi.mocked(ElectiveVacation.create).mockResolvedValue({
+      _id: 'vacation-123',
+      userId: 'user-123',
+      date: new Date('2024-06-15'),
+      reason: 'Doctor appointment',
+      status: 'pending',
+    });
+
+    const req = mockReq({
+      method: 'POST',
+      body: { date: '2024-06-15', reason: 'Doctor appointment' },
+    });
+    const res = mockRes();
+
+    await vacationCreateHandler(req, res);
+
+    expect(YearlyVacationDays.create).toHaveBeenCalledWith({
+      userId: 'user-123',
+      year: 2024,
+      obligatoryDays: ['2024-01-01'],
+      electiveDaysTotalCount: 22,
+      selectedElectiveDays: [],
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
 });
