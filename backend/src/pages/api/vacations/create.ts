@@ -24,11 +24,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const userId = req.user!.userId;
 
     const requestDate = new Date(date);
-    const startOfDay = new Date(requestDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(Date.UTC(
+      requestDate.getUTCFullYear(),
+      requestDate.getUTCMonth(),
+      requestDate.getUTCDate(),
+      0, 0, 0, 0
+    ));
     
-    const endOfDay = new Date(requestDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(Date.UTC(
+      requestDate.getUTCFullYear(),
+      requestDate.getUTCMonth(),
+      requestDate.getUTCDate(),
+      23, 59, 59, 999
+    ));
 
     let yearlyVacationDays = await YearlyVacationDays.findOne({
       year: requestDate.getFullYear(),
@@ -36,15 +44,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     });
 
     if (!yearlyVacationDays) {
-      yearlyVacationDays = await YearlyVacationDays.findOne({
+      const globalConfig = await YearlyVacationDays.findOne({
         year: requestDate.getFullYear(),
         userId: undefined,
       });
+      
+      if (!globalConfig) {
+        return responseErrorIllegalAction(res, 'NoVacationConfig');
+      }
+      
       yearlyVacationDays = await YearlyVacationDays.create({
         userId: userId,
-        year: yearlyVacationDays.year,
-        obligatoryDays: yearlyVacationDays.obligatoryDays,
-        electiveDaysTotalCount: yearlyVacationDays.electiveDaysTotalCount,
+        year: globalConfig.year,
+        obligatoryDays: globalConfig.obligatoryDays,
+        electiveDaysTotalCount: globalConfig.electiveDaysTotalCount,
         selectedElectiveDays: [],
       });
     }

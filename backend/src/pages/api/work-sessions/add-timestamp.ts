@@ -9,7 +9,7 @@ import { CheckInIncorrectParameterReason } from 'shared/src/types/response-error
 
 async function verifyInOut(userId: string | undefined, type: string): Promise<CheckInIncorrectParameterReason | null> {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
   
   const todaySessions = await WorkSession.find({
     userId: userId,
@@ -64,8 +64,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       timestamp: new Date(),
       reason,
       notes,
-      //ipAddress: req.socket.remoteAddress,
-      //userAgent: req.headers['user-agent']
     });
 
     await workSession.save();
@@ -73,7 +71,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     let hoursWorked = null;
     if (type === 'check_out') {
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       
       const sessions = await WorkSession.find({
         userId: req.user!.userId,
@@ -81,9 +79,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       }).sort({ timestamp: 1 });
 
       let totalMs = 0;
-      for (let i = 0; i < sessions.length; i += 2) {
-        if (sessions[i].type === 'check_in' && sessions[i + 1]?.type === 'check_out') {
-          totalMs += sessions[i + 1].timestamp.getTime() - sessions[i].timestamp.getTime();
+      let lastCheckIn: Date | null = null;
+      
+      for (const session of sessions) {
+        if (session.type === 'check_in') {
+          lastCheckIn = session.timestamp;
+        } else if (session.type === 'check_out' && lastCheckIn) {
+          totalMs += session.timestamp.getTime() - lastCheckIn.getTime();
+          lastCheckIn = null;
         }
       }
       

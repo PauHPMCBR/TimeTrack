@@ -171,7 +171,11 @@ describe('POST /api/auth/login', () => {
 
     const { User } = await import('@/models');
     vi.mocked(User.findOne).mockResolvedValue(user);
-    vi.mocked(User.findByIdAndUpdate).mockResolvedValue({});
+    vi.mocked(User.findByIdAndUpdate).mockResolvedValue({
+      _id: { toString: () => 'user-id-123' },
+      email: 'test@example.com',
+      role: 'employee',
+    });
 
     const req = mockReq({
       method: 'POST',

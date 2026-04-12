@@ -70,18 +70,22 @@ export default async function handler(
       return responseErrorInvalidCredentials(res);
     }
 
-    await User.findByIdAndUpdate(user._id, {
-      failedLoginAttempts: 0,
-      blocked: false,
-      blockedSince: null
-    });
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { failedLoginAttempts: 0, blocked: false, blockedSince: null },
+      { new: true }
+    );
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set');
+      return responseErrorPost(res);
+    }
     const token = jwt.sign(
       { 
-        userId: user._id.toString(),
-        email: user.email, 
-        role: user.role 
+        userId: updatedUser!._id.toString(),
+        email: updatedUser!.email, 
+        role: updatedUser!.role 
       },
       JWT_SECRET,
       { expiresIn: '24h' }
