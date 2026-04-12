@@ -6,7 +6,9 @@
     "dev": "bun next dev -p 3001",
     "build": "bun next build",
     "start": "bun next start -p 3001",
-    "lint": "bun eslint"
+    "lint": "bun eslint",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@registre-jornada/shared": "file:../shared",
@@ -23,6 +25,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
@@ -31,7 +36,9 @@
     "@types/react": "19.2.2",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "jsdom": "^29.0.2",
     "react-dom": "^19.2.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
   }
 }

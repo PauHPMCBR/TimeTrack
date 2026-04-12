@@ -23,7 +23,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const { date, reason } = req.body;
     const userId = req.user!.userId;
 
-    // Convert date to start and end of day for comparison
     const requestDate = new Date(date);
     const startOfDay = new Date(requestDate);
     startOfDay.setHours(0, 0, 0, 0);
@@ -37,19 +36,17 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     });
 
     if (!yearlyVacationDays) {
-      //create one copy for the user
       yearlyVacationDays = await YearlyVacationDays.findOne({
         year: requestDate.getFullYear(),
         userId: undefined,
       });
-      const newUserYearlyVacationDays = new YearlyVacationDays({
+      yearlyVacationDays = await YearlyVacationDays.create({
         userId: userId,
         year: yearlyVacationDays.year,
         obligatoryDays: yearlyVacationDays.obligatoryDays,
         electiveDaysTotalCount: yearlyVacationDays.electiveDaysTotalCount,
         selectedElectiveDays: [],
       });
-      await newUserYearlyVacationDays.save();
     }
 
     if (yearlyVacationDays.selectedElectiveDays.length >= yearlyVacationDays.electiveDaysTotalCount) {
@@ -79,13 +76,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 
 
-    const elective = new ElectiveVacation({
+    const elective = await ElectiveVacation.create({
         userId: req.user!.userId,
         date: new Date(date),
         reason: reason,
     });
-
-    await elective.save();
 
     res.status(201).json({ vacation: elective });
   } catch (error) {

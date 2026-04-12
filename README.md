@@ -125,6 +125,48 @@ bun run dev
 
 The frontend application should now be running on http://localhost:3000.
 
+## Testing
+
+This project uses [Vitest](https://vitest.dev/) for testing with Bun.
+
+### Running Tests
+
+Run all tests for all packages from the root:
+```bash
+bun run test:run
+```
+
+Or run tests in watch mode:
+```bash
+bun run test
+```
+
+To run tests for a specific package:
+```bash
+cd backend && bun run test:run
+cd frontend && bun run test:run
+cd shared && bun run test:run
+```
+
+### Writing Tests
+
+- Test files should be named with `.test.ts`, `.test.tsx`, `.spec.ts`, or `.spec.tsx` extensions
+- Place test files alongside the code they test, or in a `__tests__` directory
+- Backend tests run in Node.js environment
+- Frontend tests run in jsdom environment with React Testing Library
+- Shared package tests run in Node.js environment
+
+Example test file:
+```typescript
+import { describe, it, expect } from 'vitest'
+
+describe('my feature', () => {
+  it('should work correctly', () => {
+    expect(1 + 1).toBe(2)
+  })
+})
+```
+
 ## Kubernetes Deployment
 
 ## Prerequisites

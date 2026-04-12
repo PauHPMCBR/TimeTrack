@@ -55,23 +55,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     });
 
     if (existingVacation) {
-      // Update existing
       existingVacation.obligatoryDays = obligatoryDays.map((date: string) => new Date(date));
       existingVacation.electiveDaysTotalCount = electiveDaysTotalCount;
       existingVacation.selectedElectiveDays = [];
       existingVacation.updatedAt = new Date();
       
-      await existingVacation.save();
+      await YearlyVacationDays.findByIdAndUpdate(existingVacation._id, existingVacation);
     } else {
-      // Create new
-      const newVacationDays = new YearlyVacationDays({
+      await YearlyVacationDays.create({
         year,
         obligatoryDays: obligatoryDays.map((date: string) => new Date(date)),
         electiveDaysTotalCount,
         selectedElectiveDays: [],
       });
-      
-      await newVacationDays.save();
     }
 
     res.status(200).json({ 

@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "bun run --filter \"*\" --parallel dev",
     "build": "bun run --filter \"*\" build",
-    "lint": "bun run --filter \"*\" lint"
+    "lint": "bun run --filter \"*\" lint",
+    "test": "bun run --filter \"@registre-jornada/backend\" test",
+    "test:run": "bun run --filter \"@registre-jornada/backend\" test:run"
   },
   "devDependencies": {},
   "dependencies": {

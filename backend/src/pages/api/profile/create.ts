@@ -21,18 +21,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     await dbConnect();
     const { email, name, role } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
         return responseErrorIncorrectParameter(res, 'email', ['AlreadyExists']);
     }
 
-    // Generate secure registration token
-    // TODO move somewhere standard
     const registrationToken = crypto.randomBytes(32).toString('hex');
 
-    // Create new user
-    const newUser = new User({
+    const newUser = await User.create({
       name,
       email: email.toLowerCase(),
       registrationToken,
@@ -41,9 +37,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       groups: []
     });
 
-    await newUser.save();
-
-    // Generate registration link
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const registrationLink = `${frontendUrl}/register/${registrationToken}`;
 
@@ -58,7 +51,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
           registered: newUser.registered
         },
         registrationLink,
-        registrationToken, // Include token in case frontend needs it
+        registrationToken,
       }
     });
 

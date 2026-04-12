@@ -36,12 +36,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const oldStatus = vacation.status;
     
     // Update the vacation status
-    vacation.status = status;
+    const updateData: any = { status };
     if (status === 'approved') {
-      vacation.approvedBy = req.user?.userId;
-      vacation.approvedAt = new Date();
+      updateData.approvedBy = req.user?.userId;
+      updateData.approvedAt = new Date();
     }
-    await vacation.save();
+    await ElectiveVacation.findByIdAndUpdate(vacationId, updateData);
 
     // If the status changed to or from 'approved', update the user's yearly vacation days
     if (oldStatus !== status && (oldStatus === 'approved' || status === 'approved')) {
@@ -60,76 +60,66 @@ async function updateUserYearlyVacationDays(userId: string, date: Date, isApprov
   try {
     const year = date.getFullYear();
     const vacationDate = new Date(date);
-    vacationDate.setHours(0, 0, 0, 0); // Normalize to start of day
+    vacationDate.setHours(0, 0, 0, 0);
 
-    // Find or create the user's yearly vacation days
     let userYearlyVacationDays = await YearlyVacationDays.findOne({
       year,
       userId
     });
 
     if (!userYearlyVacationDays) {
-      // Look for the base (global) template for this year
       const baseYearlyVacationDays = await YearlyVacationDays.findOne({
         year,
-        userId: undefined // Global template has no userId
+        userId: undefined
       });
 
       if (!baseYearlyVacationDays) {
-        // Create a new yearly vacation days entry for the user
-        userYearlyVacationDays = new YearlyVacationDays({
+        userYearlyVacationDays = await YearlyVacationDays.create({
           userId,
           year,
           obligatoryDays: [],
           electiveDaysTotalCount: 0,
           selectedElectiveDays: isApproved ? [vacationDate] : [],
-          createdAt: new Date(),
-          updatedAt: new Date()
         });
       } else {
-        // Create a copy from the base template
-        userYearlyVacationDays = new YearlyVacationDays({
+        userYearlyVacationDays = await YearlyVacationDays.create({
           userId,
           year,
           obligatoryDays: baseYearlyVacationDays.obligatoryDays,
           electiveDaysTotalCount: baseYearlyVacationDays.electiveDaysTotalCount,
           selectedElectiveDays: isApproved ? [vacationDate] : [],
-          createdAt: new Date(),
-          updatedAt: new Date()
         });
       }
     } else {
-      // Update existing user's yearly vacation days
-      if (isApproved) {
-        // Add date to selectedElectiveDays if not already present
-        const dateExists = userYearlyVacationDays.selectedElectiveDays.some((selectedDate: any) => {
-          const normalizedSelectedDate = new Date(selectedDate);
-          normalizedSelectedDate.setHours(0, 0, 0, 0);
-          return normalizedSelectedDate.getTime() === vacationDate.getTime();
-        });
+      const existingDates = userYearlyVacationDays.selectedElectiveDays.map((d: any) => {
+        const d2 = new Date(d);
+        d2.setHours(0, 0, 0, 0);
+        return d2.getTime();
+      });
+      const newDateTime = vacationDate.getTime();
+      const dateExists = existingDates.includes(newDateTime);
 
-        if (!dateExists) {
-          userYearlyVacationDays.selectedElectiveDays.push(vacationDate);
-          userYearlyVacationDays.selectedElectiveDays.sort((a: any, b: any) => a.getTime() - b.getTime());
-        }
-      } else {
-        // Remove date from selectedElectiveDays (when status changes from approved to something else)
-        userYearlyVacationDays.selectedElectiveDays = userYearlyVacationDays.selectedElectiveDays.filter((selectedDate: any) => {
+      let newSelectedDays: Date[];
+      if (isApproved && !dateExists) {
+        const newDays = [...userYearlyVacationDays.selectedElectiveDays, vacationDate];
+        newSelectedDays = newDays.sort((a: any, b: any) => new Date(a).getTime() - new Date(b).getTime());
+      } else if (!isApproved && dateExists) {
+        newSelectedDays = userYearlyVacationDays.selectedElectiveDays.filter((selectedDate: any) => {
           const normalizedSelectedDate = new Date(selectedDate);
           normalizedSelectedDate.setHours(0, 0, 0, 0);
           return normalizedSelectedDate.getTime() !== vacationDate.getTime();
         });
+      } else {
+        newSelectedDays = userYearlyVacationDays.selectedElectiveDays;
       }
-      userYearlyVacationDays.updatedAt = new Date();
-    }
 
-    await userYearlyVacationDays.save();
-    console.log(`Updated yearly vacation days for user ${userId} in year ${year}:`, {
-      selectedElectiveDays: userYearlyVacationDays.selectedElectiveDays.map((d: any) => d.toISOString().split('T')[0])
-    });
+      await YearlyVacationDays.findByIdAndUpdate(userYearlyVacationDays._id, {
+        selectedElectiveDays: newSelectedDays,
+        updatedAt: new Date()
+      });
+    }
   } catch (error) {
     console.error('Error updating user yearly vacation days:', error);
-    // Don't throw - we don't want to fail the main request
   }
 }
 
