@@ -10,8 +10,8 @@
     "dev": "bun run --filter \"*\" --parallel dev",
     "build": "bun run --filter \"*\" build",
     "lint": "bun run --filter \"*\" lint",
-    "test": "bun run --filter \"@registre-jornada/backend\" test",
-    "test:run": "bun run --filter \"@registre-jornada/backend\" test:run"
+    "test": "bun run --filter \"@registre-jornada/backend\" test && bun run --filter \"@registre-jornada/shared\" test && bun run --filter \"@registre-jornada/frontend\" test",
+    "test:run": "bun run --filter \"@registre-jornada/backend\" test:run && bun run --filter \"@registre-jornada/shared\" test:run && bun run --filter \"@registre-jornada/frontend\" test:run"
   },
   "devDependencies": {},
   "dependencies": {
