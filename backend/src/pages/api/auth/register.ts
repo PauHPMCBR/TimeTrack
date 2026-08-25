@@ -6,6 +6,7 @@ import { responseErrorIncorrectParameter, responseErrorInvalidRegisterToken, res
 import { PasswordIncorrectParameterReason } from 'shared/src/types/response-errors';
 import { validateRequestBody } from '@/lib/validation';
 import { RegisterRequestSchema } from 'shared/src/schemas/api';
+import { toPublicUser } from '@/lib/sanitize';
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,9 +17,10 @@ export default async function handler(
   }
 
   const validationMiddleware = validateRequestBody(RegisterRequestSchema);
-    await new Promise((resolve, reject) => {
-      validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
+    await new Promise((resolve) => {
+      validationMiddleware(req, res, () => resolve(true));
     });
+    if (res.headersSent) return;
 
   try {
     await dbConnect();
@@ -110,7 +112,7 @@ export default async function handler(
 
     res.status(200).json({
       token,
-      user: user
+      user: toPublicUser(user)
     });
   } catch (error) {
     console.error('Register error:', error);

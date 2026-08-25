@@ -13,23 +13,24 @@ export default function GlobalCalendarPage() {
   const [vacations, setVacations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const year = currentDate.getFullYear();
+
   useEffect(() => {
+    let cancelled = false;
     const loadData = async () => {
-      try {
-        const res = await apiClient.getAllVacationsYearAdmin(); //FIXME
-        if (res.data && res.data.vacations) {
-          setVacations(res.data.vacations);
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      const res = await apiClient.getAllVacationsYearAdmin(year);
+      if (!cancelled && res.data && res.data.electives) {
+        setVacations(res.data.electives);
       }
+      if (!cancelled) setLoading(false);
     };
     loadData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [year]);
 
-  // --- LÒGICA DEL CALENDARI ---
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -46,16 +47,12 @@ export default function GlobalCalendarPage() {
     setCurrentDate(new Date(newDate));
   };
 
-  // --- CANVI AQUÍ: FORMAT PERSONALITZAT "MES ANY" ---
   const locale = lang === 'en' ? 'en-US' : (lang === 'ca' ? 'ca-ES' : 'es-ES');
   
-  // 1. Obtenim només el nom del mes (ex: "desembre")
   const monthOnly = currentDate.toLocaleString(locale, { month: 'long' });
   
-  // 2. Posem la primera lletra en Majúscula (ex: "Desembre")
   const monthCapitalized = monthOnly.charAt(0).toUpperCase() + monthOnly.slice(1);
   
-  // 3. Ajuntem Mes + Any (Sense "de" ni "del") -> "Desembre 2025"
   const monthName = `${monthCapitalized} ${currentDate.getFullYear()}`;
 
   // `t("calendar.weekDays")` is stored as a comma-separated string in the dictionaries.
@@ -85,10 +82,9 @@ export default function GlobalCalendarPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6">
-        
-        {/* TITOL I CONTROLS */}
+        {loading && <p className="mb-2 text-sm text-zinc-500 animate-pulse">{t("common.loading")}</p>}
+
         <div className="mb-8 flex items-center justify-between">
-            {/* Ara monthName ja ve net sense el "de" */}
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{monthName}</h1>
             
             <div className="flex gap-2">
@@ -101,7 +97,6 @@ export default function GlobalCalendarPage() {
             </div>
         </div>
 
-        {/* CALENDARI */}
         <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-800 dark:bg-zinc-900">
             <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
                 {weekDays.map((day) => (
@@ -117,7 +112,6 @@ export default function GlobalCalendarPage() {
                 ))}
 
                 {days.map((day) => {
-                    const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                     const dayVacations = vacations.filter(v => {
                         const vDate = new Date(v.date);
                         return vDate.getDate() === day && 

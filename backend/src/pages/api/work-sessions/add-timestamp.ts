@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { authenticateToken, AuthRequest } from '@/lib/auth';
 import { WorkSession } from '@/models';
@@ -40,9 +40,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   }
 
   const validationMiddleware = validateRequestBody(WorkSessionRequestSchema);
-  await new Promise((resolve, reject) => {
-    validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
+  await new Promise((resolve) => {
+    validationMiddleware(req, res, () => resolve(true));
   });
+  if (res.headersSent) return;
 
   const { type, reason, notes } = req.body;
 

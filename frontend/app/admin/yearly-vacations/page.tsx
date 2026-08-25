@@ -299,7 +299,7 @@ export default function AdminObligatoryVacationsPage() {
                         </h3>
                       </div>
                       <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                        {dates.map((date, index) => (
+                        {dates.map((date) => (
                           <div key={date.toISOString()} className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                             <div className="flex items-center gap-3">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">

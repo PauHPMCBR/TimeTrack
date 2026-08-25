@@ -5,6 +5,7 @@ import { User } from '@/models';
 import { responseErrorAccountBlocked, responseErrorInvalidCredentials, responseErrorMethodNotAllowed, responseErrorPost } from '@/lib/response-error-generator';
 import { validateRequestBody } from '@/lib/validation';
 import { LoginRequestSchema } from 'shared/src/schemas/api';
+import { toPublicUser } from '@/lib/sanitize';
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,9 +17,10 @@ export default async function handler(
 
   try {
     const validationMiddleware = validateRequestBody(LoginRequestSchema);
-    await new Promise((resolve, reject) => {
-      validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
+    await new Promise((resolve) => {
+      validationMiddleware(req, res, () => resolve(true));
     });
+    if (res.headersSent) return;
 
     await dbConnect();
     const { email, password } = req.body;
@@ -95,7 +97,7 @@ export default async function handler(
       success: true,
       data: {
         token,
-        user: user,
+        user: toPublicUser(user),
       }
     });
     

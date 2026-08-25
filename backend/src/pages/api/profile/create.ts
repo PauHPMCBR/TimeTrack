@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { User } from '@/models';
 import crypto from 'crypto';
@@ -13,15 +13,16 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   }
 
   const validationMiddleware = validateRequestBody(CreateUserRequestSchema);
-      await new Promise((resolve, reject) => {
-        validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
+      await new Promise((resolve) => {
+        validationMiddleware(req, res, () => resolve(true));
       });
+      if (res.headersSent) return;
 
   try {
     await dbConnect();
     const { email, name, role } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: String(email).toLowerCase() });
     if (existingUser) {
         return responseErrorIncorrectParameter(res, 'email', ['AlreadyExists']);
     }

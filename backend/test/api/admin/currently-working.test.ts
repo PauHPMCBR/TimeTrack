@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  requireRole: (roles: string[], handler: Function) => {
+  requireRole: (roles: string[], handler: (req: unknown, res: unknown) => unknown) => {
     return async (req: any, res: any) => {
       req.user = { userId: 'admin-123', email: 'admin@example.com', role: 'admin' };
       return handler(req, res);

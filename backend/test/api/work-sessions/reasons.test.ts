@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  authenticateToken: (handler: Function) => {
+  authenticateToken: (handler: (req: unknown, res: unknown) => unknown) => {
     return async (req: any, res: any) => {
       req.user = { userId: 'user-123', email: 'test@example.com', role: 'employee' };
       return handler(req, res);

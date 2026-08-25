@@ -65,7 +65,6 @@ export function Calendar({
   const getVacationsForDay = (date: Date): VacationEvent[] => {
     if (!vacations || !showVacations) return [];
     
-    const dateStr = ymd(date);
     const events: VacationEvent[] = [];
 
     const isObligatory = vacations.yearlyVacationDays?.obligatoryDays?.some(obligatoryDate => {
@@ -165,7 +164,6 @@ export function Calendar({
 
   // Get calendar day data
   const getCalendarDayData = (date: Date): CalendarDayData => {
-    const key = ymd(date);
     return {
       date,
       vacationEvents: getVacationsForDay(date),

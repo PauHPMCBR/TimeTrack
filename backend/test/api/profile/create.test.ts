@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  requireRole: (roles: string[], handler: Function) => {
+  requireRole: (roles: string[], handler: (req: unknown, res: unknown) => unknown) => {
     return async (req: any, res: any) => {
       req.user = { userId: 'admin-123', email: 'admin@example.com', role: 'admin' };
       return handler(req, res);
@@ -16,7 +16,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 vi.mock('@/lib/validation', () => ({
-  validateRequestBody: () => (req: any, res: any, next: Function) => next(),
+  validateRequestBody: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
 }));
 
 vi.mock('@/models', () => ({
@@ -85,7 +85,7 @@ describe('POST /api/profile/create', () => {
       registered: false,
     };
     
-    vi.mocked(User.create).mockResolvedValue(mockNewUser);
+    vi.mocked(User.create as any).mockResolvedValue(mockNewUser);
 
     const req = mockReq({
       method: 'POST',
@@ -123,7 +123,7 @@ describe('POST /api/profile/create', () => {
       registered: false,
     };
     
-    vi.mocked(User.create).mockResolvedValue(mockNewUser);
+    vi.mocked(User.create as any).mockResolvedValue(mockNewUser);
 
     const req = mockReq({
       method: 'POST',

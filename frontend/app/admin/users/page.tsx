@@ -79,7 +79,7 @@ export default function UsersListPage() {
             <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {users.length === 0 && (
                     <div className="p-8 text-center text-sm text-zinc-500">
-                        No s'han trobat usuaris.
+                        {t("admin.users.notFound")}
                     </div>
                 )}
                 {users.map((user) => (
@@ -90,10 +90,10 @@ export default function UsersListPage() {
                         </div>
                         <div>
                             <div className="font-medium text-zinc-900 dark:text-white">
-                                {user.name || "Sense nom"} 
+                                {user.name || t("admin.users.noName")}
                                 {user.role === 'admin' && (
                                     <span className="ml-2 inline-flex items-center rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                                        Admin
+                                        {t("tabs.admin")}
                                     </span>
                                 )}
                             </div>
@@ -104,12 +104,12 @@ export default function UsersListPage() {
                         {user.registered ? (
                             <div className="flex items-center gap-2 rounded-full bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10 dark:bg-zinc-400/10 dark:text-zinc-400 dark:ring-zinc-400/20">
                                 <span className="h-1.5 w-1.5 rounded-full bg-zinc-400"></span>
-                                Registrat
+                                {t("admin.users.registered")}
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20 dark:bg-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
                                 <span className="h-1.5 w-1.5 rounded-full bg-orange-400"></span>
-                                Pendent d'activació
+                                {t("admin.users.pendingActivation")}
                             </div>
                         )}
                     </div>

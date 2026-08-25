@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { Group, User } from '@/models';
@@ -12,9 +12,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   }
 
   const validationMiddleware = validateRequestBody(CreateGroupRequestSchema);
-       await new Promise((resolve, reject) => {
-          validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
-        });
+       await new Promise((resolve) => {
+          validationMiddleware(req, res, () => resolve(true));
+       });
+       if (res.headersSent) return;
 
   try {
     await dbConnect();

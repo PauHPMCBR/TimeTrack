@@ -4,20 +4,13 @@ import { useMemo, useState, useEffect } from "react";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { WorkSessionRequest } from "@/schemas/api";
-import { WorkSession, WorksessionReason } from "@/types";
-
-function formatHM(ms: number, t: (k: string) => string) {
-  const h = Math.floor(ms / 3_600_000);
-  const m = Math.floor((ms % 3_600_000) / 60_000);
-  const labelH = t ? t("time.h") : "h";
-  const labelM = t ? t("time.m") : "m";
-  return `${h}${labelH} ${m}${labelM}`; 
-}
+import { WorkSession, WorksessionReason, User } from "@/types";
+import { toLocalDateKey, formatHM } from "@/lib/datetime";
 
 export default function CheckInPage() {
   const { t, lang } = useI18n();
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [workSessions, setWorkSessions] = useState<WorkSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReason, setSelectedReason] = useState("work");
@@ -25,14 +18,7 @@ export default function CheckInPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [workSessionReasons, setWorkSessionReasons] = useState<WorksessionReason[]>([]);
 
-  const [showNoteInput, setShowNoteInput] = useState(false); 
-  const [noteSaved, setNoteSaved] = useState(false);
-  const [timeFmt, setTimeFmt] = useState<"24" | "12">("24");
-
-  const getTodayString = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  };
+  const [now, setNow] = useState(() => Date.now());
 
   const refreshSessions = async (user: any) => {
     if (!user) return;
@@ -58,15 +44,6 @@ export default function CheckInPage() {
     }
   };
 
-  const formatTimeOfDay = (dateStr: string | Date) => {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: timeFmt === "12" 
-    });
-  };
-
   const getCurrentReasons = (): WorksessionReason[] => {
     const currentType = activeSession ? 'check_out' : 'check_in';
     return workSessionReasons.filter(reason => reason.type === currentType);
@@ -81,13 +58,13 @@ export default function CheckInPage() {
   };
 
   const activeSession = useMemo(() => {
-    const todayString = getTodayString();
+    const todayString = toLocalDateKey(new Date());
     const todaySessions = workSessions
-      .filter(session => new Date(session.timestamp).toISOString().split('T')[0] === todayString)
+      .filter(session => toLocalDateKey(session.timestamp) === todayString)
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     let lastCheckIn: WorkSession | null = null;
-    
+
     for (const session of todaySessions) {
       if (session.type === 'check_in') {
         lastCheckIn = session;
@@ -98,11 +75,19 @@ export default function CheckInPage() {
     return lastCheckIn;
   }, [workSessions]);
 
+  // Keep elapsed times ticking while checked in
+  const isActiveSession = Boolean(activeSession);
+  useEffect(() => {
+    if (!isActiveSession) return;
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [isActiveSession]);
+
   const todaySummary = useMemo(() => {
-    const todayString = getTodayString();
+    const todayString = toLocalDateKey(new Date());
     const todaySessions = workSessions.filter(session => {
-      const sessionDate = new Date(session.timestamp).toISOString().split('T')[0];
-      return sessionDate === todayString;
+      return toLocalDateKey(session.timestamp) === todayString;
     }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     let totalMs = 0;
@@ -118,7 +103,7 @@ export default function CheckInPage() {
     });
 
     if (checkInTime !== null) {
-      totalMs += Date.now() - (checkInTime as Date).getTime();
+      totalMs += now - (checkInTime as Date).getTime();
     }
 
     return {
@@ -126,20 +111,17 @@ export default function CheckInPage() {
       totalMs: totalMs,
       sessions: todaySessions
     };
-  }, [workSessions]);
+  }, [workSessions, now]);
 
   const currentElapsed = useMemo(() => {
     if (!activeSession) return null;
-    const ms = Date.now() - new Date(activeSession.timestamp).getTime();
+    const ms = now - new Date(activeSession.timestamp).getTime();
     return formatHM(ms, t);
-  }, [activeSession, t]);
+  }, [activeSession, t, now]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const savedFmt = (localStorage.getItem("time_format") as "24" | "12") || "24";
-        setTimeFmt(savedFmt);
-
         const user = await apiClient.getCurrentUser();
         if (user) {
           setCurrentUser(user);
@@ -190,7 +172,6 @@ export default function CheckInPage() {
 
   return (
     <section className="space-y-6">
-      {/* Today's Summary Card */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <h1 className="text-lg font-semibold">{t("checkin.todaySummary")}</h1>
         <div className="mt-3 grid grid-cols-2 gap-4">
@@ -213,7 +194,6 @@ export default function CheckInPage() {
         </div>
       </div>
 
-      {/* Main Check In/Out Card */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="text-lg font-semibold">{t("checkin.title")}</h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
@@ -223,7 +203,6 @@ export default function CheckInPage() {
           }
         </p>
 
-        {/* Main Check In/Out Button */}
         <div className="mt-4">
           <button
             onClick={handleCheckInOut}
@@ -238,7 +217,6 @@ export default function CheckInPage() {
           </button>
         </div>
 
-        {/* Reason Selection - Always Visible */}
         {currentReasons.length > 0 && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
@@ -263,7 +241,6 @@ export default function CheckInPage() {
           </div>
         )}
 
-        {/* Notes Section - Always Visible */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
             {t("checkin.notesLabel")} {t("common.optional")}
@@ -278,7 +255,6 @@ export default function CheckInPage() {
         </div>
       </div>
 
-      {/* Today's Sessions */}
       {todaySummary.sessions.length > 0 && (
         <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <h3 className="text-lg font-semibold mb-3">{t("checkin.todaySessions")}</h3>

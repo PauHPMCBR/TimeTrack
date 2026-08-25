@@ -167,7 +167,6 @@ export default function AdminVacationsPage() {
   const pendingGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'pending')), [requests]);
   const approvedGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'approved')), [requests]);
   const rejectedGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'rejected')), [requests]);
-  const cancelledGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'cancelled')), [requests]);
 
   // Statistics (Basat en dies individuals, no grups)
   const stats = useMemo(() => ({
@@ -331,7 +330,7 @@ export default function AdminVacationsPage() {
                                             </span>
                                         )}
                                         {group.reason && (
-                                            <div className="text-zinc-500 italic">"{group.reason}"</div>
+                                            <div className="text-zinc-500 italic">&quot;{group.reason}&quot;</div>
                                         )}
                                     </div>
                                 </div>
@@ -388,7 +387,7 @@ export default function AdminVacationsPage() {
                              <div className="text-xs text-zinc-500 flex gap-2">
                                <span>{formatDateRange(group.startDate, group.endDate)}</span>
                                {group.daysCount > 1 && <span className="font-semibold">({group.daysCount}d)</span>}
-                               {group.reason && <span className="italic border-l border-zinc-300 pl-2">"{group.reason}"</span>}
+                               {group.reason && <span className="italic border-l border-zinc-300 pl-2">&quot;{group.reason}&quot;</span>}
                              </div>
                            </div>
                          </div>

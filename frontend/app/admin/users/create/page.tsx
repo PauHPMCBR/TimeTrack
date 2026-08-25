@@ -3,14 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/app/i18n";
-import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api";
 import type { CreateUserRequest } from "@/schemas/api";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher"; 
 
 export default function CreateUserPage() {
   const { t } = useI18n(); 
-  const router = useRouter();
 
   // Form states
   const [formData, setFormData] = useState<CreateUserRequest>({

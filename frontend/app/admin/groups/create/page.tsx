@@ -13,38 +13,33 @@ export default function CreateGroupPage() {
   const { t } = useI18n(); 
   const router = useRouter();
   
-  // Estats bàsics del formulari
   const [formData, setFormData] = useState<CreateGroupRequest>({ name: "", description: "" , members: []});
   
-  // Estats per a la selecció d'usuaris
   const [allUsers, setAllUsers] = useState<User[]>([]); 
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set()); 
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 1. CARREGUEM ELS USUARIS DISPONIBLES AL ENTRAR
   useEffect(() => {
+    let cancelled = false;
     const fetchUsers = async () => {
-      try {
-        const res = await apiClient.getCompanyUsers();
-        
-        let foundUsers: User[] = [];
-        // Lògica robusta per trobar l'array d'usuaris (igual que a editar)
+      const res = await apiClient.getCompanyUsers();
+      if (!cancelled) {
         if (res.data && Array.isArray(res.data)) {
-             foundUsers = res.data;
-        } else if (res.data && (res.data as any).users) {
-             foundUsers = (res.data as any).users;
+          setAllUsers(res.data);
+        } else if (res.data && res.data.users) {
+          setAllUsers(res.data.users);
         }
-        setAllUsers(foundUsers);
-      } catch (error) {
-        console.error("Error carregant usuaris:", error);
       }
     };
 
     fetchUsers();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // 2. FUNCIÓ PER SELECCIONAR/DESELECCIONAR USUARIS
   const toggleUser = (userId: string) => {
     const newSelected = new Set(selectedUserIds);
     if (newSelected.has(userId)) newSelected.delete(userId); 
@@ -52,30 +47,24 @@ export default function CreateGroupPage() {
     setSelectedUserIds(newSelected);
   };
 
-  // 3. ENVIAMENT DEL FORMULARI
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      // Convertim el Set a Array i l'afegim a les dades
-      const membersArray = Array.from(selectedUserIds);
-      
-      const res = await apiClient.createGroup({
-        ...formData,
-        members: membersArray as any // Enviem els IDs seleccionats
-      });
+    setError(null);
 
-      if (res.error) {
-        // Here we could set an error state instead of alert
-        console.error("Error creating group:", res.error);
-      } else {
-        router.push("/admin/groups");
-      }
-    } catch (error: any) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+    const membersArray = Array.from(selectedUserIds);
+
+    const res = await apiClient.createGroup({
+      ...formData,
+      members: membersArray
+    });
+
+    if (res.error) {
+      setError(t(`error.${res.error}`));
+    } else {
+      router.push("/admin/groups");
     }
+    setLoading(false);
   };
 
   return (
@@ -96,7 +85,6 @@ export default function CreateGroupPage() {
 
         <form onSubmit={handleSubmit} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="space-y-5">
-            {/* NOM */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">{t("admin.groups.name")}</label>
               <input 
@@ -109,7 +97,6 @@ export default function CreateGroupPage() {
               />
             </div>
 
-            {/* DESCRIPCIÓ */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">{t("admin.groups.desc")} {t("common.optional")}</label>
               <textarea 
@@ -121,7 +108,6 @@ export default function CreateGroupPage() {
               />
             </div>
 
-            {/* SELECCIÓ D'USUARIS (NOU) */}
             <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-3">
                     {t("admin.groups.addMembers")} ({allUsers.length})
@@ -135,8 +121,7 @@ export default function CreateGroupPage() {
                     <div className="max-h-60 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-2 space-y-1">
                         {allUsers.map((user) => {
                             const isSelected = selectedUserIds.has(user._id);
-                            // Visualització del nom
-                            const displayName = user.name || "Sense nom";
+                            const displayName = user.name || t("admin.users.noName");
                             const initial = displayName.charAt(0).toUpperCase();
 
                             return (
@@ -180,6 +165,11 @@ export default function CreateGroupPage() {
           <button type="submit" disabled={loading} className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-md transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-70 dark:focus:ring-offset-zinc-900">
             {loading ? t("common.loading") : t("common.save")}
           </button>
+          {error && (
+            <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+              {error}
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -61,23 +61,24 @@ export default function CompleteRegistrationPage() {
       });
 
       if (res.error) {
+        const details = res.details;
         // Handle structured errors
-        if (res.error === 'IncorrectParameter') {
-          if (res.details.incorrectParameter === 'email') {
+        if (res.error === 'IncorrectParameter' && details) {
+          if (details.incorrectParameter === 'email') {
             setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter"));
-          } else if (res.details.incorrectParameter === 'password') {
+          } else if (details.incorrectParameter === 'password') {
             // Show password validation errors
-            const reasons = res.details.reasons || [];
-            const errorMessages = reasons.map((reason: string) => 
+            const reasons = details.reasons || [];
+            const errorMessages = reasons.map((reason: string) =>
               t(`error.IncorrectParameter.reason.${reason}`)
             );
             setPasswordErrors(errorMessages);
             setError(t("error.IncorrectParameter.password") + " " + t("error.IncorrectParameter"));
           }
-        } else if (res.details.error === 'InvalidRegisterToken') {
+        } else if (res.error === 'InvalidRegisterToken') {
           setError(t("error.InvalidRegisterToken"));
-        } else if (res.details.error === 'MissingParameter') {
-          if (res.details.missingParameter === 'password') {
+        } else if (res.error === 'MissingParameter') {
+          if (details?.missingParameter === 'password') {
             setError(t("error.MissingParameter") + ": " + t("error.IncorrectParameter.password"));
           }
         } else if (res.error === 'PostError') {

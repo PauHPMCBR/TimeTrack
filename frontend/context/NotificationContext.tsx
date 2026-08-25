@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from "react";
 import { Alert } from "@/components/ui/Alert";
 
 type NotificationType = "info" | "success" | "warning" | "error";
@@ -21,9 +21,15 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const hideNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const timer = timers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
   }, []);
 
   const showNotification = useCallback(
@@ -31,9 +37,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const id = Math.random().toString(36).substring(2, 9);
       setNotifications((prev) => [...prev, { id, type, title, message }]);
 
-      // Auto-hide after 5 seconds for success/info, maybe keep errors/warnings longer?
       if (type === "success" || type === "info") {
-        setTimeout(() => hideNotification(id), 5000);
+        const timer = setTimeout(() => {
+          timers.current.delete(id);
+          hideNotification(id);
+        }, 5000);
+        timers.current.set(id, timer);
       }
     },
     [hideNotification]
@@ -42,7 +51,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   return (
     <NotificationContext.Provider value={{ showNotification, hideNotification }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[9999] w-full max-w-sm flex flex-col-reverse gap-2 pointer-events-none">
+      <div role="status" aria-live="polite" className="fixed bottom-4 right-4 z-[9999] w-full max-w-sm flex flex-col-reverse gap-2 pointer-events-none">
         {notifications.map((n) => (
           <div key={n.id} className="pointer-events-auto">
             <Alert

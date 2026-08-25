@@ -1,10 +1,8 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
-import { Group, User } from '@/models';
+import { User } from '@/models';
 import { responseErrorGet, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
-import { GroupIdParamSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {

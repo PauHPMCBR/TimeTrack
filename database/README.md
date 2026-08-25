@@ -47,8 +47,8 @@ docker-compose logs seed
 ### 2. Variables de entorno
 ```
 MONGO_INITDB_ROOT_USERNAME: root
-MONGO_INITDB_ROOT_PASSWORD: 09nwp43dFpFyBI3h4LmM
-MONGODB_URI: mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSource=myapp
+MONGO_INITDB_ROOT_PASSWORD: <MONGO_ROOT_PASSWORD>
+MONGODB_URI: mongodb://alumne:<MONGO_APP_PASSWORD>@mongodb:27017/myapp?authSource=myapp
 ```
 ### 3. Puertos
 - 27018 → Puerto del host (acceso desde tu máquina)
@@ -62,8 +62,8 @@ MONGODB_URI: mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSourc
 ### 2. Usuarios creados
 | Usuario | Contraseña             | Base de datos | Rol       |
 | ------: | ---------------------- | ------------- | --------- |
-|    root | `09nwp43dFpFyBI3h4LmM` | admin         | root      |
-|  alumne | `XGmHckQJzwzFKwBo14YA` | myapp         | readWrite |
+|    root | `<MONGO_ROOT_PASSWORD>` | admin         | root      |
+|  alumne | `<MONGO_APP_PASSWORD>` | myapp         | readWrite |
 
 ### 3. Colecciones
 - users - Usuarios de la aplicación
@@ -71,12 +71,12 @@ MONGODB_URI: mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSourc
 ## Conexión a la base de datos
 ### 1. Desde MongoDB Compass
 ```
-mongodb://alumne:XGmHckQJzwzFKwBo14YA@localhost:27018/myapp?authSource=myapp
+mongodb://alumne:<MONGO_APP_PASSWORD>@localhost:27018/myapp?authSource=myapp
 ```
 ### 2. Desde Node.js (fuera de Docker)
 En el fichero _.env_
 ```
-const MONGODB_URI = 'mongodb://alumne:XGmHckQJzwzFKwBo14YA@localhost:27018/myapp?authSource=myapp';
+const MONGODB_URI = 'mongodb://alumne:<MONGO_APP_PASSWORD>@localhost:27018/myapp?authSource=myapp';
 ```
 ## Gestión y Mantenimiento
 Eliminar base de datos COMPLETAMENTE (reset total)
@@ -100,7 +100,7 @@ Resetear solo los datos (mantener contenedores)
 
 ### Conectar y eliminar la base de datos
 ```
-docker exec -it mongodb mongosh -u root -p 09nwp43dFpFyBI3h4LmM --authenticationDatabase admin --eval "
+docker exec -it mongodb mongosh -u root -p <MONGO_ROOT_PASSWORD> --authenticationDatabase admin --eval "
 use myapp;
 db.dropDatabase();
 print('Base de datos eliminada');
@@ -170,10 +170,10 @@ docker-compose up --build
 ### Conectar via terminal
 ```
 # Como root
-docker exec -it mongodb mongosh -u root -p 09nwp43dFpFyBI3h4LmM --authenticationDatabase admin
+docker exec -it mongodb mongosh -u root -p <MONGO_ROOT_PASSWORD> --authenticationDatabase admin
 
 # Como usuario de aplicación
-docker exec -it mongodb mongosh -u alumne -p XGmHckQJzwzFKwBo14YA --authenticationDatabase myapp
+docker exec -it mongodb mongosh -u alumne -p <MONGO_APP_PASSWORD> --authenticationDatabase myapp
 ```
 ### Consultas comunes
 ```

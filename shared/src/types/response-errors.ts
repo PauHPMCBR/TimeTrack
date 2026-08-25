@@ -16,6 +16,7 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'InvalidToken'
     | 'InsufficientPermissions'
     | 'UserNotFound'
+    | 'GroupNotFound'
     | 'NoAccessToUser'
     | 'NoAccessToGroup'
     | 'PermissionVerificationError'
@@ -30,7 +31,7 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'YearlyVacationSaved'
     ;
 
-export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status';
+export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members';
 
 export type PasswordIncorrectParameterReason = 'LessThan12Characters'
     | 'MissingLowercase'

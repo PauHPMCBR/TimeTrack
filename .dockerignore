@@ -4,13 +4,20 @@
 **/dist
 *.log
 *.md
-*.lock
 Dockerfile*
 .dockerignore
 .gitignore
 .eslintrc.json
-tsconfig.json
 .vscode
 .idea
 .env*
+.env.*
+!.env.example
 docker-compose*.yml
+k8s
+database
+README_PTI
+coverage
+
+# Keep the lockfile for reproducible installs
+!package-lock.json

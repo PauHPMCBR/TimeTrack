@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
@@ -10,16 +10,18 @@ import { GroupIdParamSchema, CreateGroupRequestSchema } from 'shared/src/schemas
 async function handler(req: AuthRequest, res: NextApiResponse) {
 
   const validationMiddleware = validateQueryParams(GroupIdParamSchema);
-    await new Promise((resolve, reject) => {
-      validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
+    await new Promise((resolve) => {
+      validationMiddleware(req, res, () => resolve(true));
     });
+    if (res.headersSent) return;
 
   if (req.method === 'PUT') {
 
     const validationMiddleware2 = validateRequestBody(CreateGroupRequestSchema);
-     await new Promise((resolve, reject) => {
-        validationMiddleware2(req, res, (err?: any) => err ? reject(err) : resolve(true));
-      });
+     await new Promise((resolve) => {
+        validationMiddleware2(req, res, () => resolve(true));
+     });
+     if (res.headersSent) return;
 
     try {
       await dbConnect();

@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  requireRole: (roles: string[], handler: Function) => {
+  requireRole: (roles: string[], handler: (req: unknown, res: unknown) => unknown) => {
     return async (req: any, res: any) => {
       req.user = { userId: 'admin-123', email: 'admin@example.com', role: 'admin' };
       return handler(req, res);
@@ -16,8 +16,8 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 vi.mock('@/lib/validation', () => ({
-  validateQueryParams: () => (req: any, res: any, next: Function) => next(),
-  validateRequestBody: () => (req: any, res: any, next: Function) => next(),
+  validateQueryParams: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
+  validateRequestBody: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
 }));
 
 vi.mock('@/models', () => ({
@@ -32,7 +32,7 @@ vi.mock('@/models', () => ({
   },
 }));
 
-import { Group, User } from '@/models';
+import { Group } from '@/models';
 import groupUpdateHandler from '@/pages/api/groups/update/[groupId]';
 
 describe('PUT/DELETE /api/groups/update/[groupId]', () => {

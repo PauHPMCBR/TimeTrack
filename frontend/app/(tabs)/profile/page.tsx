@@ -1,32 +1,38 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link"; 
+import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
-import { WorkSession } from "@/types";
+import { WorkSession, User } from "@/types";
+import { formatHM, toLocalDateKey } from "@/lib/datetime";
 import { usePathname } from "next/navigation";
 
-function fmtHM(hours: number, t: (k: string) => string) {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  const labelH = t("time.h") || "h";
-  const labelM = t("time.m") || "m";
-  return `${h}${labelH} ${m}${labelM}`;
-}
-
 export default function ProfilePage() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const pathname = usePathname();
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<WorkSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [timeFmt, setTimeFmt] = useState<"24" | "12">("24");
+  const [now, setNow] = useState(() => Date.now());
 
-  // 1. CARREGUEM L'USUARI
+  const isCheckedIn = useMemo(() => {
+    if (sessions.length === 0) return false;
+    const sorted = [...sessions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return sorted[sorted.length - 1].type === 'check_in';
+  }, [sessions]);
+
+  useEffect(() => {
+    if (!isCheckedIn) return;
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [isCheckedIn]);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -55,7 +61,6 @@ export default function ProfilePage() {
     loadData();
   }, [pathname]);
 
-  // 2. Preferències
   useEffect(() => {
     const savedTheme = (localStorage.getItem("theme") as "light" | "dark") || "dark";
     const savedFmt = (localStorage.getItem("time_format") as "24" | "12") || "24";
@@ -76,13 +81,14 @@ export default function ProfilePage() {
     localStorage.setItem("time_format", fmt);
   };
 
-  // 3. CÀLCULS
   const workedHoursToday = useMemo(() => {
     let totalMs = 0;
     let lastIn: Date | null = null;
-    
-    const sorted = [...sessions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    
+
+    const sorted = [...sessions]
+      .filter(s => toLocalDateKey(s.timestamp) === toLocalDateKey(new Date()))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
     sorted.forEach(s => {
         if (s.type === 'check_in') lastIn = new Date(s.timestamp);
         else if (s.type === 'check_out' && lastIn) {
@@ -90,41 +96,30 @@ export default function ProfilePage() {
             lastIn = null;
         }
     });
-    
-    if (lastIn) totalMs += Date.now() - (lastIn as Date).getTime();
-    return totalMs / 3_600_000;
-  }, [sessions]);
 
-  const isCheckedIn = useMemo(() => {
-     if (sessions.length === 0) return false;
-     const last = sessions.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())[sessions.length - 1];
-     return last.type === 'check_in';
-  }, [sessions]);
+    if (lastIn) totalMs += now - (lastIn as Date).getTime();
+    return totalMs / 3_600_000;
+  }, [sessions, now]);
 
   const checkedInDuration = useMemo(() => {
       if (!isCheckedIn || sessions.length === 0) return "";
-      const last = sessions.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())[sessions.length - 1];
-      const ms = Date.now() - new Date(last.timestamp).getTime();
-      const h = Math.floor(ms / 3_600_000);
-      const m = Math.floor((ms % 3_600_000) / 60_000);
-      
-      const labelH = t("time.h") || "h";
-      const labelM = t("time.m") || "m";
-      return `${h}${labelH} ${m}${labelM}`;
-  }, [isCheckedIn, sessions, t]);
+      const sorted = [...sessions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      const last = sorted[sorted.length - 1];
+      const ms = now - new Date(last.timestamp).getTime();
+      return formatHM(ms, t);
+  }, [isCheckedIn, sessions, t, now]);
 
 
   if (loading) return <div className="p-10 text-center text-zinc-500 animate-pulse">{t("common.loading")}</div>;
-  if (!user) return <div className="p-10 text-center text-red-500">Error carregant usuari</div>;
+  if (!user) return <div className="p-10 text-center text-red-500">{t("profile.errorLoading")}</div>;
 
-  const displayName = user.name || "Usuari";
+  const displayName = user.name || t("profile.fallbackUser");
   const initials = user.email 
     ? user.email.trim()[0].toUpperCase() 
     : (user.name ? user.name.trim()[0].toUpperCase() : "U");
 
   return (
     <section className="space-y-6 pb-20">
-      {/* --- CAPÇALERA USUARI --- */}
       <div className="flex items-center gap-4">
         <div className="grid h-16 w-16 place-items-center rounded-full bg-indigo-600 text-white shadow-lg">
           <span className="text-2xl font-bold">{initials}</span>
@@ -138,11 +133,10 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* --- ESTADÍSTIQUES (AVUI) --- */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="text-sm text-zinc-500">{t("profile.hoursToday")}</div> 
-          <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">{fmtHM(workedHoursToday, t)}</div>
+          <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">{formatHM(workedHoursToday * 3_600_000, t)}</div>
         </div>
         
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -163,14 +157,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* --- LINK A VACANCES (NOU) --- */}
       <Link 
         href="/vacations" 
         className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 hover:border-indigo-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50 dark:hover:border-indigo-700"
       >
         <div className="flex items-center gap-4">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
-                {/* Icona Maleta/Sol */}
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-8a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v8"/><path d="M23 21v-8a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v8"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="12" cy="12" r="10"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
             </div>
             <div>
@@ -183,11 +175,9 @@ export default function ProfilePage() {
             </div>
         </div>
         
-        {/* Fletxa dreta */}
         <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
       </Link>
       
-      {/* --- LINK A GRUPS --- */}
       <Link 
         href="/groups" 
         className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 hover:border-indigo-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50 dark:hover:border-indigo-700"
@@ -209,14 +199,13 @@ export default function ProfilePage() {
         <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
       </Link>
 
-      {/* --- PREFERÈNCIES --- */}
       <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">{t("profile.preferences")}</div>
         
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm text-zinc-700 dark:text-zinc-300">{t("profile.theme")}</div>
           <button onClick={toggleTheme} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300">
-            {theme === 'dark' ? (lang === 'en' ? 'Dark' : (lang === 'es' ? 'Oscuro' : 'Fosc')) : (lang === 'en' ? 'Light' : (lang === 'es' ? 'Claro' : 'Clar'))}
+            {theme === 'dark' ? t("profile.theme.dark") : t("profile.theme.light")}
           </button>
         </div>
 
@@ -229,7 +218,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* --- ZONA D'ADMINISTRACIÓ (NOMÉS ADMINS) --- */}
       {user.role === 'admin' && (
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-900/10">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-indigo-900 dark:text-indigo-300">

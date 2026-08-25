@@ -13,7 +13,6 @@ export default function EditGroupPage() {
   const router = useRouter();
   const params = useParams();
   
-  // CORRECCIÓ CLAU: Mantenim la lògica de la ID que ja et funciona
   const groupId = (params?.Id || params?.id || params?.groupId || params?._id || "") as string;
 
   const [name, setName] = useState("");
@@ -24,58 +23,58 @@ export default function EditGroupPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!groupId) {
-      console.error("Error: No ID found");
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
     const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        const [groupRes, usersRes] = await Promise.all([
-          apiClient.getGroupInfo(groupId),
-          apiClient.getCompanyUsers()
-        ]);
+      setLoading(true);
 
-        // --- GESTIÓ USUARIS ---
-        let foundUsers: User[] = [];
-        if (usersRes.data && Array.isArray(usersRes.data)) {
-             foundUsers = usersRes.data;
-        } else if (usersRes.data && (usersRes.data as any).users) {
-             foundUsers = (usersRes.data as any).users;
-        }
-        setAllUsers(foundUsers);
+      const [groupRes, usersRes] = await Promise.all([
+        apiClient.getGroupInfo(groupId),
+        apiClient.getCompanyUsers()
+      ]);
+      if (cancelled) return;
 
-        // --- GESTIÓ GRUP ---
-        if (groupRes.data) {
-            // Mirem si ve dins de .group o directe
-            const groupData = (groupRes.data as any).group || groupRes.data;
-            
-            setName(groupData.name || ""); 
-            setDescription(groupData.description || "");
-
-            // Marquem els usuaris que ja són al grup (poden venir com 'users' o 'members')
-            const membersList = groupData.members || groupData.users;
-            
-            if (membersList && Array.isArray(membersList)) {
-                const existingIds = membersList.map((u: any) => u._id || u);
-                setSelectedUserIds(new Set(existingIds));
-            }
-        }
-
-      } catch (error: any) {
-        console.error("Error loading data:", error);
-      } finally {
-        setLoading(false);
+      let foundUsers: User[] = [];
+      if (usersRes.data && Array.isArray(usersRes.data)) {
+           foundUsers = usersRes.data;
+      } else if (usersRes.data && usersRes.data.users) {
+           foundUsers = usersRes.data.users;
       }
+      setAllUsers(foundUsers);
+
+      if (groupRes.error) {
+        setError(groupRes.error);
+      } else if (groupRes.data) {
+          const groupData = groupRes.data.group || groupRes.data;
+
+          setName(groupData.name || "");
+          setDescription(groupData.description || "");
+
+          const membersList = groupData.members;
+
+          if (membersList && Array.isArray(membersList)) {
+              const existingIds = membersList.map((u: User | string) =>
+                typeof u === "string" ? u : u._id
+              );
+              setSelectedUserIds(new Set(existingIds));
+          }
+      }
+
+      setLoading(false);
     };
 
     fetchData();
-  }, [groupId, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId]);
 
   const toggleUser = (userId: string) => {
     const newSelected = new Set(selectedUserIds);
@@ -87,27 +86,22 @@ export default function EditGroupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    try {
-      const usersArray = Array.from(selectedUserIds);
-      
-      const res = await apiClient.updateGroup(groupId, {
-        name,
-        description,
-        // Enviem com a 'members' si és el que espera el teu backend, o 'users'
-        members: usersArray as any 
-      });
+    setError(null);
 
-      if (res.error) {
-        // No alert, just log or handle in UI if needed
-        console.error("Error updating group:", res.error);
-      } else {
-        router.push("/admin/groups");
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setSaving(false);
+    const usersArray = Array.from(selectedUserIds);
+
+    const res = await apiClient.updateGroup(groupId, {
+      name,
+      description,
+      members: usersArray
+    });
+
+    if (res.error) {
+      setError(res.error);
+    } else {
+      router.push("/admin/groups");
     }
+    setSaving(false);
   };
 
   if (loading) {
@@ -130,14 +124,12 @@ export default function EditGroupPage() {
 
       <div className="mx-auto max-w-2xl px-4 py-6">
         <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          {/* TÍTOL TRADUÏT */}
           <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-white">
             {t("admin.groups.editTitle")}
           </h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-                {/* LABEL NOM TRADUÏT */}
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                     {t("admin.groups.name")}
                 </label>
@@ -150,7 +142,6 @@ export default function EditGroupPage() {
                 />
             </div>
             <div>
-                {/* LABEL DESCRIPCIÓ TRADUÏT */}
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                     {t("admin.groups.desc")}
                 </label>
@@ -163,7 +154,6 @@ export default function EditGroupPage() {
             </div>
 
             <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                {/* TÍTOL SECCIÓ MEMBRES TRADUÏT */}
                 <h3 className="text-base font-semibold text-zinc-900 dark:text-white mb-1">
                     {t("admin.groups.membersTitle")} ({allUsers.length})
                 </h3>
@@ -179,7 +169,6 @@ export default function EditGroupPage() {
                     <div className="max-h-60 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-2 space-y-1">
                         {allUsers.map((user) => {
                             const isSelected = selectedUserIds.has(user._id);
-                            // Fem servir user.name i t("common.noName") per si és buit
                             const displayName = user.name || t("common.noName");
                             const initial = displayName.charAt(0).toUpperCase();
 
@@ -219,14 +208,18 @@ export default function EditGroupPage() {
                 )}
             </div>
 
-            <button 
-                type="submit" 
-                disabled={saving} 
+            <button
+                type="submit"
+                disabled={saving}
                 className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
             >
-                {/* BOTÓ GUARDAR TRADUÏT */}
                 {saving ? t("common.saving") : t("common.save")}
             </button>
+            {error && (
+                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {t(`error.${error}`)}
+                </div>
+            )}
           </form>
         </div>
       </div>
