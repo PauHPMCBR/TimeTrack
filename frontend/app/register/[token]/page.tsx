@@ -14,7 +14,6 @@ export default function CompleteRegistrationPage() {
   
   const token = params.token as string;
   
-  // Read data from link if available
   const urlEmail = searchParams.get('email') || "";
   const urlName = searchParams.get('name') || "";
 
@@ -60,20 +59,18 @@ export default function CompleteRegistrationPage() {
         password: formData.password
       });
 
-      if (res.error) {
+if (res.error) {
         const details = res.details;
-        // Handle structured errors
         if (res.error === 'IncorrectParameter' && details) {
           if (details.incorrectParameter === 'email') {
-            setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter"));
+            setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter.message"));
           } else if (details.incorrectParameter === 'password') {
-            // Show password validation errors
             const reasons = details.reasons || [];
             const errorMessages = reasons.map((reason: string) =>
               t(`error.IncorrectParameter.reason.${reason}`)
             );
             setPasswordErrors(errorMessages);
-            setError(t("error.IncorrectParameter.password") + " " + t("error.IncorrectParameter"));
+            setError(t("error.IncorrectParameter.password") + " " + t("error.IncorrectParameter.message"));
           }
         } else if (res.error === 'InvalidRegisterToken') {
           setError(t("error.InvalidRegisterToken"));
@@ -84,7 +81,6 @@ export default function CompleteRegistrationPage() {
         } else if (res.error === 'PostError') {
           setError(t("error.PostError"));
         } else {
-          // Generic error handling
           setError(t(`error.${res.error}`) || res.error || t("error.PostError"));
         }
         return;
@@ -100,12 +96,11 @@ export default function CompleteRegistrationPage() {
 
     } catch (err: any) {
       console.error(err);
-      // Fallback error handling
       if (err.message?.includes("MissingUppercase")) setError(t("error.IncorrectParameter.reason.MissingUppercase"));
       else if (err.message?.includes("MissingLowercase")) setError(t("error.IncorrectParameter.reason.MissingLowercase"));
       else if (err.message?.includes("MissingNumber")) setError(t("error.IncorrectParameter.reason.MissingNumber"));
       else if (err.message?.includes("MissingSign")) setError(t("error.IncorrectParameter.reason.MissingSign"));
-      else if (err.message?.includes("email")) setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter"));
+      else if (err.message?.includes("email")) setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter.message"));
       else setError(err.message || t("error.PostError"));
     } finally {
       setLoading(false);

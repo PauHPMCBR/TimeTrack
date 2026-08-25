@@ -79,11 +79,9 @@ export default function HistoryAndStatsPage() {
     fetchData();
   }, []);
 
-  // Aggregate hours per day
   const perDay = useMemo(() => {
     const byDay = new Map<string, number>();
     
-    // Group sessions by date and calculate total hours per day
     const sessionsByDate = new Map<string, WorkSession[]>();
     
     workSessions.forEach(session => {
@@ -94,7 +92,6 @@ export default function HistoryAndStatsPage() {
       sessionsByDate.get(dateKey)!.push(session);
     });
 
-    // Calculate total hours for each day
     sessionsByDate.forEach((daySessions, dateKey) => {
       let totalHours = 0;
       const sortedSessions = daySessions.sort((a, b) => 
@@ -136,7 +133,6 @@ export default function HistoryAndStatsPage() {
       .map(([date, hrs]) => ({ date, hrs }));
   }, [workSessions]);
 
-  // Aggregate hours per week (last 6 weeks)
   const perWeek = useMemo(() => {
     const w0 = startOfWeek(new Date());
     const weeks: { label: string; hrs: number }[] = [];
@@ -147,7 +143,6 @@ export default function HistoryAndStatsPage() {
       const end = new Date(start);
       end.setDate(start.getDate() + 7);
 
-      // Calculate hours for this week from perDay data
       const weekHours = perDay.reduce((acc, day) => {
         const dayDate = parseLocalDateKey(day.date);
         if (dayDate >= start && dayDate < end) {
@@ -209,7 +204,7 @@ export default function HistoryAndStatsPage() {
           className="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30 transition-colors"
         >
           <Download size={16} />
-          {t('history.export')}
+          {t('history.export.label')}
         </button>
       </div>
 

@@ -7,7 +7,9 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev -w @registre-jornada/backend\" \"npm run dev -w @registre-jornada/frontend\"",
+    "db:up": "docker compose -f database/docker-compose.yml up -d --wait",
+    "db:down": "docker compose -f database/docker-compose.yml down",
+    "dev": "npm run db:up && concurrently -n backend,frontend -c blue,green \"npm run dev -w @registre-jornada/backend\" \"npm run dev -w @registre-jornada/frontend\"",
     "build": "npm run build --workspaces",
     "lint": "npm run lint -w @registre-jornada/backend -w @registre-jornada/frontend",
     "test": "npm run test --workspaces",

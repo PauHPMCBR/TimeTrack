@@ -117,7 +117,8 @@
     "export": {
       "date": "Date",
       "formatted": "Hours (formatted)",
-      "hours": "Hours (number)"
+      "hours": "Hours (number)",
+      "label": "Export"
     },
     "hours": "Hours",
     "monthly": {
@@ -233,13 +234,15 @@
       "employee": "Employee"
     },
     "status": {
-      "checkedInAgo": "Checked in {time} ago"
+      "checkedInAgo": "Checked in {time} ago",
+      "label": "Status"
     },
     "statusActive": "Active (Working)",
     "statusInactive": "Inactive",
     "subtitle": "Profile & hours",
     "theme": {
       "dark": "Dark",
+      "label": "Theme",
       "light": "Light"
     },
     "thisWeek": "This week",
@@ -270,6 +273,7 @@
       "email": "Email address",
       "name": "Full name",
       "role": {
+        "label": "Role",
         "admin": "Administrator",
         "employee": "Employee"
       }
@@ -337,7 +341,10 @@
       "title": "User created!"
     },
     "users": {
-      "noName": "No name"
+      "noName": "No name",
+      "notFound": "No users found.",
+      "pendingActivation": "Pending activation",
+      "registered": "Registered"
     },
     "vacations": {
       "approve": "Approve",
@@ -402,6 +409,7 @@
     },
     "IncorrectParameter": {
       "email": "email",
+      "message": "Incorrect parameter",
       "month": "month",
       "password": "password",
       "reason": {

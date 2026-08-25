@@ -12,7 +12,6 @@ export default function GroupsListPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Estats per al Modal d'Eliminar
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -35,21 +34,18 @@ export default function GroupsListPage() {
     fetchGroups();
   }, []);
 
-  // 1. Obre el modal
   const openDeleteModal = (id: string) => {
     setGroupToDelete(id);
     setIsDeleteModalOpen(true);
     setErrorMsg(null);
   };
 
-  // 2. Tanca el modal
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setGroupToDelete(null);
     setErrorMsg(null);
   };
 
-  // 3. Executa l'eliminació real
   const confirmDelete = async () => {
     if (!groupToDelete) return;
 
@@ -63,7 +59,6 @@ export default function GroupsListPage() {
         // En lloc d'alert, mostrem l'error al modal
         setErrorMsg(t("admin.groups.deleteError") + " (" + res.error + ")");
       } else {
-        // Si va bé, actualitzem la llista i tanquem
         setGroups((prev) => prev.filter((group) => group._id !== groupToDelete));
         closeDeleteModal();
       }
