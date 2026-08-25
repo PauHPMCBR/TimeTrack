@@ -140,7 +140,7 @@ export default function ProfilePage() {
         </div>
         
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="text-sm text-zinc-500">{t("profile.status")}</div>
+          <div className="text-sm text-zinc-500">{t("profile.status.label")}</div>
           <div className="mt-1 text-base text-zinc-900 dark:text-zinc-100">
             {isCheckedIn ? (
               <span className="inline-flex items-center gap-2 text-green-600 font-medium">
@@ -203,7 +203,7 @@ export default function ProfilePage() {
         <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">{t("profile.preferences")}</div>
         
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-sm text-zinc-700 dark:text-zinc-300">{t("profile.theme")}</div>
+          <div className="text-sm text-zinc-700 dark:text-zinc-300">{t("profile.theme.label")}</div>
           <button onClick={toggleTheme} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300">
             {theme === 'dark' ? t("profile.theme.dark") : t("profile.theme.light")}
           </button>

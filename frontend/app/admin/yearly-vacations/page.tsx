@@ -17,12 +17,10 @@ export default function AdminObligatoryVacationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Local state for editing
   const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
   const [electiveDaysTotalCount, setElectiveDaysTotalCount] = useState<number>(0);
   const [newDate, setNewDate] = useState<string>("");
 
-  // Fetch data for the selected year
   const fetchYearlyVacations = async () => {
     try {
       setLoading(true);
@@ -56,12 +54,10 @@ export default function AdminObligatoryVacationsPage() {
     fetchYearlyVacations();
   }, [year]);
 
-  // Handle year change
   const handleYearChange = (newYear: number) => {
     setYear(newYear);
   };
 
-  // Add a new obligatory date
   const handleAddDate = () => {
     if (!newDate) return;
     
@@ -71,7 +67,6 @@ export default function AdminObligatoryVacationsPage() {
       return;
     }
 
-    // Check if date already exists
     const exists = obligatoryDays.some(d => 
       d.getFullYear() === date.getFullYear() &&
       d.getMonth() === date.getMonth() &&
@@ -83,21 +78,18 @@ export default function AdminObligatoryVacationsPage() {
       return;
     }
 
-    // Add the date
     const newDays = [...obligatoryDays, date].sort((a, b) => a.getTime() - b.getTime());
     setObligatoryDays(newDays);
     setNewDate("");
     setError(null);
   };
 
-  // Remove an obligatory date
   const handleRemoveDate = (index: number) => {
     const newDays = [...obligatoryDays];
     newDays.splice(index, 1);
     setObligatoryDays(newDays);
   };
 
-  // Save changes
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -120,10 +112,8 @@ export default function AdminObligatoryVacationsPage() {
           : t("admin.vacationsSetup.saveSubtitleCreate").replace("{year}", year.toString());
         setSuccess(successMessage);
         
-        // Update local state with saved data
         setVacationDays(vacationData);
         
-        // Clear success message after 3 seconds
         setTimeout(() => setSuccess(null), 3000);
       }
     } catch (error) {
@@ -134,7 +124,6 @@ export default function AdminObligatoryVacationsPage() {
     }
   };
 
-  // Format date for display
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -144,7 +133,6 @@ export default function AdminObligatoryVacationsPage() {
     });
   };
 
-  // Group dates by month for better display
   const datesByMonth = () => {
     const groups: Record<string, Date[]> = {};
     

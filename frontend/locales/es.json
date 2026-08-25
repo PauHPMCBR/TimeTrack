@@ -117,7 +117,8 @@
     "export": {
       "date": "Fecha",
       "formatted": "Horas (formateado)",
-      "hours": "Horas (número)"
+      "hours": "Horas (número)",
+      "label": "Exportar"
     },
     "hours": "Horas",
     "monthly": {
@@ -233,13 +234,15 @@
       "employee": "Empleado"
     },
     "status": {
-      "checkedInAgo": "Fichado hace {time}"
+      "checkedInAgo": "Fichado hace {time}",
+      "label": "Estado"
     },
     "statusActive": "Activo (Trabajando)",
     "statusInactive": "No activo",
     "subtitle": "Perfil y horas",
     "theme": {
       "dark": "Oscuro",
+      "label": "Tema",
       "light": "Claro"
     },
     "thisWeek": "Esta semana",
@@ -270,6 +273,7 @@
       "email": "Correo electrónico",
       "name": "Nombre completo",
       "role": {
+        "label": "Rol",
         "admin": "Administrador",
         "employee": "Empleado"
       }
@@ -337,7 +341,10 @@
       "title": "¡Usuario creado!"
     },
     "users": {
-      "noName": "Sin nombre"
+      "noName": "Sin nombre",
+      "notFound": "No se han encontrado usuarios.",
+      "pendingActivation": "Activación pendiente",
+      "registered": "Registrado"
     },
     "vacations": {
       "approve": "Aprobar",
@@ -402,6 +409,7 @@
     },
     "IncorrectParameter": {
       "email": "correo electrónico",
+      "message": "Parámetro incorrecto",
       "month": "mes",
       "password": "contraseña",
       "reason": {

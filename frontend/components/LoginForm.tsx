@@ -23,7 +23,6 @@ export default function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      // Validate with Zod
       LoginRequestSchema.parse({ email, password });
 
       const res = await apiClient.login({ email, password });

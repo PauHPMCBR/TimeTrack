@@ -117,7 +117,8 @@
     "export": {
       "date": "Data",
       "formatted": "Hores (formatat)",
-      "hours": "Hores (número)"
+      "hours": "Hores (número)",
+      "label": "Exportar"
     },
     "hours": "Hores",
     "monthly": {
@@ -233,13 +234,15 @@
       "employee": "Empleat"
     },
     "status": {
-      "checkedInAgo": "Fitxat fa {time}"
+      "checkedInAgo": "Fitxat fa {time}",
+      "label": "Estat"
     },
     "statusActive": "Actiu (Treballant)",
     "statusInactive": "No actiu",
     "subtitle": "Perfil i hores",
     "theme": {
       "dark": "Fosc",
+      "label": "Tema",
       "light": "Clar"
     },
     "thisWeek": "Aquesta setmana",
@@ -270,6 +273,7 @@
       "email": "Correu electrònic",
       "name": "Nom complet",
       "role": {
+        "label": "Rol",
         "admin": "Administrador",
         "employee": "Empleat"
       }
@@ -337,7 +341,10 @@
       "title": "Usuari creat!"
     },
     "users": {
-      "noName": "Sense nom"
+      "noName": "Sense nom",
+      "notFound": "No s'han trobat usuaris.",
+      "pendingActivation": "Activació pendent",
+      "registered": "Registrat"
     },
     "vacations": {
       "approve": "Aprovar",
@@ -402,6 +409,7 @@
     },
     "IncorrectParameter": {
       "email": "correu electrònic",
+      "message": "Paràmetre incorrecte",
       "month": "mes",
       "password": "contrassenya",
       "reason": {

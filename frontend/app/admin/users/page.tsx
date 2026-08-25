@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import { User } from "@/types"; 
-// Ruta relativa: pugem 3 nivells (users -> admin -> app -> frontend -> components)
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 
 export default function UsersListPage() {

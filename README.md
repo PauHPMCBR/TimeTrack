@@ -14,7 +14,6 @@ vacation management, groups, and an admin panel.
 | Tests | Vitest (+ React Testing Library, jsdom) |
 | Package manager | npm (workspaces monorepo) |
 | Containerization | Docker / docker-compose |
-| Orchestration | Kubernetes (manifests in `k8s/`) |
 
 ## Project Structure
 
@@ -23,7 +22,6 @@ shared/     Zod schemas & shared types (source of truth for API + DB shapes)
 backend/    API-only Next.js app on port 3001
 frontend/   UI Next.js app on port 3000
 database/   MongoDB init script + local dev Docker setup
-k8s/        Kubernetes manifests
 ```
 
 Authentication is a hand-rolled email/password flow issuing stateless JWTs
@@ -71,28 +69,24 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 > **Note:** `JWT_SECRET` is mandatory. The backend refuses to sign or verify
 > tokens without it.
 
-### 3. Start MongoDB
+### 3. Run everything
 
-Using the bundled dev compose (host port **27018**):
+`npm run dev` starts MongoDB (Docker, host port **27018**), the backend
+(**:3001**) and the frontend (**:3000**) all at once:
 
 ```bash
-cd database && docker compose up -d
+npm run dev
 ```
 
-Set `MONGO_INITDB_ROOT_PASSWORD` and `MONGO_APP_PASSWORD` in `database/.env`
-first. Optionally set `SEED_DEMO=1` to create demo groups/reasons and an
-unregistered admin account — the init script prints a registration link you can
-open to set the admin's password.
+Set `MONGO_ROOT_PASSWORD` and `MONGO_APP_PASSWORD` in `.env` first (see
+`.env.example`). Optionally set `SEED_DEMO=1` to create demo groups/reasons and
+an unregistered admin account — the init script prints a registration link you
+can open to set the admin's password.
 
-### 4. Run the app
-
-```bash
-npm run dev    # backend :3001 + frontend :3000 in parallel
-```
-
-Or individually:
+Or run the pieces individually:
 
 ```bash
+npm run db:up              # just the MongoDB container
 cd backend && npm run dev
 cd frontend && npm run dev
 ```
@@ -131,38 +125,12 @@ docker compose up --build
 - Backend API: http://localhost:3001 (health check at `/api/health`)
 - MongoDB: host port 27018 (bound to localhost only)
 
-## Kubernetes Deployment
-
-Manifests live in `k8s/`. Apply order:
-
-```bash
-kubectl apply -f k8s/app-secrets.example.yaml   # after replacing values!
-kubectl apply -f k8s/mongo-init-configmap.yaml
-kubectl apply -f k8s/mongodb-pv.yaml
-kubectl apply -f k8s/mongodb-data-persistentvolumeclaim.yaml
-kubectl apply -f k8s/mongodb-deployment.yaml
-kubectl apply -f k8s/mongodb-service.yaml
-kubectl apply -f k8s/backend-deployment.yaml
-kubectl apply -f k8s/backend-service.yaml
-kubectl apply -f k8s/frontend-deployment.yaml
-kubectl apply -f k8s/frontend-service.yaml
-```
-
-Security-relevant defaults:
-
-- **MongoDB is ClusterIP-only** — never expose it via NodePort.
-- Secrets are referenced from a `app-secrets` Secret; replace the placeholders
-  before applying (or use `kubectl create secret ...`). Never commit real values.
-- Backend exposes `GET /api/health` for liveness/readiness probes.
-- The dashboard manifest grants only read-only RBAC; access it via
-  `kubectl port-forward`.
-
 The frontend bakes `NEXT_PUBLIC_BACKEND_URL` into client JS at build time — pass
-it as a build arg when building images for a cluster:
+it as a build arg when building the image:
 
 ```bash
 docker build -f frontend/Dockerfile \
-  --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.example.com .
+  --build-arg NEXT_PUBLIC_BACKEND_URL=http://localhost:3001 .
 ```
 
 ## API Overview

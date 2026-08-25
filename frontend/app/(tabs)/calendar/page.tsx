@@ -1,4 +1,3 @@
-// app/calendar/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,7 +30,6 @@ export default function CalendarPage() {
     setCursor(newCursor);
   };
 
-  // Fetch data when month changes
   useEffect(() => {
     const fetchData = async () => {
       if (!currentUser) return;
@@ -77,7 +75,6 @@ export default function CalendarPage() {
     fetchData();
   }, [cursor, currentUser, t]);
 
-  // Fetch current user on mount
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {

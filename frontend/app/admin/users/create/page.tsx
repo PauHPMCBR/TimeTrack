@@ -10,21 +10,18 @@ import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 export default function CreateUserPage() {
   const { t } = useI18n(); 
 
-  // Form states
   const [formData, setFormData] = useState<CreateUserRequest>({
     name: "",
     email: "",
     role: "employee",
   });
 
-  // UI states
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // Submit data to Backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -33,21 +30,18 @@ export default function CreateUserPage() {
     setInviteLink(null);
 
     try {
-      // 1. Call the real API
       const response = await apiClient.createUser(formData);
       
-      // 2. Handle errors
       if (response.error) {
-        // Handle structured errors
         if (response.error === 'IncorrectParameter') {
           if (response.details.incorrectParameter === 'email') {
             if (response.details.reasons?.includes('AlreadyExists')) {
               setError(t("error.IncorrectParameter.reason.AlreadyExists"));
             } else {
-              setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter"));
+              setError(t("error.IncorrectParameter.email") + " - " + t("error.IncorrectParameter.message"));
             }
           } else {
-            setError(t("error.IncorrectParameter"));
+            setError(t("error.IncorrectParameter.message"));
           }
         } else if (response.error === 'MissingParameter') {
           if (response.details.missingParameter === 'email') {
@@ -56,7 +50,6 @@ export default function CreateUserPage() {
             setError(t("error.MissingParameter") + ": " + t("register.name"));
           }
         } else if (response.error === 'ValidationError') {
-          // Handle validation errors with multiple messages
           const errors = response.details.errors || [];
           if (errors.length > 0) {
             setValidationErrors(errors);
@@ -69,7 +62,6 @@ export default function CreateUserPage() {
         } else if (response.error === 'PostError') {
           setError(t("error.PostError"));
         } else {
-          // Generic error handling
           setError(t(`error.${response.error}`) || response.error || t("error.PostError"));
         }
         setLoading(false);
@@ -92,7 +84,6 @@ export default function CreateUserPage() {
     }
   };
 
-  // Copy to clipboard
   const copyToClipboard = () => {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink);
@@ -101,7 +92,6 @@ export default function CreateUserPage() {
     }
   };
 
-  // Clear and create another user
   const handleReset = () => {
     setInviteLink(null);
     setError(null);
@@ -224,7 +214,7 @@ export default function CreateUserPage() {
               {/* Field: Role */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {t("admin.form.role")}
+                  {t("admin.form.role.label")}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button

@@ -61,7 +61,6 @@ export function Calendar({
   const prevMonth = () => onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1));
   const nextMonth = () => onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1));
 
-  // Get detailed vacations for the day
   const getVacationsForDay = (date: Date): VacationEvent[] => {
     if (!vacations || !showVacations) return [];
     
@@ -82,7 +81,6 @@ export function Calendar({
       });
     }
 
-    // Check elective vacation requests with full details
     const electiveRequests = vacations.electives?.filter(elective => {
       if (!elective.date) return false;
       const electiveDate = new Date(elective.date);
@@ -114,7 +112,6 @@ export function Calendar({
       }
     });
     
-    // Add team vacations
     if (teamVacations && teamVacations.length > 0) {
         teamVacations.forEach(vac => {
             const vacDate = new Date(vac.date);
@@ -143,7 +140,6 @@ export function Calendar({
     return events;
   };
 
-  // Get detailed work sessions for the day
   const getWorkSessionsForDay = (date: Date) => {
     if (!workSessions || !showWorkSessions) return null;
     
@@ -162,7 +158,6 @@ export function Calendar({
     return null;
   };
 
-  // Get calendar day data
   const getCalendarDayData = (date: Date): CalendarDayData => {
     return {
       date,
@@ -173,7 +168,6 @@ export function Calendar({
     };
   };
 
-  // Handle day hover for tooltip
   const handleDayHover = (date: Date, event: React.MouseEvent) => {
     setHoveredDay(date);
     const rect = event.currentTarget.getBoundingClientRect();
@@ -183,20 +177,16 @@ export function Calendar({
     });
   };
 
-  // Handle day click for modal
   const handleDayClick = (date: Date) => {
     setHoveredDay(null);
     setSelectedDay(date);
-    // Call external onClick handler if provided
     onDayClick?.(date);
   };
 
-  // Handle mouse leave from calendar area
   const handleCalendarMouseLeave = () => {
     setHoveredDay(null);
   };
 
-  // Close modal
   const closeModal = () => {
     setSelectedDay(null);
   };

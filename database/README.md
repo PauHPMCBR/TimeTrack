@@ -46,8 +46,8 @@ docker-compose logs seed
 
 ### 2. Variables de entorno
 ```
-MONGO_INITDB_ROOT_USERNAME: root
-MONGO_INITDB_ROOT_PASSWORD: <MONGO_ROOT_PASSWORD>
+MONGO_ROOT_USER: root
+MONGO_ROOT_PASSWORD: <MONGO_ROOT_PASSWORD>
 MONGODB_URI: mongodb://alumne:<MONGO_APP_PASSWORD>@mongodb:27017/myapp?authSource=myapp
 ```
 ### 3. Puertos
