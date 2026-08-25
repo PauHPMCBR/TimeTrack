@@ -14,25 +14,53 @@ spec:
       labels:
         io.kompose.service: backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - env:
-            - name: DATABASE_URL
-              value: "mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSource=myapp"
             - name: MONGODB_URI
-              value: "mongodb://alumne:XGmHckQJzwzFKwBo14YA@mongodb:27017/myapp?authSource=myapp"
-            - name: FRONTEND_URL
-              value: "http://10.4.41.75:30000"
-            - name: NODE_ENV
-              value: "development"
-            - name: USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-secret
-                  key: user-password
+                  name: app-secrets
+                  key: mongodb-uri
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: jwt-secret
+            - name: FRONTEND_URL
+              value: "http://frontend:3000"
+            - name: NODE_ENV
+              value: "production"
           image: godack/registre-jornada-backend:1.0
           imagePullPolicy: Always
           name: backend
           ports:
             - containerPort: 3001
-          resources: {}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       restartPolicy: Always

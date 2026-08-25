@@ -7,16 +7,16 @@ import {
 } from "recharts";
 import { apiClient } from "@/lib/api";
 import { WorkSession } from "@/types";
+import { toLocalDateKey } from "@/lib/datetime";
 import * as XLSX from "xlsx";
 import { Download } from "lucide-react";
 
-// Helpers
 function hoursBetween(a: Date, b: Date) {
   return Math.max(0, (b.getTime() - a.getTime()) / 3_600_000);
 }
 function startOfWeek(d = new Date()) {
   const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // dilluns=0
+  const day = (x.getDay() + 6) % 7; // monday=0
   x.setHours(0, 0, 0, 0);
   x.setDate(x.getDate() - day);
   return x;
@@ -26,36 +26,35 @@ function fmtHM(h: number) {
   const mm = Math.round((h - hh) * 60);
   return `${hh}h ${mm}m`;
 }
+function parseLocalDateKey(key: string) {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
 export default function HistoryAndStatsPage() {
   const { t } = useI18n();
   const [workSessions, setWorkSessions] = useState<WorkSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Fetch user and work sessions
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = await apiClient.getCurrentUser();
         if (user) {
-          setCurrentUser(user);
-          
-          // Fetch last 3 months of data for comprehensive history
           const now = new Date();
           const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-          
+
           // Get sessions for multiple months
           const allSessions: WorkSession[] = [];
-          
+
           for (let i = 0; i < 4; i++) {
             const date = new Date(threeMonthsAgo.getFullYear(), threeMonthsAgo.getMonth() + i, 1);
             const response = await apiClient.getMonthlyRecords(
-              user._id, 
-              date.getMonth() + 1, 
+              user._id,
+              date.getMonth() + 1,
               date.getFullYear()
             );
-            
+
             if (response.data?.sessionsByDay) {
               // Flatten the sessionsByDay array (index is day of month, position 0 is empty)
               response.data.sessionsByDay.forEach((daySessions, dayIndex) => {
@@ -67,7 +66,7 @@ export default function HistoryAndStatsPage() {
               });
             }
           }
-          
+
           setWorkSessions(allSessions);
         }
       } catch (error) {
@@ -80,23 +79,6 @@ export default function HistoryAndStatsPage() {
     fetchData();
   }, []);
 
-  // Calculate hours for a session (check-in to check-out)
-  const calculateSessionHours = (session: WorkSession): number => {
-    if (session.type === 'check_in') {
-      // Find matching check-out
-      const checkOut = workSessions.find(s => 
-        s.type === 'check_out' && 
-        new Date(s.timestamp) > new Date(session.timestamp) &&
-        Math.abs(new Date(s.timestamp).getTime() - new Date(session.timestamp).getTime()) < 24 * 60 * 60 * 1000 // within 24 hours
-      );
-      
-      if (checkOut) {
-        return hoursBetween(new Date(session.timestamp), new Date(checkOut.timestamp));
-      }
-    }
-    return 0;
-  };
-
   // Aggregate hours per day
   const perDay = useMemo(() => {
     const byDay = new Map<string, number>();
@@ -105,7 +87,7 @@ export default function HistoryAndStatsPage() {
     const sessionsByDate = new Map<string, WorkSession[]>();
     
     workSessions.forEach(session => {
-      const dateKey = new Date(session.timestamp).toISOString().slice(0, 10); // YYYY-MM-DD
+      const dateKey = toLocalDateKey(session.timestamp);
       if (!sessionsByDate.has(dateKey)) {
         sessionsByDate.set(dateKey, []);
       }
@@ -130,9 +112,18 @@ export default function HistoryAndStatsPage() {
         }
       });
 
-      // If there's an unmatched check-in at the end of the day
+      // Unmatched check-in: count until now if today, otherwise until end of
+      // that day so forgotten check-outs don't inflate historical totals.
       if (checkInTime) {
-        totalHours += hoursBetween(checkInTime, new Date());
+        const isToday = dateKey === toLocalDateKey(new Date());
+        const endDate = isToday
+          ? new Date()
+          : (() => {
+              const d = parseLocalDateKey(dateKey);
+              d.setHours(23, 59, 59, 999);
+              return d;
+            })();
+        totalHours += hoursBetween(checkInTime, endDate);
       }
 
       if (totalHours > 0) {
@@ -158,7 +149,7 @@ export default function HistoryAndStatsPage() {
 
       // Calculate hours for this week from perDay data
       const weekHours = perDay.reduce((acc, day) => {
-        const dayDate = new Date(day.date);
+        const dayDate = parseLocalDateKey(day.date);
         if (dayDate >= start && dayDate < end) {
           return acc + day.hrs;
         }
@@ -274,7 +265,7 @@ export default function HistoryAndStatsPage() {
               {perDay.map((d) => (
                 <tr key={d.date} className="border-t border-zinc-100 dark:border-zinc-800">
                   <td className="px-4 py-2">
-                    {new Date(d.date).toLocaleDateString()}
+                    {parseLocalDateKey(d.date).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-2">{fmtHM(d.hrs)}</td>
                 </tr>

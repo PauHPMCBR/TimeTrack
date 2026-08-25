@@ -1,13 +1,14 @@
+# MongoDB should never be exposed outside the cluster.
+# (The old mongodb-external NodePort service has been removed on purpose.)
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongodb-external
+  name: mongodb
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: mongodb
       port: 27017
       targetPort: 27017
-      nodePort: 30002
   selector:
     io.kompose.service: mongodb

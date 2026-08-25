@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import jwt from 'jsonwebtoken';
 
 vi.mock('@/lib/mongodb', () => ({
   default: vi.fn().mockResolvedValue({}),
@@ -33,8 +34,7 @@ export const createMockUser = (overrides: any = {}) => ({
   ...overrides,
 });
 
-export const createMockToken = (payload: any = {}) => {
-  const jwt = require('jsonwebtoken');
+export const createMockToken = (payload: Record<string, unknown> = {}) => {
   return jwt.sign(
     payload,
     process.env.JWT_SECRET || 'fallback-secret-change-in-production',

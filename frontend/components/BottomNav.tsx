@@ -2,33 +2,38 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckCircle, MessageSquare, History, CalendarDays, User, Shield, Users } from "lucide-react";
+import { CheckCircle, History, CalendarDays, User, Shield, Users } from "lucide-react";
 import { useI18n } from "@/app/i18n";
 import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { t } = useI18n();
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-   const email = localStorage.getItem('userEmail');
-    if (email === 'admin@company.com') {
-      setIsSuperAdmin(true);
-    }
+    let cancelled = false;
+    apiClient.getCurrentUser().then((user) => {
+      if (!cancelled && user?.role === "admin") {
+        setIsAdmin(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const baseItems = [
     { href: "/check-in", label: t("tabs.checkin"),  Icon: CheckCircle },
     { href: "/history",  label: t("tabs.history"),  Icon: History },
     { href: "/groups",   label: t("tabs.groups"),   Icon: Users },
-    { href: "/chat",     label: t("tabs.chat"),     Icon: MessageSquare },
     { href: "/calendar", label: t("tabs.calendar"), Icon: CalendarDays },
   ];
 
   const items = [
     ...baseItems,
-    ...(isSuperAdmin ? [{ href: "/admin", label: "Admin", Icon: Shield }] : []),
+    ...(isAdmin ? [{ href: "/admin", label: t("tabs.admin"), Icon: Shield }] : []),
     { href: "/profile",  label: t("tabs.profile"),  Icon: User },
   ];
 

@@ -43,7 +43,6 @@ export default function CalendarPage() {
         const month = cursor.getMonth() + 1;
         
         const vacationsResponse = await apiClient.getUserVacations(currentUser._id, year);
-        console.log(vacationsResponse);
         if (vacationsResponse.error) {
            setErrorMsg(t(`error.${vacationsResponse.error}`));
         } else {
@@ -51,7 +50,6 @@ export default function CalendarPage() {
         }
 
         const workSessionsResponse = await apiClient.getMonthlyRecords(currentUser._id, month, year);
-        console.log(workSessionsResponse);
         if (workSessionsResponse.error) {
            setErrorMsg(t(`error.${workSessionsResponse.error}`));
         } else {
@@ -87,7 +85,6 @@ export default function CalendarPage() {
         if (userResponse) {
           setCurrentUser(userResponse);
         } else {
-          console.log("redirecting to login...");
           router.push("/");
         }
       } catch (error) {

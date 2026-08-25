@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { User, Group } from "@/types";
-import { Users, ChevronLeft, Mail, Shield, User as UserIcon } from "lucide-react";
+import { Users, ChevronLeft, Mail } from "lucide-react";
 
 export default function GroupDetailPage() {
   const { t } = useI18n();

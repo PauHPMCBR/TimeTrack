@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireSameGroupOrAdmin } from '@/lib/auth';
 import { ElectiveVacation, YearlyVacationDays } from '@/models';
@@ -12,9 +12,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   }
 
   const validationMiddleware = validateQueryParams(UserYearParamSchema);
-    await new Promise((resolve, reject) => {
-      validationMiddleware(req, res, (err?: any) => err ? reject(err) : resolve(true));
+    await new Promise((resolve) => {
+      validationMiddleware(req, res, () => resolve(true));
     });
+    if (res.headersSent) return;
 
   try {
     await dbConnect();

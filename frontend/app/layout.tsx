@@ -27,7 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ca" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-          <title></title>
       </head>
       <body
         className={`${inter.className} min-h-dvh antialiased

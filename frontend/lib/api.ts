@@ -27,12 +27,12 @@ class ApiClient {
     const token = localStorage.getItem('auth_token');
     
     const config: RequestInit = {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
-      ...options,
     };
 
     try {
@@ -47,9 +47,9 @@ class ApiClient {
 
       if (!response.ok) {
         const error = data.error || response.statusText || 'Request failed';
-        const result = { 
+        const result = {
           error,
-          details: data 
+          details: data.details ?? {},
         };
         if (this.errorListener) {
           this.errorListener(result.error, result.details);
@@ -120,7 +120,7 @@ class ApiClient {
     });
   }
 
-  async deleteGroup(groupId: string): Promise<ApiResponse<{}>> {
+  async deleteGroup(groupId: string): Promise<ApiResponse<Record<string, never>>> {
     return this.request(`/api/groups/update/${groupId}`, {
       method: 'DELETE',
     });

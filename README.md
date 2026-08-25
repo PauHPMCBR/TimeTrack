@@ -1,338 +1,189 @@
-# Registre de jornada
+# TimeTrack — Registre de jornada
 
-## Project Description
-
-A full-stack, containerized application for employees to register their work check-ins and check-outs. It features a modern web interface, a secure backend API, user authentication, and a chatbot service, all orchestrated using Kubernetes for scalability and resilience.
-
-Key Features:
-- Employee time tracking (check-in/check-out)
-- Secure SAML-based authentication via NextAuth.js
-- Responsive frontend built with Next.js and Tailwind CSS
-- RESTful API backend
--Chatbot integration
--Multi-service architecture with Kubernetes
+A full-stack employee time-tracking application: check-in/check-out registration,
+vacation management, groups, and an admin panel.
 
 ## Tech Stack
-| Component	| Technology |
+
+| Component | Technology |
 |---|---|
-| Frontend	| Next.js 14, TypeScript, Tailwind CSS |
-| Backend	| Next.js API Routes (or separate Node.js) |
-| Authentication |	NextAuth.js (SAML) |
-| Database |	MongoDB with Mongoose ODM |
-| Containerization |	Docker |
-| Orchestration	| Kubernetes |
-| Development |	ESLint, Prettier, TypeScript |
+| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
+| Backend | Next.js API routes (Node runtime), TypeScript, JWT auth |
+| Shared | Zod schemas (API + database via `@zodyac/zod-mongoose`) |
+| Database | MongoDB with Mongoose ODM |
+| Tests | Vitest (+ React Testing Library, jsdom) |
+| Package manager | npm (workspaces monorepo) |
+| Containerization | Docker / docker-compose |
+| Orchestration | Kubernetes (manifests in `k8s/`) |
 
+## Project Structure
 
-## System Architecture
-
-The application is composed of several interconnected services:
-
-- Frontend Pod: Serves the Next.js web application to users. It handles user interactions and communicates with the backend API
-- Backend Pod: Contains the business logic and API endpoints for authentication and time record processing
-- Chatbot Pod: Hosts the AI/automated interaction service
-- MongoDB Pod: The stateful service responsible for data persistence, storing user accounts and time records
-
-These services are deployed as separate Pods (the smallest deployable units in Kubernetes) within a cluster.
-
-They are managed by Deployments, which ensure the desired number of pod replicas are running and handle updates and rollbacks. Services provide a stable network endpoint to allow the frontend, backend, and chatbot pods to communicate with each other and the database
-
-
-## Prerequisites
-
-Before you begin, ensure you have the following installed on your machine:
-- Bun (version 1.0 or higher)
-- Docker
-- Docker compose
-- kubectl (Kubernetes command-line tool)
-- A Kubernetes cluster (e.g., Minikube for local development)
-- A MongoDB database
-
-## Setup & Installation Guide
-
-Follow these steps to get the project running in a local development environment.
-### Phase 1: Local Repository and Dependency Setup
-
-Clone the Repository
-```bash
-git clone <your-repository-url>
-cd time-record-app
+```
+shared/     Zod schemas & shared types (source of truth for API + DB shapes)
+backend/    API-only Next.js app on port 3001
+frontend/   UI Next.js app on port 3000
+database/   MongoDB init script + local dev Docker setup
+k8s/        Kubernetes manifests
 ```
 
-Install Dependencies
+Authentication is a hand-rolled email/password flow issuing stateless JWTs
+(stored in `localStorage` by the frontend). There is no NextAuth/SAML.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ (with npm 10+)
+- Docker + docker compose
+- A MongoDB instance (local Docker is easiest)
+
+### 1. Install dependencies
+
 ```bash
-bun install
+npm install
 ```
 
-#### Environment Configuration
-Create a .env.local file in the frontend directory and a .env file in the backend directory. You will need to set up the following environment variables. For security, never commit these files to version control.
+### 2. Environment configuration
 
-Frontend (.env.local):
+Copy the examples and fill in real values:
+
+```bash
+cp .env.example .env          # docker-compose secrets (mongo users, JWT secret)
+```
+
+Backend (`backend/.env`, git-ignored):
+
 ```env
-NEXTAUTH_SECRET=your-secret-here-at-least-32-characters-long
-# URL of your backend service (for Kubernetes, this will be the service name)
-BACKEND_URL=http://localhost:3001
+MONGODB_URI=mongodb://alumne:<password>@localhost:27018/myapp?authSource=myapp
+JWT_SECRET=<openssl rand -base64 48>
+FRONTEND_URL=http://localhost:3000
+# Optional:
+# BLOCK_MINUTES=10
+# MAX_FAILED_LOGIN_ATTEMPTS=5
 ```
 
-Backend (.env):
+Frontend (`frontend/.env.local`, git-ignored):
+
 ```env
-MONGODB_URI= (the proper mongodb url, see the database connection section)
-NEXTAUTH_SECRET=your-secret-here-at-least-32-characters-long
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 ```
 
-### Phase 2: Database Connection
+> **Note:** `JWT_SECRET` is mandatory. The backend refuses to sign or verify
+> tokens without it.
 
-The project uses Mongoose to manage the connection to MongoDB. The application uses a connection utility to cache the database connection, which optimizes performance in environments like Kubernetes by reusing connections across requests.
+### 3. Start MongoDB
 
-You can use MongoDB for managing the database easily. The connexion is within the proper url:
-- Using the local mongodb: mongodb://<username>:<password>@localhost:27017/<dbname>?authSource=myapp
-- Using MongoDB Atlas: mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority
-- Using the database created by the docker-compose: mongodb://alumne:XGmHckQJzwzFKwBo14YA@localhost:27018/myapp?authSource=myapp
+Using the bundled dev compose (host port **27018**):
 
-### Phase 3: Running the Application Locally
-#### 3.1. With docker-compose
-Start the application with the docker compose:
 ```bash
-docker-compose up --build
+cd database && docker compose up -d
 ```
 
-The backend API should now be running on http://localhost:3001.
-The frontend application should now be running on http://localhost:3000.
-The database should now be running on the port 27018 (to avoid the conventional 27017 mongodb port)
-#### 3.2. Without docker-compose
-You will have to use MongoDB Atlas or the local mongodb
+Set `MONGO_INITDB_ROOT_PASSWORD` and `MONGO_APP_PASSWORD` in `database/.env`
+first. Optionally set `SEED_DEMO=1` to create demo groups/reasons and an
+unregistered admin account — the init script prints a registration link you can
+open to set the admin's password.
 
-Start all services from the root:
+### 4. Run the app
+
 ```bash
-bun run dev
+npm run dev    # backend :3001 + frontend :3000 in parallel
 ```
 
-Or start individually:
-Start the Backend Server:
+Or individually:
+
 ```bash
-cd backend
-bun run dev
+cd backend && npm run dev
+cd frontend && npm run dev
 ```
 
-The backend API should now be running on http://localhost:3001.
+## Testing & Quality
 
-Start the Frontend Development Server:
-Open a new terminal window.
 ```bash
-cd frontend
-bun run dev
+npm run lint       # eslint across all workspaces
+npm run test:run   # vitest across all workspaces (CI mode)
+npm run test       # vitest watch mode
 ```
 
-The frontend application should now be running on http://localhost:3000.
+Type checking per workspace:
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing with Bun.
-
-### Running Tests
-
-Run all tests for all packages from the root:
 ```bash
-bun run test:run
+cd shared && npx tsc --noEmit
+cd backend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
-Or run tests in watch mode:
+Backend tests mock MongoDB and do not require a running database.
+
+CI (GitHub Actions) runs lint, typecheck, tests, docker builds and a secret scan
+on every push/PR — see `.github/workflows/ci.yml`.
+
+## Docker Compose (full stack)
+
+From the repo root:
+
 ```bash
-bun run test
+cp .env.example .env   # then fill in the values
+docker compose up --build
 ```
 
-To run tests for a specific package:
-```bash
-cd backend && bun run test:run
-cd frontend && bun run test:run
-cd shared && bun run test:run
-```
-
-### Writing Tests
-
-- Test files should be named with `.test.ts`, `.test.tsx`, `.spec.ts`, or `.spec.tsx` extensions
-- Place test files alongside the code they test, or in a `__tests__` directory
-- Backend tests run in Node.js environment
-- Frontend tests run in jsdom environment with React Testing Library
-- Shared package tests run in Node.js environment
-
-Example test file:
-```typescript
-import { describe, it, expect } from 'vitest'
-
-describe('my feature', () => {
-  it('should work correctly', () => {
-    expect(1 + 1).toBe(2)
-  })
-})
-```
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001 (health check at `/api/health`)
+- MongoDB: host port 27018 (bound to localhost only)
 
 ## Kubernetes Deployment
 
-## Prerequisites
-- kubeadm installed
-- kubectl installed
-- The yaml files on k8s folder
-
-### 1. Installation
-
-#### 1.1 All the nodes
-```
-sudo apt update
-
-sudo apt install -y containerd
-
-sudo apt install -y apt-transport-https ca-certificates curl
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt update
-sudo apt install -y kubelet=1.28.15-00 kubeadm=1.28.15-00 kubectl=1.28.15-00
-sudo apt-mark hold kubelet kubeadm kubectl
-
-containerd config default | sudo tee /etc/containerd/config.toml
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
-sudo systemctl restart containerd
-```
-
-#### 1.2. Only in the control-plane node
-```
-sudo kubeadm init --control-plane-endpoint "10.4.41.75:6443" --pod-network-cidr=10.244.0.0/16
-
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
-```
-
-#### 1.3. Only in the worker nodes
-```
-sudo kubeadm join 10.4.41.75:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>
-```
-
-#### 1.4. Build images and push into Docker-Hub
+Manifests live in `k8s/`. Apply order:
 
 ```bash
-docker-compose build
-docker tag registre-jornada-frontend:latest godack/registre-jornada-frontend:1.0 
-docker tag registre-jornada-backend:latest godack/registre-jornada-backend:1.0 
-docker push godack/registre-jornada-frontend:1.0
-docker push godack/registre-jornada-backend:1.0
+kubectl apply -f k8s/app-secrets.example.yaml   # after replacing values!
+kubectl apply -f k8s/mongo-init-configmap.yaml
+kubectl apply -f k8s/mongodb-pv.yaml
+kubectl apply -f k8s/mongodb-data-persistentvolumeclaim.yaml
+kubectl apply -f k8s/mongodb-deployment.yaml
+kubectl apply -f k8s/mongodb-service.yaml
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/backend-service.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+kubectl apply -f k8s/frontend-service.yaml
 ```
 
+Security-relevant defaults:
 
-### 2. Kubernetes Deployment
+- **MongoDB is ClusterIP-only** — never expose it via NodePort.
+- Secrets are referenced from a `app-secrets` Secret; replace the placeholders
+  before applying (or use `kubectl create secret ...`). Never commit real values.
+- Backend exposes `GET /api/health` for liveness/readiness probes.
+- The dashboard manifest grants only read-only RBAC; access it via
+  `kubectl port-forward`.
 
+The frontend bakes `NEXT_PUBLIC_BACKEND_URL` into client JS at build time — pass
+it as a build arg when building images for a cluster:
 
-```
-cd k8s
-kubectl apply -f mongodb-secret.yaml
-kubectl apply -f mongo-init-configmap.yaml
-kubectl apply -f mongodb-pv.yaml  # Si lo tienes
-kubectl apply -f mongodb-data-persistentvolumeclaim.yaml
-kubectl apply -f mongodb-deployment.yaml
-kubectl apply -f mongodb-service.yaml
-sleep 20
-kubectl apply -f backend-deployment.yaml
-kubectl apply -f backend-service.yaml
-sleep 10
-kubectl apply -f frontend-deployment.yaml
-kubectl apply -f frontend-service.yaml
-sleep 10
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
-kubectl apply -f dashboard.yaml
+```bash
+docker build -f frontend/Dockerfile \
+  --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.example.com .
 ```
 
+## API Overview
 
-### 3. Accessing the Application
+All endpoints return `{ success?: boolean, data?: T, error?: ErrorCode, details? }`.
+Error codes are defined in `shared/src/types/response-errors.ts`.
 
-The backend API should now be running on http://{serverip}:30001.
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /api/auth/login`, `POST /api/auth/register` |
+| Profile | `GET /api/profile/me`, `GET /api/profile/[userId]`, `POST /api/profile/create` (admin) |
+| Work sessions | `POST /api/work-sessions/add-timestamp`, `GET /api/work-sessions/[userId]/day/[date]`, `GET /api/work-sessions/[userId]/month/[year]/[month]`, `GET /api/work-sessions/reasons` |
+| Vacations | `POST /api/vacations/create`, `POST /api/vacations/[vacationId]/cancel`, `GET /api/vacations/user/[userId]/[year]`, `GET /api/vacations/yearly/[year]` |
+| Groups | `GET /api/groups/[groupId]`, `POST /api/groups/create`, `PUT|DELETE /api/groups/update/[groupId]`, `GET /api/groups/user/[userId]`, `GET /api/groups/team-vacations` |
+| Admin | `GET /api/admin/users`, `GET /api/admin/groups`, `GET /api/admin/currently-working`, vacation review endpoints under `/api/admin/vacations/*` |
+| Health | `GET /api/health` |
 
-The frontend application should now be running on http://{serverip}:30000.
+All endpoints except `login`, `register` and `health` require a
+`Authorization: Bearer <token>` header. Admin endpoints additionally require the
+admin role.
 
-The database should now be running on the port 30002
+## Conventions
 
-The admin dashboard now shoud be running on https://{serverip}:30003.
-
-Run `kubectl -n kubernetes-dashboard create token admin-user --duration=24h` to get a token for the admin dashboard
-
-### 4. Monitoring and Management
-
-#### 4.1. Check Deployment Status
-##### 4.1.1. Check all resources
-```
-kubectl get all
-```
-
-##### 4.1.2. Check pods status
-```
-kubectl get pods -w
-```
-
-##### 4.1.3. Check services
-```
-kubectl get services
-```
-
-##### 4.1.4. Check logs
-```
-kubectl logs deployment/backend
-kubectl logs deployment/frontend
-kubectl logs deployment/mongodb
-```
-
-#### 4.2. Troubleshooting Commands
-##### 4.2.1. Describe pods for detailed info
-```
-kubectl describe pod <pod-name>
-```
-
-##### 4.2.2. Check environment variables
-```
-kubectl describe deployment backend | grep -A10 Environment
-```
-
-##### 4.2.3. Check service endpoints
-```
-kubectl describe service mongodb
-kubectl describe service backend
-```
-
-#### 4.3. Cleanup
-##### 4.3.1. Delete all resources
-```
-kubectl delete -f ./
-kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
-```
-
-##### 4.3.2. Stop Minikube
-```
-minikube stop
-```
-
-##### 4.3.3. Delete Minikube cluster
-```
-minikube delete --all --purge
-rm -rf ~/.minikube
-eval $(minikube docker-env -u)
-```
-
-## API Reference
-### Authentication Endpoints
-- POST /api/auth/signin - Initiates SAML sign-in flow.
-- POST /api/auth/signout - Signs out the current user.
-
-### Time Record Endpoints
-- POST /api/records/checkin - Registers a check-in. Requires authentication.
-- POST /api/records/checkout - Registers a check-out. Requires authentication.
-- GET /api/records - Retrieves time records (user-specific or manager view). Requires authentication.
-
-
-## Troubleshooting
-MongoDB connection failed: Double-check your MONGODB_URI in the Secrets and ensure your MongoDB Atlas IP whitelist allows connections from your cluster.
-
-ImagePullBackOff error in Kubernetes: Ensure your Docker images are built and tagged correctly, and are available in your Minikube's Docker environment or a remote container registry.
-
-Backend service not found from Frontend: Confirm the backend service is running and check the BACKEND_URL configuration in the frontend ConfigMap.
-
-Checking Pod Logs: Use kubectl logs -f <pod-name> -n time-record-app to view logs from a specific pod for debugging.
+See [AGENTS.md](AGENTS.md) for coding conventions and architecture notes.

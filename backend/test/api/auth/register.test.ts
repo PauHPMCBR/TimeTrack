@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/validation', () => ({
-  validateRequestBody: () => (req: any, res: any, next: Function) => next(),
+  validateRequestBody: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
 }));
 
 vi.mock('@/models', () => ({

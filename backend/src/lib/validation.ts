@@ -2,34 +2,39 @@ import { responseErrorValidation } from '@/lib/response-error-generator';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodSchema } from 'zod/v3';
 
+type Next = (err?: unknown) => void;
+
 export const validateRequestBody = (schema: ZodSchema) => {
-  return (req: NextApiRequest, res: NextApiResponse, next: Function) => {
+  return (req: NextApiRequest, res: NextApiResponse, next: Next) => {
     try {
       if (typeof req.body === 'string') {
         try {
           req.body = JSON.parse(req.body);
-        } catch (parseError) {
-          console.log('Parse error: ', parseError);
-          return responseErrorValidation(res, ['Invalid JSON in request body'], 'Request body must be valid JSON');
+        } catch {
+          responseErrorValidation(res, ['Invalid JSON in request body'], 'Request body must be valid JSON');
+          return next();
         }
       }
 
       req.body = schema.parse(req.body);
-      next();
-    } catch (error: any) {
-      console.log('validation error: ', error);
-      return responseErrorValidation(res, error.errors, error.message);
+      return next();
+    } catch (error) {
+      const zodError = error as { errors?: unknown[]; message?: string };
+      responseErrorValidation(res, (zodError.errors ?? []) as string[], zodError.message ?? 'Validation failed');
+      return next();
     }
   };
 };
 
 export const validateQueryParams = (schema: ZodSchema) => {
-  return (req: NextApiRequest, res: NextApiResponse, next: Function) => {
+  return (req: NextApiRequest, res: NextApiResponse, next: Next) => {
     try {
       req.query = schema.parse(req.query);
-      next();
-    } catch (error: any) {
-      return responseErrorValidation(res, error.errors, error.message);
+      return next();
+    } catch (error) {
+      const zodError = error as { errors?: unknown[]; message?: string };
+      responseErrorValidation(res, (zodError.errors ?? []) as string[], zodError.message ?? 'Validation failed');
+      return next();
     }
   };
 };

@@ -121,7 +121,7 @@ describe('apiClient', () => {
       const mockResponse = { data: { user: { id: '3', name: 'Created' } } };
       mockFetchSuccess(mockResponse);
 
-      const result = await apiClient.createUser({ name: 'Created', email: 'created@example.com' });
+      const result = await apiClient.createUser({ name: 'Created', email: 'created@example.com', role: 'employee' });
 
       expect(result.data).toEqual(mockResponse.data);
     });
@@ -154,7 +154,7 @@ describe('apiClient', () => {
       const mockResponse = { data: { group: { id: 'g3', name: 'New Group' } } };
       mockFetchSuccess(mockResponse);
 
-      const result = await apiClient.createGroup({ name: 'New Group' });
+      const result = await apiClient.createGroup({ name: 'New Group', members: [] });
 
       expect(result.data).toEqual(mockResponse.data);
     });
@@ -244,7 +244,7 @@ describe('apiClient', () => {
       const mockResponse = { data: { group: { id: 'g1', name: 'Updated' } } };
       mockFetchSuccess(mockResponse);
 
-      const result = await apiClient.updateGroup('g1', { name: 'Updated' });
+      const result = await apiClient.updateGroup('g1', { name: 'Updated', members: [] });
 
       expect(result.data).toEqual(mockResponse.data);
     });
@@ -312,7 +312,7 @@ describe('apiClient', () => {
 
       const result = await apiClient.setYearlyVacationsAdmin({
         year: 2024,
-        obligatoryDays: ['2024-01-01'],
+        obligatoryDays: [new Date('2024-01-01')],
         electiveDaysTotalCount: 22,
       });
 
@@ -325,7 +325,7 @@ describe('apiClient', () => {
       const mockResponse = { data: { vacation: { id: 'v1', date: '2024-06-15' } } };
       mockFetchSuccess(mockResponse);
 
-      const result = await apiClient.createVacation({ date: '2024-06-15', reason: 'Family' });
+      const result = await apiClient.createVacation({ date: new Date('2024-06-15'), reason: 'Family' });
 
       expect(result.data).toEqual(mockResponse.data);
     });
@@ -407,7 +407,7 @@ describe('apiClient', () => {
 
       await apiClient.login({ email: 'test@example.com', password: 'wrong' });
 
-      expect(listener).toHaveBeenCalledWith(mockError, expect.objectContaining({ error: mockError }));
+      expect(listener).toHaveBeenCalledWith(mockError, {});
     });
   });
 

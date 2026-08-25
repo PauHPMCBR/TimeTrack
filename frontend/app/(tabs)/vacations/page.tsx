@@ -6,7 +6,6 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { ElectiveVacation, YearlyVacationDays } from "@/types";
 
-// Tipus per a les vacances agrupades
 type GroupedVacation = {
   ids: string[];
   startDate: Date;
@@ -23,23 +22,19 @@ export default function MyVacationsPage() {
   const [stats, setStats] = useState<YearlyVacationDays | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Estats del formulari
   const [date, setDate] = useState("");
   const [daysCount, setDaysCount] = useState(1);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   
-  // Estats per missatges
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [warningMsg, setWarningMsg] = useState<string | null>(null);
 
-  // Modal Cancel·lar
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [vacationsToCancel, setVacationsToCancel] = useState<string[]>([]);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // 1. Carregar dades
   const fetchData = async () => {
     try {
       const user = await apiClient.getCurrentUser();
@@ -63,11 +58,9 @@ export default function MyVacationsPage() {
     fetchData();
   }, []);
 
-  // --- LÒGICA D'AGRUPACIÓ CORREGIDA ---
   const groupedVacations = useMemo(() => {
     if (vacations.length === 0) return [];
 
-    // 1. Ordenem de MÉS NOU a MÉS VELL
     const sorted = [...vacations].sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -76,29 +69,22 @@ export default function MyVacationsPage() {
     
     sorted.forEach((vac) => {
         const vacDate = new Date(vac.date);
-        // Normalitzem hores per evitar problemes si es van crear a hores diferents
         vacDate.setHours(0, 0, 0, 0);
 
         const lastGroup = groups[groups.length - 1];
 
         if (lastGroup) {
-            // IMPORTANT: Com que anem cap enrere en el temps, hem de comparar 
-            // amb la data d'INICI del grup (que és la més "vella" del grup actualment)
             const groupStartDate = new Date(lastGroup.startDate);
             groupStartDate.setHours(0, 0, 0, 0);
 
-            // Calculem la diferència en mil·lisegons
             const diffTime = groupStartDate.getTime() - vacDate.getTime();
-            // Convertim a dies
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-            // Si la diferència és exactament 1 dia, és consecutiu
             const isConsecutive = diffDays === 1; 
             const sameStatus = lastGroup.status === vac.status;
             const sameReason = (lastGroup.reason || "") === (vac.reason || "");
 
             if (isConsecutive && sameStatus && sameReason) {
-                // Actualitzem la data d'inici perquè "vacDate" és anterior
                 lastGroup.startDate = new Date(vac.date); 
                 lastGroup.ids.push(vac._id);
                 lastGroup.daysCount += 1;
@@ -106,7 +92,6 @@ export default function MyVacationsPage() {
             }
         }
 
-        // Si no encaixa, creem grup nou
         groups.push({
             ids: [vac._id],
             startDate: new Date(vac.date),
@@ -120,7 +105,6 @@ export default function MyVacationsPage() {
     return groups;
   }, [vacations]);
 
-  // 2. Enviar sol·licitud
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date) return;
@@ -149,7 +133,7 @@ export default function MyVacationsPage() {
 
         if (res.error) {
           errorCount++;
-          if (res.error === 'IllegalAction' || res.error === 'AllVacationsUsed') {
+          if (res.error === 'IllegalAction') {
             limitExceeded = true;
           }
         } else {
@@ -185,7 +169,6 @@ export default function MyVacationsPage() {
     }
   };
 
-  // 3. Modals
   const openCancelModal = (ids: string[]) => {
     setVacationsToCancel(ids);
     setIsCancelModalOpen(true);
@@ -212,7 +195,6 @@ export default function MyVacationsPage() {
     }
   };
 
-  // Càlculs i Formats
   const totalDays = stats?.electiveDaysTotalCount || 22; 
   const usedDays = stats?.selectedElectiveDays?.length || 0;
   const remainingDays = totalDays - usedDays;
@@ -229,7 +211,6 @@ export default function MyVacationsPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-10 relative">
       
-      {/* HEADER */}
       <header className="flex w-full items-center px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-10">
         <Link href="/profile" className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
           <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -245,7 +226,6 @@ export default function MyVacationsPage() {
 
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
 
-        {/* KPI CARDS */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <dt>
@@ -284,7 +264,6 @@ export default function MyVacationsPage() {
             </div>
         </div>
 
-        {/* --- FORMULARI SOL·LICITUD --- */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">{t("vacations.request")}</h2>
             
@@ -371,7 +350,6 @@ export default function MyVacationsPage() {
             </form>
         </div>
 
-        {/* --- LLISTA HISTORIAL --- */}
         <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">{t("vacations.history")}</h2>
             
@@ -389,7 +367,6 @@ export default function MyVacationsPage() {
                             <div className="font-semibold text-zinc-900 dark:text-white">
                                 {formatDateRange(group.startDate, group.endDate)}
                             </div>
-                            {/* BADGE DE DIES TOTALS */}
                             {group.daysCount > 1 && (
                                 <span className="ml-2 rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                                     {group.daysCount} {t("vacations.days")}
@@ -397,7 +374,7 @@ export default function MyVacationsPage() {
                             )}
                         </div>
                         {group.reason && (
-                            <div className="ml-8 text-xs text-zinc-500 mt-0.5">"{group.reason}"</div>
+                            <div className="ml-8 text-xs text-zinc-500 mt-0.5">&quot;{group.reason}&quot;</div>
                         )}
                     </div>
                     
@@ -430,7 +407,6 @@ export default function MyVacationsPage() {
 
       </div>
 
-      {/* --- MODAL DE CANCEL·LACIÓ --- */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 animate-in zoom-in-95 duration-200">

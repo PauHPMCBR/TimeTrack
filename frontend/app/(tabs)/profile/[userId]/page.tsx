@@ -1,24 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
-import { WorkSession } from "@/types";
 import { YearlyVacationResponse, MonthlyWorkRecordResponse } from "@/schemas/api";
 import { Calendar } from "@/components/calendar/Calendar";
-import { ChevronLeft, Mail, Clock, CalendarDays } from "lucide-react";
+import { ChevronLeft, Mail, CalendarDays } from "lucide-react";
 
 function toLocale(lang: "ca" | "es" | "en"): string {
   return lang === "ca" ? "ca-ES" : lang === "es" ? "es-ES" : "en-US";
-}
-
-function fmtHM(hours: number, t: (k: string) => string) {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  const labelH = t("time.h") || "h";
-  const labelM = t("time.m") || "m";
-  return `${h}${labelH} ${m}${labelM}`;
 }
 
 export default function OtherUserProfilePage() {

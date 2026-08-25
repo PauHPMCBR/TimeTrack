@@ -24,10 +24,19 @@ spec:
             - name: MONGO_INITDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-secret
-                  key: root-password
+                  name: app-secrets
+                  key: mongodb-root-password
             - name: MONGO_INITDB_ROOT_USERNAME
               value: root
+            - name: MONGO_APP_USER
+              value: alumne
+            - name: MONGO_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: user-password
+            - name: SEED_DEMO
+              value: "0"
           image: mongo:6.0
           livenessProbe:
             exec:
@@ -51,6 +60,14 @@ spec:
           name: mongodb
           ports:
             - containerPort: 27017
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
           volumeMounts:
             - mountPath: /data/db
               name: mongodb-data

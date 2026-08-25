@@ -1,14 +1,30 @@
 "use client";
 
-import React, { createContext, useState, useContext, useCallback, useMemo } from "react";
+import React, { createContext, useState, useContext, useCallback, useEffect, useMemo } from "react";
 import ca from "../locales/ca.json";
 import es from "../locales/es.json";
 import en from "../locales/en.json";
 
 type Lang = "ca" | "es" | "en";
-type Dict = Record<string, string>;
+type DictValue = string | { [k: string]: DictValue };
+type Dict = Record<string, DictValue>;
 
 const dictionaries: Record<Lang, Dict> = { ca, es, en };
+const DEFAULT_LANG: Lang = "ca";
+
+function isLang(value: string | null): value is Lang {
+  return value === "ca" || value === "es" || value === "en";
+}
+
+// Resolve a dot-separated key ("vacations.submit") through a nested dictionary.
+function lookup(dict: Dict, key: string): string | undefined {
+  let node: DictValue | undefined = dict;
+  for (const part of key.split(".")) {
+    if (typeof node !== "object" || node === null) return undefined;
+    node = (node as Dict)[part];
+  }
+  return typeof node === "string" ? node : undefined;
+}
 
 type I18nContextType = {
   lang: Lang;
@@ -19,13 +35,20 @@ type I18nContextType = {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export default function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("lang") as Lang;
-      if (saved && (saved === "ca" || saved === "es" || saved === "en")) return saved;
+  // Start with the default so server and client render identically,
+  // then load the persisted language after mount (avoids hydration mismatch).
+  const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("lang");
+    if (isLang(saved) && saved !== DEFAULT_LANG) {
+      setLangState(saved);
     }
-    return "ca";
-  });
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
@@ -35,7 +58,7 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) => {
       const dict = (dictionaries[lang] || dictionaries.ca) as Dict;
-      let text = dict[key] || key;
+      let text = lookup(dict, key) ?? key;
       
       if (params) {
         Object.entries(params).forEach(([k, v]) => {

@@ -4,125 +4,96 @@ metadata:
   name: mongo-init-script
 data:
   mongo-init.js: |
-    sleep(1000);
-
-    print('Starting database initialization...');
-
-    db = db.getSiblingDB('admin');
-
-    try {
-      db.createUser({
-        user: 'root',
-        pwd: '09nwp43dFpFyBI3h4LmM',
-        roles: [{ role: 'root', db: 'admin' }]
-      });
-      print('Root user created in admin database');
-    } catch (error) {
-      print('Root user already exists: ' + error.message);
+    // MongoDB initialization script (runs inside the official mongo image on first start).
+    //
+    // Credentials come from environment variables set in docker-compose.yml:
+    //   - Root user is created automatically by the mongo image entrypoint from
+    //     MONGO_INITDB_ROOT_USERNAME / MONGO_INITDB_ROOT_PASSWORD.
+    //   - Application user is created here from MONGO_APP_USER / MONGO_APP_PASSWORD.
+    //
+    // Demo data (groups + admin account) is only seeded when SEED_DEMO=1.
+    // The demo admin password must be provided via DEMO_ADMIN_PASSWORD.
+    
+    const APP_USER = process.env.MONGO_APP_USER || 'alumne';
+    const APP_PASSWORD = process.env.MONGO_APP_PASSWORD;
+    if (!APP_PASSWORD) {
+      throw new Error('MONGO_APP_PASSWORD environment variable is required');
     }
-
-    // Creem la base de dades de l'aplicació
+    
+    print('Starting database initialization...');
+    
     db = db.getSiblingDB('myapp');
     print('myapp database created');
-
-    // Create collections
+    
     db.createCollection('users');
-    print('users collection created');
-
-    // Creem el usuari de l'aplicació
-    try {
-      db.createUser({
-        user: 'alumne',
-        pwd: 'XGmHckQJzwzFKwBo14YA',
-        roles: [
-          { role: 'readWrite', db: 'myapp' }
-        ]               
+    db.createCollection('groups');
+    db.createCollection('worksessions');
+    db.createCollection('electivevacations');
+    db.createCollection('yearlyvacationdays');
+    db.createCollection('worksessionreasons');
+    print('Collections created');
+    
+    db.createUser({
+      user: APP_USER,
+      pwd: APP_PASSWORD,
+      roles: [{ role: 'readWrite', db: 'myapp' }]
+    });
+    print(`Application user "${APP_USER}" created in myapp database`);
+    
+    if (process.env.SEED_DEMO === '1') {
+      const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD;
+      if (!DEMO_ADMIN_PASSWORD) {
+        throw new Error('SEED_DEMO=1 requires DEMO_ADMIN_PASSWORD to be set');
+      }
+    
+      print('Seeding demo data...');
+    
+      db.groups.insertMany([
+        { name: 'Development', description: 'Software development team', members: [], createdAt: new Date(), updatedAt: new Date() },
+        { name: 'Design', description: 'UI/UX design team', members: [], createdAt: new Date(), updatedAt: new Date() },
+        { name: 'Marketing', description: 'Marketing and communications', members: [], createdAt: new Date(), updatedAt: new Date() }
+      ]);
+      print('Demo groups created');
+    
+      // Global yearly vacation template
+      const year = new Date().getFullYear();
+      db.yearlyvacationdays.insertOne({
+        year,
+        obligatoryDays: [],
+        electiveDaysTotalCount: 22,
+        selectedElectiveDays: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
-      print('alumne user created in myapp database');
-    } catch (error) {
-      print('alumne user already exists: ' + error.message);
-    }
-
-    // Creem el usuari administrador de prova
-    try {
-      
+      print(`Global yearly vacation settings for ${year} created`);
+    
+      db.worksessionreasons.insertMany([
+        { type: 'check_in', reasonId: 'work_start', englishText: 'Start of work', spanishText: 'Inicio del trabajo', catalanText: 'Inici de la feina' },
+        { type: 'check_out', reasonId: 'work_end', englishText: 'End of work', spanishText: 'Fin del trabajo', catalanText: 'Fi de la feina' },
+        { type: 'check_out', reasonId: 'lunch_break', englishText: 'Lunch break', spanishText: 'Descanso para comer', catalanText: 'Descans per dinar' },
+        { type: 'check_in', reasonId: 'lunch_return', englishText: 'Return from lunch', spanishText: 'Vuelta de la comida', catalanText: 'Tornada del dinar' }
+      ]);
+      print('Work session reasons created');
+    
+      // Create the initial admin as UNREGISTERED. Open the printed link in the
+      // browser to choose a real password (hashed properly by the backend).
+      const registrationToken = crypto.randomBytes(32).toString('hex');
       db.users.insertOne({
         name: 'System Administrator',
         email: 'admin@company.com',
-        password: '$2b$12$CqmY1PBDB4XYX4XVaxxiz.fVWYVKK9RlzfqWPZETE9dH0FMlxyYHW', // hashed 'admin123'
-        registrationToken: crypto.randomBytes(32).toString('hex'),
-        registered: true,
+        registrationToken,
+        registered: false,
         role: 'admin',
         groups: [],
         failedLoginAttempts: 0,
         blocked: false,
-        blockedSince: undefined
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
-      print('Test data inserted');
-    } catch (error) {
-      print('Test data already exists: ' + error.message);
+      print('Demo admin user created (unregistered).');
+      print(`Complete registration at: http://localhost:3000/register/${registrationToken}`);
+    } else {
+      print('SEED_DEMO not enabled - skipping demo data.');
     }
-
-    // Insert work session reasons as separate documents
-    try {
-      // Check-in reasons
-      db.worksessionreasons.insertMany([
-        {
-          type: 'check_in',
-          reasonId: 'work',
-          englishText: 'Start work',
-          spanishText: 'Inicio de trabajo',
-          catalanText: 'Inici de treball'
-        },
-        {
-          type: 'check_in',
-          reasonId: 'extra_hours',
-          englishText: 'Extra hours',
-          spanishText: 'Horas extra',
-          catalanText: 'Hores extra'
-        },
-        // Check-out reasons
-        {
-          type: 'check_out',
-          reasonId: 'end_work',
-          englishText: 'End work',
-          spanishText: 'Fin de trabajo',
-          catalanText: 'Fi de treball'
-        },
-        {
-          type: 'check_out',
-          reasonId: 'lunch',
-          englishText: 'Lunch break',
-          spanishText: 'Pausa para comer',
-          catalanText: 'Pausa per dinar'
-        },
-        {
-          type: 'check_out',
-          reasonId: 'break',
-          englishText: 'Break',
-          spanishText: 'Descanso',
-          catalanText: 'Descans'
-        },
-        {
-          type: 'check_out',
-          reasonId: 'other',
-          englishText: 'Other',
-          spanishText: 'Otro',
-          catalanText: 'Altres'
-        }
-      ]);
-      print('Work session reasons inserted');
-    } catch (error) {
-      print('Work session reasons already exist: ' + error.message);
-    }
-
+    
     print('Database initialization completed successfully!');
-
-    function sleep(milliseconds) {
-      var start = new Date().getTime();
-      for (var i = 0; i < 1e7; i++) {
-        if ((new Date().getTime() - start) > milliseconds) {
-          break;
-        }
-      }
-    }

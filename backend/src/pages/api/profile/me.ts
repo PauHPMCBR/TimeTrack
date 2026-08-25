@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { authenticateToken, AuthRequest } from '@/lib/auth';
 import { User } from '@/models';

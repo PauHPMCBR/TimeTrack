@@ -14,16 +14,41 @@ spec:
       labels:
         io.kompose.service: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - env:
+            # NOTE: NEXT_PUBLIC_* variables are baked into the client bundle at
+            # image build time. Rebuild the image with
+            # --build-arg NEXT_PUBLIC_BACKEND_URL=<publicly-reachable-url>.
+            # This runtime entry only affects server-side rendering.
             - name: NEXT_PUBLIC_BACKEND_URL
-              value: "http://backend:3001"
+              value: "http://localhost:3001"
             - name: NODE_ENV
-              value: "development"
+              value: "production"
           image: godack/registre-jornada-frontend:1.0
           imagePullPolicy: Always
           name: frontend
           ports:
             - containerPort: 3000
-          resources: {}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       restartPolicy: Always

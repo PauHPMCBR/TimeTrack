@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  requireSameGroupOrAdmin: (handler: Function) => {
+  requireSameGroupOrAdmin: (handler: (req: unknown, res: unknown) => unknown) => {
     return async (req: any, res: any) => {
       req.user = { userId: 'user-123', email: 'test@example.com', role: 'employee' };
       return handler(req, res);
@@ -16,7 +16,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 vi.mock('@/lib/validation', () => ({
-  validateQueryParams: () => (req: any, res: any, next: Function) => next(),
+  validateQueryParams: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
 }));
 
 vi.mock('@/models', () => ({
@@ -100,7 +100,7 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
       .mockResolvedValueOnce({ year: 2024, electiveDaysTotalCount: 22, obligatoryDays: ['2024-01-01'] })  // globalSettings
       .mockResolvedValueOnce(null);  // user yearly not found
 
-    vi.mocked(YearlyVacationDays.create).mockResolvedValue({
+    vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({
       year: 2024,
       userId: 'user-456',
       obligatoryDays: ['2024-01-01'],

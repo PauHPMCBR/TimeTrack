@@ -1,10 +1,9 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole, requireSameGroupOrAdmin } from '@/lib/auth';
+import { AuthRequest, requireRole } from '@/lib/auth';
 import { ElectiveVacation, YearlyVacationDays } from '@/models';
 import { responseErrorGet, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
-import { UserYearParamSchema, YearlyVacationResponse } from 'shared/src/schemas/api';
+import { YearlyVacationResponse } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
