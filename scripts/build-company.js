@@ -33,121 +33,145 @@
 //   }
 import { readFileSync, cpSync, rmSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const brandingDir = join(repoRoot, "branding");
-const deployConfigPath = join(repoRoot, "deploy-docs", "config.json");
 
-function usage() {
-  console.error(
-    "Usage: node scripts/build-company.js --config <company.json> [--backend] [--domain <root-domain>] [--push-tag <registry>]"
-  );
-  process.exit(1);
+export function readCompanyConfig(path) {
+  return JSON.parse(readFileSync(resolve(path), "utf8"));
 }
 
-const argv = process.argv.slice(2);
-const args = {};
-for (let i = 0; i < argv.length; i++) {
-  if (argv[i] === "--config") args.config = argv[++i];
-  else if (argv[i] === "--backend") args.backend = true;
-  else if (argv[i] === "--push-tag") args.pushTag = argv[++i];
-  else if (argv[i] === "--domain") args.domain = argv[++i];
-  else usage();
-}
-if (!args.config) usage();
-
-const cfg = JSON.parse(readFileSync(resolve(args.config), "utf8"));
-const { subdomain } = cfg;
-if (!subdomain) {
-  console.error("Config must include 'subdomain'.");
-  process.exit(1);
+export function resolveDomain({ repoRoot: root = repoRoot, flag, env }) {
+  let domain = flag || env;
+  const cfgPath = join(root, "deploy-docs", "config.json");
+  if (!domain && existsSync(cfgPath)) {
+    try {
+      domain = JSON.parse(readFileSync(cfgPath, "utf8")).domain;
+    } catch {
+      domain = undefined;
+    }
+  }
+  return domain;
 }
 
-// Resolve the root domain (deployment context, never part of company config).
-let domain = args.domain || process.env.DEPLOY_DOMAIN;
-if (!domain && existsSync(deployConfigPath)) {
-  try {
-    domain = JSON.parse(readFileSync(deployConfigPath, "utf8")).domain;
-  } catch {
-    domain = undefined;
+export function stageBranding(cfg, dir = brandingDir) {
+  mkdirSync(dir, { recursive: true });
+  rmSync(join(dir, "icon.png"), { force: true });
+  rmSync(join(dir, "favicon.png"), { force: true });
+  if (cfg.iconFile) {
+    cpSync(resolve(cfg.iconFile), join(dir, "icon.png"));
+  }
+  if (cfg.faviconFile) {
+    cpSync(resolve(cfg.faviconFile), join(dir, "favicon.png"));
   }
 }
-if (!domain) {
-  console.error(
-    "No root domain configured. Pass --domain <root-domain>, set DEPLOY_DOMAIN,\n" +
-      "or create deploy-docs/config.json with { \"domain\": \"example.com\" }."
+
+export function buildFrontend(cfg, domain, root = repoRoot) {
+  const appName = cfg.name || "TimeTrack360";
+  const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
+  stageBranding(cfg);
+  execFileSync(
+    "docker",
+    [
+      "build",
+      "-f",
+      "frontend/Dockerfile",
+      "--build-arg",
+      `NEXT_PUBLIC_BACKEND_URL=${backendUrl}`,
+      "--build-arg",
+      `NEXT_PUBLIC_APP_NAME=${appName}`,
+      "-t",
+      `registre-jornada-frontend:${cfg.subdomain}`,
+      ".",
+    ],
+    { cwd: root, stdio: "inherit" }
   );
-  process.exit(1);
 }
 
-const frontendTag = `registre-jornada-frontend:${subdomain}`;
-const backendTag = "registre-jornada-backend:latest";
-const appName = cfg.name || "TimeTrack360";
-const backendUrl = cfg.backendUrl || `https://api.${subdomain}.${domain}`;
-const frontendUrl = cfg.frontendUrl || `https://${subdomain}.${domain}`;
-
-// 1. Stage branding files (absolute paths) into branding/ for the build.
-//    Clear previous files first so stale logos never leak across companies.
-mkdirSync(brandingDir, { recursive: true });
-rmSync(join(brandingDir, "icon.png"), { force: true });
-rmSync(join(brandingDir, "favicon.png"), { force: true });
-if (cfg.iconFile) {
-  cpSync(resolve(cfg.iconFile), join(brandingDir, "icon.png"));
-}
-if (cfg.faviconFile) {
-  cpSync(resolve(cfg.faviconFile), join(brandingDir, "favicon.png"));
-}
-
-// 2. Build the frontend image.
-execFileSync(
-  "docker",
-  [
-    "build",
-    "-f",
-    "frontend/Dockerfile",
-    "--build-arg",
-    `NEXT_PUBLIC_BACKEND_URL=${backendUrl}`,
-    "--build-arg",
-    `NEXT_PUBLIC_APP_NAME=${appName}`,
-    "-t",
-    frontendTag,
-    ".",
-  ],
-  { cwd: repoRoot, stdio: "inherit" }
-);
-
-// 3. Optionally build the backend and/or push.
-if (args.backend) {
-  execFileSync("docker", ["build", "-f", "backend/Dockerfile", "-t", backendTag, "."], {
-    cwd: repoRoot,
+export function buildBackend(root = repoRoot) {
+  execFileSync("docker", ["build", "-f", "backend/Dockerfile", "-t", "registre-jornada-backend:latest", "."], {
+    cwd: root,
     stdio: "inherit",
   });
 }
-if (args.pushTag) {
-  execFileSync("docker", ["tag", frontendTag, `${args.pushTag}:${subdomain}`], { stdio: "inherit" });
-  execFileSync("docker", ["push", `${args.pushTag}:${subdomain}`], { stdio: "inherit" });
-  if (args.backend) {
-    execFileSync("docker", ["tag", backendTag, `${args.pushTag}:backend`], { stdio: "inherit" });
-    execFileSync("docker", ["push", `${args.pushTag}:backend`], { stdio: "inherit" });
-  }
-}
 
-// 4. Print what the operator needs for compose + Caddy.
-console.log(`\n=== ${subdomain}.${domain} ===
+export function printInfo(cfg, domain) {
+  const frontendTag = `registre-jornada-frontend:${cfg.subdomain}`;
+  const backendTag = "registre-jornada-backend:latest";
+  const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
+  const frontendUrl = cfg.frontendUrl || `https://${cfg.subdomain}.${domain}`;
+
+  console.log(`\n=== ${cfg.subdomain}.${domain} ===
 frontend:  ${frontendTag}
 backend:   ${backendTag}
 frontendUrl: ${frontendUrl}
 backendUrl:  ${backendUrl}
 
 Caddyfile entries to append (Caddyfile):
-${subdomain}.${domain}         { reverse_proxy ${subdomain}-frontend:3000 }
-api.${subdomain}.${domain}     { reverse_proxy ${subdomain}-backend:3001 }
+${cfg.subdomain}.${domain}         { reverse_proxy ${cfg.subdomain}-frontend:3000 }
+api.${cfg.subdomain}.${domain}     { reverse_proxy ${cfg.subdomain}-backend:3001 }
 
-Per-company compose (companies/${subdomain}/compose.yml):
-  container_name: "${subdomain}-frontend"
-  container_name: "${subdomain}-backend"
+Per-company compose (companies/${cfg.subdomain}/compose.yml):
+  container_name: "${cfg.subdomain}-frontend"
+  container_name: "${cfg.subdomain}-backend"
   FRONTEND_URL: ${frontendUrl}
-  MONGODB_URI: mongodb://${subdomain}:<db-password>@mongodb:27017/myapp_${subdomain}?authSource=myapp_${subdomain}`);
+  MONGODB_URI: mongodb://${cfg.subdomain}:<db-password>@mongodb:27017/myapp_${cfg.subdomain}?authSource=myapp_${cfg.subdomain}`);
+}
+
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMain) {
+  function usage() {
+    console.error(
+      "Usage: node scripts/build-company.js --config <company.json> [--backend] [--domain <root-domain>] [--push-tag <registry>]"
+    );
+    process.exit(1);
+  }
+
+  const argv = process.argv.slice(2);
+  const args = {};
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--config") args.config = argv[++i];
+    else if (argv[i] === "--backend") args.backend = true;
+    else if (argv[i] === "--push-tag") args.pushTag = argv[++i];
+    else if (argv[i] === "--domain") args.domain = argv[++i];
+    else usage();
+  }
+  if (!args.config) usage();
+
+  const cfg = readCompanyConfig(args.config);
+  if (!cfg.subdomain) {
+    console.error("Config must include 'subdomain'.");
+    process.exit(1);
+  }
+
+  const domain = resolveDomain({ flag: args.domain, env: process.env.DEPLOY_DOMAIN });
+  if (!domain) {
+    console.error(
+      "No root domain configured. Pass --domain <root-domain>, set DEPLOY_DOMAIN,\n" +
+        "or create deploy-docs/config.json with { \"domain\": \"example.com\" }."
+    );
+    process.exit(1);
+  }
+
+  buildFrontend(cfg, domain);
+
+  if (args.backend) {
+    buildBackend();
+  }
+  if (args.pushTag) {
+    execFileSync("docker", ["tag", `registre-jornada-frontend:${cfg.subdomain}`, `${args.pushTag}:${cfg.subdomain}`], {
+      stdio: "inherit",
+    });
+    execFileSync("docker", ["push", `${args.pushTag}:${cfg.subdomain}`], { stdio: "inherit" });
+    if (args.backend) {
+      execFileSync("docker", ["tag", "registre-jornada-backend:latest", `${args.pushTag}:backend`], { stdio: "inherit" });
+      execFileSync("docker", ["push", `${args.pushTag}:backend`], { stdio: "inherit" });
+    }
+  }
+
+  printInfo(cfg, domain);
+}
