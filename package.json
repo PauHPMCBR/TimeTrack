@@ -15,7 +15,8 @@
     "test": "npm run test --workspaces",
     "test:run": "npm run test:run --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    "build:company": "node scripts/build-company.js"
+    "build:company": "node scripts/build-company.js",
+    "deploy:all": "node scripts/deploy-all.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
