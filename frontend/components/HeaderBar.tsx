@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Avatar from "@/components/Avatar";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { User } from "@/types";
@@ -40,15 +41,13 @@ export default function HeaderBar() {
           onClick={() => setOpen(!open)}
           className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center font-bold shadow-sm hover:scale-105 transition-transform text-sm overflow-hidden"
         >
-          {user?.avatar ? (
-            <img
-              src={apiClient.getAvatarUrl(user._id, user.avatar)}
-              alt={user.name || "avatar"}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            initial
-          )}
+          <Avatar
+            userId={user?._id ?? ""}
+            version={user?.avatar ?? null}
+            fallback={initial}
+            className="h-full w-full object-cover"
+            fallbackClassName="h-full w-full"
+          />
         </button>
 
         {open && (

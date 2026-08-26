@@ -9,6 +9,7 @@ import { formatHM, toLocalDateKey } from "@/lib/datetime";
 import { usePathname } from "next/navigation";
 import { Building2, Users, ShieldCheck, LayoutGrid, ChevronRight, Camera } from "lucide-react";
 import Card from "@/components/ui/Card";
+import Avatar from "@/components/Avatar";
 
 const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
 const AVATAR_TYPES = [
@@ -202,17 +203,14 @@ export default function ProfilePage() {
     <section className="space-y-6 pb-20">
       <div className="flex items-center gap-4">
         <div className="relative">
-          {user.avatar ? (
-            <img
-              src={apiClient.getAvatarUrl(user._id, user.avatar)}
-              alt={displayName}
-              className="h-16 w-16 rounded-full object-cover shadow-lg"
-            />
-          ) : (
-            <div className="grid h-16 w-16 place-items-center rounded-full bg-indigo-600 text-white shadow-lg">
-              <span className="text-2xl font-bold">{initials}</span>
-            </div>
-          )}
+          <Avatar
+            userId={user._id}
+            version={user.avatar}
+            alt={displayName}
+            fallback={initials}
+            className="h-16 w-16 rounded-full object-cover shadow-lg"
+            fallbackClassName="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-lg"
+          />
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
