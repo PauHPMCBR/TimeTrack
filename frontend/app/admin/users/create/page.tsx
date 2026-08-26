@@ -7,7 +7,7 @@ import { apiClient } from "@/lib/api";
 import type { CreateUserRequest } from "@/schemas/api";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher"; 
 import Button from "@/components/ui/Button";
-import { ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, Check } from "lucide-react";
 
 export default function CreateUserPage() {
   const { t } = useI18n(); 
@@ -107,7 +107,7 @@ export default function CreateUserPage() {
       {/* --- TOP BAR (HEADER) --- */}
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/profile" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronRight className="mr-1 h-4 w-4" />
+          <ChevronLeft className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
 

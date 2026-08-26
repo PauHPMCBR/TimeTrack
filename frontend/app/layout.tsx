@@ -18,11 +18,11 @@ export const metadata: Metadata = {
 // 🟢 Script per inicialitzar el tema abans de React (evita parpelleig)
 const themeInitScript = `
   try {
-    var _theme = localStorage.getItem('theme') || 'mocha';
+    var _theme = localStorage.getItem('theme') || 'latte';
     if (_theme === 'dark') _theme = 'mocha';
     else if (_theme === 'light') _theme = 'latte';
     var _valid = ['latte', 'frappe', 'macchiato', 'mocha'].indexOf(_theme) !== -1;
-    if (!_valid) _theme = 'mocha';
+    if (!_valid) _theme = 'latte';
     var _root = document.documentElement;
     _root.setAttribute('data-theme', _theme);
     _root.classList.toggle('dark', _theme !== 'latte');

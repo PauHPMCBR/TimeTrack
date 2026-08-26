@@ -8,7 +8,7 @@ import { Group } from "@/types";
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { ChevronRight, Plus, Edit2, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Edit2, Trash2 } from "lucide-react";
 
 export default function GroupsListPage() {
   const { t } = useI18n();
@@ -77,7 +77,7 @@ export default function GroupsListPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 relative">
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronRight className="mr-1 h-4 w-4" />
+          <ChevronLeft className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />

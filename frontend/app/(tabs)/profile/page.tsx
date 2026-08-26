@@ -46,7 +46,7 @@ export default function ProfilePage() {
   const [sessions, setSessions] = useState<WorkSession[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [theme, setTheme] = useState<ThemeFlavor>("mocha");
+  const [theme, setTheme] = useState<ThemeFlavor>("latte");
   const [timeFmt, setTimeFmt] = useState<"24" | "12">("24");
   const [now, setNow] = useState(() => Date.now());
 
@@ -149,7 +149,7 @@ export default function ProfilePage() {
   }, [pathname]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme") || "mocha";
+    const saved = localStorage.getItem("theme") || "latte";
     const normalized =
       saved === "light" ? "latte" : saved === "dark" ? "mocha" : saved;
     const savedTheme: ThemeFlavor = FLAVORS.some((f) => f.id === normalized)
