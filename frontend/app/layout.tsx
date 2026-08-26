@@ -13,6 +13,9 @@ const sora = Sora({ subsets: ["latin"], variable: "--font-display" });
 export const metadata: Metadata = {
   title: APP_NAME,
   description: "Employee time tracking application",
+  icons: {
+    icon: [{ url: FAVICON_URL ?? "/favicon.ico", sizes: "any" }],
+  },
 };
 
 // 🟢 Script per inicialitzar el tema abans de React (evita parpelleig)
@@ -34,7 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ca" suppressHydrationWarning className={sora.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        {FAVICON_URL && <link rel="icon" href={FAVICON_URL} sizes="any" />}
       </head>
       <body
         className={`${inter.className} min-h-dvh antialiased
