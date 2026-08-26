@@ -59,3 +59,4 @@ branding/favicon.png
 
 # Local runtime data dir (backend DATA_DIR, profile pictures in dev)
 backend/data/
+deploy-docs
