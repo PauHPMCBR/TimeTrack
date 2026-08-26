@@ -8,6 +8,11 @@ COPY shared/package.json shared/package.json
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 
+# Install dependencies before copying sources so the expensive `npm ci` layer is
+# cached across deploys (it only reruns when the manifests change). The cache
+# mount persists the npm cache between builds, avoiding re-downloads.
+RUN --mount=type=cache,target=/root/.npm npm ci
+
 # Copy workspace sources needed for the build
 COPY shared ./shared
 COPY frontend ./frontend
@@ -15,8 +20,6 @@ COPY frontend ./frontend
 # Optional per-company branding (see branding/README.md). The folder is always
 # copied; icon.png / favicon.png inside it override the defaults if present.
 COPY branding ./branding
-
-RUN npm ci
 
 ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
@@ -45,7 +48,9 @@ RUN mkdir -p public/brand && rm -f /app/brand.env && { \
       fi; \
     }
 
-RUN set -a; [ -f /app/brand.env ] && . /app/brand.env || true; set +a; npm run build
+# Persist Next.js's build cache across builds so unchanged code recompiles much
+# faster on repeat deploys.
+RUN --mount=type=cache,target=/app/frontend/.next/cache set -a; [ -f /app/brand.env ] && . /app/brand.env || true; set +a; npm run build
 
 # Stage 2: Runner
 FROM node:22-alpine AS runner
@@ -69,7 +74,7 @@ COPY --from=builder /app/shared/package.json /app/shared/package.json
 
 # Install production dependencies only
 WORKDIR /app
-RUN npm ci --omit=dev && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
 
 WORKDIR /app/frontend
 USER web
