@@ -1,0 +1,6 @@
+{
+  "subdomain": "acme",
+  "name": "ACME",
+  "iconFile": "/absolute/path/to/acme/logo.png",
+  "faviconFile": "/absolute/path/to/acme/favicon.png"
+}

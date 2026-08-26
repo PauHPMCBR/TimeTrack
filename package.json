@@ -14,7 +14,8 @@
     "lint": "npm run lint -w @registre-jornada/backend -w @registre-jornada/frontend",
     "test": "npm run test --workspaces",
     "test:run": "npm run test:run --workspaces",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "build:company": "node scripts/build-company.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

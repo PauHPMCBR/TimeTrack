@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/api";
 import { YearlyVacationResponse, MonthlyWorkRecordResponse } from "@/schemas/api";
 import { Calendar } from "@/components/calendar/Calendar";
 import { ChevronLeft, Mail, CalendarDays } from "lucide-react";
+import Card from "@/components/ui/Card";
 
 function toLocale(lang: "ca" | "es" | "en"): string {
   return lang === "ca" ? "ca-ES" : lang === "es" ? "es-ES" : "en-US";
@@ -131,7 +132,7 @@ export default function OtherUserProfilePage() {
         />
         
         {workSessions && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <Card className="p-4">
             <div className="font-medium mb-2 text-zinc-900 dark:text-white">{t('calendar.workSummary')}</div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
@@ -147,7 +148,7 @@ export default function OtherUserProfilePage() {
                 <div className="text-lg font-semibold text-zinc-900 dark:text-white">{workSessions.summary.daysWithSessions}</div>
               </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </section>

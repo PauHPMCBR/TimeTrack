@@ -6,6 +6,8 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import { User } from "@/types"; 
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
+import Card from "@/components/ui/Card";
+import { ChevronRight, UserPlus } from "lucide-react";
 
 export default function UsersListPage() {
   const { t } = useI18n();
@@ -41,9 +43,7 @@ export default function UsersListPage() {
       <header className="flex w-full items-center justify-between px-6 py-4">
         {/* Canviat: Ara torna al menú d'Admin (/admin), no al perfil */}
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
@@ -63,13 +63,13 @@ export default function UsersListPage() {
             href="/admin/users/create" 
             className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <UserPlus size={16} />
             {t("admin.dashboard.addUser")}
           </Link>
         </div>
 
         {/* LLISTA */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="overflow-hidden">
           {loading ? (
              <div className="p-8 text-center text-sm text-zinc-500 animate-pulse">
                 {t("common.loading")}
@@ -106,8 +106,8 @@ export default function UsersListPage() {
                                 {t("admin.users.registered")}
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20 dark:bg-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
-                                <span className="h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+                            <div className="flex items-center gap-2 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
                                 {t("admin.users.pendingActivation")}
                             </div>
                         )}
@@ -116,7 +116,7 @@ export default function UsersListPage() {
                 ))}
             </ul>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

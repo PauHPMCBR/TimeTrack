@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api";
 import { WorkSessionRequest } from "@/schemas/api";
 import { WorkSession, WorksessionReason, User } from "@/types";
 import { toLocalDateKey, formatHM } from "@/lib/datetime";
+import Card from "@/components/ui/Card";
 
 export default function CheckInPage() {
   const { t, lang } = useI18n();
@@ -172,7 +173,7 @@ export default function CheckInPage() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="p-5">
         <h1 className="text-lg font-semibold">{t("checkin.todaySummary")}</h1>
         <div className="mt-3 grid grid-cols-2 gap-4">
           <div className="text-center">
@@ -192,9 +193,9 @@ export default function CheckInPage() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="p-5">
         <h2 className="text-lg font-semibold">{t("checkin.title")}</h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
           {activeSession 
@@ -253,10 +254,10 @@ export default function CheckInPage() {
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
-      </div>
+      </Card>
 
       {todaySummary.sessions.length > 0 && (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-5">
           <h3 className="text-lg font-semibold mb-3">{t("checkin.todaySessions")}</h3>
           <div className="space-y-3">
             {todaySummary.sessions
@@ -298,7 +299,7 @@ export default function CheckInPage() {
                 );
               })}
           </div>
-        </div>
+        </Card>
       )}
     </section>
   );

@@ -6,6 +6,8 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import type { CreateUserRequest } from "@/schemas/api";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher"; 
+import Button from "@/components/ui/Button";
+import { ChevronRight, Check } from "lucide-react";
 
 export default function CreateUserPage() {
   const { t } = useI18n(); 
@@ -105,9 +107,7 @@ export default function CreateUserPage() {
       {/* --- TOP BAR (HEADER) --- */}
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/profile" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
 
@@ -126,7 +126,7 @@ export default function CreateUserPage() {
         {inviteLink ? (
           <div className="rounded-2xl border border-green-200 bg-green-50 p-6 text-center shadow-sm dark:border-green-900/30 dark:bg-green-900/10">
             <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/20">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <Check size={24} />
             </div>
             
             <h3 className="text-lg font-medium text-green-900 dark:text-green-300">
@@ -247,10 +247,11 @@ export default function CreateUserPage() {
             </div>
 
             {/* Submit Button */}
-            <button 
+            <Button 
               type="submit" 
               disabled={loading}
-              className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-md transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-70 dark:focus:ring-offset-zinc-900"
+              variant="primary"
+              className="mt-8 w-full"
             >
               {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -258,7 +259,7 @@ export default function CreateUserPage() {
                       {t("common.loading")}
                   </span>
               ) : t("admin.btn.create")}
-            </button>
+            </Button>
           </form>
         )}
       </div>

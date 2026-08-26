@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from '@/app/i18n';
+import { APP_NAME, APP_ICON_URL } from "@/lib/brand";
 import { apiClient } from "@/lib/api";
 import { Alert } from "./ui/Alert";
 import { LoginRequestSchema } from "@/schemas/api";
+import { Clock } from "lucide-react";
+import Button from "./ui/Button";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -57,12 +60,13 @@ export default function LoginForm() {
     >
       <div className="mb-6 flex flex-col items-center">
         <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-            <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          {APP_ICON_URL ? (
+            <img src={APP_ICON_URL} alt={APP_NAME} className="h-10 w-10 rounded-2xl object-contain" />
+          ) : (
+            <Clock size={20} />
+          )}
         </div>
-        <div className="text-2xl font-bold">TimeTrack360</div>
+        <div className="text-2xl font-bold">{APP_NAME}</div>
         <div className="text-xs text-zinc-500">{t("brand.tagline")}</div>
       </div>
 
@@ -111,13 +115,9 @@ export default function LoginForm() {
           </Alert>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} className="w-full" size="lg">
           {loading ? t("common.loading") : t("login.submit")}
-        </button>
+        </Button>
       </div>
     </form>
   );

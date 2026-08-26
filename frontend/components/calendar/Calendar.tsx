@@ -4,6 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import { CalendarProps, CalendarDayData, VacationEvent } from "@/types/calendar";
 import { CalendarDay } from "./CalendarDay";
 import { CalendarTooltip, getVacationClass } from "./CalendarTooltip";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
@@ -231,12 +233,12 @@ export function Calendar({
               />
             </div>
             <div className="border-t border-zinc-200 dark:border-zinc-700 p-4 flex justify-end">
-              <button
+              <Button
                 onClick={closeModal}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+                variant="primary"
               >
                 {t('common.close')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -244,29 +246,31 @@ export function Calendar({
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
-        <button
+        <Button
           onClick={prevMonth}
-          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
+          variant="secondary"
+          size="sm"
           disabled={loading}
         >
           ← {t("calendar.prevMonth")}
-        </button>
+        </Button>
 
         <div className="text-lg font-semibold flex items-center gap-2">
           {monthLabel}
         </div>
 
-        <button
+        <Button
           onClick={nextMonth}
-          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/60"
+          variant="secondary"
+          size="sm"
           disabled={loading}
         >
           {t("calendar.nextMonth")} →
-        </button>
+        </Button>
       </div>
 
       {/* Calendar Grid */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="overflow-hidden">
         <div className="grid grid-cols-7 border-b border-zinc-200 text-center text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
           {["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"].map((d) => (
             <div key={d} className="px-2 py-2">{d}</div>
@@ -297,7 +301,7 @@ export function Calendar({
             );
           })}
         </div>
-      </div>
+      </Card>
     </section>
   );
 }

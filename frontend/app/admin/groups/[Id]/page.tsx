@@ -7,6 +7,9 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { User } from "@/types"; 
 import LanguageSwitcher from "../../../../components/LanguageSwitcher"; 
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import { ChevronRight, Check } from "lucide-react";
 
 export default function EditGroupPage() {
   const { t } = useI18n();
@@ -116,14 +119,14 @@ export default function EditGroupPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin/groups" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
       </header>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-8">
           <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-white">
             {t("admin.groups.editTitle")}
           </h1>
@@ -199,7 +202,7 @@ export default function EditGroupPage() {
                                     <div className={`h-5 w-5 rounded-full border flex items-center justify-center ${
                                         isSelected ? "bg-indigo-600 border-indigo-600" : "border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                                     }`}>
-                                        {isSelected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                 </div>
                             );
@@ -208,20 +211,21 @@ export default function EditGroupPage() {
                 )}
             </div>
 
-            <button
+            <Button
                 type="submit"
                 disabled={saving}
-                className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+                variant="primary"
+                className="w-full"
             >
                 {saving ? t("common.saving") : t("common.save")}
-            </button>
+            </Button>
             {error && (
                 <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                     {t(`error.${error}`)}
                 </div>
             )}
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

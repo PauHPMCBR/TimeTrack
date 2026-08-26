@@ -13,7 +13,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <main className="mx-auto flex min-h-[80dvh] w-full max-w-3xl items-center justify-center px-4">
+      <main className="mx-auto flex min-h-[80dvh] w-full max-w-3xl animate-fade-in items-center justify-center px-4">
         <LoginForm></LoginForm>
       </main>
     </div>

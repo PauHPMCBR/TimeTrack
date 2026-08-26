@@ -7,6 +7,7 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { User, Group } from "@/types";
 import { Users, ChevronLeft, Mail } from "lucide-react";
+import Card from "@/components/ui/Card";
 
 export default function GroupDetailPage() {
   const { t } = useI18n();
@@ -86,7 +87,7 @@ export default function GroupDetailPage() {
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{group.name}</h1>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="p-6">
         <div className="flex items-center gap-4 mb-4">
           <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
             <Users size={24} />
@@ -98,7 +99,7 @@ export default function GroupDetailPage() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">

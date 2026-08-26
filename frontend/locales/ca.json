@@ -241,9 +241,11 @@
     "statusInactive": "No actiu",
     "subtitle": "Perfil i hores",
     "theme": {
-      "dark": "Fosc",
       "label": "Tema",
-      "light": "Clar"
+      "latte": "Latte",
+      "frappe": "Frappé",
+      "macchiato": "Macchiato",
+      "mocha": "Mocha"
     },
     "thisWeek": "Aquesta setmana",
     "timeFormat": "Format d'hora",

@@ -6,6 +6,7 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { Group } from "@/types";
 import { Users, ChevronRight } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function UserGroupsPage() {
   const { t } = useI18n();
@@ -43,9 +44,11 @@ export default function UserGroupsPage() {
         {loading ? (
           <div className="p-8 text-center text-sm text-zinc-500 animate-pulse">{t("common.loading")}</div>
         ) : groups.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
-            {t("groups.empty")}
-          </div>
+          <EmptyState
+            icon={<Users size={24} />}
+            title={t("groups.empty")}
+            description={t("groups.subtitle")}
+          />
         ) : (
           groups.map((group) => (
             <Link

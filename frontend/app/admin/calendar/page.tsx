@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
+import Card from "@/components/ui/Card";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 export default function GlobalCalendarPage() {
   const { t, lang } = useI18n();
@@ -75,7 +77,7 @@ export default function GlobalCalendarPage() {
       
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
@@ -89,15 +91,15 @@ export default function GlobalCalendarPage() {
             
             <div className="flex gap-2">
                 <button onClick={() => changeMonth(-1)} className="p-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
-                    <svg className="h-5 w-5 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    <ChevronRight className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                 </button>
                 <button onClick={() => changeMonth(1)} className="p-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
-                    <svg className="h-5 w-5 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    <ChevronLeft className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                 </button>
             </div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="overflow-hidden">
             <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
                 {weekDays.map((day) => (
                     <div key={day} className="py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -134,7 +136,7 @@ export default function GlobalCalendarPage() {
                                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
                                                 : v.status === 'rejected'
                                                 ? 'bg-red-50 text-red-400 line-through opacity-50'
-                                                : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                                         }`}
                                         title={`${v.userId?.name} (${v.status})`}
                                     >
@@ -146,7 +148,7 @@ export default function GlobalCalendarPage() {
                     );
                 })}
             </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
