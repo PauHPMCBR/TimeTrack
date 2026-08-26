@@ -159,6 +159,32 @@ describe('apiClient', () => {
     });
   });
 
+  describe('getAvatarBlob', () => {
+    it('should fetch the avatar with the auth token and return a blob', async () => {
+      const blob = new Blob(['image'], { type: 'image/jpeg' });
+      localStorage.setItem('auth_token', 'token123');
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) }) as any;
+
+      const result = await apiClient.getAvatarBlob('user-1', 'user-1-1700000000000.jpg');
+
+      expect(result).toBe(blob);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/profile/user-1/avatar'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer token123' }),
+        })
+      );
+    });
+
+    it('should return null on error or missing avatar', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ ok: false }) as any;
+      expect(await apiClient.getAvatarBlob('user-1', 'v1')).toBeNull();
+
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network error')) as any;
+      expect(await apiClient.getAvatarBlob('user-1', 'v1')).toBeNull();
+    });
+  });
+
   describe('getGroupInfo', () => {
     it('should fetch group info', async () => {
       const mockResponse = { data: { group: { id: 'g1', name: 'Team' } } };

@@ -154,9 +154,21 @@ class ApiClient {
     return res;
   }
 
-  getAvatarUrl(userId: string, version?: string | null): string {
-    const base = `${API_BASE_URL}/api/profile/${userId}/avatar`;
-    return version ? `${base}?v=${encodeURIComponent(version)}` : base;
+  // Avatars are fetched with the auth token (an <img> tag can't send the JWT,
+  // and an unauthenticated request would be blocked by the browser), then
+  // displayed via a blob URL.
+  async getAvatarBlob(userId: string, version?: string | null): Promise<Blob | null> {
+    const token = localStorage.getItem('auth_token');
+    const endpoint = `/api/profile/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) return null;
+      return await response.blob();
+    } catch {
+      return null;
+    }
   }
 
   async createUser(userCreated: CreateUserRequest): Promise<ApiResponse<{ user: User, registrationLink?: string, registrationToken?: string }>> {
