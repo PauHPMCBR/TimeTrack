@@ -8,11 +8,14 @@ COPY shared/package.json shared/package.json
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 
+# Install dependencies before copying sources so the expensive `npm ci` layer is
+# cached across deploys (it only reruns when the manifests change). The cache
+# mount persists the npm cache between builds, avoiding re-downloads.
+RUN --mount=type=cache,target=/root/.npm npm ci
+
 # Copy workspace sources needed for the build
 COPY shared ./shared
 COPY backend ./backend
-
-RUN npm ci
 
 WORKDIR /app/backend
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -42,7 +45,7 @@ COPY --from=builder /app/shared/package.json /app/shared/package.json
 
 # Install production dependencies only
 WORKDIR /app
-RUN npm ci --omit=dev && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
 
 WORKDIR /app/backend
 USER api
