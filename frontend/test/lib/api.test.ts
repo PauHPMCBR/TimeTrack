@@ -28,6 +28,7 @@ describe('apiClient', () => {
   const mockFetchSuccess = (data: any) => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => null },
       json: () => Promise.resolve(data),
     }) as any;
   };
@@ -36,6 +37,7 @@ describe('apiClient', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status,
+      headers: { get: () => null },
       json: () => Promise.resolve({ error }),
     }) as any;
   };
@@ -526,6 +528,22 @@ describe('apiClient', () => {
           }),
         })
       );
+    });
+
+    it('should persist the refreshed token from the X-Auth-Token header', async () => {
+      localStorage.setItem('auth_token', 'old-token');
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        headers: {
+          get: (name: string) => (name === 'X-Auth-Token' ? 'new-token' : null),
+        },
+        json: () => Promise.resolve({ data: { user: { id: '1' } } }),
+      }) as any;
+
+      const result = await apiClient.getProfile();
+
+      expect(result.data).toEqual({ user: { id: '1' } });
+      expect(localStorage.getItem('auth_token')).toBe('new-token');
     });
   });
 });

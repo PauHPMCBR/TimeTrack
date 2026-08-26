@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
-import jwt from 'jsonwebtoken';
+import { signToken } from '@/lib/auth';
 import { User } from '@/models';
 import { responseErrorIncorrectParameter, responseErrorInvalidRegisterToken, responseErrorMethodNotAllowed, responseErrorMissingParameter, responseErrorPost } from '@/lib/response-error-generator';
 import { PasswordIncorrectParameterReason } from 'shared/src/types/response-errors';
@@ -95,20 +95,11 @@ export default async function handler(
     user.password = password;
     await user.save();
 
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      console.error('JWT_SECRET environment variable is not set');
-      return responseErrorPost(res);
-    }
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        email: user.email, 
-        role: user.role 
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = signToken({
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    });
 
     res.status(200).json({
       token,

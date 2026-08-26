@@ -41,7 +41,14 @@ class ApiClient {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-      
+
+      // Sliding session: the backend re-issues the JWT (72h) in this header
+      // when it's close to expiring. Store it for the next request.
+      const refreshedToken = response.headers.get('X-Auth-Token');
+      if (refreshedToken) {
+        localStorage.setItem('auth_token', refreshedToken);
+      }
+
       let data: any;
       try {
         data = await response.json();
