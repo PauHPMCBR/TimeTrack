@@ -127,7 +127,7 @@ describe('apiClient', () => {
       const mockResponse = { data: { user: { id: '3', name: 'Created' } } };
       mockFetchSuccess(mockResponse);
 
-      const result = await apiClient.createUser({ name: 'Created', email: 'created@example.com', role: 'employee' });
+      const result = await apiClient.createUser({ name: 'Created', email: 'created@example.com', role: 'employee', dni: '12345678A' });
 
       expect(result.data).toEqual(mockResponse.data);
     });

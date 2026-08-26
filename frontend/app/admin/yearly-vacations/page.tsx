@@ -7,7 +7,7 @@ import { apiClient } from "@/lib/api";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { YearlyVacationAdminRequest } from "@/schemas/api";
 import Button from "@/components/ui/Button";
-import { ChevronRight, ChevronLeft, X } from "lucide-react";
+import { ChevronRight, ChevronLeft, X, Copy } from "lucide-react";
 
 export default function AdminObligatoryVacationsPage() {
   const { t } = useI18n();
@@ -22,6 +22,7 @@ export default function AdminObligatoryVacationsPage() {
   const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
   const [electiveDaysTotalCount, setElectiveDaysTotalCount] = useState<number>(0);
   const [newDate, setNewDate] = useState<string>("");
+  const [copying, setCopying] = useState(false);
 
   const fetchYearlyVacations = async () => {
     try {
@@ -123,6 +124,31 @@ export default function AdminObligatoryVacationsPage() {
       setError(t("error.PostError") || "Error saving data");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCopyFromPreviousYear = async () => {
+    try {
+      setCopying(true);
+      setError(null);
+      setSuccess(null);
+
+      const res = await apiClient.copyYearlyVacations({ toYear: year });
+
+      if (res.error) {
+        setError(res.error === 'EntryNotFound'
+          ? t("admin.vacationsSetup.copyNotFound").replace("{year}", (year - 1).toString())
+          : t(`error.${res.error}`) || res.error || t("error.PostError"));
+      } else {
+        setSuccess(t("admin.vacationsSetup.copySuccess").replace("{year}", (year - 1).toString()).replace("{toYear}", year.toString()));
+        await fetchYearlyVacations();
+        setTimeout(() => setSuccess(null), 4000);
+      }
+    } catch (error) {
+      console.error("Error copying vacations:", error);
+      setError(t("error.PostError") || "Error copying data");
+    } finally {
+      setCopying(false);
     }
   };
 
@@ -231,7 +257,33 @@ export default function AdminObligatoryVacationsPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            
+
+            {/* --- COPY FROM PREVIOUS YEAR --- */}
+            <section className="rounded-2xl border border-dashed border-zinc-300 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                    <Copy size={18} className="text-indigo-500" />
+                    {t("admin.vacationsSetup.copyTitle")}
+                  </h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {t("admin.vacationsSetup.copySubtitle")
+                    .replace("{year}", (year - 1).toString())
+                    .replace("{toYear}", year.toString())}
+                  </p>
+                </div>
+                <Button
+                  onClick={handleCopyFromPreviousYear}
+                  disabled={copying || loading}
+                  variant="soft"
+                  className="shrink-0"
+                >
+                  <Copy size={16} />
+                  {copying ? t("common.loading") : t("admin.vacationsSetup.copyButton")}
+                </Button>
+              </div>
+            </section>
+
             {/* --- OBLIGATORY VACATIONS --- */}
             <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-6">

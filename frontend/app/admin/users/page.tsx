@@ -8,7 +8,7 @@ import { User } from "@/types";
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { ChevronLeft, UserPlus, Download } from "lucide-react";
+import { ChevronLeft, UserPlus, Download, Pencil } from "lucide-react";
 
 export default function UsersListPage() {
   const { t } = useI18n();
@@ -187,6 +187,13 @@ export default function UsersListPage() {
                                 {t("admin.users.pendingActivation")}
                             </div>
                         )}
+                        <Link
+                          href={`/admin/users/${user._id}`}
+                          className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+                          aria-label={t("admin.usersEdit.editAction")}
+                        >
+                          <Pencil size={16} />
+                        </Link>
                     </div>
                 </li>
                 ))}

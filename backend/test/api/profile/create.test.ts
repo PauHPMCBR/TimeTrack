@@ -19,6 +19,14 @@ vi.mock('@/lib/validation', () => ({
   validateRequestBody: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
 }));
 
+vi.mock('@/lib/settings', () => ({
+  getAppSettings: vi.fn().mockResolvedValue({
+    defaultExpectedHours: 8,
+    benevolenceHours: 1,
+    endOfDayHour: 17,
+  }),
+}));
+
 vi.mock('@/models', () => ({
   User: {
     findOne: vi.fn(),
@@ -83,13 +91,15 @@ describe('POST /api/profile/create', () => {
       email: 'new@example.com',
       role: 'employee',
       registered: false,
+      dni: '12345678A',
+      expectedWorkHours: 8,
     };
     
     vi.mocked(User.create as any).mockResolvedValue(mockNewUser);
 
     const req = mockReq({
       method: 'POST',
-      body: { email: 'new@example.com', name: 'New User', role: 'employee' },
+      body: { email: 'new@example.com', name: 'New User', role: 'employee', dni: '12345678A' },
     });
     const res = mockRes();
 
@@ -104,6 +114,8 @@ describe('POST /api/profile/create', () => {
             id: 'new-user-id',
             name: 'New User',
             email: 'new@example.com',
+            dni: '12345678A',
+            expectedWorkHours: 8,
           }),
           registrationLink: expect.any(String),
           registrationToken: expect.any(String),
@@ -112,7 +124,7 @@ describe('POST /api/profile/create', () => {
     );
   });
 
-  it('should use default role employee if not provided', async () => {
+  it('should use default role employee and company default expected hours if not provided', async () => {
     vi.mocked(User.findOne).mockResolvedValue(null);
     
     const mockNewUser = {
@@ -121,13 +133,15 @@ describe('POST /api/profile/create', () => {
       email: 'new@example.com',
       role: 'employee',
       registered: false,
+      dni: '12345678A',
+      expectedWorkHours: 8,
     };
     
     vi.mocked(User.create as any).mockResolvedValue(mockNewUser);
 
     const req = mockReq({
       method: 'POST',
-      body: { email: 'new@example.com', name: 'New User' },
+      body: { email: 'new@example.com', name: 'New User', dni: '12345678A' },
     });
     const res = mockRes();
 
@@ -137,6 +151,8 @@ describe('POST /api/profile/create', () => {
     expect(User.create).toHaveBeenCalledWith(
       expect.objectContaining({
         role: 'employee',
+        dni: '12345678A',
+        expectedWorkHours: 8,
       })
     );
   });

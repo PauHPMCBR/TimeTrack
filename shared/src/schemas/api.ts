@@ -19,8 +19,31 @@ export const CreateUserRequestSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   email: z.string().email('Invalid email format'),
   role: z.enum(['employee', 'admin']).default('employee'),
+  dni: z.string().min(1, 'DNI is required').max(20),
 });
 export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
+
+export const UpdateUserRequestSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long').optional(),
+  email: z.string().email('Invalid email format').optional(),
+  role: z.enum(['employee', 'admin']).optional(),
+  dni: z.string().min(1, 'DNI is required').max(20),
+  expectedWorkHours: z.number().positive().optional(),
+}).refine(data => Object.keys(data).length > 0, 'At least one field is required');
+export type UpdateUserRequest = z.infer<typeof UpdateUserRequestSchema>;
+
+export const CopyYearlyVacationRequestSchema = z.object({
+  fromYear: z.number().int().gte(2000).lte(2100).optional(),
+  toYear: z.number().int().gte(2000).lte(2100),
+});
+export type CopyYearlyVacationRequest = z.infer<typeof CopyYearlyVacationRequestSchema>;
+
+export const AppSettingsRequestSchema = z.object({
+  defaultExpectedHours: z.number().positive().optional(),
+  benevolenceHours: z.number().gte(0).optional(),
+  endOfDayHour: z.number().min(0).max(24).optional(),
+}).refine(data => Object.keys(data).length > 0, 'At least one field is required');
+export type AppSettingsRequest = z.infer<typeof AppSettingsRequestSchema>;
 
 export const GroupIdParamSchema = z.object({
   groupId: z.string().min(1, 'Group id is required').max(100, 'Group id too long'),

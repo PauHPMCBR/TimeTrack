@@ -280,7 +280,10 @@
       "title": "Equip"
     },
     "form": {
+      "dni": "DNI",
+      "dniPlaceholder": "Ex: 12345678A",
       "email": "Correu electrònic",
+      "expectedHours": "Hores setmanals esperades",
       "name": "Nom complet",
       "role": {
         "label": "Rol",
@@ -333,6 +336,10 @@
       "yearlyvacations": {
         "desc": "Assigna vacances obligatòries i quantitat de vacances d'elecció",
         "title": "Vacances anuals"
+      },
+      "settings": {
+        "desc": "Configuració general de l'empresa (hores, benevolència...).",
+        "title": "Configuració"
       }
     },
     "stats": {
@@ -355,6 +362,23 @@
       "notFound": "No s'han trobat usuaris.",
       "pendingActivation": "Activació pendent",
       "registered": "Registrat"
+    },
+    "usersEdit": {
+      "editAction": "Editar usuari",
+      "saved": "Usuari actualitzat correctament",
+      "subtitle": "Modifica les dades de l'empleat.",
+      "title": "Editar usuari"
+    },
+    "settings": {
+      "benevolenceHelp": "Marge de tolerància respecte a les hores esperades abans de marcar una anomalia.",
+      "benevolenceLabel": "Benevolència de desviació (hores)",
+      "defaultHoursHelp": "Hores de treball esperades per defecte per als nous empleats.",
+      "defaultHoursLabel": "Hores esperades per defecte",
+      "endOfDayHelp": "Hora límit del dia per detectar treballadors sense sortir.",
+      "endOfDayLabel": "Hora de fi de dia",
+      "saved": "Configuració desada correctament",
+      "subtitle": "Configura els valors generals de l'empresa.",
+      "title": "Configuració de l'empresa"
     },
     "export": {
       "button": "Exporta CSV",
@@ -385,6 +409,11 @@
     "vacationsSetup": {
       "addButton": "Afegir Data",
       "addDate": "Afegir data de festiu",
+      "copyButton": "Copiar de {year}",
+      "copyNotFound": "No hi ha configuració de vacances per a l'any {year}.",
+      "copySubtitle": "Copia els festius i els dies electius de l'any {year} a l'any {toYear}.",
+      "copySuccess": "Configuració copiada de {year} a {toYear} correctament",
+      "copyTitle": "Copiar configuració d'un altre any",
       "dateExists": "Aquesta data ja està afegida",
       "days": "dies",
       "electiveDaysLabel": "Màxim de dies electius per empleat",

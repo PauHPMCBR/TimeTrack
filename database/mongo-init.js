@@ -25,6 +25,7 @@ db.createCollection('worksessions');
 db.createCollection('electivevacations');
 db.createCollection('yearlyvacationdays');
 db.createCollection('worksessionreasons');
+db.createCollection('appsettings');
 print('Collections created');
 
 db.createUser({
@@ -61,6 +62,16 @@ if (process.env.SEED_DEMO === '1') {
   });
   print(`Global yearly vacation settings for ${year} created`);
 
+  // Global company settings (lazily created by the backend if missing)
+  db.appsettings.insertOne({
+    defaultExpectedHours: 8,
+    benevolenceHours: 1,
+    endOfDayHour: 20,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+  print('Company settings created');
+
   db.worksessionreasons.insertMany([
     { type: 'check_in', reasonId: 'work_start', englishText: 'Start of work', spanishText: 'Inicio del trabajo', catalanText: 'Inici de la feina' },
     { type: 'check_out', reasonId: 'work_end', englishText: 'End of work', spanishText: 'Fin del trabajo', catalanText: 'Fi de la feina' },
@@ -79,6 +90,8 @@ if (process.env.SEED_DEMO === '1') {
     registered: false,
     role: 'admin',
     groups: [],
+    dni: '00000000A',
+    expectedWorkHours: 8,
     failedLoginAttempts: 0,
     blocked: false,
     createdAt: new Date(),

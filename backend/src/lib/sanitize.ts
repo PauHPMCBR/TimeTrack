@@ -6,6 +6,8 @@ const PUBLIC_USER_FIELDS = [
   'role',
   'groups',
   'registered',
+  'dni',
+  'expectedWorkHours',
   'avatar',
 ] as const;
 

@@ -6,7 +6,7 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import Card from "@/components/ui/Card";
-import { UserPlus, Users, Calendar, UserMinus, Timer, Building2, ChevronLeft, CalendarOff } from "lucide-react";
+import { UserPlus, Users, Calendar, UserMinus, Timer, Building2, ChevronLeft, CalendarOff, Settings } from "lucide-react";
 
 export default function AdminDashboard() {
   const { t } = useI18n();
@@ -100,6 +100,16 @@ export default function AdminDashboard() {
       bgColor: "bg-pink-50 dark:bg-pink-900/20",
       icon: (
         <Calendar size={24} />
+      )
+    },
+    {
+      title: t("admin.menu.settings.title"),
+      desc: t("admin.menu.settings.desc"),
+      href: "/admin/settings",
+      iconColor: "text-zinc-600 dark:text-zinc-300",
+      bgColor: "bg-zinc-100 dark:bg-zinc-800",
+      icon: (
+        <Settings size={24} />
       )
     }
   ];

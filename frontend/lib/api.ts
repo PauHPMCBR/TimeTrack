@@ -1,16 +1,19 @@
 import type {
+  AppSettingsRequest,
+  CopyYearlyVacationRequest,
   CreateGroupRequest,
   CreateUserRequest,
   ElectiveVacationRequest,
   LoginRequest,
   MonthlyWorkRecordResponse,
   RegisterRequest,
+  UpdateUserRequest,
   UserLoginResponse,
   WorkSessionRequest,
   YearlyVacationAdminRequest,
   YearlyVacationResponse,
 } from '@/schemas/api'
-import { ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
+import { AppSettings, ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
 import { ApiResponse } from '@/types/apiErrors'
 import type { ErrorCode } from 'shared/src/types/response-errors'
 import { triggerDownload } from './csv'
@@ -198,6 +201,31 @@ class ApiClient {
     return this.request(`/api/profile/create`, {
       method: 'POST',
       body: JSON.stringify(userCreated),
+    });
+  }
+
+  async updateUser(userId: string, params: UpdateUserRequest): Promise<ApiResponse<{ user: User }>> {
+    return this.request(`/api/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(params),
+    });
+  }
+
+  async getSettings(): Promise<ApiResponse<{ settings: AppSettings }>> {
+    return this.request(`/api/admin/settings`);
+  }
+
+  async updateSettings(params: AppSettingsRequest): Promise<ApiResponse<{ settings: AppSettings }>> {
+    return this.request(`/api/admin/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(params),
+    });
+  }
+
+  async copyYearlyVacations(params: CopyYearlyVacationRequest): Promise<ApiResponse<{ success: boolean; year: number; sourceYear: number }>> {
+    return this.request(`/api/admin/vacations/copy`, {
+      method: 'POST',
+      body: JSON.stringify(params),
     });
   }
 

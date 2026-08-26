@@ -9,6 +9,7 @@ import {
   YearlyVacationDaysSchema,
   UserRoleSchema,
   WorkSessionReasonSchema,
+  AppSettingsSchema,
 } from '../../src/schemas/database';
 
 describe('Database Schemas', () => {
@@ -21,6 +22,7 @@ describe('Database Schemas', () => {
         registrationToken: 'token123',
         role: 'employee',
         groups: [],
+        dni: '12345678A',
       });
       expect(result.success).toBe(true);
     });
@@ -30,13 +32,50 @@ describe('Database Schemas', () => {
         name: 'John Doe',
         email: 'john@example.com',
         registrationToken: 'token123',
+        dni: '12345678A',
       });
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.registered).toBe(false);
         expect(result.data.role).toBe('employee');
         expect(result.data.groups).toEqual([]);
+        expect(result.data.expectedWorkHours).toBe(8);
       }
+    });
+
+    it('should accept dni and expectedWorkHours', () => {
+      const result = UserSchema.safeParse({
+        name: 'John Doe',
+        email: 'john@example.com',
+        registrationToken: 'token123',
+        dni: '12345678A',
+        expectedWorkHours: 7.5,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.dni).toBe('12345678A');
+        expect(result.data.expectedWorkHours).toBe(7.5);
+      }
+    });
+
+    it('should reject missing dni', () => {
+      const result = UserSchema.safeParse({
+        name: 'John Doe',
+        email: 'john@example.com',
+        registrationToken: 'token123',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject non-positive expectedWorkHours', () => {
+      const result = UserSchema.safeParse({
+        name: 'John Doe',
+        email: 'john@example.com',
+        registrationToken: 'token123',
+        dni: '12345678A',
+        expectedWorkHours: 0,
+      });
+      expect(result.success).toBe(false);
     });
 
     it('should reject invalid role', () => {
@@ -44,7 +83,34 @@ describe('Database Schemas', () => {
         name: 'John Doe',
         email: 'john@example.com',
         role: 'superuser',
+        dni: '12345678A',
       });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('AppSettingsSchema', () => {
+    it('should validate correct settings', () => {
+      const result = AppSettingsSchema.safeParse({
+        defaultExpectedHours: 8,
+        benevolenceHours: 1,
+        endOfDayHour: 17,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept defaults', () => {
+      const result = AppSettingsSchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.defaultExpectedHours).toBe(8);
+        expect(result.data.benevolenceHours).toBe(1);
+        expect(result.data.endOfDayHour).toBe(17);
+      }
+    });
+
+    it('should reject negative benevolence', () => {
+      const result = AppSettingsSchema.safeParse({ benevolenceHours: -1 });
       expect(result.success).toBe(false);
     });
   });
