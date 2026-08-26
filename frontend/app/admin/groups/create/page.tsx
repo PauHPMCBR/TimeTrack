@@ -6,6 +6,8 @@ import { useI18n } from "@/app/i18n";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api"; 
 import LanguageSwitcher from "../../../../components/LanguageSwitcher"; 
+import Button from "@/components/ui/Button";
+import { ChevronRight, Check } from "lucide-react";
 import { CreateGroupRequest } from "@/schemas/api";
 import { User } from "@/types"; 
 
@@ -71,7 +73,7 @@ export default function CreateGroupPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin/groups" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
@@ -151,7 +153,7 @@ export default function CreateGroupPage() {
                                     <div className={`h-5 w-5 rounded-full border flex items-center justify-center ${
                                         isSelected ? "bg-indigo-600 border-indigo-600" : "border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                                     }`}>
-                                        {isSelected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                 </div>
                             );
@@ -162,9 +164,9 @@ export default function CreateGroupPage() {
 
           </div>
           
-          <button type="submit" disabled={loading} className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-md transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-70 dark:focus:ring-offset-zinc-900">
+          <Button type="submit" disabled={loading} variant="primary" className="mt-8 w-full">
             {loading ? t("common.loading") : t("common.save")}
-          </button>
+          </Button>
           {error && (
             <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
               {error}

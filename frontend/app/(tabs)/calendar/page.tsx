@@ -7,6 +7,7 @@ import { YearlyVacationResponse, MonthlyWorkRecordResponse } from "@/schemas/api
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/calendar/Calendar";
 import { Alert } from "@/components/ui/Alert";
+import Card from "@/components/ui/Card";
 
 function toLocale(lang: "ca" | "es" | "en"): string {
   return lang === "ca" ? "ca-ES" : lang === "es" ? "es-ES" : "en-US";
@@ -123,7 +124,7 @@ export default function CalendarPage() {
       />
 
       {/* Legend */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="p-4 text-sm">
         <div className="font-medium mb-2">{t("calendar.legend.title")}</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-2">
@@ -179,7 +180,7 @@ export default function CalendarPage() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -7,6 +7,23 @@ import { apiClient } from "@/lib/api";
 import { WorkSession, User } from "@/types";
 import { formatHM, toLocalDateKey } from "@/lib/datetime";
 import { usePathname } from "next/navigation";
+import { Building2, Users, ShieldCheck, LayoutGrid, ChevronRight } from "lucide-react";
+import Card from "@/components/ui/Card";
+
+const FLAVORS = [
+  { id: "latte", base: "#eff1f5" },
+  { id: "frappe", base: "#303446" },
+  { id: "macchiato", base: "#24273a" },
+  { id: "mocha", base: "#1e1e2e" },
+] as const;
+
+type ThemeFlavor = (typeof FLAVORS)[number]["id"];
+
+const applyTheme = (theme: ThemeFlavor) => {
+  const root = document.documentElement;
+  root.setAttribute("data-theme", theme);
+  root.classList.toggle("dark", theme !== "latte");
+};
 
 export default function ProfilePage() {
   const { t } = useI18n();
@@ -16,7 +33,7 @@ export default function ProfilePage() {
   const [sessions, setSessions] = useState<WorkSession[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<ThemeFlavor>("mocha");
   const [timeFmt, setTimeFmt] = useState<"24" | "12">("24");
   const [now, setNow] = useState(() => Date.now());
 
@@ -62,18 +79,22 @@ export default function ProfilePage() {
   }, [pathname]);
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem("theme") as "light" | "dark") || "dark";
+    const saved = localStorage.getItem("theme") || "mocha";
+    const normalized =
+      saved === "light" ? "latte" : saved === "dark" ? "mocha" : saved;
+    const savedTheme: ThemeFlavor = FLAVORS.some((f) => f.id === normalized)
+      ? (normalized as ThemeFlavor)
+      : "mocha";
     const savedFmt = (localStorage.getItem("time_format") as "24" | "12") || "24";
     setTheme(savedTheme);
     setTimeFmt(savedFmt);
-    document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    applyTheme(savedTheme);
   }, []);
 
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
+  const changeTheme = (next: ThemeFlavor) => {
     setTheme(next);
     localStorage.setItem("theme", next);
-    document.documentElement.classList.toggle("dark", next === "dark");
+    applyTheme(next);
   };
 
   const changeTimeFmt = (fmt: "24" | "12") => {
@@ -134,12 +155,12 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-4">
           <div className="text-sm text-zinc-500">{t("profile.hoursToday")}</div> 
           <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">{formatHM(workedHoursToday * 3_600_000, t)}</div>
-        </div>
+        </Card>
         
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-4">
           <div className="text-sm text-zinc-500">{t("profile.status.label")}</div>
           <div className="mt-1 text-base text-zinc-900 dark:text-zinc-100">
             {isCheckedIn ? (
@@ -154,7 +175,7 @@ export default function ProfilePage() {
               </span>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       <Link 
@@ -163,7 +184,7 @@ export default function ProfilePage() {
       >
         <div className="flex items-center gap-4">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-8a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v8"/><path d="M23 21v-8a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v8"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="12" cy="12" r="10"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
+                <Building2 size={24} />
             </div>
             <div>
                 <div className="font-semibold text-zinc-900 dark:text-white text-lg">
@@ -175,7 +196,7 @@ export default function ProfilePage() {
             </div>
         </div>
         
-        <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        <ChevronRight className="h-5 w-5 text-zinc-400" />
       </Link>
       
       <Link 
@@ -184,7 +205,7 @@ export default function ProfilePage() {
       >
         <div className="flex items-center gap-4">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <Users size={24} />
             </div>
             <div>
                 <div className="font-semibold text-zinc-900 dark:text-white text-lg">
@@ -196,17 +217,35 @@ export default function ProfilePage() {
             </div>
         </div>
         
-        <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        <ChevronRight className="h-5 w-5 text-zinc-400" />
       </Link>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <Card className="p-4">
         <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">{t("profile.preferences")}</div>
         
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-sm text-zinc-700 dark:text-zinc-300">{t("profile.theme.label")}</div>
-          <button onClick={toggleTheme} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300">
-            {theme === 'dark' ? t("profile.theme.dark") : t("profile.theme.light")}
-          </button>
+        <div className="mb-4">
+          <div className="mb-2 text-sm text-zinc-700 dark:text-zinc-300">{t("profile.theme.label")}</div>
+          <div className="grid grid-cols-4 gap-2">
+            {FLAVORS.map((flavor) => (
+              <button
+                key={flavor.id}
+                onClick={() => changeTheme(flavor.id)}
+                className={`rounded-lg border p-2 text-center transition-colors ${
+                  theme === flavor.id
+                    ? "border-indigo-500 ring-2 ring-indigo-500/30"
+                    : "border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50"
+                }`}
+              >
+                <span
+                  className="mx-auto mb-1 block h-5 w-5 rounded-full border border-black/10"
+                  style={{ backgroundColor: flavor.base }}
+                />
+                <span className={`text-xs ${theme === flavor.id ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-600 dark:text-zinc-400"}`}>
+                  {t(`profile.theme.${flavor.id}`)}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center justify-between">
@@ -216,12 +255,12 @@ export default function ProfilePage() {
             <button onClick={() => changeTimeFmt("12")} className={`rounded-lg border px-3 py-1.5 text-sm ${timeFmt === "12" ? "border-indigo-600 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20" : "border-zinc-300 dark:border-zinc-700"}`}>12h</button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {user.role === 'admin' && (
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-900/10">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-indigo-900 dark:text-indigo-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <ShieldCheck size={16} />
             {t("profile.admin.title")}
           </div>
           
@@ -229,11 +268,11 @@ export default function ProfilePage() {
             {t("profile.admin.description")}
           </div>
 
-          <Link 
-            href="/admin" 
+          <Link
+            href="/admin"
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <LayoutGrid size={16} />
             {t("profile.admin.title")}
           </Link>
         </div>

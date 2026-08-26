@@ -241,9 +241,11 @@
     "statusInactive": "Inactive",
     "subtitle": "Profile & hours",
     "theme": {
-      "dark": "Dark",
       "label": "Theme",
-      "light": "Light"
+      "latte": "Latte",
+      "frappe": "Frappé",
+      "macchiato": "Macchiato",
+      "mocha": "Mocha"
     },
     "thisWeek": "This week",
     "timeFormat": "Time format",

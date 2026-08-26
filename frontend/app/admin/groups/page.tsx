@@ -6,6 +6,9 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import { Group } from "@/types"; 
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import { ChevronRight, Plus, Edit2, Trash2 } from "lucide-react";
 
 export default function GroupsListPage() {
   const { t } = useI18n();
@@ -74,7 +77,7 @@ export default function GroupsListPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 relative">
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
@@ -87,7 +90,7 @@ export default function GroupsListPage() {
             <p className="mt-1 text-sm text-zinc-500">{t("admin.groups.subtitle")}</p>
           </div>
           <Link href="/admin/groups/create" className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <Plus size={16} />
             {t("admin.groups.add")}
           </Link>
         </div>
@@ -99,7 +102,7 @@ export default function GroupsListPage() {
              <div className="col-span-2 rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">{t("admin.groups.empty")}</div>
           ) : (
              groups.map((group) => (
-                <div key={group._id} className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <Card key={group._id} className="flex flex-col justify-between p-5">
                     <div>
                         <h3 className="font-semibold text-zinc-900 dark:text-white truncate">{group.name}</h3>
                         <p className="text-sm text-zinc-500 mb-4">{group.description || "Sense descripció"}</p>
@@ -111,7 +114,7 @@ export default function GroupsListPage() {
                             href={`/admin/groups/${group._id}`} 
                             className="flex-1 inline-flex justify-center items-center gap-2 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 transition-colors"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            <Edit2 size={14} />
                             {t("admin.groups.edit")}
                         </Link>
 
@@ -120,11 +123,11 @@ export default function GroupsListPage() {
                             onClick={() => openDeleteModal(group._id)}
                             className="flex-1 inline-flex justify-center items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <Trash2 size={14} />
                             {t("admin.groups.delete")}
                         </button>
                     </div>
-                </div>
+                </Card>
              ))
           )}
         </div>
@@ -136,7 +139,7 @@ export default function GroupsListPage() {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 animate-in fade-in zoom-in duration-200">
             
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              <Trash2 size={24} />
             </div>
 
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
@@ -154,20 +157,22 @@ export default function GroupsListPage() {
             )}
 
             <div className="mt-6 flex gap-3">
-              <button
+              <Button
                 onClick={closeDeleteModal}
                 disabled={isDeleting}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                variant="secondary"
+                className="flex-1"
               >
                 {t("common.cancel")}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
+                variant="danger"
+                className="flex-1"
               >
                 {isDeleting ? t("common.loading") : t("admin.groups.delete")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

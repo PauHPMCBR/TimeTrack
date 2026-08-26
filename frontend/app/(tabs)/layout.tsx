@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import BottomNav from "@/components/BottomNav";
 import HeaderBar from "@/components/HeaderBar";
+import { APP_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "TimeTrack360",
+  title: APP_NAME,
   description: "Registre de jornada",
 };
 
@@ -17,7 +18,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-4 sm:pb-28">
+      <main className="mx-auto w-full max-w-3xl animate-fade-in px-4 pb-24 pt-4 sm:pb-28">
         {children}
       </main>
 

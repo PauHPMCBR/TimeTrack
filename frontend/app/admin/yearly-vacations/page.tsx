@@ -6,6 +6,8 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { YearlyVacationAdminRequest } from "@/schemas/api";
+import Button from "@/components/ui/Button";
+import { ChevronRight, ChevronLeft, X } from "lucide-react";
 
 export default function AdminObligatoryVacationsPage() {
   const { t } = useI18n();
@@ -153,9 +155,7 @@ export default function AdminObligatoryVacationsPage() {
       {/* HEADER */}
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
@@ -182,9 +182,7 @@ export default function AdminObligatoryVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading || saving}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ChevronRight className="h-4 w-4" />
               </button>
               
               <div className="min-w-[100px] text-center">
@@ -196,9 +194,7 @@ export default function AdminObligatoryVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading || saving}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronLeft className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -307,9 +303,7 @@ export default function AdminObligatoryVacationsPage() {
                               disabled={saving}
                               className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                             >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
+                              <X className="h-4 w-4" />
                             </button>
                           </div>
                         ))}
@@ -371,10 +365,11 @@ export default function AdminObligatoryVacationsPage() {
                       : t("admin.vacationsSetup.saveSubtitleCreate").replace("{year}", year.toString())}
                   </div>
                 </div>
-                <button
+                <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="primary"
+                  className="px-6 py-3"
                 >
                   {saving ? (
                     <span className="flex items-center gap-2">
@@ -387,7 +382,7 @@ export default function AdminObligatoryVacationsPage() {
                   ) : (
                     t("common.save")
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

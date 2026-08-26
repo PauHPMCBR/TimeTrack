@@ -5,6 +5,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import LanguageSwitcher from "../../../components/LanguageSwitcher";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 
 export default function CompleteRegistrationPage() {
   const { t } = useI18n();
@@ -117,7 +119,7 @@ if (res.error) {
 
       {/* MAIN CONTENT */}
       <div className="flex flex-1 items-center justify-center px-4 pb-20">
-        <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="w-full max-w-md p-8">
           
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{t("register.welcome")}</h1>
@@ -199,15 +201,16 @@ if (res.error) {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-md hover:bg-indigo-700 disabled:opacity-70 transition-colors"
+              variant="primary"
+              className="w-full"
             >
               {loading ? t("register.saving") : t("register.btn")}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

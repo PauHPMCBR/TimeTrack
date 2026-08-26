@@ -2,6 +2,365 @@
 @tailwind components;
 @tailwind utilities;
 
+/* —— Catppuccin (https://catppuccin.com) —— */
+/* Latte (light) and Mocha (dark) flavors, mapped onto the Tailwind
+   zinc (neutral) and indigo (brand accent) scales via CSS variables. */
+:root {
+  /* zinc */
+  --ctp-zinc-50: 239 241 245;   /* base */
+  --ctp-zinc-100: 230 233 239;  /* mantle */
+  --ctp-zinc-200: 204 208 218;  /* surface0 */
+  --ctp-zinc-300: 188 192 204;  /* surface1 */
+  --ctp-zinc-400: 156 160 176;  /* overlay0 */
+  --ctp-zinc-500: 140 143 161;  /* overlay1 */
+  --ctp-zinc-600: 124 127 147;  /* overlay2 */
+  --ctp-zinc-700: 108 111 133;  /* subtext0 */
+  --ctp-zinc-800: 92 95 119;    /* subtext1 */
+  --ctp-zinc-900: 76 79 105;    /* text */
+  --ctp-zinc-950: 76 79 105;    /* text */
+
+  /* indigo (lavender accent) */
+  --ctp-indigo-50: 238 241 255;
+  --ctp-indigo-100: 228 232 255;
+  --ctp-indigo-200: 209 215 254;
+  --ctp-indigo-300: 182 192 253;
+  --ctp-indigo-400: 148 162 252;
+  --ctp-indigo-500: 114 135 253; /* lavender */
+  --ctp-indigo-600: 90 107 240;
+  --ctp-indigo-700: 74 88 201;
+  --ctp-indigo-800: 59 70 160;
+  --ctp-indigo-900: 46 55 125;
+
+  /* semantic colors */
+  --ctp-red-50: 255 245 245;
+  --ctp-red-100: 254 229 228;
+  --ctp-red-200: 252 203 201;
+  --ctp-red-300: 247 174 173;
+  --ctp-red-400: 241 145 146;
+  --ctp-red-500: 229 99 105;
+  --ctp-red-600: 210 15 57;
+  --ctp-red-700: 147 31 46;
+  --ctp-red-800: 108 32 38;
+  --ctp-red-900: 70 28 30;
+  --ctp-green-50: 246 250 245;
+  --ctp-green-100: 231 243 229;
+  --ctp-green-200: 207 231 202;
+  --ctp-green-300: 181 218 174;
+  --ctp-green-400: 156 205 146;
+  --ctp-green-500: 116 184 103;
+  --ctp-green-600: 64 160 43;
+  --ctp-green-700: 52 113 40;
+  --ctp-green-800: 43 83 35;
+  --ctp-green-900: 33 55 29;
+  --ctp-amber-50: 254 249 245;
+  --ctp-amber-100: 252 241 229;
+  --ctp-amber-200: 249 226 204;
+  --ctp-amber-300: 244 211 176;
+  --ctp-amber-400: 240 195 147;
+  --ctp-amber-500: 233 171 103;
+  --ctp-amber-600: 223 142 29;
+  --ctp-amber-700: 154 101 36;
+  --ctp-amber-800: 111 76 34;
+  --ctp-amber-900: 71 51 29;
+  --ctp-sky-50: 245 251 254;
+  --ctp-sky-100: 230 244 253;
+  --ctp-sky-200: 205 232 250;
+  --ctp-sky-300: 177 220 246;
+  --ctp-sky-400: 149 207 243;
+  --ctp-sky-500: 102 188 237;
+  --ctp-sky-600: 4 165 229;
+  --ctp-sky-700: 31 116 158;
+  --ctp-sky-800: 33 86 114;
+  --ctp-sky-900: 29 57 72;
+  --ctp-purple-50: 248 246 255;
+  --ctp-purple-100: 238 232 255;
+  --ctp-purple-200: 221 209 255;
+  --ctp-purple-300: 203 183 254;
+  --ctp-purple-400: 186 158 252;
+  --ctp-purple-500: 162 117 247;
+  --ctp-purple-600: 136 57 239;
+  --ctp-purple-700: 96 50 165;
+  --ctp-purple-800: 71 43 119;
+  --ctp-purple-900: 48 34 76;
+  --ctp-blue-50: 244 248 255;
+  --ctp-blue-100: 226 237 255;
+  --ctp-blue-200: 196 218 255;
+  --ctp-blue-300: 165 198 255;
+  --ctp-blue-400: 135 177 255;
+  --ctp-blue-500: 89 145 251;
+  --ctp-blue-600: 30 102 245;
+  --ctp-blue-700: 30 76 169;
+  --ctp-blue-800: 28 60 122;
+  --ctp-blue-900: 25 43 77;
+}
+
+.dark {
+  /* zinc */
+  --ctp-zinc-50: 205 214 244;   /* text */
+  --ctp-zinc-100: 205 214 244;  /* text */
+  --ctp-zinc-200: 186 194 222;  /* subtext1 */
+  --ctp-zinc-300: 166 173 200;  /* subtext0 */
+  --ctp-zinc-400: 147 153 178;  /* overlay2 */
+  --ctp-zinc-500: 127 132 156;  /* overlay1 */
+  --ctp-zinc-600: 108 112 134;  /* overlay0 */
+  --ctp-zinc-700: 88 91 112;    /* surface2 */
+  --ctp-zinc-800: 69 71 90;     /* surface1 */
+  --ctp-zinc-900: 49 50 68;     /* surface0 */
+  --ctp-zinc-950: 30 30 46;     /* base */
+
+  /* indigo (lavender accent) */
+  --ctp-indigo-50: 245 246 255;
+  --ctp-indigo-100: 232 235 255;
+  --ctp-indigo-200: 211 216 254;
+  --ctp-indigo-300: 196 203 251;
+  --ctp-indigo-400: 180 190 254; /* lavender */
+  --ctp-indigo-500: 143 156 245;
+  --ctp-indigo-600: 110 121 221;
+  --ctp-indigo-700: 78 88 187;
+  --ctp-indigo-800: 58 66 150;
+  --ctp-indigo-900: 43 49 115;
+
+  /* semantic colors */
+  --ctp-red-50: 255 248 250;
+  --ctp-red-100: 255 239 242;
+  --ctp-red-200: 255 223 230;
+  --ctp-red-300: 254 207 218;
+  --ctp-red-400: 243 139 168;
+  --ctp-red-500: 238 122 148;
+  --ctp-red-600: 231 99 122;
+  --ctp-red-700: 224 78 100;
+  --ctp-red-800: 218 55 80;
+  --ctp-red-900: 214 40 69;
+  --ctp-green-50: 250 253 249;
+  --ctp-green-100: 243 251 242;
+  --ctp-green-200: 231 248 229;
+  --ctp-green-300: 218 244 216;
+  --ctp-green-400: 166 227 161;
+  --ctp-green-500: 148 215 141;
+  --ctp-green-600: 125 199 115;
+  --ctp-green-700: 105 185 92;
+  --ctp-green-800: 86 173 71;
+  --ctp-green-900: 75 167 58;
+  --ctp-amber-50: 255 253 250;
+  --ctp-amber-100: 254 251 244;
+  --ctp-amber-200: 253 247 233;
+  --ctp-amber-300: 253 243 222;
+  --ctp-amber-400: 249 226 175;
+  --ctp-amber-500: 245 211 153;
+  --ctp-amber-600: 239 191 123;
+  --ctp-amber-700: 234 174 96;
+  --ctp-amber-800: 229 159 70;
+  --ctp-amber-900: 226 151 52;
+  --ctp-sky-50: 248 253 254;
+  --ctp-sky-100: 240 250 252;
+  --ctp-sky-200: 224 246 250;
+  --ctp-sky-300: 208 241 247;
+  --ctp-sky-400: 137 220 235;
+  --ctp-sky-500: 120 210 234;
+  --ctp-sky-600: 97 197 233;
+  --ctp-sky-700: 75 186 232;
+  --ctp-sky-800: 52 176 231;
+  --ctp-sky-900: 35 171 230;
+  --ctp-purple-50: 252 250 255;
+  --ctp-purple-100: 248 243 255;
+  --ctp-purple-200: 240 230 254;
+  --ctp-purple-300: 233 218 253;
+  --ctp-purple-400: 203 166 247;
+  --ctp-purple-500: 190 149 247;
+  --ctp-purple-600: 173 126 245;
+  --ctp-purple-700: 159 105 243;
+  --ctp-purple-800: 148 85 242;
+  --ctp-purple-900: 142 72 240;
+  --ctp-blue-50: 248 251 255;
+  --ctp-blue-100: 238 245 255;
+  --ctp-blue-200: 221 234 255;
+  --ctp-blue-300: 205 224 254;
+  --ctp-blue-400: 137 180 250;
+  --ctp-blue-500: 118 167 250;
+  --ctp-blue-600: 94 149 249;
+  --ctp-blue-700: 73 134 248;
+  --ctp-blue-800: 54 119 247;
+  --ctp-blue-900: 42 111 246;
+}
+
+html[data-theme="frappe"] {
+  /* zinc */
+  --ctp-zinc-50: 198 208 245;   /* text */
+  --ctp-zinc-100: 198 208 245;  /* text */
+  --ctp-zinc-200: 181 191 226;  /* subtext1 */
+  --ctp-zinc-300: 165 173 206;  /* subtext0 */
+  --ctp-zinc-400: 148 156 187;  /* overlay2 */
+  --ctp-zinc-500: 131 139 167;  /* overlay1 */
+  --ctp-zinc-600: 115 121 148;  /* overlay0 */
+  --ctp-zinc-700: 98 104 128;   /* surface2 */
+  --ctp-zinc-800: 81 87 109;    /* surface1 */
+  --ctp-zinc-900: 65 69 89;     /* surface0 */
+  --ctp-zinc-950: 48 52 70;     /* base */
+
+  /* indigo (lavender accent) */
+  --ctp-indigo-50: 251 251 254;
+  --ctp-indigo-100: 245 245 253;
+  --ctp-indigo-200: 234 235 251;
+  --ctp-indigo-300: 224 224 249;
+  --ctp-indigo-400: 214 214 247;
+  --ctp-indigo-500: 186 187 241; /* lavender */
+  --ctp-indigo-600: 160 162 214;
+  --ctp-indigo-700: 132 134 184;
+  --ctp-indigo-800: 103 106 155;
+  --ctp-indigo-900: 75 78 125;
+
+  /* semantic colors */
+  --ctp-red-50: 254 248 247;
+  --ctp-red-100: 254 238 237;
+  --ctp-red-200: 252 220 219;
+  --ctp-red-300: 249 203 202;
+  --ctp-red-400: 231 130 132;
+  --ctp-red-500: 228 115 119;
+  --ctp-red-600: 224 94 101;
+  --ctp-red-700: 219 74 86;
+  --ctp-red-800: 215 53 72;
+  --ctp-red-900: 213 38 65;
+  --ctp-green-50: 250 252 248;
+  --ctp-green-100: 242 249 239;
+  --ctp-green-200: 230 242 222;
+  --ctp-green-300: 217 236 206;
+  --ctp-green-400: 166 209 137;
+  --ctp-green-500: 149 200 121;
+  --ctp-green-600: 126 189 100;
+  --ctp-green-700: 106 179 82;
+  --ctp-green-800: 87 170 65;
+  --ctp-green-900: 76 165 55;
+  --ctp-amber-50: 253 252 248;
+  --ctp-amber-100: 251 247 240;
+  --ctp-amber-200: 248 240 224;
+  --ctp-amber-300: 244 232 209;
+  --ctp-amber-400: 229 200 144;
+  --ctp-amber-500: 229 190 127;
+  --ctp-amber-600: 227 176 104;
+  --ctp-amber-700: 226 165 83;
+  --ctp-amber-800: 225 154 62;
+  --ctp-amber-900: 224 148 48;
+  --ctp-sky-50: 249 252 253;
+  --ctp-sky-100: 241 249 250;
+  --ctp-sky-200: 227 242 245;
+  --ctp-sky-300: 213 236 240;
+  --ctp-sky-400: 153 209 219;
+  --ctp-sky-500: 135 201 221;
+  --ctp-sky-600: 109 191 224;
+  --ctp-sky-700: 85 182 226;
+  --ctp-sky-800: 60 174 228;
+  --ctp-sky-900: 41 170 228;
+  --ctp-purple-50: 252 249 254;
+  --ctp-purple-100: 248 241 252;
+  --ctp-purple-200: 240 228 249;
+  --ctp-purple-300: 233 214 245;
+  --ctp-purple-400: 202 158 230;
+  --ctp-purple-500: 189 143 233;
+  --ctp-purple-600: 172 122 236;
+  --ctp-purple-700: 159 103 237;
+  --ctp-purple-800: 148 83 238;
+  --ctp-purple-900: 142 71 239;
+  --ctp-blue-50: 248 250 254;
+  --ctp-blue-100: 238 243 253;
+  --ctp-blue-200: 222 231 251;
+  --ctp-blue-300: 206 219 249;
+  --ctp-blue-400: 140 170 238;
+  --ctp-blue-500: 122 159 240;
+  --ctp-blue-600: 97 144 242;
+  --ctp-blue-700: 76 130 243;
+  --ctp-blue-800: 56 117 244;
+  --ctp-blue-900: 44 110 245;
+}
+
+html[data-theme="macchiato"] {
+  /* zinc */
+  --ctp-zinc-50: 202 211 245;   /* text */
+  --ctp-zinc-100: 202 211 245;  /* text */
+  --ctp-zinc-200: 184 192 224;  /* subtext1 */
+  --ctp-zinc-300: 165 173 203;  /* subtext0 */
+  --ctp-zinc-400: 147 154 183;  /* overlay2 */
+  --ctp-zinc-500: 128 135 162;  /* overlay1 */
+  --ctp-zinc-600: 110 115 141;  /* overlay0 */
+  --ctp-zinc-700: 91 96 120;    /* surface2 */
+  --ctp-zinc-800: 73 77 100;    /* surface1 */
+  --ctp-zinc-900: 54 58 79;     /* surface0 */
+  --ctp-zinc-950: 36 39 58;     /* base */
+
+  /* indigo (lavender accent) */
+  --ctp-indigo-50: 251 251 255;
+  --ctp-indigo-100: 244 245 254;
+  --ctp-indigo-200: 233 235 253;
+  --ctp-indigo-300: 223 225 252;
+  --ctp-indigo-400: 212 215 251;
+  --ctp-indigo-500: 183 189 248; /* lavender */
+  --ctp-indigo-600: 157 163 218;
+  --ctp-indigo-700: 129 134 185;
+  --ctp-indigo-800: 100 104 152;
+  --ctp-indigo-900: 72 75 119;
+
+  /* semantic colors */
+  --ctp-red-50: 255 248 248;
+  --ctp-red-100: 254 238 240;
+  --ctp-red-200: 253 222 225;
+  --ctp-red-300: 251 205 210;
+  --ctp-red-400: 237 135 150;
+  --ctp-red-500: 233 119 133;
+  --ctp-red-600: 227 97 111;
+  --ctp-red-700: 222 76 93;
+  --ctp-red-800: 216 54 76;
+  --ctp-red-900: 213 39 67;
+  --ctp-green-50: 250 253 249;
+  --ctp-green-100: 243 250 240;
+  --ctp-green-200: 230 245 225;
+  --ctp-green-300: 218 240 211;
+  --ctp-green-400: 166 218 149;
+  --ctp-green-500: 149 208 131;
+  --ctp-green-600: 125 194 108;
+  --ctp-green-700: 105 182 87;
+  --ctp-green-800: 87 172 68;
+  --ctp-green-900: 76 166 56;
+  --ctp-amber-50: 254 252 249;
+  --ctp-amber-100: 253 249 242;
+  --ctp-amber-200: 250 243 228;
+  --ctp-amber-300: 248 237 215;
+  --ctp-amber-400: 238 212 159;
+  --ctp-amber-500: 236 200 140;
+  --ctp-amber-600: 233 183 113;
+  --ctp-amber-700: 230 169 90;
+  --ctp-amber-800: 227 156 66;
+  --ctp-amber-900: 225 149 50;
+  --ctp-sky-50: 249 253 253;
+  --ctp-sky-100: 240 250 251;
+  --ctp-sky-200: 225 244 247;
+  --ctp-sky-300: 210 238 243;
+  --ctp-sky-400: 145 215 227;
+  --ctp-sky-500: 127 206 228;
+  --ctp-sky-600: 103 194 229;
+  --ctp-sky-700: 80 184 229;
+  --ctp-sky-800: 56 175 229;
+  --ctp-sky-900: 38 170 229;
+  --ctp-purple-50: 251 249 255;
+  --ctp-purple-100: 247 242 254;
+  --ctp-purple-200: 239 229 254;
+  --ctp-purple-300: 231 215 253;
+  --ctp-purple-400: 198 160 246;
+  --ctp-purple-500: 186 144 246;
+  --ctp-purple-600: 170 122 244;
+  --ctp-purple-700: 158 103 243;
+  --ctp-purple-800: 147 83 241;
+  --ctp-purple-900: 141 71 240;
+  --ctp-blue-50: 248 250 255;
+  --ctp-blue-100: 238 244 254;
+  --ctp-blue-200: 221 232 253;
+  --ctp-blue-300: 205 221 252;
+  --ctp-blue-400: 138 173 244;
+  --ctp-blue-500: 120 161 245;
+  --ctp-blue-600: 95 145 246;
+  --ctp-blue-700: 74 131 246;
+  --ctp-blue-800: 55 118 246;
+  --ctp-blue-900: 43 110 245;
+}
+
 /* —— Estils base perquè tot es vegi net sense tocar components —— */
 @layer base {
   html, body {
@@ -39,13 +398,44 @@
 
   /* Enfasi d’accessibilitat */
   :focus-visible {
-    @apply outline-none ring-2 ring-zinc-400 dark:ring-zinc-600 rounded-md;
+    @apply outline-none ring-2 ring-indigo-500/60 rounded-md;
   }
 
-  /* Scrollbar suau (opcional) */
-  * { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.25) transparent; }
+  /* Títols amb font display */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* Scrollbar i selecció d’acord amb el tema */
+  * { scrollbar-width: thin; scrollbar-color: rgb(var(--ctp-zinc-500) / 0.4) transparent; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--ctp-zinc-500) / 0.4);
+    border-radius: 9999px;
+  }
+  ::selection {
+    background-color: rgb(var(--ctp-indigo-500) / 0.3);
+  }
+
+  /* Transicions suaus en canviar de tema */
+  @media (prefers-reduced-motion: no-preference) {
+    *, *::before, *::after {
+      transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+      transition-duration: 150ms;
+      transition-timing-function: ease-out;
+    }
+  }
+
+  /* Aparició suau del contingut */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-fade-in {
+      animation: fade-in 300ms ease-out;
+    }
+  }
 }
 
 /* —— Res: cap gradient aquí. El fons el posarem des del layout amb classes —— */

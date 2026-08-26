@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { ElectiveVacation, YearlyVacationDays } from "@/types";
+import { ChevronLeft, Check, Timer, Layers, AlertTriangle, AlertCircle, Trash2, CalendarDays } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 
 type GroupedVacation = {
   ids: string[];
@@ -213,9 +217,7 @@ export default function MyVacationsPage() {
       
       <header className="flex w-full items-center px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-10">
         <Link href="/profile" className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="mr-2 h-4 w-4" />
           {t("common.back") || "Tornar"}
         </Link>
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-white mx-auto">
@@ -227,44 +229,44 @@ export default function MyVacationsPage() {
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <Card className="relative overflow-hidden p-6">
                 <dt>
                     <div className="absolute rounded-md bg-indigo-500 p-3">
-                        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <Check className="h-6 w-6 text-white" />
                     </div>
                     <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("vacations.balance")}</p>
                 </dt>
                 <dd className="ml-16 flex items-baseline">
                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{remainingDays}</p>
                 </dd>
-            </div>
+            </Card>
 
-            <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <Card className="relative overflow-hidden p-6">
                 <dt>
                     <div className="absolute rounded-md bg-zinc-100 p-3 dark:bg-zinc-800">
-                        <svg className="h-6 w-6 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <Timer className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
                     </div>
                     <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("vacations.used")}</p>
                 </dt>
                 <dd className="ml-16 flex items-baseline">
                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{usedDays}</p>
                 </dd>
-            </div>
+            </Card>
 
-            <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <Card className="relative overflow-hidden p-6">
                 <dt>
                     <div className="absolute rounded-md bg-zinc-100 p-3 dark:bg-zinc-800">
-                        <svg className="h-6 w-6 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        <Layers className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
                     </div>
                     <p className="ml-16 truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">{t("vacations.total")}</p>
                 </dt>
                 <dd className="ml-16 flex items-baseline">
                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{totalDays}</p>
                 </dd>
-            </div>
+            </Card>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-6">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">{t("vacations.request")}</h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -321,21 +323,21 @@ export default function MyVacationsPage() {
 
                 {successMsg && (
                     <div className="rounded-lg bg-green-50 p-3 text-sm text-green-700 flex items-center gap-2 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <Check className="w-4 h-4" />
                         {successMsg}
                     </div>
                 )}
                 
                 {warningMsg && (
                     <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700 flex items-center gap-2 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <AlertTriangle className="w-4 h-4" />
                         {warningMsg}
                     </div>
                 )}
 
                 {errorMsg && (
                     <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <AlertCircle className="w-4 h-4" />
                         {errorMsg}
                     </div>
                 )}
@@ -348,19 +350,20 @@ export default function MyVacationsPage() {
                     {submitting ? t("common.loading") : t("vacations.submit")}
                 </button>
             </form>
-        </div>
+        </Card>
 
         <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">{t("vacations.history")}</h2>
             
             {groupedVacations.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-200 p-10 text-center text-sm text-zinc-400 dark:border-zinc-800">
-                {t("vacations.empty")}
-            </div>
+            <EmptyState
+              icon={<CalendarDays size={24} />}
+              title={t("vacations.empty")}
+            />
             ) : (
             <div className="space-y-3">
                 {groupedVacations.map((group, index) => (
-                <div key={`${group.startDate.toString()}-${index}`} className="group flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-indigo-300 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-700">
+                <Card key={`${group.startDate.toString()}-${index}`} className="group flex items-center justify-between p-4 hover:border-indigo-300 transition-colors dark:hover:border-indigo-700">
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="text-lg">📅</span>
@@ -384,7 +387,7 @@ export default function MyVacationsPage() {
                             ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30' 
                             : group.status === 'rejected'
                             ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30'
-                            : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30'
+                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30'
                         }`}>
                             {t(`vacations.status.${group.status}`)}
                         </span>
@@ -395,11 +398,11 @@ export default function MyVacationsPage() {
                                 className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors dark:hover:bg-red-900/20"
                                 title={t("vacations.cancel")}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                <Trash2 size={16} />
                             </button>
                         )}
                     </div>
-                </div>
+                </Card>
                 ))}
             </div>
             )}
@@ -412,7 +415,7 @@ export default function MyVacationsPage() {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
             
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <Trash2 size={24} />
             </div>
 
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
@@ -423,20 +426,22 @@ export default function MyVacationsPage() {
             </p>
 
             <div className="mt-6 flex gap-3">
-              <button
+              <Button
+                variant="secondary"
                 onClick={closeCancelModal}
                 disabled={isCancelling}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="flex-1"
               >
                 {t("common.cancel")}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 onClick={confirmCancel}
                 disabled={isCancelling}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none disabled:opacity-50"
+                className="flex-1"
               >
                 {isCancelling ? t("common.loading") : t("vacations.cancelModal.confirm")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

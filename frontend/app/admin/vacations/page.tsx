@@ -7,6 +7,8 @@ import { apiClient } from "@/lib/api";
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 import { ElectiveVacation, User } from "@/types";
 import { Alert } from "@/components/ui/Alert";
+import Card from "@/components/ui/Card";
+import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 
 // 1. DEFINIM EL TIPUS PER A LES VACANCES AGRUPADES
 type GroupedRequest = {
@@ -191,9 +193,7 @@ export default function AdminVacationsPage() {
       {/* HEADER */}
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronRight className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />
@@ -216,9 +216,7 @@ export default function AdminVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ChevronRight className="h-4 w-4" />
               </button>
               
               <div className="min-w-[100px] text-center">
@@ -230,9 +228,7 @@ export default function AdminVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronLeft className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -243,9 +239,9 @@ export default function AdminVacationsPage() {
               <div className="text-sm text-zinc-500 dark:text-zinc-400">{t("admin.vacations.total")}</div>
               <div className="text-2xl font-bold text-zinc-900 dark:text-white">{stats.total}</div>
             </div>
-            <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
-              <div className="text-sm text-orange-600 dark:text-orange-400">{t("admin.vacations.pending")}</div>
-              <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.pending}</div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+              <div className="text-sm text-amber-600 dark:text-amber-400">{t("admin.vacations.pending")}</div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.pending}</div>
             </div>
             <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
               <div className="text-sm text-green-600 dark:text-green-400">{t("admin.vacations.approved")}</div>
@@ -302,7 +298,7 @@ export default function AdminVacationsPage() {
                           const isProcessing = group.ids.some(id => processingIds.includes(id));
 
                           return (
-                            <div key={`${group.userId}-${idx}`} className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-900">
+                            <Card key={`${group.userId}-${idx}`} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                                 
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
@@ -341,9 +337,7 @@ export default function AdminVacationsPage() {
                                         disabled={isProcessing}
                                         className="flex items-center gap-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
                                     >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
+                                        <Check className="w-4 h-4" />
                                         {t("admin.vacations.approve")}
                                     </button>
                                     <button 
@@ -351,13 +345,11 @@ export default function AdminVacationsPage() {
                                         disabled={isProcessing}
                                         className="flex items-center gap-1 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors dark:bg-transparent dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
                                     >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
+                                        <X className="w-4 h-4" />
                                         {t("admin.vacations.reject")}
                                     </button>
                                 </div>
-                            </div>
+                            </Card>
                           );
                         })}
                     </div>
