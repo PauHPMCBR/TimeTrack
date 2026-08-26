@@ -5,9 +5,9 @@ export type ThemeFlavor = "latte" | "frappe" | "macchiato" | "mocha";
 export const THEME_FLAVORS: ThemeFlavor[] = ["latte", "frappe", "macchiato", "mocha"];
 
 export function getThemeFlavor(): ThemeFlavor {
-  if (typeof document === "undefined") return "mocha";
+  if (typeof document === "undefined") return "latte";
   const v = document.documentElement.getAttribute("data-theme");
-  return v && (THEME_FLAVORS as string[]).includes(v) ? (v as ThemeFlavor) : "mocha";
+  return v && (THEME_FLAVORS as string[]).includes(v) ? (v as ThemeFlavor) : "latte";
 }
 
 export function applyTheme(theme: ThemeFlavor) {

@@ -6,7 +6,7 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import Card from "@/components/ui/Card";
-import { UserPlus, Users, Calendar, UserMinus, Timer, Building2, ChevronRight, CalendarOff } from "lucide-react";
+import { UserPlus, Users, Calendar, UserMinus, Timer, Building2, ChevronLeft, CalendarOff } from "lucide-react";
 
 export default function AdminDashboard() {
   const { t } = useI18n();
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
       
       <header className="flex w-full items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-10">
         <Link href="/profile" className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronRight className="mr-2 h-4 w-4" />
+          <ChevronLeft className="mr-2 h-4 w-4" />
           {t("common.back")}
         </Link>
         <div className="flex items-center gap-4">

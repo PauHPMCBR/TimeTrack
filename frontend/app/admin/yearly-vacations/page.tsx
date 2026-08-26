@@ -155,7 +155,7 @@ export default function AdminObligatoryVacationsPage() {
       {/* HEADER */}
       <header className="flex w-full items-center justify-between px-6 py-4">
         <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronRight className="mr-1 h-4 w-4" />
+          <ChevronLeft className="mr-1 h-4 w-4" />
           {t("common.back")}
         </Link>
         <LanguageSwitcher />

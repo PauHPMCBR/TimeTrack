@@ -178,15 +178,22 @@ export default function HistoryAndStatsPage() {
     return totalThisWeek / days;
   }, [totalThisWeek]);
 
-  const handleExport = useCallback(() => {
-    const headers = [
-      t('history.export.date'),
-      t('history.export.hours'),
-      t('history.export.formatted'),
-    ];
-    const rows = perDay.map(day => [day.date, day.hrs.toFixed(2), fmtHM(day.hrs)]);
+  const handleExport = useCallback(async () => {
+    const user = await apiClient.getCurrentUser();
+    // Same detail as the admin CSV export: one row per check-in/check-out.
+    const headers = ['Name', 'Email', 'Timestamp', 'Type', 'Reason', 'Notes'];
+    const rows = [...workSessions]
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .map(s => [
+        user?.name ?? '',
+        user?.email ?? '',
+        new Date(s.timestamp).toISOString(),
+        s.type,
+        s.reason ?? '',
+        s.notes ?? '',
+      ]);
     downloadCsv(toCsv(headers, rows), `history_${new Date().toISOString().slice(0, 10)}.csv`);
-  }, [perDay, t]);
+  }, [workSessions]);
 
   if (loading) {
     return (
