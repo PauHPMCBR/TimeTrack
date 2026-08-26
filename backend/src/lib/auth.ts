@@ -17,6 +17,39 @@ type Handler = (req: AuthRequest, res: NextApiResponse) => unknown;
 
 export const getJwtSecret = (): string | null => process.env.JWT_SECRET ?? null;
 
+// Rolling session: tokens are valid 96h, and get re-issued (extended by another
+// 96h) whenever an authenticated request arrives with less than REFRESH_AFTER_MS
+// left. Active users therefore never get logged out; idle sessions die ~96h
+// after their last action. The new token is returned in the X-Auth-Token header.
+// An absolute cap forces a re-login after ABSOLUTE_MAX_MS even with activity.
+const TOKEN_TTL = '96h';
+const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
+const ABSOLUTE_MAX_MS = 30 * 24 * 60 * 60 * 1000;
+export const REFRESH_TOKEN_HEADER = 'X-Auth-Token';
+
+export const signToken = (
+  user: AuthRequest['user'],
+  options?: { sessionStart?: number }
+): string => {
+  const JWT_SECRET = getJwtSecret();
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  // `sessionStart` anchors the 30-day cap to the first login; it is carried
+  // across refreshes while `iat`/`exp` keep reflecting each issue, so a
+  // refreshed token stays valid 96h from *now*, not from the original login.
+  return jwt.sign(
+    {
+      userId: user!.userId,
+      email: user!.email,
+      role: user!.role,
+      sessionStart: options?.sessionStart ?? Math.floor(Date.now() / 1000),
+    },
+    JWT_SECRET,
+    { expiresIn: TOKEN_TTL }
+  );
+};
+
 export const authenticateToken = (handler: Handler) => {
   return async (req: AuthRequest, res: NextApiResponse) => {
     const authHeader = req.headers.authorization;
@@ -33,8 +66,20 @@ export const authenticateToken = (handler: Handler) => {
     }
 
     try {
-      const user = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
+      const user = jwt.verify(token, JWT_SECRET) as AuthRequest['user'] & { exp?: number; iat?: number; sessionStart?: number };
       req.user = user;
+
+      // Absolute cap: force a re-login after ABSOLUTE_MAX_MS even with activity.
+      const sessionStart = user?.sessionStart ?? user?.iat;
+      if (sessionStart && Date.now() - sessionStart * 1000 > ABSOLUTE_MAX_MS) {
+        return responseError(res, 403, 'InvalidToken');
+      }
+
+      // Sliding expiration: extend the session when it's close to expiring.
+      if (user?.userId && user.exp && user.exp * 1000 - Date.now() < REFRESH_AFTER_MS) {
+        res.setHeader(REFRESH_TOKEN_HEADER, signToken(user, { sessionStart }));
+      }
+
       return handler(req, res);
     } catch {
       return responseError(res, 403, 'InvalidToken');
