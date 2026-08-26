@@ -70,15 +70,17 @@ describe('GET /api/admin/export/work-sessions', () => {
       { _id: 's1', userId: 'user-1', type: 'check_out', timestamp: new Date('2024-01-14T17:00:00Z') },
     ];
 
-    vi.mocked(User.find).mockResolvedValue(mockUsers as any);
+    vi.mocked(User.find).mockReturnValue({ lean: vi.fn().mockResolvedValue(mockUsers) } as any);
     vi.mocked(WorkSession.find).mockReturnValue({
-      sort: vi.fn().mockImplementation(() =>
-        Promise.resolve(
-          [...mockSessions].sort(
-            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-          )
-        )
-      ),
+      select: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          lean: vi.fn().mockResolvedValue(
+            [...mockSessions].sort(
+              (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            )
+          ),
+        }),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { userIds: 'user-1,user-2' } });

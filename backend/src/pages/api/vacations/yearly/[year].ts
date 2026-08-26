@@ -16,7 +16,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const yearlyVacationDays = await YearlyVacationDays.findOne({
       userId: undefined,
       year
-    });
+    }).lean();
 
     if (!yearlyVacationDays) {
       return responseErrorEntryNotFound(res, 'YearlyVacationDays');

@@ -12,7 +12,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   try {
     await dbConnect();
 
-    const reasons = await WorkSessionReason.find();
+    const reasons = await WorkSessionReason.find().lean();
 
     res.status(200).json({ reasons: reasons });
   } catch (error) {

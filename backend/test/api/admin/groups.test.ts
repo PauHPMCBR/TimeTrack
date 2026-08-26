@@ -52,7 +52,7 @@ describe('GET /api/admin/groups', () => {
       { _id: 'group-2', name: 'Group 2' },
     ];
 
-    vi.mocked(Group.find).mockResolvedValue(mockGroups);
+    vi.mocked(Group.find).mockReturnValue({ lean: vi.fn().mockResolvedValue(mockGroups) } as any);
 
     const req = mockReq({ method: 'GET' });
     const res = mockRes();

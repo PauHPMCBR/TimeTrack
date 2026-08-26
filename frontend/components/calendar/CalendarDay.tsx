@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { CalendarDayProps } from "@/types/calendar";
 
-export function CalendarDay({ day, onHover, onClick, getVacationClass, t }: CalendarDayProps) {
+function CalendarDayComponent({ day, onHover, onClick, getVacationClass, t }: CalendarDayProps) {
   const { date, vacationEvents, workEvent, isToday, isWeekend } = day;
 
   const cellCls = [
@@ -61,3 +62,5 @@ export function CalendarDay({ day, onHover, onClick, getVacationClass, t }: Cale
     </div>
   );
 }
+
+export const CalendarDay = memo(CalendarDayComponent);

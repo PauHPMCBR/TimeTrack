@@ -97,11 +97,16 @@ export default function ProfilePage() {
     }
   };
 
+  // Sorted copy computed once — reused by isCheckedIn / workedHoursToday /
+  // checkedInDuration instead of re-sorting on every 30s tick.
+  const sortedSessions = useMemo(() => {
+    return [...sessions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, [sessions]);
+
   const isCheckedIn = useMemo(() => {
     if (sessions.length === 0) return false;
-    const sorted = [...sessions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    return sorted[sorted.length - 1].type === 'check_in';
-  }, [sessions]);
+    return sortedSessions[sortedSessions.length - 1].type === 'check_in';
+  }, [sessions, sortedSessions]);
 
   useEffect(() => {
     if (!isCheckedIn) return;
@@ -111,6 +116,7 @@ export default function ProfilePage() {
   }, [isCheckedIn]);
 
   useEffect(() => {
+    let cancelled = false;
     const loadData = async () => {
       setLoading(true);
       setUser(null); 
@@ -124,6 +130,7 @@ export default function ProfilePage() {
           
           const today = new Date();
           const res = await apiClient.getDailyRecords(currentUser._id, today);
+          if (cancelled) return;
           if (res.data && res.data.workSessions) {
             setSessions(res.data.workSessions);
           }
@@ -131,11 +138,14 @@ export default function ProfilePage() {
       } catch (error) {
         console.error("Error carregant perfil:", error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadData();
+    return () => {
+      cancelled = true;
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -166,11 +176,10 @@ export default function ProfilePage() {
     let totalMs = 0;
     let lastIn: Date | null = null;
 
-    const sorted = [...sessions]
-      .filter(s => toLocalDateKey(s.timestamp) === toLocalDateKey(new Date()))
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const todaySessions = sortedSessions
+      .filter(s => toLocalDateKey(s.timestamp) === toLocalDateKey(new Date()));
 
-    sorted.forEach(s => {
+    todaySessions.forEach(s => {
         if (s.type === 'check_in') lastIn = new Date(s.timestamp);
         else if (s.type === 'check_out' && lastIn) {
             totalMs += new Date(s.timestamp).getTime() - lastIn.getTime();
@@ -180,15 +189,14 @@ export default function ProfilePage() {
 
     if (lastIn) totalMs += now - (lastIn as Date).getTime();
     return totalMs / 3_600_000;
-  }, [sessions, now]);
+  }, [sortedSessions, now]);
 
   const checkedInDuration = useMemo(() => {
       if (!isCheckedIn || sessions.length === 0) return "";
-      const sorted = [...sessions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      const last = sorted[sorted.length - 1];
+      const last = sortedSessions[sortedSessions.length - 1];
       const ms = now - new Date(last.timestamp).getTime();
       return formatHM(ms, t);
-  }, [isCheckedIn, sessions, t, now]);
+  }, [isCheckedIn, sortedSessions, t, now]);
 
 
   if (loading) return <div className="p-10 text-center text-zinc-500 animate-pulse">{t("common.loading")}</div>;

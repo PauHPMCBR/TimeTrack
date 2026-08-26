@@ -18,12 +18,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'YearRequired' });
     }
 
-    const currentUser = await User.findById(userId);
+    const currentUser = await User.findById(userId).lean() as any;
     if (!currentUser) {
       return res.status(404).json({ error: 'UserNotFound' });
     }
 
-    const groups = await Group.find({ _id: { $in: currentUser.groups } });
+    const groups = await Group.find({ _id: { $in: currentUser.groups } }).lean() as any[];
     const memberIds = new Set<string>();
     groups.forEach(g => {
       g.members.forEach((m: any) => memberIds.add(m.toString()));
@@ -39,7 +39,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       userId: { $in: Array.from(memberIds) },
       date: { $gte: startDate, $lte: endDate },
       status: 'approved'
-    }).populate('userId', 'name email');
+    }).populate('userId', 'name email').lean() as any[];
 
     res.status(200).json({ vacations });
   } catch (error) {

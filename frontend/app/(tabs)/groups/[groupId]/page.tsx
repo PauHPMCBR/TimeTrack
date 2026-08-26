@@ -42,18 +42,12 @@ export default function GroupDetailPage() {
     if (!group) return;
 
     const fetchMembers = async () => {
-      const details = [];
-      for (const memberId of group.members) {
-        try {
-          const res = await apiClient.getProfile(memberId);
-          if (res.data?.user) {
-            details.push(res.data.user);
-          }
-        } catch (e) {
-          console.error(`Failed to fetch user ${memberId}:`, e);
-        }
-      }
-      setMemberDetails(details);
+      const results = await Promise.all(
+        group.members.map((memberId) =>
+          apiClient.getProfile(memberId).then((res) => res.data?.user ?? null)
+        )
+      );
+      setMemberDetails(results.filter((u): u is User => u !== null));
     };
 
     fetchMembers();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { CalendarProps, CalendarDayData, VacationEvent } from "@/types/calendar";
 import { CalendarDay } from "./CalendarDay";
 import { CalendarTooltip, getVacationClass } from "./CalendarTooltip";
@@ -54,7 +54,7 @@ export function Calendar({
     [cursor]
   );
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
 
   const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" })
     .format(cursor)
@@ -63,7 +63,7 @@ export function Calendar({
   const prevMonth = () => onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1));
   const nextMonth = () => onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1));
 
-  const getVacationsForDay = (date: Date): VacationEvent[] => {
+  const getVacationsForDay = useCallback((date: Date): VacationEvent[] => {
     if (!vacations || !showVacations) return [];
     
     const events: VacationEvent[] = [];
@@ -140,9 +140,9 @@ export function Calendar({
     }
 
     return events;
-  };
+  }, [vacations, teamVacations, showVacations, t]);
 
-  const getWorkSessionsForDay = (date: Date) => {
+  const getWorkSessionsForDay = useCallback((date: Date) => {
     if (!workSessions || !showWorkSessions) return null;
     
     const day = date.getDate();
@@ -158,36 +158,44 @@ export function Calendar({
     }
     
     return null;
-  };
+  }, [workSessions, showWorkSessions]);
 
-  const getCalendarDayData = (date: Date): CalendarDayData => {
-    return {
-      date,
-      vacationEvents: getVacationsForDay(date),
-      workEvent: getWorkSessionsForDay(date),
-      isToday: ymd(date) === ymd(today),
-      isWeekend: [6, 0].includes(date.getDay())
-    };
-  };
+  // Precompute every cell's data once per month/data — avoids O(days × events)
+  // recomputation and full-grid re-renders on every hover/tooltip move.
+  const daysData = useMemo(() => {
+    const map = new Map<string, CalendarDayData>();
+    rows.flat().forEach((date) => {
+      if (!date) return;
+      const key = ymd(date);
+      map.set(key, {
+        date,
+        vacationEvents: getVacationsForDay(date),
+        workEvent: getWorkSessionsForDay(date),
+        isToday: key === ymd(today),
+        isWeekend: [6, 0].includes(date.getDay())
+      });
+    });
+    return map;
+  }, [rows, getVacationsForDay, getWorkSessionsForDay, today]);
 
-  const handleDayHover = (date: Date, event: React.MouseEvent) => {
+  const handleDayHover = useCallback((date: Date, event: React.MouseEvent) => {
     setHoveredDay(date);
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipPosition({
       x: rect.left + rect.width / 2,
       y: rect.top
     });
-  };
+  }, []);
 
-  const handleDayClick = (date: Date) => {
+  const handleDayClick = useCallback((date: Date) => {
     setHoveredDay(null);
     setSelectedDay(date);
     onDayClick?.(date);
-  };
+  }, [onDayClick]);
 
-  const handleCalendarMouseLeave = () => {
+  const handleCalendarMouseLeave = useCallback(() => {
     setHoveredDay(null);
-  };
+  }, []);
 
   const closeModal = () => {
     setSelectedDay(null);
@@ -287,7 +295,7 @@ export function Calendar({
               />
             );
 
-            const dayData = getCalendarDayData(date);
+            const dayData = daysData.get(ymd(date))!;
 
             return (
               <CalendarDay

@@ -57,7 +57,9 @@ describe('GET /api/groups/user/[userId]', () => {
 
     const { Group } = await import('@/models');
     vi.mocked(Group.find).mockReturnValue({
-      sort: vi.fn().mockResolvedValue(mockGroups),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockGroups),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { userId: 'user-456' } });
@@ -72,7 +74,9 @@ describe('GET /api/groups/user/[userId]', () => {
   it('should return 500 on database error', async () => {
     const { Group } = await import('@/models');
     vi.mocked(Group.find).mockReturnValue({
-      sort: vi.fn().mockRejectedValue(new Error('DB Error')),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('DB Error')),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { userId: 'user-456' } });

@@ -57,7 +57,9 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
     ];
 
     vi.mocked(WorkSession.find).mockReturnValue({
-      sort: vi.fn().mockResolvedValue(mockSessions),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockSessions),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { userId: 'user-456', year: '2024', month: '1' } });
@@ -83,7 +85,9 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
 
   it('should return 500 on database error', async () => {
     vi.mocked(WorkSession.find).mockReturnValue({
-      sort: vi.fn().mockRejectedValue(new Error('DB Error')),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('DB Error')),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { userId: 'user-456', year: '2024', month: '1' } });

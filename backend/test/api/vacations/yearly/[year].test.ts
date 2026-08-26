@@ -54,7 +54,9 @@ describe('GET /api/vacations/yearly/[year]', () => {
       selectedElectiveDays: [],
     };
 
-    vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(mockYearlyVacation);
+    vi.mocked(YearlyVacationDays.findOne).mockReturnValue({
+      lean: vi.fn().mockResolvedValue(mockYearlyVacation),
+    } as any);
 
     const req = mockReq({ method: 'GET', query: { year: '2024' } });
     const res = mockRes();
@@ -66,7 +68,9 @@ describe('GET /api/vacations/yearly/[year]', () => {
   });
 
   it('should return 404 if yearly vacation config not found', async () => {
-    vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(null);
+    vi.mocked(YearlyVacationDays.findOne).mockReturnValue({
+      lean: vi.fn().mockResolvedValue(null),
+    } as any);
 
     const req = mockReq({ method: 'GET', query: { year: '2099' } });
     const res = mockRes();

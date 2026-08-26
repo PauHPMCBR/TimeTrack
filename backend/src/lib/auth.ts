@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
+import dbConnect from '@/lib/mongodb';
 import { User, Group } from '@/models';
 import { responseError } from './response-error-generator';
 
@@ -59,8 +60,21 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
 
       const targetUserId = req.query.userId as string;
 
-      const currentUser = await User.findById(req.user?.userId);
-      const targetUser = await User.findById(targetUserId);
+      // Fast path: users can always view their own data — no DB round-trips.
+      if (targetUserId && targetUserId === req.user?.userId) {
+        return handler(req, res);
+      }
+
+      if (!targetUserId) {
+        return responseError(res, 403, 'NoAccessToUser');
+      }
+
+      await dbConnect();
+
+      const [currentUser, targetUser] = await Promise.all([
+        User.findById(req.user?.userId),
+        User.findById(targetUserId),
+      ]);
 
       if (!currentUser || !targetUser) {
         return responseError(res, 404, 'UserNotFound');
@@ -95,6 +109,8 @@ export const requireInGroupOrAdmin = (handler: Handler) => {
       if (!req.user?.userId || !groupId) {
         return responseError(res, 403, 'NoAccessToGroup');
       }
+
+      await dbConnect();
 
       const group = await Group.findById(groupId);
       if (!group) {

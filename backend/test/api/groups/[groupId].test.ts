@@ -59,12 +59,12 @@ describe('GET /api/groups/[groupId]', () => {
     };
 
     const mockQuery = {
-      populate: vi.fn().mockResolvedValue(mockGroup),
+      populate: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockGroup),
+      }),
     };
 
-    vi.mocked(Group.findById)
-      .mockReturnValueOnce(mockGroup as any)
-      .mockReturnValue(mockQuery as any);
+    vi.mocked(Group.findById).mockReturnValue(mockQuery as any);
 
     const req = mockReq({ method: 'GET', query: { groupId: 'group-123' } });
     const res = mockRes();
@@ -76,7 +76,11 @@ describe('GET /api/groups/[groupId]', () => {
   });
 
   it('should return 404 if group not found', async () => {
-    vi.mocked(Group.findById).mockResolvedValue(null);
+    vi.mocked(Group.findById).mockReturnValue({
+      populate: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(null),
+      }),
+    } as any);
 
     const req = mockReq({ method: 'GET', query: { groupId: 'nonexistent' } });
     const res = mockRes();

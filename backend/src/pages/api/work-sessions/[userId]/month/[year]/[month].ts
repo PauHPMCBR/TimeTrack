@@ -35,7 +35,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         $gte: startOfMonth, 
         $lt: nextMonth 
       }
-    }).sort({ timestamp: 1 });
+    }).sort({ timestamp: 1 }).lean();
 
     // Initialize arrays with 32 elements (index 0 unused, 1-31 for days)
     const sessionsByDay: any[][] = Array(32).fill(null).map(() => []);
@@ -60,10 +60,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       const daySessions = sessionsByDay[day];
       if (daySessions.length === 0) continue;
 
-      // Sort sessions by timestamp for this day
-      daySessions.sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+      // Sessions arrive globally sorted by timestamp, and grouping preserves
+      // that order per day, so no re-sort is needed here.
 
       let dayHours = 0;
       let checkInTime: Date | null = null;

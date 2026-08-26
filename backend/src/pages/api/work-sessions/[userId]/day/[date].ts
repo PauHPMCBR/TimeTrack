@@ -27,7 +27,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const sessions = await WorkSession.find({
       userId: userId,
       timestamp: { $gte: startOfDay, $lte: endOfDay },
-    }).sort({ timestamp: 1 });
+    }).sort({ timestamp: 1 }).lean();
 
     res.status(200).json({
       success: true,

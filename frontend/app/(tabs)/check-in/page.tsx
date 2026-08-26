@@ -58,12 +58,14 @@ export default function CheckInPage() {
     }
   };
 
-  const activeSession = useMemo(() => {
+  const todaySessions = useMemo(() => {
     const todayString = toLocalDateKey(new Date());
-    const todaySessions = workSessions
+    return workSessions
       .filter(session => toLocalDateKey(session.timestamp) === todayString)
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, [workSessions]);
 
+  const activeSession = useMemo(() => {
     let lastCheckIn: WorkSession | null = null;
 
     for (const session of todaySessions) {
@@ -74,7 +76,7 @@ export default function CheckInPage() {
       }
     }
     return lastCheckIn;
-  }, [workSessions]);
+  }, [todaySessions]);
 
   // Keep elapsed times ticking while checked in
   const isActiveSession = Boolean(activeSession);
@@ -86,11 +88,6 @@ export default function CheckInPage() {
   }, [isActiveSession]);
 
   const todaySummary = useMemo(() => {
-    const todayString = toLocalDateKey(new Date());
-    const todaySessions = workSessions.filter(session => {
-      return toLocalDateKey(session.timestamp) === todayString;
-    }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
     let totalMs = 0;
     let checkInTime: Date | null = null;
 
@@ -112,7 +109,7 @@ export default function CheckInPage() {
       totalMs: totalMs,
       sessions: todaySessions
     };
-  }, [workSessions, now]);
+  }, [todaySessions, now]);
 
   const currentElapsed = useMemo(() => {
     if (!activeSession) return null;

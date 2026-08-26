@@ -59,7 +59,7 @@ describe('GET /api/admin/currently-working', () => {
       { _id: 'user-1', name: 'User 1', email: 'user1@example.com' },
       { _id: 'user-2', name: 'User 2', email: 'user2@example.com' },
     ];
-    vi.mocked(User.find).mockResolvedValue(mockUsers);
+    vi.mocked(User.find).mockReturnValue({ lean: vi.fn().mockResolvedValue(mockUsers) } as any);
 
     const req = mockReq({ method: 'GET' });
     const res = mockRes();
@@ -75,7 +75,7 @@ describe('GET /api/admin/currently-working', () => {
 
   it('should return 200 with empty array when no users are working', async () => {
     vi.mocked(WorkSession.aggregate).mockResolvedValue([]);
-    vi.mocked(User.find).mockResolvedValue([]);
+    vi.mocked(User.find).mockReturnValue({ lean: vi.fn().mockResolvedValue([]) } as any);
 
     const req = mockReq({ method: 'GET' });
     const res = mockRes();

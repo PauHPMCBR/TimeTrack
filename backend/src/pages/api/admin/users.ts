@@ -12,7 +12,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
   try {
     await dbConnect();
 
-    const users = await User.find({}, '-password'); // No enviem la contrasenya
+    const users = await User.find({}, '-password -registrationToken').lean(); // No enviem la contrasenya ni tokens de registre
     res.status(200).json({
       users: users
     });
