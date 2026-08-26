@@ -22,7 +22,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const userId = req.query.userId as string;
     const user = await User.findById(userId)
       .select('-password -registrationToken')
-      .populate('groups', 'name description');
+      .populate('groups', 'name description')
+      .lean();
 
     if (!user) {
       return responseErrorEntryNotFound(res, 'User');

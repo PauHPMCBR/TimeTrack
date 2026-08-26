@@ -4,6 +4,8 @@ import { GroupSchema, UserSchema, ElectiveVacationSchema, WorkSessionSchema, Yea
 import { zodSchema } from "@zodyac/zod-mongoose";
 
 const zUserSchema = zodSchema(UserSchema);
+zUserSchema.index({ email: 1, registered: 1 });
+zUserSchema.index({ registrationToken: 1 });
 zUserSchema.pre('save', async function(next) {
   // Only hash the password if it's modified (or new) and exists
   if (!this.isModified('password') || !this.password) return next();
@@ -25,15 +27,22 @@ const zWorkSessionReasonSchema = zodSchema(WorkSessionReasonSchema);
 
 const zWorkSessionSchema = zodSchema(WorkSessionSchema);
 zWorkSessionSchema.index({ userId: 1, timestamp: -1 });
+// Admin "currently working" aggregation matches on timestamp alone.
+zWorkSessionSchema.index({ timestamp: -1 });
 
 const zElectiveVacationSchema = zodSchema(ElectiveVacationSchema);
-zElectiveVacationSchema.index({ status: 1, startDate: 1 });
+zElectiveVacationSchema.index({ userId: 1, date: 1 });
+zElectiveVacationSchema.index({ status: 1, date: 1 });
+zElectiveVacationSchema.index({ date: 1 });
 
 const zGroupSchema = zodSchema(GroupSchema);
+zGroupSchema.index({ members: 1, name: 1 });
 
 const zYearlyVacationDays = zodSchema(YearlyVacationDaysSchema);
 // Compound index for user-year uniqueness
 zYearlyVacationDays.index({ userId: 1, year: 1 }, { unique: true });
+// Global-template rows (userId absent) are looked up by year alone.
+zYearlyVacationDays.index({ year: 1 });
 
 // Export models
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);

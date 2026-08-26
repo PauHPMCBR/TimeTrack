@@ -63,7 +63,9 @@ describe('GET /api/groups/team-vacations', () => {
   });
 
   it('should return 404 if user not found', async () => {
-    vi.mocked(User.findById).mockResolvedValue(null);
+    vi.mocked(User.findById).mockReturnValue({
+      lean: vi.fn().mockResolvedValue(null),
+    } as any);
 
     const req = mockReq({ method: 'GET', query: { year: '2024' } });
     const res = mockRes();
@@ -75,20 +77,23 @@ describe('GET /api/groups/team-vacations', () => {
   });
 
   it('should return 200 with vacations on successful GET', async () => {
-    vi.mocked(User.findById).mockResolvedValue({
-      _id: 'user-123',
-      groups: ['group-1'],
-    });
+    vi.mocked(User.findById).mockReturnValue({
+      lean: vi.fn().mockResolvedValue({ _id: 'user-123', groups: ['group-1'] }),
+    } as any);
 
-    vi.mocked(Group.find).mockResolvedValue([
-      { _id: 'group-1', members: ['user-456', 'user-789'] },
-    ]);
+    vi.mocked(Group.find).mockReturnValue({
+      lean: vi.fn().mockResolvedValue([
+        { _id: 'group-1', members: ['user-456', 'user-789'] },
+      ]),
+    } as any);
 
     const mockVacations = [
       { _id: 'vacation-1', userId: { name: 'User 1' }, date: new Date('2024-06-15') },
     ];
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      populate: vi.fn().mockResolvedValue(mockVacations),
+      populate: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockVacations),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { year: '2024' } });

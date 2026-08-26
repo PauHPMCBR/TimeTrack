@@ -16,15 +16,17 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
-    const vacations = await ElectiveVacation.find({
-      date: { $gte: startDate, $lte: endDate },
-    }).sort({ date: 1 });
+    const [vacations, yearlyVacationDays] = await Promise.all([
+      ElectiveVacation.find({
+        date: { $gte: startDate, $lte: endDate },
+      }).sort({ date: 1 }).lean(),
 
-    // find generic yearly vacation days
-    const yearlyVacationDays = await YearlyVacationDays.findOne({
-      userId: undefined,
-      year: year,
-    });
+      // find generic yearly vacation days
+      YearlyVacationDays.findOne({
+        userId: undefined,
+        year: year,
+      }).lean(),
+    ]) as [any[], any];
 
     const response: YearlyVacationResponse = {
       year: year,

@@ -23,7 +23,6 @@ export default function CalendarPage() {
   const [vacations, setVacations] = useState<YearlyVacationResponse | null>(null);
   const [workSessions, setWorkSessions] = useState<MonthlyWorkRecordResponse | null>(null);
   const [teamVacations, setTeamVacations] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -32,66 +31,63 @@ export default function CalendarPage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
-      if (!currentUser) return;
-      
       setLoading(true);
       setErrorMsg(null);
       try {
+        // getCurrentUser is cached in ApiClient, so this resolves instantly on
+        // subsequent month changes; the three data calls then run in parallel.
+        const user = await apiClient.getCurrentUser();
+        if (cancelled) return;
+        if (!user) {
+          router.push("/");
+          return;
+        }
+
         const year = cursor.getFullYear();
         const month = cursor.getMonth() + 1;
-        
-        const vacationsResponse = await apiClient.getUserVacations(currentUser._id, year);
+
+        const [vacationsResponse, workSessionsResponse, teamVacationsRes] = await Promise.all([
+          apiClient.getUserVacations(user._id, year),
+          apiClient.getMonthlyRecords(user._id, month, year),
+          apiClient.getTeamVacations(year),
+        ]);
+        if (cancelled) return;
+
         if (vacationsResponse.error) {
-           setErrorMsg(t(`error.${vacationsResponse.error}`));
+          setErrorMsg(t(`error.${vacationsResponse.error}`));
         } else {
-           setVacations(vacationsResponse.data!);
+          setVacations(vacationsResponse.data!);
         }
 
-        const workSessionsResponse = await apiClient.getMonthlyRecords(currentUser._id, month, year);
         if (workSessionsResponse.error) {
-           setErrorMsg(t(`error.${workSessionsResponse.error}`));
+          setErrorMsg(t(`error.${workSessionsResponse.error}`));
         } else {
-           setWorkSessions(workSessionsResponse.data!);
+          setWorkSessions(workSessionsResponse.data!);
         }
 
-        const teamVacationsRes = await apiClient.getTeamVacations(year);
         if (teamVacationsRes.data && teamVacationsRes.data.vacations) {
-            // Filter out self to not duplicate
-            const others = teamVacationsRes.data.vacations.filter((v: any) => {
-                const vUserId = typeof v.userId === 'object' ? v.userId._id : v.userId;
-                return vUserId !== currentUser._id;
-            });
-            setTeamVacations(others);
+          // Filter out self to not duplicate
+          const others = teamVacationsRes.data.vacations.filter((v: any) => {
+            const vUserId = typeof v.userId === 'object' ? v.userId._id : v.userId;
+            return vUserId !== user._id;
+          });
+          setTeamVacations(others);
         }
-
       } catch (error) {
         console.error('Failed to fetch calendar data:', error);
         setErrorMsg(t('error.GetError'));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchData();
-  }, [cursor, currentUser, t]);
-
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const userResponse = await apiClient.getCurrentUser();
-        if (userResponse) {
-          setCurrentUser(userResponse);
-        } else {
-          router.push("/");
-        }
-      } catch (error) {
-        console.error('Failed to fetch current user:', error);
-      }
+    return () => {
+      cancelled = true;
     };
-    
-    fetchCurrentUser();
-  }, []);
+  }, [cursor, t, router]);
 
   return (
     <div className="space-y-4">

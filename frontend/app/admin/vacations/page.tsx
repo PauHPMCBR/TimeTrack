@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
@@ -31,6 +31,7 @@ export default function AdminVacationsPage() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
   const [processingIds, setProcessingIds] = useState<string[]>([]); // Per evitar doble click
+  const fetchSeq = useRef(0); // ignora respostes obsoletes en canvis ràpids d'any
 
   const usersMap = useMemo(() => {
     const map: Record<string, User> = {};
@@ -45,6 +46,7 @@ export default function AdminVacationsPage() {
   };
 
   const fetchVacations = async () => {
+    const seq = ++fetchSeq.current;
     try {
       setLoading(true);
       setError(null);
@@ -53,6 +55,8 @@ export default function AdminVacationsPage() {
         apiClient.getAllVacationsYearAdmin(year),
         apiClient.getCompanyUsers()
       ]);
+
+      if (seq !== fetchSeq.current) return; // una petició més nova ja ha començat
 
       if (resVacations.status === 'fulfilled' && resVacations.value.data) {
         setRequests(resVacations.value.data.electives || []);
@@ -70,7 +74,7 @@ export default function AdminVacationsPage() {
       console.error("Unexpected error:", error);
       setError(t("error.GetError") || "Error loading data");
     } finally {
-      setLoading(false);
+      if (seq === fetchSeq.current) setLoading(false);
     }
   };
 

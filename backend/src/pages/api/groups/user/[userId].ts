@@ -23,7 +23,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     const groups = await Group.find({
         members: userId,
-    }).sort({ name: 1 });
+    }).sort({ name: 1 }).lean();
 
     res.status(200).json({ groups: groups });
   } catch (error) {

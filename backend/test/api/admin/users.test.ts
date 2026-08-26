@@ -52,7 +52,7 @@ describe('GET /api/admin/users', () => {
     ];
 
     const { User } = await import('@/models');
-    vi.mocked(User.find).mockResolvedValue(mockUsers);
+    vi.mocked(User.find).mockReturnValue({ lean: vi.fn().mockResolvedValue(mockUsers) } as any);
 
     const req = mockReq({ method: 'GET' });
     const res = mockRes();

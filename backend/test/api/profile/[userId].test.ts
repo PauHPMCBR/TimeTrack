@@ -61,7 +61,9 @@ describe('GET /api/profile/[userId]', () => {
     const { User } = await import('@/models');
     vi.mocked(User.findById).mockReturnValue({
       select: vi.fn().mockReturnValue({
-        populate: vi.fn().mockResolvedValue(mockUser),
+        populate: vi.fn().mockReturnValue({
+          lean: vi.fn().mockResolvedValue(mockUser),
+        }),
       }),
     } as any);
 
@@ -78,7 +80,9 @@ describe('GET /api/profile/[userId]', () => {
     const { User } = await import('@/models');
     vi.mocked(User.findById).mockReturnValue({
       select: vi.fn().mockReturnValue({
-        populate: vi.fn().mockResolvedValue(null),
+        populate: vi.fn().mockReturnValue({
+          lean: vi.fn().mockResolvedValue(null),
+        }),
       }),
     } as any);
 
@@ -98,7 +102,9 @@ describe('GET /api/profile/[userId]', () => {
     const { User } = await import('@/models');
     vi.mocked(User.findById).mockReturnValue({
       select: vi.fn().mockReturnValue({
-        populate: vi.fn().mockRejectedValue(new Error('DB Error')),
+        populate: vi.fn().mockReturnValue({
+          lean: vi.fn().mockRejectedValue(new Error('DB Error')),
+        }),
       }),
     } as any);
 

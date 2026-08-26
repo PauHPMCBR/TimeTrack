@@ -52,6 +52,7 @@ export default function OtherUserProfilePage() {
   useEffect(() => {
     if (!userId) return;
 
+    let cancelled = false;
     const fetchCalendarData = async () => {
       setCalendarLoading(true);
       try {
@@ -63,16 +64,20 @@ export default function OtherUserProfilePage() {
           apiClient.getMonthlyRecords(userId, month, year)
         ]);
 
+        if (cancelled) return;
         if (vacRes.data) setVacations(vacRes.data);
         if (workRes.data) setWorkSessions(workRes.data);
       } catch (error) {
         console.error("Error loading calendar data:", error);
       } finally {
-        setCalendarLoading(false);
+        if (!cancelled) setCalendarLoading(false);
       }
     };
 
     fetchCalendarData();
+    return () => {
+      cancelled = true;
+    };
   }, [userId, cursor]);
 
   const handleMonthChange = (newCursor: Date) => {

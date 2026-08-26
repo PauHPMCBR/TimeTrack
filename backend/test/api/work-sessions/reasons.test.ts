@@ -18,7 +18,7 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/models', () => ({
   WorkSessionReason: {
     find: vi.fn().mockReturnValue({
-      sort: vi.fn().mockResolvedValue([
+      lean: vi.fn().mockResolvedValue([
         { _id: 'reason-1', name: 'Working from home', type: 'all' },
         { _id: 'reason-2', name: 'Doctor appointment', type: 'check_in' },
       ]),

@@ -20,6 +20,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:30
 class ApiClient {
   private currentUser: User | undefined = undefined;
   private errorListener: ((error: string, details?: any) => void) | null = null;
+  private reasonsPromise: Promise<ApiResponse<{ reasons: WorksessionReason[] }>> | null = null;
+  private avatarCache = new Map<string, Promise<Blob | null>>();
 
   setErrorListener(listener: ((error: string, details?: any) => void) | null) {
     this.errorListener = listener;
@@ -93,6 +95,8 @@ class ApiClient {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("remembered_email");
     this.currentUser = undefined;
+    this.reasonsPromise = null;
+    this.avatarCache.clear();
   }
 
   async register(credentials: RegisterRequest): Promise<ApiResponse<UserLoginResponse>> {
@@ -156,10 +160,22 @@ class ApiClient {
 
   // Avatars are fetched with the auth token (an <img> tag can't send the JWT,
   // and an unauthenticated request would be blocked by the browser), then
-  // displayed via a blob URL.
+  // displayed via a blob URL. The blob is cached per (userId, version) so the
+  // network is only hit once per avatar version across the SPA session.
   async getAvatarBlob(userId: string, version?: string | null): Promise<Blob | null> {
     const token = localStorage.getItem('auth_token');
     const endpoint = `/api/profile/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
+    const key = `${userId}:${version ?? ''}`;
+
+    let cached = this.avatarCache.get(key);
+    if (!cached) {
+      cached = this.fetchAvatarBlob(endpoint, token);
+      this.avatarCache.set(key, cached);
+    }
+    return cached;
+  }
+
+  private async fetchAvatarBlob(endpoint: string, token: string | null): Promise<Blob | null> {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -233,7 +249,11 @@ class ApiClient {
 
   // Work session methods
   async getWorkSessionReasons(): Promise<ApiResponse<{ reasons: WorksessionReason[] }>> {
-    return this.request(`/api/work-sessions/reasons`);
+    // Reasons are effectively static per company — cache for the session.
+    if (!this.reasonsPromise) {
+      this.reasonsPromise = this.request(`/api/work-sessions/reasons`);
+    }
+    return this.reasonsPromise;
   }
 
   async addWorkRecordTimestamp(info: WorkSessionRequest): Promise<ApiResponse<{ workSession: WorkSession }>> {

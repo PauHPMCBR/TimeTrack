@@ -37,7 +37,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       .filter(s => s.latestSession.type === 'check_in')
       .map(s => s._id);
 
-    const activeUsers = await User.find({ _id: { $in: activeUserIds } }, 'name email');
+    const activeUsers = await User.find({ _id: { $in: activeUserIds } }, 'name email').lean();
 
     res.status(200).json({
       count: activeUsers.length,

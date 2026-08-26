@@ -14,7 +14,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     const vacations = await ElectiveVacation.find({
       status: "pending",
-    }).sort({ date: 1 });
+    }).sort({ date: 1 }).lean();
 
     res.status(200).json({ vacations: vacations });
   } catch (error) {

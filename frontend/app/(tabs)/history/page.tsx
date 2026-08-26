@@ -59,17 +59,15 @@ export default function HistoryAndStatsPage() {
           const now = new Date();
           const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
 
-          // Get sessions for multiple months
-          const allSessions: WorkSession[] = [];
-
-          for (let i = 0; i < 4; i++) {
+          // Get sessions for multiple months — fetch all 4 in parallel.
+          const monthCalls = Array.from({ length: 4 }, (_, i) => {
             const date = new Date(threeMonthsAgo.getFullYear(), threeMonthsAgo.getMonth() + i, 1);
-            const response = await apiClient.getMonthlyRecords(
-              user._id,
-              date.getMonth() + 1,
-              date.getFullYear()
-            );
+            return apiClient.getMonthlyRecords(user._id, date.getMonth() + 1, date.getFullYear());
+          });
+          const responses = await Promise.all(monthCalls);
 
+          const allSessions: WorkSession[] = [];
+          responses.forEach((response) => {
             if (response.data?.sessionsByDay) {
               // Flatten the sessionsByDay array (index is day of month, position 0 is empty)
               response.data.sessionsByDay.forEach((daySessions, dayIndex) => {
@@ -80,7 +78,7 @@ export default function HistoryAndStatsPage() {
                 }
               });
             }
-          }
+          });
 
           setWorkSessions(allSessions);
         }

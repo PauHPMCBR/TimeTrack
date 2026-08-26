@@ -13,7 +13,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     await dbConnect();
 
     // Busquem TOTS els grups
-    const groups = await Group.find({}); 
+    const groups = await Group.find({}).lean(); 
     
     // Retornem l'objecte { groups: [...] }
     res.status(200).json({

@@ -65,10 +65,14 @@ describe('GET /api/admin/vacations/[year]', () => {
     };
 
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockResolvedValue(mockVacations),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockVacations),
+      }),
     } as any);
 
-    vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(mockYearlyVacation);
+    vi.mocked(YearlyVacationDays.findOne).mockReturnValue({
+      lean: vi.fn().mockResolvedValue(mockYearlyVacation),
+    } as any);
 
     const req = mockReq({ method: 'GET', query: { year: '2024' } });
     const res = mockRes();
@@ -85,7 +89,9 @@ describe('GET /api/admin/vacations/[year]', () => {
 
   it('should return 500 on database error', async () => {
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockRejectedValue(new Error('DB Error')),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('DB Error')),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { year: '2024' } });

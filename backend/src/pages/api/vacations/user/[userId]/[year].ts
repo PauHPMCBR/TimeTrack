@@ -25,23 +25,23 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
     // 1. Recuperem les vacances (electives) sol·licitades
-    const vacations = await ElectiveVacation.find({
-      userId: userId,
-      date: { $gte: startDate, $lte: endDate },
-    }).sort({ date: 1 });
+    // 2. Plantilla Global + registre específic de l'usuari (independent → paral·lel)
+    const [vacations, globalSettings, yearlyVacationDaysResult] = await Promise.all([
+      ElectiveVacation.find({
+        userId: userId,
+        date: { $gte: startDate, $lte: endDate },
+      }).sort({ date: 1 }).lean(),
+      YearlyVacationDays.findOne({
+        year: year,
+        userId: undefined, // userId undefined indica que és la plantilla global
+      }).lean(),
+      YearlyVacationDays.findOne({
+        year: year,
+        userId: userId,
+      }).lean(),
+    ]) as [any[], any, any];
 
-    // 2. Busquem la Plantilla Global (Configuració Mestra)
-    // Aquesta és la que conté el '22' que has canviat
-    const globalSettings = await YearlyVacationDays.findOne({
-      year: year,
-      userId: undefined, // userId undefined indica que és la plantilla global
-    });
-
-    // 3. Busquem el registre específic de l'usuari
-    let yearlyVacationDays = await YearlyVacationDays.findOne({
-      year: year,
-      userId: userId,
-    });
+    let yearlyVacationDays = yearlyVacationDaysResult;
 
     // --- NOVA LÒGICA DE SINCRONITZACIÓ ---
     

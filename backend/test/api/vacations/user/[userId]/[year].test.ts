@@ -69,12 +69,14 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
     };
 
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockResolvedValue(mockVacations),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockVacations),
+      }),
     } as any);
 
     vi.mocked(YearlyVacationDays.findOne)
-      .mockResolvedValueOnce({ year: 2024, electiveDaysTotalCount: 22, obligatoryDays: [] })  // globalSettings
-      .mockResolvedValueOnce(mockYearlyVacation);  // user yearly
+      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValueOnce({ year: 2024, electiveDaysTotalCount: 22, obligatoryDays: [] }) } as any)  // globalSettings
+      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValueOnce(mockYearlyVacation) } as any);  // user yearly
 
     const req = mockReq({ method: 'GET', query: { userId: 'user-456', year: '2024' } });
     const res = mockRes();
@@ -93,12 +95,14 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
     const mockVacations: any[] = [];
 
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockResolvedValue(mockVacations),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockVacations),
+      }),
     } as any);
 
     vi.mocked(YearlyVacationDays.findOne)
-      .mockResolvedValueOnce({ year: 2024, electiveDaysTotalCount: 22, obligatoryDays: ['2024-01-01'] })  // globalSettings
-      .mockResolvedValueOnce(null);  // user yearly not found
+      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValueOnce({ year: 2024, electiveDaysTotalCount: 22, obligatoryDays: ['2024-01-01'] }) } as any)  // globalSettings
+      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValueOnce(null) } as any);  // user yearly not found
 
     vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({
       year: 2024,
@@ -126,7 +130,9 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
 
   it('should return 500 on database error', async () => {
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockRejectedValue(new Error('DB Error')),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('DB Error')),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET', query: { userId: 'user-456', year: '2024' } });

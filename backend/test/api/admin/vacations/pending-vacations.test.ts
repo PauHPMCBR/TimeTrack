@@ -53,7 +53,9 @@ describe('GET /api/admin/vacations/pending-vacations', () => {
     ];
 
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockResolvedValue(mockVacations),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockVacations),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET' });
@@ -67,7 +69,9 @@ describe('GET /api/admin/vacations/pending-vacations', () => {
 
   it('should return 500 on database error', async () => {
     vi.mocked(ElectiveVacation.find).mockReturnValue({
-      sort: vi.fn().mockRejectedValue(new Error('DB Error')),
+      sort: vi.fn().mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('DB Error')),
+      }),
     } as any);
 
     const req = mockReq({ method: 'GET' });
