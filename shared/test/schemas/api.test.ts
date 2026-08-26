@@ -61,6 +61,7 @@ describe('API Schemas', () => {
       const result = CreateUserRequestSchema.safeParse({
         name: 'New User',
         email: 'new@example.com',
+        dni: '12345678A',
       });
       expect(result.success).toBe(true);
     });
@@ -70,8 +71,18 @@ describe('API Schemas', () => {
         name: 'New User',
         email: 'new@example.com',
         role: 'admin',
+        dni: '12345678A',
       });
       expect(result.success).toBe(true);
+    });
+
+    it('should reject missing dni', () => {
+      const result = CreateUserRequestSchema.safeParse({
+        name: 'New User',
+        email: 'new@example.com',
+        role: 'admin',
+      });
+      expect(result.success).toBe(false);
     });
 
     it('should reject invalid role', () => {
@@ -79,6 +90,7 @@ describe('API Schemas', () => {
         name: 'New User',
         email: 'new@example.com',
         role: 'superadmin',
+        dni: '12345678A',
       });
       expect(result.success).toBe(false);
     });

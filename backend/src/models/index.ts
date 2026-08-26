@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { GroupSchema, UserSchema, ElectiveVacationSchema, WorkSessionSchema, YearlyVacationDaysSchema, WorkSessionReasonSchema } from 'shared/src/schemas/database';
+import { GroupSchema, UserSchema, ElectiveVacationSchema, WorkSessionSchema, YearlyVacationDaysSchema, WorkSessionReasonSchema, AppSettingsSchema } from 'shared/src/schemas/database';
 import { zodSchema } from "@zodyac/zod-mongoose";
 
 const zUserSchema = zodSchema(UserSchema);
@@ -44,6 +44,9 @@ zYearlyVacationDays.index({ userId: 1, year: 1 }, { unique: true });
 // Global-template rows (userId absent) are looked up by year alone.
 zYearlyVacationDays.index({ year: 1 });
 
+const zAppSettings = zodSchema(AppSettingsSchema);
+zAppSettings.index({ _id: 1 });
+
 // Export models
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);
 export const WorkSessionReason = mongoose.models.WorkSessionReason || mongoose.model('WorkSessionReason', zWorkSessionReasonSchema);
@@ -51,3 +54,4 @@ export const WorkSession = mongoose.models.WorkSession || mongoose.model('WorkSe
 export const ElectiveVacation = mongoose.models.ElectiveVacation || mongoose.model('ElectiveVacation', zElectiveVacationSchema);
 export const Group = mongoose.models.Group || mongoose.model('Group', zGroupSchema);
 export const YearlyVacationDays = mongoose.models.YearlyVacationDays || mongoose.model('YearlyVacationDays', zYearlyVacationDays);
+export const AppSettings = mongoose.models.AppSettings || mongoose.model('AppSettings', zAppSettings);

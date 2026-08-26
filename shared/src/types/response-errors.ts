@@ -31,7 +31,7 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'YearlyVacationSaved'
     ;
 
-export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members' | 'avatar';
+export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members' | 'avatar' | 'dni' | 'expectedWorkHours' | 'fromYear' | 'toYear';
 
 export type PasswordIncorrectParameterReason = 'LessThan12Characters'
     | 'MissingLowercase'

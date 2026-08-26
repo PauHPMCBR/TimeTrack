@@ -6,6 +6,7 @@ import dbConnect from '@/lib/mongodb';
 import { responseErrorIncorrectParameter, responseErrorMethodNotAllowed, responseErrorPost } from '@/lib/response-error-generator';
 import { validateRequestBody } from '@/lib/validation';
 import { CreateUserRequestSchema } from 'shared/src/schemas/api';
+import { getAppSettings } from '@/lib/settings';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -20,7 +21,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
   try {
     await dbConnect();
-    const { email, name, role } = req.body;
+    const { email, name, role, dni } = req.body;
 
     const existingUser = await User.findOne({ email: String(email).toLowerCase() });
     if (existingUser) {
@@ -29,13 +30,17 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     const registrationToken = crypto.randomBytes(32).toString('hex');
 
+    const settings = await getAppSettings();
+
     const newUser = await User.create({
       name,
       email: email.toLowerCase(),
       registrationToken,
       registered: false,
       role: role || 'employee',
-      groups: []
+      groups: [],
+      dni,
+      expectedWorkHours: settings.defaultExpectedHours,
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -49,7 +54,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
           name: newUser.name,
           email: newUser.email,
           role: newUser.role,
-          registered: newUser.registered
+          registered: newUser.registered,
+          dni: newUser.dni,
+          expectedWorkHours: newUser.expectedWorkHours,
         },
         registrationLink,
         registrationToken,

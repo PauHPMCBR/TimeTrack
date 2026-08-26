@@ -280,7 +280,10 @@
       "title": "Team"
     },
     "form": {
+      "dni": "ID number",
+      "dniPlaceholder": "Ex: 12345678A",
       "email": "Email address",
+      "expectedHours": "Expected work hours",
       "name": "Full name",
       "role": {
         "label": "Role",
@@ -333,6 +336,10 @@
       "yearlyvacations": {
         "desc": "Asign obligatory vacations and amount of elective vacations",
         "title": "Yearly vacations"
+      },
+      "settings": {
+        "desc": "Company-wide configuration (hours, benevolence...).",
+        "title": "Settings"
       }
     },
     "stats": {
@@ -355,6 +362,23 @@
       "notFound": "No users found.",
       "pendingActivation": "Pending activation",
       "registered": "Registered"
+    },
+    "usersEdit": {
+      "editAction": "Edit user",
+      "saved": "User updated successfully",
+      "subtitle": "Modify the employee's details.",
+      "title": "Edit user"
+    },
+    "settings": {
+      "benevolenceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
+      "benevolenceLabel": "Deviation benevolence (hours)",
+      "defaultHoursHelp": "Expected work hours by default for new employees.",
+      "defaultHoursLabel": "Default expected hours",
+      "endOfDayHelp": "End-of-day hour to detect workers who haven't checked out.",
+      "endOfDayLabel": "End of day hour",
+      "saved": "Settings saved successfully",
+      "subtitle": "Configure the company-wide values.",
+      "title": "Company settings"
     },
     "export": {
       "button": "Export CSV",
@@ -385,6 +409,11 @@
     "vacationsSetup": {
       "addButton": "Add Date",
       "addDate": "Add holiday date",
+      "copyButton": "Copy from {year}",
+      "copyNotFound": "No vacation settings found for year {year}.",
+      "copySubtitle": "Copies obligatory holidays and elective days from {year} to {toYear}.",
+      "copySuccess": "Settings copied from {year} to {toYear} successfully",
+      "copyTitle": "Copy settings from another year",
       "dateExists": "This date is already added",
       "days": "days",
       "electiveDaysLabel": "Maximum elective days per employee",

@@ -14,10 +14,21 @@ export const UserSchema = z.object({
   registered: z.boolean().default(false),
   role: UserRoleSchema.default('employee'),
   groups: z.array(z.string()).default([]),
+  dni: z.string().min(1, 'DNI is required').max(20),
+  expectedWorkHours: z.number().positive().default(8),
   avatar: z.string().optional(),
   failedLoginAttempts: z.number().int().gte(0).default(0),
   blocked: z.boolean().default(false),
   blockedSince: z.date().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+// Company-wide configuration. Stored as a single document (no _id filter).
+export const AppSettingsSchema = z.object({
+  defaultExpectedHours: z.number().positive().default(8),
+  benevolenceHours: z.number().gte(0).default(1),
+  endOfDayHour: z.number().min(0).max(24).default(17),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });

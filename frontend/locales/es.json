@@ -280,7 +280,10 @@
       "title": "Equipo"
     },
     "form": {
+      "dni": "DNI",
+      "dniPlaceholder": "Ej: 12345678A",
       "email": "Correo electrónico",
+      "expectedHours": "Horas semanales esperadas",
       "name": "Nombre completo",
       "role": {
         "label": "Rol",
@@ -333,6 +336,10 @@
       "yearlyvacations": {
         "desc": "Asigna vacaciones obligatorias y cantidad de vacaciones de elección",
         "title": "Vacaciones anuales"
+      },
+      "settings": {
+        "desc": "Configuración general de la empresa (horas, benevolencia...).",
+        "title": "Configuración"
       }
     },
     "stats": {
@@ -355,6 +362,23 @@
       "notFound": "No se han encontrado usuarios.",
       "pendingActivation": "Activación pendiente",
       "registered": "Registrado"
+    },
+    "usersEdit": {
+      "editAction": "Editar usuario",
+      "saved": "Usuario actualizado correctamente",
+      "subtitle": "Modifica los datos del empleado.",
+      "title": "Editar usuario"
+    },
+    "settings": {
+      "benevolenceHelp": "Margen de tolerancia respecto a las horas esperadas antes de marcar una anomalía.",
+      "benevolenceLabel": "Benevolencia de desviación (horas)",
+      "defaultHoursHelp": "Horas de trabajo esperadas por defecto para los nuevos empleados.",
+      "defaultHoursLabel": "Horas esperadas por defecto",
+      "endOfDayHelp": "Hora límite del día para detectar trabajadores sin salir.",
+      "endOfDayLabel": "Hora de fin de día",
+      "saved": "Configuración guardada correctamente",
+      "subtitle": "Configura los valores generales de la empresa.",
+      "title": "Configuración de la empresa"
     },
     "export": {
       "button": "Exportar CSV",
@@ -385,6 +409,11 @@
     "vacationsSetup": {
       "addButton": "Añadir Fecha",
       "addDate": "Añadir fecha de festivo",
+      "copyButton": "Copiar de {year}",
+      "copyNotFound": "No hay configuración de vacaciones para el año {year}.",
+      "copySubtitle": "Copia los festivos y los días electivos del año {year} al año {toYear}.",
+      "copySuccess": "Configuración copiada de {year} a {toYear} correctamente",
+      "copyTitle": "Copiar configuración de otro año",
       "dateExists": "Esta fecha ya está añadida",
       "days": "días",
       "electiveDaysLabel": "Máximo de días electivos por empleado",
