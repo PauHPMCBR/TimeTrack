@@ -38,6 +38,9 @@ services:
       - FRONTEND_URL=http://localhost:3000
       - MONGODB_URI=mongodb://${MONGO_APP_USER:-alumne}:${MONGO_APP_PASSWORD}@mongodb:27017/myapp?authSource=myapp
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env}
+      - DATA_DIR=/data
+    volumes:
+      - app_uploads:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
       interval: 15s
@@ -69,6 +72,7 @@ services:
 
 volumes:
   mongodb_data:
+  app_uploads:
 
 networks:
   app-network:

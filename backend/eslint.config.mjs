@@ -13,19 +13,21 @@ export default tseslint.config(
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["test/**"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-    },
-  },
-  {
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" },
       ],
-      "no-console": "warn",
+      // console.error/warn is the codebase's logging convention; only flag the
+      // debug/verbose variants.
+      "no-console": ["warn", { allow: ["error", "warn"] }],
+    },
+  },
+  {
+    files: ["test/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   }
 );

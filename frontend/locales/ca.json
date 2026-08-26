@@ -221,6 +221,14 @@
       "description": "Crea nous usuaris i gestiona l'equip des d'aquí.",
       "title": "Panell d'Administració"
     },
+    "avatar": {
+      "change": "Canvia la foto",
+      "invalidFormat": "Format no compatible. Fes servir JPG, PNG, WEBP o GIF.",
+      "tooLarge": "La imatge és massa gran (màxim 10 MB).",
+      "uploadError": "No s'ha pogut pujar la foto. Torna-ho a provar.",
+      "uploading": "Pujant...",
+      "updated": "Foto actualitzada"
+    },
     "change": "Canvia",
     "errorLoading": "Error carregant l'usuari",
     "fallbackUser": "Usuari",
@@ -347,6 +355,12 @@
       "notFound": "No s'han trobat usuaris.",
       "pendingActivation": "Activació pendent",
       "registered": "Registrat"
+    },
+    "export": {
+      "button": "Exporta CSV",
+      "error": "Ha fallat l'exportació.",
+      "selectAll": "Selecciona-ho tot",
+      "selectedCount": "{count} seleccionats"
     },
     "vacations": {
       "approve": "Aprovar",

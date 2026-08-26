@@ -221,6 +221,14 @@
       "description": "Create new users and manage the team here.",
       "title": "Admin Panel"
     },
+    "avatar": {
+      "change": "Change photo",
+      "invalidFormat": "Unsupported format. Use JPG, PNG, WEBP or GIF.",
+      "tooLarge": "Image too large (max 10 MB).",
+      "uploadError": "Could not upload the photo. Please try again.",
+      "uploading": "Uploading...",
+      "updated": "Photo updated"
+    },
     "change": "Toggle",
     "errorLoading": "Error loading user",
     "fallbackUser": "User",
@@ -347,6 +355,12 @@
       "notFound": "No users found.",
       "pendingActivation": "Pending activation",
       "registered": "Registered"
+    },
+    "export": {
+      "button": "Export CSV",
+      "error": "Export failed.",
+      "selectAll": "Select all",
+      "selectedCount": "{count} selected"
     },
     "vacations": {
       "approve": "Approve",

@@ -6,6 +6,7 @@ const PUBLIC_USER_FIELDS = [
   'role',
   'groups',
   'registered',
+  'avatar',
 ] as const;
 
 /**

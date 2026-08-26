@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { WorkSession, User } from "@/types";
 import { formatHM, toLocalDateKey } from "@/lib/datetime";
 import { usePathname } from "next/navigation";
-import { Building2, Users, ShieldCheck, LayoutGrid, ChevronRight } from "lucide-react";
+import { Building2, Users, ShieldCheck, LayoutGrid, ChevronRight, Camera } from "lucide-react";
 import Card from "@/components/ui/Card";
+
+const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+const AVATAR_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/tiff",
+  "image/bmp",
+  "image/svg+xml",
+];
 
 const FLAVORS = [
   { id: "latte", base: "#eff1f5" },
@@ -36,6 +48,53 @@ export default function ProfilePage() {
   const [theme, setTheme] = useState<ThemeFlavor>("mocha");
   const [timeFmt, setTimeFmt] = useState<"24" | "12">("24");
   const [now, setNow] = useState(() => Date.now());
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const readFileAsDataURL = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadSuccess(false);
+    setUploadError(null);
+
+    if (file.type && !AVATAR_TYPES.includes(file.type)) {
+      setUploadError(t("profile.avatar.invalidFormat"));
+      return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      setUploadError(t("profile.avatar.tooLarge"));
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const dataUrl = await readFileAsDataURL(file);
+      const res = await apiClient.uploadAvatar(dataUrl);
+      if (res.error) {
+        setUploadError(t("profile.avatar.uploadError"));
+      } else {
+        setUser(prev => (prev ? { ...prev, avatar: res.data!.avatar } : prev));
+        setUploadSuccess(true);
+      }
+    } catch {
+      setUploadError(t("profile.avatar.uploadError"));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const isCheckedIn = useMemo(() => {
     if (sessions.length === 0) return false;
@@ -142,8 +201,33 @@ export default function ProfilePage() {
   return (
     <section className="space-y-6 pb-20">
       <div className="flex items-center gap-4">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-indigo-600 text-white shadow-lg">
-          <span className="text-2xl font-bold">{initials}</span>
+        <div className="relative">
+          {user.avatar ? (
+            <img
+              src={apiClient.getAvatarUrl(user._id, user.avatar)}
+              alt={displayName}
+              className="h-16 w-16 rounded-full object-cover shadow-lg"
+            />
+          ) : (
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-indigo-600 text-white shadow-lg">
+              <span className="text-2xl font-bold">{initials}</span>
+            </div>
+          )}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-zinc-900 text-white shadow transition-transform hover:scale-110 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+            title={t("profile.avatar.change")}
+          >
+            <Camera size={12} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={AVATAR_TYPES.join(",")}
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
         <div>
           <div className="text-lg font-semibold text-zinc-900 dark:text-white">{displayName}</div>
@@ -151,6 +235,21 @@ export default function ProfilePage() {
           <div className="mt-1 inline-block rounded-md border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
              {user.role || "Employee"}
           </div>
+          {(uploading || uploadSuccess || uploadError) && (
+            <div
+              className={`mt-1 text-xs ${
+                uploadError
+                  ? "text-red-600 dark:text-red-400"
+                  : uploadSuccess
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-zinc-500"
+              }`}
+            >
+              {uploading
+                ? t("profile.avatar.uploading")
+                : uploadError || t("profile.avatar.updated")}
+            </div>
+          )}
         </div>
       </div>
 

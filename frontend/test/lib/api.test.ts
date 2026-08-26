@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { apiClient } from '../../lib/api';
 
+vi.mock('../../lib/csv', () => ({
+  triggerDownload: vi.fn(),
+}));
+
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -124,6 +128,34 @@ describe('apiClient', () => {
       const result = await apiClient.createUser({ name: 'Created', email: 'created@example.com', role: 'employee' });
 
       expect(result.data).toEqual(mockResponse.data);
+    });
+  });
+
+  describe('uploadAvatar', () => {
+    it('should upload an avatar data URL', async () => {
+      const mockResponse = { data: { avatar: 'user-1-1700000000000.png' } };
+      mockFetchSuccess(mockResponse);
+
+      const result = await apiClient.uploadAvatar('data:image/png;base64,AAAA');
+
+      expect(result.data).toEqual(mockResponse.data);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/profile/avatar'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ dataUrl: 'data:image/png;base64,AAAA' }),
+        })
+      );
+    });
+
+    it('should clear cached user after successful upload', async () => {
+      const mockResponse = { data: { avatar: 'user-1-1700000000000.png' } };
+      mockFetchSuccess(mockResponse);
+
+      apiClient['currentUser'] = { _id: 'user-1' } as any;
+      await apiClient.uploadAvatar('data:image/png;base64,AAAA');
+
+      expect(apiClient['currentUser']).toBeUndefined();
     });
   });
 
@@ -383,6 +415,47 @@ describe('apiClient', () => {
       const result = await apiClient.getCompanyUsers();
 
       expect(result.data).toEqual(mockResponse.data);
+    });
+  });
+
+  describe('exportWorkSessions', () => {
+    it('should download CSV for selected users', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(['Name,Email'], { type: 'text/csv' })),
+      }) as any;
+
+      const result = await apiClient.exportWorkSessions(['user-1', 'user-2']);
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/admin/export/work-sessions'),
+        expect.any(Object)
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('userIds=user-1%2Cuser-2'),
+        expect.any(Object)
+      );
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should return error when export fails', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: () => Promise.resolve({ error: 'InsufficientPermissions' }),
+      }) as any;
+
+      const result = await apiClient.exportWorkSessions(['user-1']);
+
+      expect(result.error).toBe('InsufficientPermissions');
+    });
+
+    it('should return NetworkError on network failure', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+      const result = await apiClient.exportWorkSessions(['user-1']);
+
+      expect(result.error).toBe('NetworkError');
     });
   });
 

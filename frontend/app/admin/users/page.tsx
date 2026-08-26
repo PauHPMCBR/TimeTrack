@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
 import { User } from "@/types"; 
 import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 import Card from "@/components/ui/Card";
-import { ChevronRight, UserPlus } from "lucide-react";
+import Button from "@/components/ui/Button";
+import { ChevronRight, UserPlus, Download } from "lucide-react";
 
 export default function UsersListPage() {
   const { t } = useI18n();
   
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -21,10 +25,8 @@ export default function UsersListPage() {
         setLoading(true);
         const res = await apiClient.getCompanyUsers();
         
-        if (res.data && Array.isArray(res.data)) {
-          setUsers(res.data);
-        } else if (res.data && (res.data as any).users) {
-          setUsers((res.data as any).users);
+        if (res.data?.users) {
+          setUsers(res.data.users);
         }
       } catch (error) {
         console.error("Error carregant usuaris:", error);
@@ -35,6 +37,42 @@ export default function UsersListPage() {
 
     fetchUsers();
   }, []);
+
+  const allSelected = useMemo(
+    () => users.length > 0 && selected.size === users.length,
+    [users, selected]
+  );
+
+  const toggleUser = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(users.map(u => u._id)));
+    }
+  };
+
+  const handleExport = async () => {
+    if (selected.size === 0) return;
+    setExporting(true);
+    setExportError(null);
+    const res = await apiClient.exportWorkSessions([...selected]);
+    setExporting(false);
+    if (res.error) {
+      setExportError(res.error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -68,6 +106,38 @@ export default function UsersListPage() {
           </Link>
         </div>
 
+        {/* Barra de selecció / exportació */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            {t("admin.export.selectAll")}
+          </label>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              {t("admin.export.selectedCount", { count: selected.size })}
+            </span>
+            <Button
+              onClick={handleExport}
+              disabled={selected.size === 0 || exporting}
+              variant="soft"
+            >
+              <Download size={16} />
+              {exporting ? t("common.loading") : t("admin.export.button")}
+            </Button>
+          </div>
+        </div>
+
+        {exportError && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            {t("admin.export.error")} ({exportError})
+          </div>
+        )}
+
         {/* LLISTA */}
         <Card className="overflow-hidden">
           {loading ? (
@@ -84,6 +154,12 @@ export default function UsersListPage() {
                 {users.map((user) => (
                 <li key={user._id} className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                     <div className="flex items-center gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(user._id)}
+                          onChange={() => toggleUser(user._id)}
+                          className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                        />
                         <div className="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
                             {user.name ? user.name.charAt(0).toUpperCase() : "?"}
                         </div>

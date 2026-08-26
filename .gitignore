@@ -56,3 +56,6 @@ frontend/node_modules/
 # Per-company branding files (see branding/README.md)
 branding/icon.png
 branding/favicon.png
+
+# Local runtime data dir (backend DATA_DIR, profile pictures in dev)
+backend/data/

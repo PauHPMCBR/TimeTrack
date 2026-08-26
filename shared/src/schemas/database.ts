@@ -14,6 +14,7 @@ export const UserSchema = z.object({
   registered: z.boolean().default(false),
   role: UserRoleSchema.default('employee'),
   groups: z.array(z.string()).default([]),
+  avatar: z.string().optional(),
   failedLoginAttempts: z.number().int().gte(0).default(0),
   blocked: z.boolean().default(false),
   blockedSince: z.date().optional(),

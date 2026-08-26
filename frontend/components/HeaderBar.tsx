@@ -5,16 +5,22 @@ import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
+import { User } from "@/types";
 
 export default function HeaderBar() {
   const { t } = useI18n();
-  const [email, setEmail] = useState<string | null>(); // TODO translations
+  const [email, setEmail] = useState<string | null>();
+  const [user, setUser] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const storedEmail = localStorage.getItem("remembered_email");
     setEmail(storedEmail || "Sense Sessió");
+  }, []);
+
+  useEffect(() => {
+    apiClient.getCurrentUser().then((u) => setUser(u || null));
   }, []);
 
   const handleLogout = () => {
@@ -32,9 +38,17 @@ export default function HeaderBar() {
       <div className="relative">
         <button
           onClick={() => setOpen(!open)}
-          className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center font-bold shadow-sm hover:scale-105 transition-transform text-sm"
+          className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center font-bold shadow-sm hover:scale-105 transition-transform text-sm overflow-hidden"
         >
-          {initial}
+          {user?.avatar ? (
+            <img
+              src={apiClient.getAvatarUrl(user._id, user.avatar)}
+              alt={user.name || "avatar"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initial
+          )}
         </button>
 
         {open && (

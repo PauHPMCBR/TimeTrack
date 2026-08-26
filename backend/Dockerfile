@@ -30,6 +30,9 @@ ENV PORT=3001
 RUN addgroup -g 1001 -S appgroup && \
     adduser -S api -u 1001 -G appgroup
 
+# Per-company runtime data directory (mounted from the host in production).
+RUN mkdir -p /data && chown api:appgroup /data
+
 COPY --from=builder --chown=api:appgroup /app/backend/.next /app/backend/.next
 COPY --from=builder /app/backend/package.json /app/backend/package.json
 COPY --from=builder /app/package.json /app/package.json

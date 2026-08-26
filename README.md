@@ -151,7 +151,3 @@ Error codes are defined in `shared/src/types/response-errors.ts`.
 All endpoints except `login`, `register` and `health` require a
 `Authorization: Bearer <token>` header. Admin endpoints additionally require the
 admin role.
-
-## Conventions
-
-See [AGENTS.md](AGENTS.md) for coding conventions and architecture notes.

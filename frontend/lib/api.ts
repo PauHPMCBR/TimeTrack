@@ -12,6 +12,8 @@ import type {
 } from '@/schemas/api'
 import { ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
 import { ApiResponse } from '@/types/apiErrors'
+import type { ErrorCode } from 'shared/src/types/response-errors'
+import { triggerDownload } from './csv'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
@@ -141,6 +143,22 @@ class ApiClient {
     return this.request(`/api/profile/${userId}`);
   }
 
+  async uploadAvatar(dataUrl: string): Promise<ApiResponse<{ avatar: string }>> {
+    const res = await this.request<{ avatar: string }>(`/api/profile/avatar`, {
+      method: 'POST',
+      body: JSON.stringify({ dataUrl }),
+    });
+    if (!res.error) {
+      this.currentUser = undefined;
+    }
+    return res;
+  }
+
+  getAvatarUrl(userId: string, version?: string | null): string {
+    const base = `${API_BASE_URL}/api/profile/${userId}/avatar`;
+    return version ? `${base}?v=${encodeURIComponent(version)}` : base;
+  }
+
   async createUser(userCreated: CreateUserRequest): Promise<ApiResponse<{ user: User, registrationLink?: string, registrationToken?: string }>> {
     return this.request(`/api/profile/create`, {
       method: 'POST',
@@ -223,6 +241,45 @@ class ApiClient {
 
   async getCompanyUsers(): Promise<ApiResponse<{ users: User[] }>> {
     return this.request(`/api/admin/users`);
+  }
+
+  async exportWorkSessions(userIds: string[]): Promise<ApiResponse<null>> {
+    const token = localStorage.getItem('auth_token');
+    const endpoint = `/api/admin/export/work-sessions?userIds=${encodeURIComponent(userIds.join(','))}`;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        let data: { error?: string; details?: unknown } = {};
+        try {
+          data = await response.json();
+        } catch (e) {
+          data = {};
+        }
+        const error = (data.error || response.statusText || 'Request failed') as ErrorCode;
+        const result = {
+          error,
+          details: data.details ?? {},
+        };
+        if (this.errorListener) {
+          this.errorListener(result.error, result.details);
+        }
+        return result;
+      }
+
+      const blob = await response.blob();
+      triggerDownload(blob, `work_sessions_${new Date().toISOString().slice(0, 10)}.csv`);
+      return { data: null };
+    } catch (error) {
+      const result: ApiResponse<null> = { error: 'NetworkError' };
+      if (this.errorListener && result.error) {
+        this.errorListener(result.error);
+      }
+      return result;
+    }
   }
 }
 
