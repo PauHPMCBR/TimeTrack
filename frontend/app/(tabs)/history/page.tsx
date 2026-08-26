@@ -8,7 +8,7 @@ import {
 import { apiClient } from "@/lib/api";
 import { WorkSession } from "@/types";
 import { toLocalDateKey } from "@/lib/datetime";
-import * as XLSX from "xlsx";
+import { toCsv, downloadCsv } from "@/lib/csv";
 import { Download, Clock } from "lucide-react";
 import { useThemeFlavor, type ThemeFlavor } from "@/lib/theme";
 import Card from "@/components/ui/Card";
@@ -181,16 +181,13 @@ export default function HistoryAndStatsPage() {
   }, [totalThisWeek]);
 
   const handleExport = useCallback(() => {
-    const data = perDay.map(day => ({
-      [t('history.export.date')]: day.date,
-      [t('history.export.hours')]: day.hrs.toFixed(2),
-      [t('history.export.formatted')]: fmtHM(day.hrs)
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "History");
-    XLSX.writeFile(workbook, `history_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const headers = [
+      t('history.export.date'),
+      t('history.export.hours'),
+      t('history.export.formatted'),
+    ];
+    const rows = perDay.map(day => [day.date, day.hrs.toFixed(2), fmtHM(day.hrs)]);
+    downloadCsv(toCsv(headers, rows), `history_${new Date().toISOString().slice(0, 10)}.csv`);
   }, [perDay, t]);
 
   if (loading) {

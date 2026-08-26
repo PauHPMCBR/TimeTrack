@@ -1,0 +1,63 @@
+import type { NextApiResponse } from 'next';
+import dbConnect from '@/lib/mongodb';
+import { AuthRequest, requireRole } from '@/lib/auth';
+import { WorkSession, User } from '@/models';
+import { responseErrorGet, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
+import { validateQueryParams } from '@/lib/validation';
+import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
+
+function escapeCsvField(value: unknown): string {
+  const str = value === null || value === undefined ? '' : String(value);
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+async function handler(req: AuthRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return responseErrorMethodNotAllowed(res);
+  }
+
+  const validationMiddleware = validateQueryParams(AdminExportWorkSessionsQuerySchema);
+  await new Promise((resolve) => {
+    validationMiddleware(req, res, () => resolve(true));
+  });
+  if (res.headersSent) return;
+
+  try {
+    await dbConnect();
+
+    const userIds = (req.query.userIds as string).split(',').filter(Boolean);
+
+    const users = await User.find({ _id: { $in: userIds } }, 'name email');
+    const userMap = new Map(users.map(u => [u._id.toString(), u]));
+
+    const sessions = await WorkSession.find({ userId: { $in: userIds } }).sort({ timestamp: 1 });
+
+    const headers = ['Name', 'Email', 'Timestamp', 'Type', 'Reason', 'Notes'];
+    const rows = sessions.map(s => [
+      userMap.get(s.userId.toString())?.name ?? '',
+      userMap.get(s.userId.toString())?.email ?? '',
+      new Date(s.timestamp).toISOString(),
+      s.type,
+      s.reason ?? '',
+      s.notes ?? '',
+    ]);
+
+    const csv = [headers, ...rows]
+      .map(line => line.map(escapeCsvField).join(','))
+      .join('\r\n');
+
+    const filename = `work_sessions_${new Date().toISOString().slice(0, 10)}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200).send('\uFEFF' + csv);
+  } catch (error) {
+    console.error('Admin export work sessions error:', error);
+    return responseErrorGet(res);
+  }
+}
+
+export default requireRole(['admin'], handler);

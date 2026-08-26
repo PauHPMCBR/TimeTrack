@@ -221,6 +221,14 @@
       "description": "Crea nuevos usuarios y gestiona el equipo desde aquí.",
       "title": "Panel de Administración"
     },
+    "avatar": {
+      "change": "Cambiar foto",
+      "invalidFormat": "Formato no compatible. Usa JPG, PNG, WEBP o GIF.",
+      "tooLarge": "La imagen es demasiado grande (máximo 10 MB).",
+      "uploadError": "No se pudo subir la foto. Inténtalo de nuevo.",
+      "uploading": "Subiendo...",
+      "updated": "Foto actualizada"
+    },
     "change": "Cambiar",
     "errorLoading": "Error al cargar el usuario",
     "fallbackUser": "Usuario",
@@ -347,6 +355,12 @@
       "notFound": "No se han encontrado usuarios.",
       "pendingActivation": "Activación pendiente",
       "registered": "Registrado"
+    },
+    "export": {
+      "button": "Exportar CSV",
+      "error": "Ha fallado la exportación.",
+      "selectAll": "Seleccionar todo",
+      "selectedCount": "{count} seleccionados"
     },
     "vacations": {
       "approve": "Aprobar",

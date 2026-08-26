@@ -41,6 +41,11 @@ export const WorkSessionRequestSchema = z.object({
 });
 export type WorkSessionRequest = z.infer<typeof WorkSessionRequestSchema>;
 
+export const AvatarUploadRequestSchema = z.object({
+  dataUrl: z.string().regex(/^data:image\/(jpeg|png|webp|gif|avif|tiff|bmp|svg|svg\+xml);base64,/, 'Invalid avatar data url'),
+});
+export type AvatarUploadRequest = z.infer<typeof AvatarUploadRequestSchema>;
+
 export const ElectiveVacationRequestSchema = z.object({
   date: z.string().transform(str => new Date(str)), // Convert string to Date
   reason: z.string().max(1000).optional(),
@@ -78,6 +83,11 @@ export const UserYearParamSchema = z.object({
   year: z.string().transform(val => parseInt(val, 10)).refine(val => !isNaN(val) && val >= 2000 && val <= 2100, 'Invalid year'),
 });
 export type UserYearParam = z.infer<typeof UserYearParamSchema>;
+
+export const AdminExportWorkSessionsQuerySchema = z.object({
+  userIds: z.string().min(1, 'At least one user id is required'),
+});
+export type AdminExportWorkSessionsQuery = z.infer<typeof AdminExportWorkSessionsQuerySchema>;
 
 export const UserLoginResponseSchema = z.object({
   user: UserSchema,

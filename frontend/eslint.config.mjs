@@ -24,18 +24,18 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.test.{ts,tsx}", "test/**"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-    },
-  },
-  {
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" },
       ],
+    },
+  },
+  {
+    files: ["**/*.test.{ts,tsx}", "test/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   }
 );

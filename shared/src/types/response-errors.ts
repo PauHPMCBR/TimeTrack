@@ -31,7 +31,7 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'YearlyVacationSaved'
     ;
 
-export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members';
+export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members' | 'avatar';
 
 export type PasswordIncorrectParameterReason = 'LessThan12Characters'
     | 'MissingLowercase'
@@ -50,7 +50,8 @@ export type EmailIncorrectParameterReason = 'AlreadyExists'
 export type IncorrectParameterReason = PasswordIncorrectParameterReason 
     | CheckInIncorrectParameterReason
     | EmailIncorrectParameterReason
-    | 'ShouldNotBeSet' | 'DatesNotInYear' | 'SomeUsersNotFound'; // TODO translation
+    | 'ShouldNotBeSet' | 'DatesNotInYear' | 'SomeUsersNotFound'
+    | 'AvatarTooLarge' | 'InvalidAvatarFormat'; // TODO translation
 
 export type IllegalAction = 'DuplicateVacationRequest'
     | 'AllVacationsUsed'
