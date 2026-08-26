@@ -1,0 +1,6 @@
+{
+  "subdomain": "mobe",
+  "name": "MOBE",
+  "iconFile": "/home/debian/mobe_files/mobe_logo.png",       // optional, absolute path
+  "faviconFile": "/home/debian/mobe_files/mobe_favicon.png"  // optional, absolute path
+}
