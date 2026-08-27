@@ -14,6 +14,12 @@ import Label from '@/components/ui/Label';
 import TextField from '@/components/ui/TextField';
 import RoleSelector from '@/components/ui/RoleSelector';
 import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
+import { EMPLOYEE_ROLE } from 'shared/src/lib/constants';
+import {
+    DEFAULT_EXPECTED_WORK_HOURS,
+    DEFAULT_NON_WORKING_DAYS,
+} from 'shared/src/lib/defaults';
+import { COPIED_LINK_FEEDBACK_MS } from '@/lib/constants';
 import { Check, Copy, Link2, Loader2 } from 'lucide-react';
 
 type Props = {
@@ -34,9 +40,9 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const [formData, setFormData] = useState<UpdateUserRequest>({
         name: '',
         email: '',
-        role: 'employee',
+        role: EMPLOYEE_ROLE,
         dni: '',
-        expectedWorkHours: 8,
+        expectedWorkHours: DEFAULT_EXPECTED_WORK_HOURS,
         workDays: undefined,
     });
     const [saving, setSaving] = useState(false);
@@ -60,7 +66,8 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
             email: user.email,
             role: user.role,
             dni: user.dni ?? '',
-            expectedWorkHours: user.expectedWorkHours ?? 8,
+            expectedWorkHours:
+                user.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS,
             workDays: user.workDays,
         });
         const hasCustom = !!user.workDays && user.workDays.length > 0;
@@ -68,7 +75,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setNonWorkDays(
             hasCustom
                 ? ALL_DAYS.filter((d) => !user.workDays!.includes(d))
-                : [6, 0]
+                : [...DEFAULT_NON_WORKING_DAYS]
         );
         resetDirty();
         setError(null);
@@ -106,7 +113,10 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const handleCustomNonWorkDaysChange = (checked: boolean) => {
         setCustomNonWorkDays(checked);
         if (checked) {
-            const start = nonWorkDays.length > 0 ? nonWorkDays : [6, 0];
+            const start =
+                nonWorkDays.length > 0
+                    ? nonWorkDays
+                    : [...DEFAULT_NON_WORKING_DAYS];
             setNonWorkDays(start);
             setFormData((prev) => ({
                 ...prev,
@@ -184,7 +194,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         if (!registrationLink) return;
         navigator.clipboard.writeText(registrationLink);
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setTimeout(() => setCopied(false), COPIED_LINK_FEEDBACK_MS);
     };
 
     return (
@@ -287,7 +297,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                     <div>
                         <Label>{t('admin.form.expectedHours')}</Label>
                         <HoursMinutesInput
-                            value={formData.expectedWorkHours ?? 8}
+                            value={formData.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS}
                             minHours={1}
                             onChange={(v) => update({ expectedWorkHours: v })}
                         />
@@ -323,7 +333,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                             {t('admin.form.role.label')}
                         </Label>
                         <RoleSelector
-                            value={formData.role ?? 'employee'}
+                            value={formData.role ?? EMPLOYEE_ROLE}
                             onChange={(role) => update({ role })}
                         />
                     </div>

@@ -1,10 +1,16 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
+import {
+    ADMIN_ROLE,
+    CHECK_IN,
+    VACATION_PENDING,
+} from 'shared/src/lib/constants';
 import { User, Group, WorkSession, ElectiveVacation } from '@/models';
 import { getAppSettings } from '@/lib/settings';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { dateKey } from '@/lib/date-key';
+import { startOfDay } from '@/lib/date-range';
 import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
 import {
     responseErrorGet,
@@ -20,7 +26,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
 
         const users = (await User.find(
-            { role: { $ne: 'admin' } },
+            { role: { $ne: ADMIN_ROLE } },
             'name email dni role registered groups expectedWorkHours workDays avatar'
         )
             .sort({ name: 1 })
@@ -30,11 +36,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             .sort({ name: 1 })
             .lean()) as unknown as GroupRow[];
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = startOfDay(new Date());
 
         const [pendingVacations, latestSessions, settings] = await Promise.all([
-            ElectiveVacation.countDocuments({ status: 'pending' }),
+            ElectiveVacation.countDocuments({ status: VACATION_PENDING }),
             WorkSession.aggregate([
                 { $match: { timestamp: { $gte: today } } },
                 { $sort: { timestamp: -1 } },
@@ -45,7 +50,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const workingUserIds = new Set(
             latestSessions
-                .filter((s) => s.latest.type === 'check_in')
+                .filter((s) => s.latest.type === CHECK_IN)
                 .map((s) => s._id)
         );
 
@@ -136,4 +141,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

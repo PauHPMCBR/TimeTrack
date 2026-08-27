@@ -9,11 +9,12 @@ import {
     responseErrorMissingParameter,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { PasswordIncorrectParameterReason } from 'shared/src/types/response-errors';
 import { runValidation, validateRequestBody } from '@/lib/validation';
 import { RegisterRequestSchema } from 'shared/src/schemas/api';
+import { MS_PER_HOUR } from 'shared/src/lib/constants';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
+import { validatePassword } from '@/lib/password';
 
 export default withRateLimit(
     async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -54,35 +55,7 @@ export default withRateLimit(
                 return responseErrorMissingParameter(res, 'password');
             }
 
-            const pwd = String(password);
-            const errors: PasswordIncorrectParameterReason[] = [];
-
-            if (pwd.length < 8) {
-                errors.push('TooShort');
-            }
-            if (!/[a-z]/.test(pwd)) {
-                errors.push('MissingLowercase');
-            }
-            if (!/[A-Z]/.test(pwd)) {
-                errors.push('MissingUppercase');
-            }
-            if (!/\d/.test(pwd)) {
-                errors.push('MissingNumber');
-            }
-            if (!/[^A-Za-z0-9]/.test(pwd)) {
-                errors.push('MissingSign');
-            }
-
-            const lowerPwd = pwd.toLowerCase();
-            const lowerEmail = String(email || '').toLowerCase();
-            const lowerName = String(name || '').toLowerCase();
-
-            if (lowerPwd.includes(lowerEmail) && lowerEmail.length > 0) {
-                errors.push('ContainsEmail');
-            }
-            if (lowerPwd.includes(lowerName) && lowerName.length > 0) {
-                errors.push('ContainsUsername');
-            }
+            const errors = validatePassword(String(password), email, name);
 
             if (errors.length > 0) {
                 return responseErrorIncorrectParameter(res, 'password', errors);
@@ -125,5 +98,5 @@ export default withRateLimit(
             return responseErrorPost(res);
         }
     },
-    { limit: 10, windowMs: 60 * 60 * 1000 }
+    { limit: 10, windowMs: MS_PER_HOUR }
 );

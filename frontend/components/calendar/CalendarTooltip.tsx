@@ -1,4 +1,5 @@
 import { VacationEvent, WorkSessionEvent } from '@/types/calendar';
+import { CHECK_IN } from 'shared/src/lib/constants';
 
 interface CalendarTooltipProps {
     date: Date;
@@ -135,12 +136,12 @@ export function CalendarTooltip({
                                                 <div
                                                     className={`font-medium text-sm ${
                                                         session.type ===
-                                                        'check_in'
+                                                        CHECK_IN
                                                             ? 'text-green-600 dark:text-green-400'
                                                             : 'text-red-600 dark:text-red-400'
                                                     }`}
                                                 >
-                                                    {session.type === 'check_in'
+                                                    {session.type === CHECK_IN
                                                         ? t('calendar.checkIn')
                                                         : t(
                                                               'calendar.checkOut'

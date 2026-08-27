@@ -75,6 +75,14 @@ export function responseErrorInvalidRegisterToken(res: NextApiResponse) {
     return responseError(res, 400, 'InvalidRegisterToken');
 }
 
+export function responseErrorInvalidResetToken(res: NextApiResponse) {
+    return responseError(res, 400, 'InvalidResetToken');
+}
+
+export function responseErrorResetTokenExpired(res: NextApiResponse) {
+    return responseError(res, 400, 'ResetTokenExpired');
+}
+
 export function responseErrorIncorrectParameter(
     res: NextApiResponse,
     parameter?: IncorrectParameter,

@@ -9,6 +9,7 @@ import {
 } from '@/lib/response-error-generator';
 import { runValidation, validateRequestBody } from '@/lib/validation';
 import { ElectiveVacationRequestSchema } from 'shared/src/schemas/api';
+import { VACATION_APPROVED, VACATION_PENDING } from 'shared/src/lib/constants';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -91,7 +92,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 $gte: startOfDay,
                 $lte: endOfDay,
             },
-            status: { $in: ['pending', 'approved'] },
+            status: { $in: [VACATION_PENDING, VACATION_APPROVED] },
         });
 
         if (sameDayVacations.length > 0) {

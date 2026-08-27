@@ -1,5 +1,11 @@
 import dbConnect from '@/lib/mongodb';
 import { AppSettings } from '@/models';
+import {
+    DEFAULT_BENEVOLENCE_HOURS,
+    DEFAULT_END_OF_DAY_HOUR,
+    DEFAULT_EXPECTED_WORK_HOURS,
+    DEFAULT_NON_WORKING_DAYS,
+} from 'shared/src/lib/defaults';
 
 export interface AppSettingsValues {
     defaultExpectedHours: number;
@@ -7,14 +13,16 @@ export interface AppSettingsValues {
     toleranceHours: number;
     endOfDayHour: number;
     nonWorkingDays: number[];
+    inconsistencyReminderEnabled: boolean;
 }
 
 const DEFAULTS: AppSettingsValues = {
-    defaultExpectedHours: 8,
-    benevolenceHours: 1,
-    toleranceHours: 1,
-    endOfDayHour: 20,
-    nonWorkingDays: [6, 0],
+    defaultExpectedHours: DEFAULT_EXPECTED_WORK_HOURS,
+    benevolenceHours: DEFAULT_BENEVOLENCE_HOURS,
+    toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
+    endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
+    nonWorkingDays: DEFAULT_NON_WORKING_DAYS,
+    inconsistencyReminderEnabled: true,
 };
 
 const CACHE_TTL_MS = 60 * 1000;
@@ -54,6 +62,9 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
             settings.nonWorkingDays.length > 0
                 ? settings.nonWorkingDays
                 : DEFAULTS.nonWorkingDays,
+        inconsistencyReminderEnabled:
+            settings.inconsistencyReminderEnabled ??
+            DEFAULTS.inconsistencyReminderEnabled,
     };
     cachedAt = Date.now();
 

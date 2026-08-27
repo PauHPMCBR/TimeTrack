@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 
 // Allowed frontend origins. Keep this list explicit — never reflect arbitrary
 // origins, and don't ship dev-only hosts.
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     'http://frontend:3000', // Docker container name
-    'http://localhost:3000', // Browser access
+    DEFAULT_FRONTEND_URL, // Browser access
     'http://127.0.0.1:3000', // Alternative localhost
     'http://host.docker.internal:3000', // Docker host (fallback)
 ].filter(Boolean) as string[];
@@ -30,7 +31,7 @@ export function middleware(request: NextRequest) {
     const allowedOrigin =
         requestOrigin !== null && allowedOrigins.includes(requestOrigin)
             ? requestOrigin
-            : allowedOrigins[0] || 'http://localhost:3000';
+            : allowedOrigins[0] || DEFAULT_FRONTEND_URL;
 
     if (request.method === 'OPTIONS') {
         const response = new Response(null, { status: 200 });

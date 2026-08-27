@@ -1,6 +1,7 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { User } from '@/models';
 import { toPublicUser } from '@/lib/sanitize';
 import {
@@ -31,4 +32,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

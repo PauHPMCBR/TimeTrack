@@ -8,6 +8,8 @@ export type ErrorCode =
     | 'InvalidCredentials'
     | 'AccountBlocked'
     | 'InvalidRegisterToken'
+    | 'InvalidResetToken'
+    | 'ResetTokenExpired'
     | 'IncorrectParameter'
     | 'MissingParameter'
     | 'IllegalAction'

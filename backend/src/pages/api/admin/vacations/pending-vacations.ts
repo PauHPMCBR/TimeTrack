@@ -1,6 +1,7 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
+import { ADMIN_ROLE, VACATION_PENDING } from 'shared/src/lib/constants';
 import { ElectiveVacation } from '@/models';
 import {
     responseErrorGet,
@@ -16,7 +17,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
 
         const vacations = await ElectiveVacation.find({
-            status: 'pending',
+            status: VACATION_PENDING,
         })
             .sort({ date: 1 })
             .lean();
@@ -28,4 +29,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

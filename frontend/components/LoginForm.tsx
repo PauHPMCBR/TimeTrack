@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { APP_NAME, APP_ICON_URL } from '@/lib/brand';
 import { apiClient } from '@/lib/api';
 import { Alert } from './ui/Alert';
 import { LoginRequestSchema } from '@/schemas/api';
+import { AUTH_TOKEN_KEY, REMEMBERED_EMAIL_KEY } from '@/lib/storage';
 import { Clock } from 'lucide-react';
 import Button from './ui/Button';
 
 export default function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { t } = useI18n();
 
     const [email, setEmail] = useState('');
@@ -33,13 +36,17 @@ export default function LoginForm() {
 
             if (res.data) {
                 if (remember) {
-                    localStorage.setItem('auth_token', res.data.token);
+                    localStorage.setItem(AUTH_TOKEN_KEY, res.data.token);
                     localStorage.setItem(
-                        'remembered_email',
+                        REMEMBERED_EMAIL_KEY,
                         res.data.user.email
                     );
                 }
-                router.push('/dashboard');
+                // Preserve the `next` return-to (set by RequireAuth) so a
+                // user who hit a protected page while logged out lands back
+                // there after logging in.
+                const next = searchParams.get('next');
+                router.push(next && next.startsWith('/') ? next : '/dashboard');
             } else {
                 throw new Error('UnknownError');
             }
@@ -136,6 +143,15 @@ export default function LoginForm() {
                 >
                     {loading ? t('common.loading') : t('login.submit')}
                 </Button>
+
+                <div className="text-center text-sm">
+                    <Link
+                        href="/forgot-password"
+                        className="text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                        {t('login.forgot')}
+                    </Link>
+                </div>
             </div>
         </form>
     );

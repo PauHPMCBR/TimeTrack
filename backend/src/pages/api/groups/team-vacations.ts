@@ -7,6 +7,7 @@ import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
+import { VACATION_APPROVED } from 'shared/src/lib/constants';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -43,7 +44,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const vacations = await ElectiveVacation.find({
             userId: { $in: Array.from(memberIds) },
             date: { $gte: startDate, $lte: endDate },
-            status: 'approved',
+            status: VACATION_APPROVED,
         })
             .populate('userId', 'name email')
             .lean();

@@ -10,6 +10,8 @@ import Button from '@/components/ui/Button';
 import Label from '@/components/ui/Label';
 import TextField from '@/components/ui/TextField';
 import RoleSelector from '@/components/ui/RoleSelector';
+import { EMPLOYEE_ROLE } from 'shared/src/lib/constants';
+import { COPIED_LINK_FEEDBACK_MS } from '@/lib/constants';
 import { Check, Copy, Loader2 } from 'lucide-react';
 
 type Props = {
@@ -29,7 +31,7 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
     const [formData, setFormData] = useState<CreateUserRequest>({
         name: '',
         email: '',
-        role: 'employee',
+        role: EMPLOYEE_ROLE,
         dni: '',
     });
     const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
 
     useEffect(() => {
         if (open) {
-            setFormData({ name: '', email: '', role: 'employee', dni: '' });
+            setFormData({ name: '', email: '', role: EMPLOYEE_ROLE, dni: '' });
             setInviteLink(null);
             setCopied(false);
             setError(null);
@@ -151,7 +153,7 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
         if (inviteLink) {
             navigator.clipboard.writeText(inviteLink);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            setTimeout(() => setCopied(false), COPIED_LINK_FEEDBACK_MS);
         }
     };
 

@@ -82,6 +82,7 @@ describe('/api/admin/settings', () => {
             endOfDayHour: 17,
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
+            inconsistencyReminderEnabled: true,
         });
 
         const req = mockReq({ method: 'GET' });
@@ -99,9 +100,39 @@ describe('/api/admin/settings', () => {
                     endOfDayHour: 17,
                     toleranceHours: 1,
                     nonWorkingDays: [6, 0],
+                    inconsistencyReminderEnabled: true,
                 },
             },
         });
+    });
+
+    it('should update the inconsistency reminder toggle on PUT', async () => {
+        vi.mocked(AppSettings.findOne).mockResolvedValue({ _id: 'settings-1' });
+        vi.mocked(getAppSettings).mockResolvedValue({
+            defaultExpectedHours: 8,
+            benevolenceHours: 1,
+            endOfDayHour: 20,
+            toleranceHours: 1,
+            nonWorkingDays: [6, 0],
+            inconsistencyReminderEnabled: false,
+        });
+
+        const req = mockReq({
+            method: 'PUT',
+            body: { inconsistencyReminderEnabled: false },
+        });
+        const res = mockRes();
+
+        await settingsHandler(req, res);
+
+        expect(AppSettings.findByIdAndUpdate).toHaveBeenCalledWith(
+            'settings-1',
+            expect.objectContaining({
+                inconsistencyReminderEnabled: false,
+            }),
+            { new: true }
+        );
+        expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('should update existing settings on PUT', async () => {
@@ -112,6 +143,7 @@ describe('/api/admin/settings', () => {
             endOfDayHour: 18,
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
+            inconsistencyReminderEnabled: true,
         });
 
         const req = mockReq({
@@ -145,6 +177,7 @@ describe('/api/admin/settings', () => {
                     endOfDayHour: 18,
                     toleranceHours: 1,
                     nonWorkingDays: [6, 0],
+                    inconsistencyReminderEnabled: true,
                 },
             },
         });
@@ -158,6 +191,7 @@ describe('/api/admin/settings', () => {
             endOfDayHour: 17,
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
+            inconsistencyReminderEnabled: true,
         });
 
         const req = mockReq({

@@ -7,6 +7,7 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
+import { VACATION_CANCELLED } from 'shared/src/lib/constants';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -26,7 +27,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         await ElectiveVacation.updateMany(
             { _id: vacationId },
-            { status: 'cancelled' }
+            { status: VACATION_CANCELLED }
         );
 
         res.status(201).json({ success: true });

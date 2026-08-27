@@ -59,7 +59,24 @@
         },
         "remember": "Recuérdame",
         "submit": "Entrar",
-        "title": "Inicia sesión"
+        "title": "Inicia sesión",
+        "forgot": "¿Has olvidado tu contraseña?"
+    },
+    "forgotPassword": {
+        "backLogin": "Volver al inicio de sesión",
+        "email": "Correo electrónico",
+        "sent": "Si la cuenta existe, recibirás un correo con un enlace para restablecer tu contraseña.",
+        "submit": "Enviar el enlace",
+        "subtitle": "Te enviaremos un enlace para restablecerla.",
+        "title": "Recupera tu contraseña"
+    },
+    "resetPassword": {
+        "confirm": "Repite la contraseña",
+        "invalidLink": "El enlace de restablecimiento no es válido o está incompleto.",
+        "password": "Nueva contraseña",
+        "submit": "Cambiar contraseña",
+        "subtitle": "Define una nueva contraseña para tu cuenta.",
+        "title": "Nueva contraseña"
     },
     "register": {
         "btn": "Activar cuenta",
@@ -101,7 +118,23 @@
         "title": "Fichaje",
         "todaySessions": "Sesiones de hoy",
         "todaySummary": "Resumen de hoy",
-        "totalHours": "Horas totales"
+        "totalHours": "Horas totales",
+        "autoApply": "Aplicar horario automático",
+        "autoApplyConfirmBody": "Se reemplazarán los registros de {date} por tu horario automático ({timetable}).",
+        "autoApplyConfirmCancel": "Cancelar",
+        "autoApplyConfirmConfirm": "Sí, aplicar",
+        "autoApplyConfirmTitle": "¿Aplicar el horario automático?",
+        "autoApplyFailed": "No se pudo aplicar el horario automático.",
+        "autoApplied": "Horario automático aplicado.",
+        "autoAddInterval": "Añadir intervalo",
+        "autoRemoveInterval": "Quitar",
+        "autoCheckIn": "Entrada",
+        "autoCheckOut": "Salida",
+        "autoSave": "Guardar horario",
+        "autoSaveFailed": "No se pudo guardar el horario automático.",
+        "autoSaved": "Horario automático guardado.",
+        "autoSubtitle": "Define los horarios (uno o más intervalos) que aplicará el botón de horario automático.",
+        "autoTitle": "Horario automático"
     },
     "lunch": {
         "noteHelper": "Añade una nota opcional sobre la pausa.",
@@ -413,6 +446,8 @@
             "endOfDayLabel": "Hora de fin de día",
             "nonWorkingDaysHelp": "Días de la semana en los que no se espera trabajo (no se marcará anomalía).",
             "nonWorkingDaysLabel": "Días no laborables",
+            "reminderHelp": "Envía un correo al final del día a los usuarios con un fichaje inconsistente, con el enlace para aplicar el horario automático.",
+            "reminderLabel": "Recordatorio de fichaje inconsistente por correo",
             "saved": "Configuración guardada correctamente",
             "subtitle": "Configura los valores generales de la empresa.",
             "title": "Configuración de la empresa"
@@ -558,6 +593,8 @@
         "InternalError": "Error interno",
         "InvalidCredentials": "Credenciales inválidos",
         "InvalidRegisterToken": "Token de registro inválido",
+        "InvalidResetToken": "El enlace de restablecimiento no es válido o ya se ha usado.",
+        "ResetTokenExpired": "El enlace de restablecimiento ha caducado. Solicita uno nuevo.",
         "InvalidToken": "Token inválido o expirado",
         "MessageMissing": "Falta el mensaje",
         "MethodNotAllowed": "Método no permitido",

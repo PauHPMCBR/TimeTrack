@@ -7,6 +7,7 @@ import Avatar from '@/components/Avatar';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { User } from '@/types';
+import { REMEMBERED_EMAIL_KEY } from '@/lib/storage';
 
 export default function HeaderBar() {
     const { t } = useI18n();
@@ -16,7 +17,7 @@ export default function HeaderBar() {
     const router = useRouter();
 
     useEffect(() => {
-        const storedEmail = localStorage.getItem('remembered_email');
+        const storedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
         setEmail(storedEmail || 'Sense Sessió');
     }, []);
 

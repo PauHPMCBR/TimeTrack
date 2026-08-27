@@ -1,6 +1,7 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
+import { ADMIN_ROLE, SOURCE_USER } from 'shared/src/lib/constants';
 import { WorkSession, User } from '@/models';
 import {
     responseErrorGet,
@@ -90,7 +91,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             userMap.get(s.userId.toString())?.email ?? '',
             new Date(s.timestamp).toISOString(),
             s.type,
-            s.source ?? 'user',
+            s.source ?? SOURCE_USER,
             s.reason ?? '',
             s.notes ?? '',
         ]);
@@ -113,4 +114,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

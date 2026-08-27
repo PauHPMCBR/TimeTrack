@@ -7,6 +7,12 @@ import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
 import { AdminWorkSessionRow } from '@/types';
 import { localeTag } from '@/lib/datetime';
+import { CHECK_IN, CHECK_OUT, MS_PER_HOUR } from 'shared/src/lib/constants';
+import {
+    DEFAULT_CHECK_IN_HOUR,
+    DEFAULT_CHECK_OUT_HOUR,
+} from 'shared/src/lib/defaults';
+import type { WorkSessionType } from 'shared/src/schemas/database';
 import Button from '@/components/ui/Button';
 import { LogIn, LogOut, Plus, Trash2, X, Loader2 } from 'lucide-react';
 
@@ -19,7 +25,7 @@ type Props = {
 // Times are kept as datetime-local strings ("YYYY-MM-DDTHH:mm") while editing.
 type EditableSession = {
     _id: string;
-    type: 'check_in' | 'check_out';
+    type: WorkSessionType;
     timestamp: string;
 };
 
@@ -29,20 +35,18 @@ function toDatetimeLocal(d: Date | string): string {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function nextExpectedType(
-    sessions: EditableSession[]
-): 'check_in' | 'check_out' {
-    if (sessions.length === 0) return 'check_in';
-    return sessions[sessions.length - 1].type === 'check_in'
-        ? 'check_out'
-        : 'check_in';
+function nextExpectedType(sessions: EditableSession[]): WorkSessionType {
+    if (sessions.length === 0) return CHECK_IN;
+    return sessions[sessions.length - 1].type === CHECK_IN
+        ? CHECK_OUT
+        : CHECK_IN;
 }
 
 function isCoherent(sessions: EditableSession[]): boolean {
-    let expected: 'check_in' | 'check_out' = 'check_in';
+    let expected: WorkSessionType = CHECK_IN;
     for (const s of sessions) {
         if (s.type !== expected) return false;
-        expected = s.type === 'check_in' ? 'check_out' : 'check_in';
+        expected = s.type === CHECK_IN ? CHECK_OUT : CHECK_IN;
     }
     return true;
 }
@@ -113,10 +117,17 @@ export default function SessionEditorModal({ row, onClose, onSaved }: Props) {
         const last = sessions[sessions.length - 1];
         let ts: Date;
         if (last) {
-            ts = new Date(new Date(last.timestamp).getTime() + 60 * 60 * 1000);
+            ts = new Date(new Date(last.timestamp).getTime() + MS_PER_HOUR);
         } else {
             ts = new Date(`${row.date}T00:00`);
-            ts.setHours(expected === 'check_in' ? 9 : 17, 0, 0, 0);
+            ts.setHours(
+                expected === CHECK_IN
+                    ? DEFAULT_CHECK_IN_HOUR
+                    : DEFAULT_CHECK_OUT_HOUR,
+                0,
+                0,
+                0
+            );
         }
         const dayStart = new Date(`${row.date}T00:00`);
         const dayEnd = new Date(`${row.date}T23:59`);
@@ -242,12 +253,12 @@ export default function SessionEditorModal({ row, onClose, onSaved }: Props) {
                                 >
                                     <span
                                         className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white ${
-                                            session.type === 'check_in'
+                                            session.type === CHECK_IN
                                                 ? 'bg-green-500'
                                                 : 'bg-red-500'
                                         }`}
                                     >
-                                        {session.type === 'check_in' ? (
+                                        {session.type === CHECK_IN ? (
                                             <LogIn size={14} />
                                         ) : (
                                             <LogOut size={14} />
@@ -296,7 +307,7 @@ export default function SessionEditorModal({ row, onClose, onSaved }: Props) {
                         className="mt-4 w-full"
                     >
                         <Plus size={16} />
-                        {expected === 'check_in'
+                        {expected === CHECK_IN
                             ? t('admin.sessionEditor.addIn')
                             : t('admin.sessionEditor.addOut')}
                     </Button>
