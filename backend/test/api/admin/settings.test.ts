@@ -21,6 +21,7 @@ vi.mock('@/lib/validation', () => ({
 
 vi.mock('@/lib/settings', () => ({
   getAppSettings: vi.fn(),
+  invalidateAppSettingsCache: vi.fn(),
 }));
 
 vi.mock('@/models', () => ({

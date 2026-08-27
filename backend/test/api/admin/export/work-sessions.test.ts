@@ -104,6 +104,52 @@ describe('GET /api/admin/export/work-sessions', () => {
     expect(csv.indexOf('2024-01-14')).toBeLessThan(csv.indexOf('2024-01-15'));
   });
 
+  it('should filter sessions by date range when from/to are provided', async () => {
+    vi.mocked(User.find).mockReturnValue({ lean: vi.fn().mockResolvedValue([]) } as any);
+    vi.mocked(WorkSession.find).mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          lean: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    } as any);
+
+    const req = mockReq({
+      method: 'GET',
+      query: { userIds: 'user-1', from: '2024-01-01', to: '2024-01-31' },
+    });
+    const res = mockExportRes();
+
+    await exportHandler(req, res);
+
+    expect(WorkSession.find).toHaveBeenCalledWith({
+      userId: { $in: ['user-1'] },
+      timestamp: {
+        $gte: new Date('2024-01-01T00:00:00'),
+        $lte: new Date('2024-01-31T23:59:59.999'),
+      },
+    });
+  });
+
+  it('should return 400 when from is not a valid date', async () => {
+    const req = mockReq({
+      method: 'GET',
+      query: { userIds: 'user-1', from: 'not-a-date' },
+    });
+    const res = mockExportRes();
+
+    await exportHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'IncorrectParameter',
+      details: {
+        incorrectParameter: 'date',
+        reasons: ['InvalidTimestamp'],
+      },
+    });
+  });
+
   it('should return 500 on database error', async () => {
     vi.mocked(User.find).mockRejectedValue(new Error('DB Error'));
 

@@ -466,6 +466,28 @@ describe('apiClient', () => {
       expect(result.error).toBeUndefined();
     });
 
+    it('should include date range when provided', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(['Name,Email'], { type: 'text/csv' })),
+      }) as any;
+
+      const result = await apiClient.exportWorkSessions(['user-1'], {
+        from: '2024-01-01',
+        to: '2024-01-31',
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('from=2024-01-01'),
+        expect.any(Object)
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('to=2024-01-31'),
+        expect.any(Object)
+      );
+      expect(result.error).toBeUndefined();
+    });
+
     it('should return error when export fails', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,

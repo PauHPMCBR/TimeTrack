@@ -31,6 +31,7 @@ vi.mock('@/lib/settings', () => ({
 }));
 
 const queryChain = (result: unknown) => ({
+  select: vi.fn().mockReturnThis(),
   sort: vi.fn().mockReturnThis(),
   lean: vi.fn().mockResolvedValue(result),
 });
@@ -387,7 +388,34 @@ describe('GET /api/admin/work-sessions', () => {
       });
     });
 
-    it('should return 500 on database error', async () => {
+it('should paginate rows when limit/offset are provided', async () => {
+    vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
+    vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+    vi.mocked(ElectiveVacation.find).mockReturnValue(simpleChain([]) as any);
+    vi.mocked(YearlyVacationDays.find).mockReturnValue(simpleChain([]) as any);
+
+    const req = mockReq({
+      method: 'GET',
+      query: { period: 'week', date: '2025-06-09', limit: '3', offset: '2' },
+    });
+    const res = mockRes();
+
+    await adminWorkSessionsHandler(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.data.total).toBe(14); // 2 users × 7 days
+    expect(body.data.limit).toBe(3);
+    expect(body.data.offset).toBe(2);
+    expect(body.data.rows).toHaveLength(3);
+    const keys = body.data.rows.map((r: any) => `${r.date}:${r.userName}`);
+    expect(keys).toEqual([
+      '2025-06-10:Anna',
+      '2025-06-10:Berta',
+      '2025-06-11:Anna',
+    ]);
+  });
+
+  it('should return 500 on database error', async () => {
       vi.mocked(User.findById).mockRejectedValue(new Error('DB Error'));
 
       const req = mockReq({

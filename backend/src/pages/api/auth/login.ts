@@ -6,11 +6,13 @@ import { responseErrorAccountBlocked, responseErrorInvalidCredentials, responseE
 import { validateRequestBody } from '@/lib/validation';
 import { LoginRequestSchema } from 'shared/src/schemas/api';
 import { toPublicUser } from '@/lib/sanitize';
+import { withRateLimit } from '@/lib/rate-limit';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {  
+export default withRateLimit(
+  async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse
+  ) {  
   if (req.method !== 'POST') {
     return responseErrorMethodNotAllowed(res);
   }
@@ -96,4 +98,6 @@ export default async function handler(
     console.error('Error stack:', error.stack);
     return responseErrorPost(res);
   }
-}
+  },
+  { limit: 20, windowMs: 15 * 60 * 1000 }
+);

@@ -48,6 +48,9 @@ function AdminEventsInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<AdminWorkSessionRow | null>(null);
+  const PAGE_SIZE = 200;
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
 
   const locale = localeTag(lang);
 
@@ -56,28 +59,31 @@ function AdminEventsInner() {
     setError(null);
     let params: Parameters<typeof apiClient.getAdminWorkSessions>[0];
     if (period === "day" || period === "week") {
-      params = { period, date: toLocalDateKey(cursor) };
+      params = { period, date: toLocalDateKey(cursor), limit: PAGE_SIZE, offset };
     } else if (period === "month") {
-      params = { period, year: cursor.getFullYear(), month: cursor.getMonth() + 1 };
+      params = { period, year: cursor.getFullYear(), month: cursor.getMonth() + 1, limit: PAGE_SIZE, offset };
     } else {
-      params = { period, year: cursor.getFullYear() };
+      params = { period, year: cursor.getFullYear(), limit: PAGE_SIZE, offset };
     }
 
     const res = await apiClient.getAdminWorkSessions(params);
     if (res.error) {
       setError(t(`error.${res.error}`) || res.error || t("error.GetError"));
       setRows([]);
+      setTotal(0);
     } else if (res.data?.rows) {
       setRows(res.data.rows);
+      setTotal(res.data.total ?? res.data.rows.length);
     }
     setLoading(false);
-  }, [period, cursor, t]);
+  }, [period, cursor, offset, t]);
 
   useEffect(() => {
     loadRows();
   }, [loadRows]);
 
   const shiftCursor = (dir: -1 | 1) => {
+    setOffset(0);
     const next = new Date(cursor);
     if (period === "day") next.setDate(next.getDate() + dir);
     else if (period === "week") next.setDate(next.getDate() + 7 * dir);
@@ -125,7 +131,7 @@ function AdminEventsInner() {
               {PERIODS.map((p) => (
                 <button
                   key={p}
-                  onClick={() => setPeriod(p)}
+                  onClick={() => { setOffset(0); setPeriod(p); }}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     period === p
                       ? "bg-indigo-600 text-white"
@@ -282,6 +288,32 @@ function AdminEventsInner() {
               </table>
             </div>
           </Card>
+        )}
+
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} / {total}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
+                disabled={offset === 0}
+                className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                aria-label={t("admin.events.pagination.previous")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setOffset((o) => o + PAGE_SIZE)}
+                disabled={offset + PAGE_SIZE >= total}
+                className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                aria-label={t("admin.events.pagination.next")}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         )}
 
         {editingRow && (

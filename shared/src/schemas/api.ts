@@ -104,6 +104,13 @@ export const YearMonthParamSchema = z.object({
 });
 export type YearMonthParam = z.infer<typeof YearMonthParamSchema>;
 
+export const WorkSessionRangeQuerySchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'from must be YYYY-MM-DD'),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'to must be YYYY-MM-DD'),
+});
+export type WorkSessionRangeQuery = z.infer<typeof WorkSessionRangeQuerySchema>;
+
 export const UserYearParamSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
   year: z.string().transform(val => parseInt(val, 10)).refine(val => !isNaN(val) && val >= 2000 && val <= 2100, 'Invalid year'),
@@ -112,6 +119,8 @@ export type UserYearParam = z.infer<typeof UserYearParamSchema>;
 
 export const AdminExportWorkSessionsQuerySchema = z.object({
   userIds: z.string().min(1, 'At least one user id is required'),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'from must be YYYY-MM-DD').optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'to must be YYYY-MM-DD').optional(),
 });
 export type AdminExportWorkSessionsQuery = z.infer<typeof AdminExportWorkSessionsQuerySchema>;
 
@@ -138,12 +147,12 @@ export const AdminWorkSessionRowSchema = z.object({
 });
 export type AdminWorkSessionRow = z.infer<typeof AdminWorkSessionRowSchema>;
 
-export const AdminWorkSessionsQuerySchema = z.object({
-  period: z.enum(['day', 'week', 'month', 'year']),
-  date: z.string().optional(),
-  year: z.coerce.number().int().gte(2000).lte(2100).optional(),
-  month: z.coerce.number().int().gte(1).lte(12).optional(),
-}).superRefine((data, ctx) => {
+function validateAdminWorkSessionsQuery(data: {
+  period: string;
+  date?: string;
+  year?: number;
+  month?: number;
+}, ctx: z.RefinementCtx) {
   if ((data.period === 'day' || data.period === 'week') && !data.date) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['date'], message: 'Date is required for day/week periods' });
   }
@@ -153,8 +162,25 @@ export const AdminWorkSessionsQuerySchema = z.object({
   if (data.period === 'year' && data.year === undefined) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['year'], message: 'Year is required for year period' });
   }
-});
+}
+
+export const AdminWorkSessionsQuerySchema = z.object({
+  period: z.enum(['day', 'week', 'month', 'year']),
+  date: z.string().optional(),
+  year: z.coerce.number().int().gte(2000).lte(2100).optional(),
+  month: z.coerce.number().int().gte(1).lte(12).optional(),
+}).superRefine(validateAdminWorkSessionsQuery);
 export type AdminWorkSessionsQuery = z.infer<typeof AdminWorkSessionsQuerySchema>;
+
+export const AdminWorkSessionsQueryWithPaginationSchema = z.object({
+  period: z.enum(['day', 'week', 'month', 'year']),
+  date: z.string().optional(),
+  year: z.coerce.number().int().gte(2000).lte(2100).optional(),
+  month: z.coerce.number().int().gte(1).lte(12).optional(),
+  limit: z.coerce.number().int().min(1).max(1000).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+}).superRefine(validateAdminWorkSessionsQuery);
+export type AdminWorkSessionsQueryWithPagination = z.infer<typeof AdminWorkSessionsQueryWithPaginationSchema>;
 
 export const AdminWorkSessionInputSchema = z.object({
   type: WorkSessionTypeSchema,

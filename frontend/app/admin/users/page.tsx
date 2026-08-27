@@ -21,6 +21,8 @@ export default function UsersListPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [creating, setCreating] = useState(false);
   const [total, setTotal] = useState(0);
@@ -69,7 +71,10 @@ export default function UsersListPage() {
     if (selected.size === 0) return;
     setExporting(true);
     setExportError(null);
-    const res = await apiClient.exportWorkSessions([...selected]);
+    const res = await apiClient.exportWorkSessions([...selected], {
+      from: exportFrom || undefined,
+      to: exportTo || undefined,
+    });
     setExporting(false);
     if (res.error) setExportError(res.error);
   };
@@ -106,6 +111,26 @@ export default function UsersListPage() {
           <span className="text-sm text-zinc-500 dark:text-zinc-400">
             {t("admin.export.selectedCount", { count: selected.size })}
           </span>
+          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+            {t("admin.export.from")}
+            <input
+              type="date"
+              value={exportFrom}
+              max={exportTo || undefined}
+              onChange={(e) => setExportFrom(e.target.value)}
+              className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+            {t("admin.export.to")}
+            <input
+              type="date"
+              value={exportTo}
+              min={exportFrom || undefined}
+              onChange={(e) => setExportTo(e.target.value)}
+              className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+            />
+          </label>
           <Button
             onClick={handleExport}
             disabled={selected.size === 0 || exporting}

@@ -29,6 +29,7 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'CheckInRegistered'
     | 'CheckOutRegistered'
     | 'YearlyVacationSaved'
+    | 'RateLimited'
     ;
 
 export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members' | 'avatar' | 'dni' | 'expectedWorkHours' | 'fromYear' | 'toYear' | 'timestamp' | 'date';

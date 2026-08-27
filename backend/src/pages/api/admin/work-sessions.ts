@@ -13,7 +13,7 @@ import {
 } from '@/lib/response-error-generator';
 import { validateQueryParams, validateRequestBody } from '@/lib/validation';
 import {
-  AdminWorkSessionsQuerySchema,
+  AdminWorkSessionsQueryWithPaginationSchema,
   AdminWorkSessionsQuery,
   AdminWorkSessionRow,
   AdminReplaceDayWorkSessionsRequest,
@@ -91,7 +91,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     return responseErrorMethodNotAllowed(res);
   }
 
-  const validationMiddleware = validateQueryParams(AdminWorkSessionsQuerySchema);
+  const validationMiddleware = validateQueryParams(AdminWorkSessionsQueryWithPaginationSchema);
   await new Promise((resolve) => {
     validationMiddleware(req, res, () => resolve(true));
   });
@@ -102,6 +102,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     const query = req.query as unknown as AdminWorkSessionsQuery;
     const { period } = query;
+    const limit = req.query.limit !== undefined ? Number(req.query.limit) : undefined;
+    const offset = req.query.offset !== undefined ? Number(req.query.offset) : 0;
 
     const days: Date[] = [];
     if (period === 'day') {
@@ -143,7 +145,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     const [users, sessions, approvedVacations, yearlyTemplates, settings] = await Promise.all([
       User.find({ role: { $ne: 'admin' } }, 'name email dni expectedWorkHours workDays').sort({ name: 1 }).lean(),
-      WorkSession.find({ timestamp: { $gte: periodStart, $lte: periodEnd } }).sort({ timestamp: 1 }).lean(),
+      WorkSession.find({ timestamp: { $gte: periodStart, $lte: periodEnd } })
+        .select('userId type timestamp source')
+        .sort({ timestamp: 1 })
+        .lean(),
       ElectiveVacation.find({ status: 'approved', date: { $gte: periodStart, $lte: periodEnd } }).lean(),
       YearlyVacationDays.find({ userId: { $exists: false }, year: { $in: Array.from(yearSet) } }).lean(),
       getAppSettings(),
@@ -223,9 +228,16 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     rows.sort((a, b) => a.date.localeCompare(b.date) || a.userName.localeCompare(b.userName));
 
+    // Server-side pagination bounds the response (critical for year views,
+    // where rows = users × days). When no limit is given, behave as before.
+    const total = rows.length;
+    const pageRows = limit !== undefined ? rows.slice(offset, offset + limit) : rows;
+
     res.status(200).json({
       success: true,
-      data: { rows },
+      data: limit !== undefined
+        ? { rows: pageRows, total, limit, offset }
+        : { rows: pageRows },
     });
   } catch (error) {
     console.error('Admin work sessions error:', error);

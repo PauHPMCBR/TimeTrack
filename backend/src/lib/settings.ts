@@ -17,12 +17,21 @@ const DEFAULTS: AppSettingsValues = {
   nonWorkingDays: [6, 0],
 };
 
+const CACHE_TTL_MS = 60 * 1000;
+let cachedSettings: AppSettingsValues | null = null;
+let cachedAt = 0;
+
 /**
  * Returns the company-wide settings document, lazily creating it (with the
  * defaults) on first access. A singleton is enforced by always reading the
- * first document in the collection.
+ * first document in the collection. Results are cached for a short TTL since
+ * settings are near-static; call invalidateAppSettingsCache() after writes.
  */
 export async function getAppSettings(): Promise<AppSettingsValues> {
+  if (cachedSettings && Date.now() - cachedAt < CACHE_TTL_MS) {
+    return cachedSettings;
+  }
+
   await dbConnect();
 
   let settings = await AppSettings.findOne({});
@@ -30,7 +39,7 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
     settings = await AppSettings.create(DEFAULTS);
   }
 
-  return {
+  cachedSettings = {
     defaultExpectedHours: settings.defaultExpectedHours ?? DEFAULTS.defaultExpectedHours,
     benevolenceHours: settings.benevolenceHours ?? DEFAULTS.benevolenceHours,
     toleranceHours: settings.toleranceHours ?? settings.benevolenceHours ?? DEFAULTS.toleranceHours,
@@ -39,4 +48,12 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
       ? settings.nonWorkingDays
       : DEFAULTS.nonWorkingDays,
   };
+  cachedAt = Date.now();
+
+  return cachedSettings;
+}
+
+export function invalidateAppSettingsCache(): void {
+  cachedSettings = null;
+  cachedAt = 0;
 }
