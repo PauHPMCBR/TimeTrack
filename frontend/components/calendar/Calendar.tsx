@@ -10,6 +10,12 @@ import {
 import { CalendarDay } from './CalendarDay';
 import { CalendarTooltip, getVacationClass } from './CalendarTooltip';
 import { weekDayShortLabels } from '@/lib/datetime';
+import {
+    VACATION_APPROVED,
+    VACATION_PENDING,
+    VACATION_REJECTED,
+} from 'shared/src/lib/constants';
+import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
@@ -52,7 +58,7 @@ export function Calendar({
     workSessions,
     teamVacations = [],
     usersMap,
-    nonWorkingDays = [6, 0],
+    nonWorkingDays = DEFAULT_NON_WORKING_DAYS,
     loading = false,
     showWorkSessions = true,
     showVacations = true,
@@ -129,19 +135,19 @@ export function Calendar({
                     : undefined;
                 const label = userName ?? t('calendar.electiveVacation');
 
-                if (elective.status === 'approved') {
+                if (elective.status === VACATION_APPROVED) {
                     events.push({
                         type: 'elective-approved',
                         label: label,
                         elective: elective,
                     });
-                } else if (elective.status === 'pending') {
+                } else if (elective.status === VACATION_PENDING) {
                     events.push({
                         type: 'elective-pending',
                         label: label,
                         elective: elective,
                     });
-                } else if (elective.status === 'rejected') {
+                } else if (elective.status === VACATION_REJECTED) {
                     events.push({
                         type: 'elective-rejected',
                         label: label,

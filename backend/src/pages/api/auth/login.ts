@@ -10,6 +10,7 @@ import {
 } from '@/lib/response-error-generator';
 import { validateRequestBody, runValidation } from '@/lib/validation';
 import { LoginRequestSchema } from 'shared/src/schemas/api';
+import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
 
@@ -122,5 +123,5 @@ export default withRateLimit(
             return responseErrorPost(res);
         }
     },
-    { limit: 20, windowMs: 15 * 60 * 1000 }
+    { limit: 20, windowMs: 15 * MS_PER_MINUTE }
 );

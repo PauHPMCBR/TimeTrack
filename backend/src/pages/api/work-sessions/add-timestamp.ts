@@ -11,27 +11,13 @@ import { runValidation, validateRequestBody } from '@/lib/validation';
 import { WorkSessionRequestSchema } from 'shared/src/schemas/api';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { CheckInIncorrectParameterReason } from 'shared/src/types/response-errors';
-
-// The check-then-insert guard (verifyInOut → save) is racy: two concurrent
-// requests for the same user can both observe "no open check-in" and insert
-// duplicate sessions. This backend runs as a single instance per company, so an
-// in-process per-user mutex fully serializes a user's check-ins/outs. (If the
-// backend is ever scaled horizontally, replace this with a DB-level lock.)
-const userLocks = new Map<string, Promise<unknown>>();
-
-async function withUserLock<T>(
-    userId: string,
-    fn: () => Promise<T>
-): Promise<T> {
-    const prev = userLocks.get(userId) ?? Promise.resolve();
-    const run = prev.catch(() => {}).then(fn);
-    userLocks.set(userId, run);
-    try {
-        return await run;
-    } finally {
-        if (userLocks.get(userId) === run) userLocks.delete(userId);
-    }
-}
+import { withUserLock } from '@/lib/user-lock';
+import { todayRange } from '@/lib/date-range';
+import {
+    CHECK_IN,
+    CHECK_OUT,
+    SOURCE_USER,
+} from 'shared/src/lib/constants';
 
 // Fetches today's sessions once (ascending) and derives both the last-session
 // type (for the check_in/check_out guard) and the day's worked hours from it.
@@ -40,12 +26,11 @@ async function withUserLock<T>(
 async function getTodaySessions(
     userId: string
 ): Promise<InstanceType<typeof WorkSession>[]> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const { start, end } = todayRange();
 
     return WorkSession.find({
         userId: userId,
-        timestamp: { $gte: today },
+        timestamp: { $gte: start, $lt: end },
     }).sort({ timestamp: 1 });
 }
 
@@ -53,15 +38,15 @@ function verifyInOut(
     lastSession: InstanceType<typeof WorkSession> | undefined,
     type: string
 ): CheckInIncorrectParameterReason | null {
-    if (type === 'check_in') {
-        if (lastSession && lastSession.type === 'check_in') {
+    if (type === CHECK_IN) {
+        if (lastSession && lastSession.type === CHECK_IN) {
             return 'AlreadyCheckedIn';
         }
-    } else if (type === 'check_out') {
+    } else if (type === CHECK_OUT) {
         if (!lastSession) {
             return 'NoEntryToday';
         }
-        if (lastSession.type === 'check_out') {
+        if (lastSession.type === CHECK_OUT) {
             return 'AlreadyCheckedOut';
         }
     }
@@ -95,7 +80,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
 
-        if (!['check_in', 'check_out'].includes(type)) {
+        if (![CHECK_IN, CHECK_OUT].includes(type)) {
             return responseErrorIncorrectParameter(res, 'type');
         }
 
@@ -115,7 +100,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     userId: req.user!.userId,
                     type,
                     timestamp: new Date(),
-                    source: 'user',
+                    source: SOURCE_USER,
                     reason,
                     notes,
                 });
@@ -123,7 +108,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 await workSession.save();
 
                 let hoursWorked = null;
-                if (type === 'check_out') {
+                if (type === CHECK_OUT) {
                     hoursWorked = computeDayHours([
                         ...todaySessions,
                         workSession,
@@ -142,7 +127,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: {
                 message:
-                    type === 'check_in'
+                    type === CHECK_IN
                         ? 'CheckInRegistered'
                         : 'CheckOutRegistered',
                 session: result.workSession,

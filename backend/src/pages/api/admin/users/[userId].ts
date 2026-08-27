@@ -1,6 +1,8 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 import { User } from '@/models';
 import { toPublicUser } from '@/lib/sanitize';
 import {
@@ -43,7 +45,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             let registrationLink: string | null = null;
             if (!user.registered && user.registrationToken) {
                 const frontendUrl =
-                    process.env.FRONTEND_URL || 'http://localhost:3000';
+                    process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
                 const inviteParams = new URLSearchParams({
                     name: user.name,
                     email: user.email,
@@ -130,4 +132,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

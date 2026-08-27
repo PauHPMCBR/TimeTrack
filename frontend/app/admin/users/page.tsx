@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { User } from '@/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -213,7 +214,7 @@ export default function UsersListPage() {
                                                         )}
                                                     </span>
                                                 )}
-                                            {user.role === 'admin' && (
+                                            {user.role === ADMIN_ROLE && (
                                                 <span className="ml-2 inline-flex items-center rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                                                     {t('tabs.admin')}
                                                 </span>

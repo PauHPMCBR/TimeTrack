@@ -1,3 +1,5 @@
+import { MS_PER_HOUR, MS_PER_MINUTE } from 'shared/src/lib/constants';
+
 export function toLocalDateKey(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date;
     const y = d.getFullYear();
@@ -7,8 +9,8 @@ export function toLocalDateKey(date: Date | string): string {
 }
 
 export function formatHM(ms: number, t?: (k: string) => string): string {
-    const h = Math.floor(ms / 3_600_000);
-    const m = Math.floor((ms % 3_600_000) / 60_000);
+    const h = Math.floor(ms / MS_PER_HOUR);
+    const m = Math.floor((ms % MS_PER_HOUR) / MS_PER_MINUTE);
     const labelH = t ? t('time.h') : 'h';
     const labelM = t ? t('time.m') : 'm';
     return `${h}${labelH} ${m}${labelM}`;

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { User, Group } from '@/types';
 import { Users, ChevronLeft, Mail } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -133,7 +134,7 @@ export default function GroupDetailPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {member.role === 'admin' && (
+                                {member.role === ADMIN_ROLE && (
                                     <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
                                         {t('profile.role.admin')}
                                     </span>

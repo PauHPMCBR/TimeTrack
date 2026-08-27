@@ -2,6 +2,12 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import {
+    ADMIN_ROLE,
+    SOURCE_ADMIN,
+    VACATION_APPROVED,
+} from 'shared/src/lib/constants';
+import { DEFAULT_EXPECTED_WORK_HOURS } from 'shared/src/lib/defaults';
+import {
     User,
     WorkSession,
     ElectiveVacation,
@@ -118,7 +124,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     userId,
                     type: p.type,
                     timestamp: p.timestamp,
-                    source: 'admin',
+                    source: SOURCE_ADMIN,
                 }));
                 return session
                     ? WorkSession.insertMany(docs, { session })
@@ -201,7 +207,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const [users, sessions, approvedVacations, yearlyTemplates, settings] =
             (await Promise.all([
                 User.find(
-                    { role: { $ne: 'admin' } },
+                    { role: { $ne: ADMIN_ROLE } },
                     'name email dni expectedWorkHours workDays'
                 )
                     .sort({ name: 1 })
@@ -213,7 +219,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     .sort({ timestamp: 1 })
                     .lean(),
                 ElectiveVacation.find({
-                    status: 'approved',
+                    status: VACATION_APPROVED,
                     date: { $gte: periodStart, $lte: periodEnd },
                 }).lean(),
                 YearlyVacationDays.find({
@@ -269,7 +275,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                         : settings.nonWorkingDays;
                 const isNonWorkingDay = nonWorkingDays.includes(dow);
 
-                const expectedHours = user.expectedWorkHours ?? 8;
+                const expectedHours = user.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS;
                 const { totalHours, anomalies } = computeDayHours(userSessions);
                 const anomalySet = new Set(anomalies);
 
@@ -343,4 +349,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

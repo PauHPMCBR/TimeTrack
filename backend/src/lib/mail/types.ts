@@ -1,0 +1,1 @@
+export type EmailLanguage = 'ca' | 'en' | 'es';

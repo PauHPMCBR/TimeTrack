@@ -8,6 +8,12 @@ import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { ChevronRight, ChevronLeft, Check, X } from 'lucide-react';
+import {
+    VACATION_APPROVED,
+    VACATION_CANCELLED,
+    VACATION_PENDING,
+    VACATION_REJECTED,
+} from 'shared/src/lib/constants';
 
 type GroupedRequest = {
     ids: string[];
@@ -146,7 +152,7 @@ export default function AdminVacationsPage() {
 
     const handleBulkResolve = async (
         ids: string[],
-        status: 'approved' | 'rejected'
+        status: typeof VACATION_APPROVED | typeof VACATION_REJECTED
     ) => {
         if (ids.length === 0) return;
 
@@ -182,21 +188,21 @@ export default function AdminVacationsPage() {
     const pendingGroups = useMemo(
         () =>
             groupRequests(
-                filteredRequests.filter((r) => r.status === 'pending')
+                filteredRequests.filter((r) => r.status === VACATION_PENDING)
             ),
         [filteredRequests]
     );
     const approvedGroups = useMemo(
         () =>
             groupRequests(
-                filteredRequests.filter((r) => r.status === 'approved')
+                filteredRequests.filter((r) => r.status === VACATION_APPROVED)
             ),
         [filteredRequests]
     );
     const rejectedGroups = useMemo(
         () =>
             groupRequests(
-                filteredRequests.filter((r) => r.status === 'rejected')
+                filteredRequests.filter((r) => r.status === VACATION_REJECTED)
             ),
         [filteredRequests]
     );
@@ -204,13 +210,13 @@ export default function AdminVacationsPage() {
     const stats = useMemo(
         () => ({
             total: filteredRequests.length,
-            pending: filteredRequests.filter((r) => r.status === 'pending')
+            pending: filteredRequests.filter((r) => r.status === VACATION_PENDING)
                 .length,
-            approved: filteredRequests.filter((r) => r.status === 'approved')
+            approved: filteredRequests.filter((r) => r.status === VACATION_APPROVED)
                 .length,
-            rejected: filteredRequests.filter((r) => r.status === 'rejected')
+            rejected: filteredRequests.filter((r) => r.status === VACATION_REJECTED)
                 .length,
-            cancelled: filteredRequests.filter((r) => r.status === 'cancelled')
+            cancelled: filteredRequests.filter((r) => r.status === VACATION_CANCELLED)
                 .length,
             obligatoryDays: obligatoryDays.length,
         }),
@@ -433,7 +439,7 @@ export default function AdminVacationsPage() {
                                                         onClick={() =>
                                                             handleBulkResolve(
                                                                 group.ids,
-                                                                'approved'
+                                                                VACATION_APPROVED
                                                             )
                                                         }
                                                         disabled={isProcessing}
@@ -448,7 +454,7 @@ export default function AdminVacationsPage() {
                                                         onClick={() =>
                                                             handleBulkResolve(
                                                                 group.ids,
-                                                                'rejected'
+                                                                VACATION_REJECTED
                                                             )
                                                         }
                                                         disabled={isProcessing}

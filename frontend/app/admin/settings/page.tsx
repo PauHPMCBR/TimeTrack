@@ -12,6 +12,12 @@ import Label from '@/components/ui/Label';
 import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
 import Card from '@/components/ui/Card';
 import AdminBackButton from '../../../components/AdminBackButton';
+import {
+    DEFAULT_BENEVOLENCE_HOURS,
+    DEFAULT_END_OF_DAY_HOUR,
+    DEFAULT_EXPECTED_WORK_HOURS,
+    DEFAULT_NON_WORKING_DAYS,
+} from 'shared/src/lib/defaults';
 import { Check } from 'lucide-react';
 
 type FormState = {
@@ -19,16 +25,18 @@ type FormState = {
     toleranceHours: number;
     endOfDayHour: number;
     nonWorkingDays: number[];
+    inconsistencyReminderEnabled: boolean;
 };
 
 export default function AdminSettingsPage() {
     const { t, lang } = useI18n();
 
     const [formData, setFormData] = useState<FormState>({
-        defaultExpectedHours: 8,
-        toleranceHours: 1,
-        endOfDayHour: 20,
-        nonWorkingDays: [6, 0],
+        defaultExpectedHours: DEFAULT_EXPECTED_WORK_HOURS,
+        toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
+        endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
+        nonWorkingDays: [...DEFAULT_NON_WORKING_DAYS],
+        inconsistencyReminderEnabled: true,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -60,9 +68,14 @@ export default function AdminSettingsPage() {
                     setFormData({
                         defaultExpectedHours: s.defaultExpectedHours,
                         toleranceHours:
-                            s.toleranceHours ?? s.benevolenceHours ?? 1,
+                            s.toleranceHours ??
+                            s.benevolenceHours ??
+                            DEFAULT_BENEVOLENCE_HOURS,
                         endOfDayHour: s.endOfDayHour,
-                        nonWorkingDays: s.nonWorkingDays ?? [6, 0],
+                        nonWorkingDays:
+                            s.nonWorkingDays ?? [...DEFAULT_NON_WORKING_DAYS],
+                        inconsistencyReminderEnabled:
+                            s.inconsistencyReminderEnabled ?? true,
                     });
                 }
             } catch (err) {
@@ -97,6 +110,8 @@ export default function AdminSettingsPage() {
                 toleranceHours: formData.toleranceHours,
                 endOfDayHour: formData.endOfDayHour,
                 nonWorkingDays: formData.nonWorkingDays,
+                inconsistencyReminderEnabled:
+                    formData.inconsistencyReminderEnabled,
             });
 
             if (response.error) {
@@ -238,6 +253,32 @@ export default function AdminSettingsPage() {
                                 <p className="mt-1.5 text-xs text-zinc-500">
                                     {t('admin.settings.nonWorkingDaysHelp')}
                                 </p>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <input
+                                    id="inconsistency-reminder"
+                                    type="checkbox"
+                                    className="mt-0.5 h-4 w-4 accent-indigo-600"
+                                    checked={formData.inconsistencyReminderEnabled}
+                                    onChange={(e) =>
+                                        updateForm({
+                                            inconsistencyReminderEnabled:
+                                                e.target.checked,
+                                        })
+                                    }
+                                />
+                                <div>
+                                    <label
+                                        htmlFor="inconsistency-reminder"
+                                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    >
+                                        {t('admin.settings.reminderLabel')}
+                                    </label>
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                        {t('admin.settings.reminderHelp')}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 

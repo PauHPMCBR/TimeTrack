@@ -4,12 +4,20 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { User, Group } from '@/models';
 import { responseError } from './response-error-generator';
+import {
+    ADMIN_ROLE,
+    MS_PER_DAY,
+    REFRESH_TOKEN_HEADER,
+} from 'shared/src/lib/constants';
+import type { UserRole } from 'shared/src/schemas/database';
+
+export { REFRESH_TOKEN_HEADER };
 
 export interface AuthRequest extends NextApiRequest {
     user?: {
         userId: string;
         email: string;
-        role: 'employee' | 'admin' | 'manager';
+        role: UserRole | 'manager';
     };
 }
 
@@ -23,9 +31,8 @@ export const getJwtSecret = (): string | null => process.env.JWT_SECRET ?? null;
 // after their last action. The new token is returned in the X-Auth-Token header.
 // An absolute cap forces a re-login after ABSOLUTE_MAX_MS even with activity.
 const TOKEN_TTL = '96h';
-const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
-const ABSOLUTE_MAX_MS = 30 * 24 * 60 * 60 * 1000;
-export const REFRESH_TOKEN_HEADER = 'X-Auth-Token';
+const REFRESH_AFTER_MS = MS_PER_DAY;
+const ABSOLUTE_MAX_MS = 30 * MS_PER_DAY;
 
 export const signToken = (
     user: AuthRequest['user'],
@@ -116,7 +123,7 @@ export const requireRole = (roles: string[], handler: Handler) => {
 export const requireSameGroupOrAdmin = (handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
         try {
-            if (req.user?.role === 'admin') {
+            if (req.user?.role === ADMIN_ROLE) {
                 return handler(req, res);
             }
 
@@ -168,7 +175,7 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
 export const requireInGroupOrAdmin = (handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
         try {
-            if (req.user?.role === 'admin') {
+            if (req.user?.role === ADMIN_ROLE) {
                 return handler(req, res);
             }
 

@@ -1,8 +1,10 @@
 import { useI18n } from '@/app/i18n';
+import { ADMIN_ROLE, EMPLOYEE_ROLE } from 'shared/src/lib/constants';
+import type { UserRole } from 'shared/src/schemas/database';
 
 export type RoleSelectorProps = {
-    value: 'employee' | 'admin';
-    onChange: (role: 'employee' | 'admin') => void;
+    value: UserRole;
+    onChange: (role: UserRole) => void;
 };
 
 const active =
@@ -14,7 +16,7 @@ const idle =
 export default function RoleSelector({ value, onChange }: RoleSelectorProps) {
     const { t } = useI18n();
 
-    const Option = ({ role }: { role: 'employee' | 'admin' }) => (
+    const Option = ({ role }: { role: UserRole }) => (
         <button
             type="button"
             onClick={() => onChange(role)}
@@ -28,8 +30,8 @@ export default function RoleSelector({ value, onChange }: RoleSelectorProps) {
 
     return (
         <div className="grid grid-cols-2 gap-3">
-            <Option role="employee" />
-            <Option role="admin" />
+            <Option role={EMPLOYEE_ROLE} />
+            <Option role={ADMIN_ROLE} />
         </div>
     );
 }

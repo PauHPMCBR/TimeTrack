@@ -1,6 +1,7 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { AppSettings } from '@/models';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
 import {
@@ -42,6 +43,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 toleranceHours,
                 endOfDayHour,
                 nonWorkingDays,
+                inconsistencyReminderEnabled,
             } = req.body;
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
@@ -54,6 +56,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             if (endOfDayHour !== undefined) update.endOfDayHour = endOfDayHour;
             if (nonWorkingDays !== undefined)
                 update.nonWorkingDays = nonWorkingDays;
+            if (inconsistencyReminderEnabled !== undefined)
+                update.inconsistencyReminderEnabled =
+                    inconsistencyReminderEnabled;
 
             const existing = await AppSettings.findOne({});
             if (existing) {
@@ -80,4 +85,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

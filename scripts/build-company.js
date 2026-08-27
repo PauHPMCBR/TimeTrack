@@ -28,7 +28,7 @@
 //   {
 //     "subdomain": "acme",            // required
 //     "name": "ACME",                 // optional, default TimeTrack360
-//     "language": "ca",               // optional, official email language: "ca" | "en" (default "ca")
+//     "language": "ca",               // optional, official email language: "ca" | "en" | "es" (default "ca")
 //     "iconFile": "/abs/path/icon.png",      // optional
 //     "faviconFile": "/abs/path/favicon.png" // optional
 //   }
@@ -92,7 +92,7 @@ export function buildFrontend(cfg, domain, root = repoRoot) {
   );
 }
 
-export const COMPANY_LANGUAGES = ["ca", "en"];
+export const COMPANY_LANGUAGES = ["ca", "en", "es"];
 
 export function resolveCompanyLanguage(cfg) {
   const lang = String(cfg.language || "ca").toLowerCase();

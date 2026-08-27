@@ -6,13 +6,26 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { WorkSession, User } from '@/types';
 import { formatHM, toLocalDateKey } from '@/lib/datetime';
+import {
+    applyTheme,
+    DARK_THEME_FLAVOR,
+    DEFAULT_THEME_FLAVOR,
+    ThemeFlavor,
+} from '@/lib/theme';
+import { THEME_KEY, TIME_FORMAT_KEY } from '@/lib/storage';
+import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
+import {
+    AVATAR_MAX_BYTES,
+    CHECK_IN,
+    CHECK_OUT,
+    MS_PER_HOUR,
+} from 'shared/src/lib/constants';
 import { usePathname, useRouter } from 'next/navigation';
 import { Users, ChevronRight, Camera, LogOut } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/Avatar';
 
-const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
 const AVATAR_TYPES = [
     'image/jpeg',
     'image/png',
@@ -31,14 +44,6 @@ const FLAVORS = [
     { id: 'mocha', base: '#1e1e2e' },
 ] as const;
 
-type ThemeFlavor = (typeof FLAVORS)[number]['id'];
-
-const applyTheme = (theme: ThemeFlavor) => {
-    const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
-    root.classList.toggle('dark', theme !== 'latte');
-};
-
 export default function ProfilePage() {
     const { t } = useI18n();
     const pathname = usePathname();
@@ -48,7 +53,7 @@ export default function ProfilePage() {
     const [sessions, setSessions] = useState<WorkSession[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const [theme, setTheme] = useState<ThemeFlavor>('latte');
+    const [theme, setTheme] = useState<ThemeFlavor>(DEFAULT_THEME_FLAVOR);
     const [timeFmt, setTimeFmt] = useState<'24' | '12'>('24');
     const [now, setNow] = useState(() => Date.now());
 
@@ -113,13 +118,16 @@ export default function ProfilePage() {
 
     const isCheckedIn = useMemo(() => {
         if (sessions.length === 0) return false;
-        return sortedSessions[sortedSessions.length - 1].type === 'check_in';
+        return sortedSessions[sortedSessions.length - 1].type === CHECK_IN;
     }, [sessions, sortedSessions]);
 
     useEffect(() => {
         if (!isCheckedIn) return;
         setNow(Date.now());
-        const interval = setInterval(() => setNow(Date.now()), 30_000);
+        const interval = setInterval(
+            () => setNow(Date.now()),
+            NOW_REFRESH_INTERVAL_MS
+        );
         return () => clearInterval(interval);
     }, [isCheckedIn]);
 
@@ -160,14 +168,20 @@ export default function ProfilePage() {
     }, [pathname]);
 
     useEffect(() => {
-        const saved = localStorage.getItem('theme') || 'latte';
+        const saved = localStorage.getItem(THEME_KEY) || DEFAULT_THEME_FLAVOR;
         const normalized =
-            saved === 'light' ? 'latte' : saved === 'dark' ? 'mocha' : saved;
-        const savedTheme: ThemeFlavor = FLAVORS.some((f) => f.id === normalized)
+            saved === 'light'
+                ? DEFAULT_THEME_FLAVOR
+                : saved === 'dark'
+                  ? DARK_THEME_FLAVOR
+                  : saved;
+        const savedTheme: ThemeFlavor = FLAVORS.some(
+            (f) => f.id === normalized
+        )
             ? (normalized as ThemeFlavor)
-            : 'mocha';
+            : DARK_THEME_FLAVOR;
         const savedFmt =
-            (localStorage.getItem('time_format') as '24' | '12') || '24';
+            (localStorage.getItem(TIME_FORMAT_KEY) as '24' | '12') || '24';
         setTheme(savedTheme);
         setTimeFmt(savedFmt);
         applyTheme(savedTheme);
@@ -175,13 +189,13 @@ export default function ProfilePage() {
 
     const changeTheme = (next: ThemeFlavor) => {
         setTheme(next);
-        localStorage.setItem('theme', next);
+        localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
     };
 
     const changeTimeFmt = (fmt: '24' | '12') => {
         setTimeFmt(fmt);
-        localStorage.setItem('time_format', fmt);
+        localStorage.setItem(TIME_FORMAT_KEY, fmt);
     };
 
     const workedHoursToday = useMemo(() => {
@@ -193,15 +207,15 @@ export default function ProfilePage() {
         );
 
         todaySessions.forEach((s) => {
-            if (s.type === 'check_in') lastIn = new Date(s.timestamp);
-            else if (s.type === 'check_out' && lastIn) {
+            if (s.type === CHECK_IN) lastIn = new Date(s.timestamp);
+            else if (s.type === CHECK_OUT && lastIn) {
                 totalMs += new Date(s.timestamp).getTime() - lastIn.getTime();
                 lastIn = null;
             }
         });
 
         if (lastIn) totalMs += now - (lastIn as Date).getTime();
-        return totalMs / 3_600_000;
+        return totalMs / MS_PER_HOUR;
     }, [sortedSessions, now]);
 
     const checkedInDuration = useMemo(() => {
@@ -294,7 +308,7 @@ export default function ProfilePage() {
                         {t('profile.hoursToday')}
                     </div>
                     <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">
-                        {formatHM(workedHoursToday * 3_600_000, t)}
+                        {formatHM(workedHoursToday * MS_PER_HOUR, t)}
                     </div>
                 </Card>
 

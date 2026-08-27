@@ -19,9 +19,22 @@ vi.mock('@/lib/auth', () => ({
     AuthRequest: class {},
 }));
 
+vi.mock('@/lib/validation', () => ({
+    runValidation: async (middleware: any, req: any, res: any) => {
+        await new Promise((resolve) =>
+            middleware(req, res, () => resolve(true))
+        );
+        return !res.headersSent;
+    },
+    validateRequestBody:
+        () => (req: any, res: any, next: (err?: unknown) => void) =>
+            next(),
+}));
+
 vi.mock('@/models', () => ({
     User: {
         findById: vi.fn(),
+        findByIdAndUpdate: vi.fn(),
     },
 }));
 
@@ -123,6 +136,86 @@ describe('GET /api/profile/me', () => {
             success: false,
             error: 'GetError',
             details: {},
+        });
+    });
+});
+
+describe('PUT /api/profile/me (automatic timetable)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
+
+    it('updates the user auto timetable and returns the updated profile', async () => {
+        const { User } = await import('@/models');
+        const updated = {
+            _id: 'user-123',
+            name: 'Test User',
+            email: 'test@example.com',
+            role: 'employee',
+            autoTimetable: [
+                { checkIn: '08:30', checkOut: '16:30' },
+                { checkIn: '14:00', checkOut: '18:00' },
+            ],
+        };
+        vi.mocked(User.findByIdAndUpdate).mockReturnValue({
+            select: vi.fn().mockReturnValue({
+                populate: vi.fn().mockReturnValue({
+                    lean: vi.fn().mockResolvedValue(updated),
+                }),
+            }),
+        } as any);
+
+        const req = mockReq({
+            method: 'PUT',
+            body: {
+                autoTimetable: updated.autoTimetable,
+            },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+            'user-123',
+            expect.objectContaining({
+                autoTimetable: updated.autoTimetable,
+            }),
+            { new: true }
+        );
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: { user: updated },
+        });
+    });
+
+    it('returns 404 when the user does not exist', async () => {
+        const { User } = await import('@/models');
+        vi.mocked(User.findByIdAndUpdate).mockReturnValue({
+            select: vi.fn().mockReturnValue({
+                populate: vi.fn().mockReturnValue({
+                    lean: vi.fn().mockResolvedValue(null),
+                }),
+            }),
+        } as any);
+
+        const req = mockReq({
+            method: 'PUT',
+            body: { autoTimetable: [{ checkIn: '09:00', checkOut: '17:00' }] },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'EntryNotFound',
+            details: { entry: 'User' },
         });
     });
 });

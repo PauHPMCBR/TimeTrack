@@ -1,6 +1,7 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { YearlyVacationDays } from '@/models';
 import {
     responseErrorMethodNotAllowed,
@@ -93,4 +94,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

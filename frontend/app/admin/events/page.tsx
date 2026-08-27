@@ -10,6 +10,15 @@ import Card from '@/components/ui/Card';
 import SessionEditorModal from '@/components/SessionEditorModal';
 import AdminBackButton from '../../../components/AdminBackButton';
 import {
+    ADMIN_REPORT_PERIODS,
+    AdminReportPeriod,
+    CHECK_IN,
+    MS_PER_HOUR,
+    SOURCE_ADMIN,
+    SOURCE_AUTOMATIC,
+    SOURCE_USER,
+} from 'shared/src/lib/constants';
+import {
     ChevronRight,
     ChevronLeft,
     ShieldCheck,
@@ -17,9 +26,9 @@ import {
     Zap,
 } from 'lucide-react';
 
-type Period = 'day' | 'week' | 'month' | 'year';
+type Period = AdminReportPeriod;
 
-const PERIODS: Period[] = ['day', 'week', 'month', 'year'];
+const PERIODS: Period[] = [...ADMIN_REPORT_PERIODS];
 
 export default function AdminEventsPage() {
     return (
@@ -35,8 +44,8 @@ function AdminEventsInner() {
 
     const [period, setPeriod] = useState<Period>(() => {
         const p = searchParams.get('period');
-        return p === 'day' || p === 'week' || p === 'month' || p === 'year'
-            ? p
+        return (ADMIN_REPORT_PERIODS as readonly string[]).includes(p ?? '')
+            ? (p as Period)
             : 'week';
     });
     const [cursor, setCursor] = useState(() => {
@@ -334,13 +343,13 @@ function AdminEventsInner() {
                                                                 (s, i) => {
                                                                     const source =
                                                                         s.source ??
-                                                                        'user';
+                                                                        SOURCE_USER;
                                                                     const SourceIcon =
                                                                         source ===
-                                                                        'admin'
+                                                                        SOURCE_ADMIN
                                                                             ? ShieldCheck
                                                                             : source ===
-                                                                                'automatic'
+                                                                                SOURCE_AUTOMATIC
                                                                               ? Zap
                                                                               : User;
                                                                     return (
@@ -362,7 +371,7 @@ function AdminEventsInner() {
                                                                                 )}
                                                                                 className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm font-medium text-white ${
                                                                                     s.type ===
-                                                                                    'check_in'
+                                                                                    CHECK_IN
                                                                                         ? 'bg-green-500'
                                                                                         : 'bg-red-500'
                                                                                 }`}
@@ -387,7 +396,7 @@ function AdminEventsInner() {
                                                     {row.totalHours > 0
                                                         ? formatHM(
                                                               row.totalHours *
-                                                                  3_600_000,
+                                                                  MS_PER_HOUR,
                                                               t
                                                           )
                                                         : '—'}

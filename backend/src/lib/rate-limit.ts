@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 
 interface RateLimitEntry {
     count: number;
@@ -10,6 +11,8 @@ interface RateLimitEntry {
 // backend is ever scaled horizontally, move this to Redis.
 const rateLimitMap = new Map<string, RateLimitEntry>();
 const MAX_ENTRIES = 10_000;
+const DEFAULT_RATE_LIMIT = 100;
+const DEFAULT_RATE_LIMIT_WINDOW_MS = 15 * MS_PER_MINUTE;
 
 // Keys on the client IP. Behind a reverse proxy every request shares the
 // proxy's socket address, so prefer the left-most (client) X-Forwarded-For
@@ -34,8 +37,8 @@ function prune(windowMs: number): void {
 export const rateLimit = (
     req: NextApiRequest,
     res: NextApiResponse,
-    limit: number = 100,
-    windowMs: number = 15 * 60 * 1000
+    limit: number = DEFAULT_RATE_LIMIT,
+    windowMs: number = DEFAULT_RATE_LIMIT_WINDOW_MS
 ): boolean => {
     // Don't throttle the test suite, which shares one 'unknown' key across all
     // requests.
@@ -77,8 +80,8 @@ export const withRateLimit = (
     options: RateLimitOptions = {}
 ) => {
     return async (req: NextApiRequest, res: NextApiResponse) => {
-        const windowMs = options.windowMs ?? 15 * 60 * 1000;
-        const limit = options.limit ?? 100;
+        const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
+        const limit = options.limit ?? DEFAULT_RATE_LIMIT;
 
         if (!rateLimit(req, res, limit, windowMs)) {
             res.setHeader('Retry-After', String(Math.ceil(windowMs / 1000)));

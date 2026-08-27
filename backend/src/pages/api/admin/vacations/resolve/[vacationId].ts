@@ -1,6 +1,13 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
+import {
+    ADMIN_ROLE,
+    VACATION_APPROVED,
+    VACATION_CANCELLED,
+    VACATION_PENDING,
+    VACATION_REJECTED,
+} from 'shared/src/lib/constants';
 import { ElectiveVacation, YearlyVacationDays } from '@/models';
 import { runInTransaction } from '@/lib/transaction';
 import {
@@ -25,7 +32,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const { status } = req.body;
 
         if (
-            !['pending', 'approved', 'rejected', 'cancelled'].includes(status)
+            ![VACATION_PENDING, VACATION_APPROVED, VACATION_REJECTED, VACATION_CANCELLED].includes(
+                status
+            )
         ) {
             return responseErrorIncorrectParameter(res, 'status');
         }
@@ -50,7 +59,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 approvedBy?: string;
                 approvedAt?: Date;
             } = { status };
-            if (status === 'approved') {
+            if (status === VACATION_APPROVED) {
                 updateData.approvedBy = req.user?.userId;
                 updateData.approvedAt = new Date();
             }
@@ -62,12 +71,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
             if (
                 oldStatus !== status &&
-                (oldStatus === 'approved' || status === 'approved')
+                (oldStatus === VACATION_APPROVED || status === VACATION_APPROVED)
             ) {
                 await updateUserYearlyVacationDays(
                     vacation.userId,
                     vacation.date,
-                    status === 'approved',
+                    status === VACATION_APPROVED,
                     session
                 );
             }
@@ -184,4 +193,4 @@ async function updateUserYearlyVacationDays(
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

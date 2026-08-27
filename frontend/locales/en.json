@@ -59,7 +59,24 @@
         },
         "remember": "Remember me",
         "submit": "Sign in",
-        "title": "Sign in"
+        "title": "Sign in",
+        "forgot": "Forgot your password?"
+    },
+    "forgotPassword": {
+        "backLogin": "Back to sign in",
+        "email": "Email address",
+        "sent": "If the account exists, you'll receive an email with a link to reset your password.",
+        "submit": "Send the link",
+        "subtitle": "We'll email you a link to reset it.",
+        "title": "Recover your password"
+    },
+    "resetPassword": {
+        "confirm": "Confirm the password",
+        "invalidLink": "The reset link is invalid or incomplete.",
+        "password": "New password",
+        "submit": "Change password",
+        "subtitle": "Set a new password for your account.",
+        "title": "New password"
     },
     "register": {
         "btn": "Activate account",
@@ -101,7 +118,23 @@
         "title": "Check-in",
         "todaySessions": "Today's Sessions",
         "todaySummary": "Today's Summary",
-        "totalHours": "Total Hours"
+        "totalHours": "Total Hours",
+        "autoApply": "Set automatic timetable",
+        "autoApplyConfirmBody": "It will replace {date}'s records with your automatic timetable ({timetable}).",
+        "autoApplyConfirmCancel": "Cancel",
+        "autoApplyConfirmConfirm": "Yes, apply it",
+        "autoApplyConfirmTitle": "Apply the automatic timetable?",
+        "autoApplyFailed": "Couldn't apply the automatic timetable.",
+        "autoApplied": "Automatic timetable applied.",
+        "autoAddInterval": "Add interval",
+        "autoRemoveInterval": "Remove",
+        "autoCheckIn": "Check-in",
+        "autoCheckOut": "Check-out",
+        "autoSave": "Save timetable",
+        "autoSaveFailed": "Couldn't save the automatic timetable.",
+        "autoSaved": "Automatic timetable saved.",
+        "autoSubtitle": "Set the timetable (one or more intervals) the automatic button will apply.",
+        "autoTitle": "Automatic timetable"
     },
     "lunch": {
         "noteHelper": "Add an optional note about the break.",
@@ -413,6 +446,8 @@
             "endOfDayLabel": "End of day time",
             "nonWorkingDaysHelp": "Days of the week when no work is expected (won't flag an anomaly).",
             "nonWorkingDaysLabel": "Non-working days",
+            "reminderHelp": "Send an end-of-day email to users with an inconsistent check-in/out, with the link to apply the automatic timetable.",
+            "reminderLabel": "Inconsistent check-in/out email reminder",
             "saved": "Settings saved successfully",
             "subtitle": "Configure the company-wide values.",
             "title": "Company settings"
@@ -558,6 +593,8 @@
         "InternalError": "Internal error",
         "InvalidCredentials": "Invalid credentials",
         "InvalidRegisterToken": "Invalid register token",
+        "InvalidResetToken": "The reset link is invalid or has already been used.",
+        "ResetTokenExpired": "The reset link has expired. Request a new one.",
         "InvalidToken": "Invalid or expired token",
         "MessageMissing": "Message missing",
         "MethodNotAllowed": "Method not allowed",

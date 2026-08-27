@@ -1,4 +1,5 @@
 import { WorkSessionAnomaly } from '../schemas/api';
+import { CHECK_IN, CHECK_OUT, MS_PER_HOUR } from './constants';
 
 export interface DaySessionLike {
     type: 'check_in' | 'check_out';
@@ -34,12 +35,12 @@ export function computeDayHours(
 
     for (const session of sessions) {
         const timestamp = new Date(session.timestamp);
-        if (session.type === 'check_in') {
+        if (session.type === CHECK_IN) {
             if (pendingCheckIn) {
                 anomalies.push('forgot_check_out');
             }
             pendingCheckIn = timestamp;
-        } else if (session.type === 'check_out') {
+        } else if (session.type === CHECK_OUT) {
             if (pendingCheckIn) {
                 totalMs += timestamp.getTime() - pendingCheckIn.getTime();
                 pendingCheckIn = null;
@@ -59,7 +60,7 @@ export function computeDayHours(
         }
     }
 
-    const rawHours = Math.max(0, totalMs / 3_600_000);
+    const rawHours = Math.max(0, totalMs / MS_PER_HOUR);
     const totalHours =
         options.round === false ? rawHours : Math.round(rawHours * 100) / 100;
 
@@ -79,10 +80,10 @@ export function isWithinBenevolence(
 
 /** True when sessions alternate starting with a check_in (empty is coherent). */
 export function isCoherentSequence(sessions: DaySessionLike[]): boolean {
-    let expected: 'check_in' | 'check_out' = 'check_in';
+    let expected: 'check_in' | 'check_out' = CHECK_IN;
     for (const session of sessions) {
         if (session.type !== expected) return false;
-        expected = session.type === 'check_in' ? 'check_out' : 'check_in';
+        expected = session.type === CHECK_IN ? CHECK_OUT : CHECK_IN;
     }
     return true;
 }

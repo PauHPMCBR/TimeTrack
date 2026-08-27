@@ -59,7 +59,24 @@
         },
         "remember": "Recorda'm",
         "submit": "Entrar",
-        "title": "Inicia sessió"
+        "title": "Inicia sessió",
+        "forgot": "Has oblidat la contrasenya?"
+    },
+    "forgotPassword": {
+        "backLogin": "Torna a l'inici de sessió",
+        "email": "Correu electrònic",
+        "sent": "Si el compte existeix, rebràs un correu amb un enllaç per restablir la contrasenya.",
+        "submit": "Envia l'enllaç",
+        "subtitle": "Et enviarem un enllaç per restablir-la.",
+        "title": "Recupera la contrasenya"
+    },
+    "resetPassword": {
+        "confirm": "Repeteix la contrasenya",
+        "invalidLink": "L'enllaç de restabliment no és vàlid o és incomplet.",
+        "password": "Nova contrasenya",
+        "submit": "Canvia la contrasenya",
+        "subtitle": "Defineix una nova contrasenya per al teu compte.",
+        "title": "Nova contrasenya"
     },
     "register": {
         "btn": "Activar compte",
@@ -101,7 +118,23 @@
         "title": "Fitxatge",
         "todaySessions": "Sessions d'avui",
         "todaySummary": "Resum d'avui",
-        "totalHours": "Hores totals"
+        "totalHours": "Hores totals",
+        "autoApply": "Aplica l'horari automàtic",
+        "autoApplyConfirmBody": "Es reemplaçaran els registres de {date} pels horaris automàtics ({timetable}).",
+        "autoApplyConfirmCancel": "Cancel·la",
+        "autoApplyConfirmConfirm": "Sí, aplica-ho",
+        "autoApplyConfirmTitle": "Aplicar l'horari automàtic?",
+        "autoApplyFailed": "No s'ha pogut aplicar l'horari automàtic.",
+        "autoApplied": "Horari automàtic aplicat.",
+        "autoAddInterval": "Afegeix un interval",
+        "autoRemoveInterval": "Elimina",
+        "autoCheckIn": "Entrada",
+        "autoCheckOut": "Sortida",
+        "autoSave": "Desa l'horari",
+        "autoSaveFailed": "No s'ha pogut desar l'horari automàtic.",
+        "autoSaved": "Horari automàtic desat.",
+        "autoSubtitle": "Defineix els horaris (un o més intervals) que s'aplicaran amb el botó d'horari automàtic.",
+        "autoTitle": "Horari automàtic"
     },
     "lunch": {
         "noteHelper": "Afegeix una nota opcional sobre la pausa.",
@@ -413,6 +446,8 @@
             "endOfDayLabel": "Hora de fi de dia",
             "nonWorkingDaysHelp": "Dies de la setmana en què no s'espera treball (no es marcarà cap anomalia).",
             "nonWorkingDaysLabel": "Dies no laborables",
+            "reminderHelp": "Envia un correu a final de dia als usuaris amb el fitxatge inconsistent, amb l'enllaç per aplicar l'horari automàtic.",
+            "reminderLabel": "Recordatori de fitxatge inconsistent per correu",
             "saved": "Configuració desada correctament",
             "subtitle": "Configura els valors generals de l'empresa.",
             "title": "Configuració de l'empresa"
@@ -558,6 +593,8 @@
         "InternalError": "Error intern",
         "InvalidCredentials": "Credencials invàlids",
         "InvalidRegisterToken": "Token de registre invàlid",
+        "InvalidResetToken": "L'enllaç de restabliment no és vàlid o ja s'ha fet servir.",
+        "ResetTokenExpired": "L'enllaç de restabliment ha caducat. Demana'n un de nou.",
         "InvalidToken": "Token invàlid o expirat",
         "MessageMissing": "Falta el missatge",
         "MethodNotAllowed": "Mètode no permès",

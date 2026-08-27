@@ -6,6 +6,12 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ApiNotificationManager } from '@/components/ApiNotificationManager';
 import { APP_NAME, FAVICON_URL } from '@/lib/brand';
+import {
+    DARK_THEME_FLAVOR,
+    DEFAULT_THEME_FLAVOR,
+    THEME_FLAVORS,
+} from '@/lib/theme';
+import { THEME_KEY } from '@/lib/storage';
 
 const inter = Inter({ subsets: ['latin'] });
 const sora = Sora({ subsets: ['latin'], variable: '--font-display' });
@@ -20,14 +26,14 @@ export const metadata: Metadata = {
 
 const themeInitScript = `
   try {
-    var _theme = localStorage.getItem('theme') || 'latte';
-    if (_theme === 'dark') _theme = 'mocha';
-    else if (_theme === 'light') _theme = 'latte';
-    var _valid = ['latte', 'frappe', 'macchiato', 'mocha'].indexOf(_theme) !== -1;
-    if (!_valid) _theme = 'latte';
+    var _theme = localStorage.getItem('${THEME_KEY}') || '${DEFAULT_THEME_FLAVOR}';
+    if (_theme === 'dark') _theme = '${DARK_THEME_FLAVOR}';
+    else if (_theme === 'light') _theme = '${DEFAULT_THEME_FLAVOR}';
+    var _valid = ${JSON.stringify(THEME_FLAVORS)}.indexOf(_theme) !== -1;
+    if (!_valid) _theme = '${DEFAULT_THEME_FLAVOR}';
     var _root = document.documentElement;
     _root.setAttribute('data-theme', _theme);
-    _root.classList.toggle('dark', _theme !== 'latte');
+    _root.classList.toggle('dark', _theme !== '${DEFAULT_THEME_FLAVOR}');
   } catch (_) {}
 `;
 

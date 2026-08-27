@@ -3,15 +3,20 @@ import type {
     AdminWorkSessionsQueryWithPagination,
     AdminWorkSessionInput,
     AppSettingsRequest,
+    ApplyAutoScheduleRequest,
     CopyYearlyVacationRequest,
     CreateGroupRequest,
     CreateUserRequest,
     ElectiveVacationRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     MonthlyWorkRecordResponse,
     RegisterRequest,
+    ResetPasswordRequest,
+    UpdateProfileRequest,
     UpdateUserRequest,
     UserLoginResponse,
+    WorkSessionAnomaly,
     WorkSessionRequest,
     YearlyVacationAdminRequest,
     YearlyVacationResponse,
@@ -30,6 +35,12 @@ import {
 } from '@/types';
 import { ApiResponse, ErrorDetails } from '@/types/apiErrors';
 import type { ErrorCode } from 'shared/src/types/response-errors';
+import {
+    REFRESH_TOKEN_HEADER,
+    VACATION_APPROVED,
+    VACATION_REJECTED,
+} from 'shared/src/lib/constants';
+import { AUTH_TOKEN_KEY, REMEMBERED_EMAIL_KEY } from './storage';
 import { triggerDownload } from './csv';
 import { toLocalDateKey } from './datetime';
 
@@ -55,7 +66,7 @@ class ApiClient {
         endpoint: string,
         options: RequestInit = {}
     ): Promise<ApiResponse<T>> {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
 
         const config: RequestInit = {
             ...options,
@@ -69,11 +80,11 @@ class ApiClient {
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-            // Sliding session: the backend re-issues the JWT (72h) in this header
+            // Sliding session: the backend re-issues the JWT (96h) in this header
             // when it's close to expiring. Store it for the next request.
-            const refreshedToken = response.headers.get('X-Auth-Token');
+            const refreshedToken = response.headers.get(REFRESH_TOKEN_HEADER);
             if (refreshedToken) {
-                localStorage.setItem('auth_token', refreshedToken);
+                localStorage.setItem(AUTH_TOKEN_KEY, refreshedToken);
             }
 
             let data: { error?: string; details?: unknown; data?: unknown };
@@ -131,8 +142,8 @@ class ApiClient {
     }
 
     async logoff() {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('remembered_email');
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(REMEMBERED_EMAIL_KEY);
         this.currentUser = undefined;
         this.reasonsPromise = null;
         this.avatarCache.clear();
@@ -144,6 +155,49 @@ class ApiClient {
         return this.request<UserLoginResponse>(`/api/auth/register`, {
             method: 'POST',
             body: JSON.stringify(credentials),
+        });
+    }
+
+    async forgotPassword(
+        email: string
+    ): Promise<ApiResponse<{ message: string }>> {
+        const body: ForgotPasswordRequest = { email };
+        return this.request(`/api/auth/forgot-password`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    async resetPassword(
+        credentials: ResetPasswordRequest
+    ): Promise<ApiResponse<UserLoginResponse>> {
+        return this.request<UserLoginResponse>(`/api/auth/reset-password`, {
+            method: 'POST',
+            body: JSON.stringify(credentials),
+        });
+    }
+
+    async updateMyProfile(
+        input: UpdateProfileRequest
+    ): Promise<ApiResponse<{ user: User }>> {
+        return this.request(`/api/profile/me`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        });
+    }
+
+    async applyAutoSchedule(
+        input?: ApplyAutoScheduleRequest
+    ): Promise<
+        ApiResponse<{
+            workSessions: WorkSession[];
+            totalHours: number;
+            anomalies: WorkSessionAnomaly[];
+        }>
+    > {
+        return this.request(`/api/work-sessions/apply-auto-schedule`, {
+            method: 'POST',
+            body: JSON.stringify(input ?? {}),
         });
     }
 
@@ -221,7 +275,7 @@ class ApiClient {
         userId: string,
         version?: string | null
     ): Promise<Blob | null> {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const endpoint = `/api/profile/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
         const key = `${userId}:${version ?? ''}`;
 
@@ -357,7 +411,7 @@ class ApiClient {
 
     async resolveVacation(
         vacationId: string,
-        status: 'approved' | 'rejected'
+        status: typeof VACATION_APPROVED | typeof VACATION_REJECTED
     ): Promise<ApiResponse<{ success: boolean }>> {
         return this.request(`/api/admin/vacations/resolve/${vacationId}`, {
             method: 'POST',
@@ -476,7 +530,7 @@ class ApiClient {
         userIds: string[],
         options?: { from?: string; to?: string }
     ): Promise<ApiResponse<null>> {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const params = new URLSearchParams();
         params.set('userIds', userIds.join(','));
         if (options?.from) params.set('from', options.from);

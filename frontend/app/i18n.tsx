@@ -11,6 +11,7 @@ import React, {
 import ca from '../locales/ca.json';
 import es from '../locales/es.json';
 import en from '../locales/en.json';
+import { LANG_KEY } from '@/lib/storage';
 
 type Lang = 'ca' | 'es' | 'en';
 type DictValue = string | { [k: string]: DictValue };
@@ -51,7 +52,7 @@ export default function I18nProvider({
     const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
 
     useEffect(() => {
-        const saved = localStorage.getItem('lang');
+        const saved = localStorage.getItem(LANG_KEY);
         if (isLang(saved) && saved !== DEFAULT_LANG) {
             setLangState(saved);
         }
@@ -63,7 +64,7 @@ export default function I18nProvider({
 
     const setLang = useCallback((l: Lang) => {
         setLangState(l);
-        if (typeof window !== 'undefined') localStorage.setItem('lang', l);
+        if (typeof window !== 'undefined') localStorage.setItem(LANG_KEY, l);
     }, []);
 
     const t = useCallback(

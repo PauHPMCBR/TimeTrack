@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { User as UserType } from '@/types';
 
 export default function BottomNav() {
@@ -24,7 +25,7 @@ export default function BottomNav() {
         apiClient.getCurrentUser().then((u) => setUser(u || null));
     }, []);
 
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === ADMIN_ROLE;
 
     const items = [
         { href: '/check-in', label: t('tabs.checkin'), Icon: CheckCircle },

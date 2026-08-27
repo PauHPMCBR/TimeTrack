@@ -1,6 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { AVATAR_MAX_BYTES } from 'shared/src/lib/constants';
+
+export { AVATAR_MAX_BYTES };
 
 // Per-company runtime data directory. In production each company's backend
 // mounts its own host directory (e.g. /opt/timetrack/companies/<company>/data)
@@ -17,8 +20,6 @@ function avatarsDir(): string {
 // Input limits. We are lenient about what users upload (any common image
 // format, up to 10 MB) because sanitizeAvatar() downscales and re-encodes
 // everything to a single canonical format/size below.
-export const AVATAR_MAX_BYTES = 10 * 1024 * 1024; // 10 MB input cap
-
 // Canonical output: every profile picture is stored as a 256x256 JPEG.
 // JPEG (not PNG) because profile pictures are photos: much smaller files with
 // negligible quality loss at this size. PNG's lossless/alpha strengths only

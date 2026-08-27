@@ -17,6 +17,12 @@ import {
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+import {
+    VACATION_APPROVED,
+    VACATION_PENDING,
+    VACATION_REJECTED,
+} from 'shared/src/lib/constants';
+import { DEFAULT_ELECTIVE_VACATION_DAYS } from 'shared/src/lib/defaults';
 
 type GroupedVacation = {
     ids: string[];
@@ -212,7 +218,7 @@ export default function MyVacationsPage() {
         }
     };
 
-    const totalDays = stats?.electiveDaysTotalCount || 22;
+    const totalDays = stats?.electiveDaysTotalCount || DEFAULT_ELECTIVE_VACATION_DAYS;
     const usedDays = stats?.selectedElectiveDays?.length || 0;
     const remainingDays = totalDays - usedDays;
 
@@ -433,10 +439,10 @@ export default function MyVacationsPage() {
                                     <div className="flex items-center gap-3">
                                         <span
                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                                group.status === 'approved'
+                                                group.status === VACATION_APPROVED
                                                     ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30'
                                                     : group.status ===
-                                                        'rejected'
+                                                        VACATION_REJECTED
                                                       ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30'
                                                       : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30'
                                             }`}
@@ -446,7 +452,7 @@ export default function MyVacationsPage() {
                                             )}
                                         </span>
 
-                                        {group.status === 'pending' && (
+                                        {group.status === VACATION_PENDING && (
                                             <button
                                                 onClick={() =>
                                                     openCancelModal(group.ids)

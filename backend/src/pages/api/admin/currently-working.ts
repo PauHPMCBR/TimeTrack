@@ -1,7 +1,9 @@
 import { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
+import { ADMIN_ROLE, CHECK_IN } from 'shared/src/lib/constants';
 import { WorkSession, User } from '@/models';
+import { startOfDay } from '@/lib/date-range';
 import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
@@ -15,8 +17,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = startOfDay(new Date());
 
         const latestSessions = await WorkSession.aggregate([
             {
@@ -36,7 +37,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         ]);
 
         const activeUserIds = latestSessions
-            .filter((s) => s.latestSession.type === 'check_in')
+            .filter((s) => s.latestSession.type === CHECK_IN)
             .map((s) => s._id);
 
         const activeUsers = await User.find(
@@ -57,4 +58,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);

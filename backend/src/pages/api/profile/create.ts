@@ -1,5 +1,7 @@
 import type { NextApiResponse } from 'next';
 import { requireRole, AuthRequest } from '@/lib/auth';
+import { ADMIN_ROLE, EMPLOYEE_ROLE, TOKEN_BYTE_LENGTH } from 'shared/src/lib/constants';
+import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 import { User } from '@/models';
 import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
@@ -40,7 +42,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             ]);
         }
 
-        const registrationToken = crypto.randomBytes(32).toString('hex');
+        const registrationToken = crypto.randomBytes(TOKEN_BYTE_LENGTH).toString('hex');
 
         const settings = await getAppSettings();
 
@@ -49,13 +51,13 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             email: email.toLowerCase(),
             registrationToken,
             registered: false,
-            role: role || 'employee',
+            role: role || EMPLOYEE_ROLE,
             groups: [],
             dni,
             expectedWorkHours: settings.defaultExpectedHours,
         });
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
         const inviteParams = new URLSearchParams({ name, email });
         const registrationLink = `${frontendUrl}/register/${registrationToken}?${inviteParams.toString()}`;
 
@@ -87,4 +89,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole(['admin'], handler);
+export default requireRole([ADMIN_ROLE], handler);
