@@ -11,6 +11,7 @@ import {
 import { runValidation, validateRequestBody } from '@/lib/validation';
 import { CreateUserRequestSchema } from 'shared/src/schemas/api';
 import { getAppSettings } from '@/lib/settings';
+import { sendRegistrationInvite } from '@/lib/mail';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -57,6 +58,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const inviteParams = new URLSearchParams({ name, email });
         const registrationLink = `${frontendUrl}/register/${registrationToken}?${inviteParams.toString()}`;
+
+        void sendRegistrationInvite({
+            to: newUser.email,
+            name: newUser.name,
+            registrationLink,
+        });
 
         res.status(201).json({
             success: true,

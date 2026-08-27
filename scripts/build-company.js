@@ -28,6 +28,7 @@
 //   {
 //     "subdomain": "acme",            // required
 //     "name": "ACME",                 // optional, default TimeTrack360
+//     "language": "ca",               // optional, official email language: "ca" | "en" (default "ca")
 //     "iconFile": "/abs/path/icon.png",      // optional
 //     "faviconFile": "/abs/path/favicon.png" // optional
 //   }
@@ -91,6 +92,19 @@ export function buildFrontend(cfg, domain, root = repoRoot) {
   );
 }
 
+export const COMPANY_LANGUAGES = ["ca", "en"];
+
+export function resolveCompanyLanguage(cfg) {
+  const lang = String(cfg.language || "ca").toLowerCase();
+  if (!COMPANY_LANGUAGES.includes(lang)) {
+    console.warn(
+      `Warning: unknown language "${cfg.language}" (supported: ${COMPANY_LANGUAGES.join(", ")}); using "ca".`
+    );
+    return "ca";
+  }
+  return lang;
+}
+
 export function buildBackend(root = repoRoot) {
   execFileSync("docker", ["build", "-f", "backend/Dockerfile", "-t", "registre-jornada-backend:latest", "."], {
     cwd: root,
@@ -103,12 +117,15 @@ export function printInfo(cfg, domain) {
   const backendTag = "registre-jornada-backend:latest";
   const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
   const frontendUrl = cfg.frontendUrl || `https://${cfg.subdomain}.${domain}`;
+  const companyName = cfg.name || "TimeTrack360";
+  const companyLanguage = resolveCompanyLanguage(cfg);
 
   console.log(`\n=== ${cfg.subdomain}.${domain} ===
 frontend:  ${frontendTag}
 backend:   ${backendTag}
 frontendUrl: ${frontendUrl}
 backendUrl:  ${backendUrl}
+language:    ${companyLanguage}
 
 Caddyfile entries to append (Caddyfile):
 ${cfg.subdomain}.${domain}         { reverse_proxy ${cfg.subdomain}-frontend:3000 }
@@ -118,7 +135,15 @@ Per-company compose (companies/${cfg.subdomain}/compose.yml):
   container_name: "${cfg.subdomain}-frontend"
   container_name: "${cfg.subdomain}-backend"
   FRONTEND_URL: ${frontendUrl}
-  MONGODB_URI: mongodb://${cfg.subdomain}:<db-password>@mongodb:27017/myapp_${cfg.subdomain}?authSource=myapp_${cfg.subdomain}`);
+  MONGODB_URI: mongodb://${cfg.subdomain}:<db-password>@mongodb:27017/myapp_${cfg.subdomain}?authSource=myapp_${cfg.subdomain}
+  JWT_SECRET: <company-jwt-secret>
+  COMPANY_NAME: ${companyName}
+  COMPANY_LANGUAGE: ${companyLanguage}
+  SMTP_HOST: smtp-relay.brevo.com
+  SMTP_PORT: "587"
+  SMTP_USER: <smtp-login>
+  SMTP_PASS: <smtp-key>
+  EMAIL_FROM: no-reply@registrejornada.fyi`);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
