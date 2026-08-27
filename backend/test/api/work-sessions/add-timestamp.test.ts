@@ -187,13 +187,11 @@ describe('POST /api/work-sessions/add-timestamp', () => {
 
     const checkInTime = new Date();
     checkInTime.setHours(8, 0, 0, 0);
-    const checkOutTime = new Date();
-    checkOutTime.setHours(17, 0, 0, 0);
 
+    // The last session today is an open check-in, so a check-out is valid.
     mockStaticFind.mockReturnValue({
       sort: vi.fn().mockResolvedValue([
         { _id: 'session-1', type: 'check_in', timestamp: checkInTime },
-        { _id: 'session-2', type: 'check_out', timestamp: checkOutTime },
       ]),
     } as any);
 
@@ -203,6 +201,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'CheckOutRegistered',
+        hoursWorked: expect.any(Number),
       })
     );
   });

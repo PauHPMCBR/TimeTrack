@@ -28,14 +28,13 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [pendingVacations, latestSessions, sessions, settings] = await Promise.all([
+    const [pendingVacations, latestSessions, settings] = await Promise.all([
       ElectiveVacation.countDocuments({ status: 'pending' }),
       WorkSession.aggregate([
         { $match: { timestamp: { $gte: today } } },
         { $sort: { timestamp: -1 } },
         { $group: { _id: '$userId', latest: { $first: '$$ROOT' } } },
       ]),
-      WorkSession.find({ timestamp: { $gte: today } }).sort({ timestamp: 1 }).lean(),
       getAppSettings(),
     ]);
 

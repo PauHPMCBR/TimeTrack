@@ -58,29 +58,18 @@ export default function HistoryAndStatsPage() {
         if (user) {
           const now = new Date();
           const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+          // Last day of the current month (inclusive upper bound).
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-          // Get sessions for multiple months — fetch all 4 in parallel.
-          const monthCalls = Array.from({ length: 4 }, (_, i) => {
-            const date = new Date(threeMonthsAgo.getFullYear(), threeMonthsAgo.getMonth() + i, 1);
-            return apiClient.getMonthlyRecords(user._id, date.getMonth() + 1, date.getFullYear());
-          });
-          const responses = await Promise.all(monthCalls);
+          const response = await apiClient.getWorkSessionRange(
+            user._id,
+            toLocalDateKey(threeMonthsAgo),
+            toLocalDateKey(endOfMonth)
+          );
 
-          const allSessions: WorkSession[] = [];
-          responses.forEach((response) => {
-            if (response.data?.sessionsByDay) {
-              // Flatten the sessionsByDay array (index is day of month, position 0 is empty)
-              response.data.sessionsByDay.forEach((daySessions, dayIndex) => {
-                if (dayIndex > 0 && daySessions) {
-                  daySessions.forEach(session => {
-                    allSessions.push(session);
-                  });
-                }
-              });
-            }
-          });
-
-          setWorkSessions(allSessions);
+          if (response.data?.workSessions) {
+            setWorkSessions(response.data.workSessions);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch history data:', error);

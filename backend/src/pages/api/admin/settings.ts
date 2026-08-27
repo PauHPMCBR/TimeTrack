@@ -2,7 +2,7 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { AppSettings } from '@/models';
-import { getAppSettings } from '@/lib/settings';
+import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
 import {
   responseErrorGet,
   responseErrorMethodNotAllowed,
@@ -48,6 +48,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       } else {
         await AppSettings.create(update);
       }
+
+      invalidateAppSettingsCache();
 
       const settings = await getAppSettings();
       res.status(200).json({

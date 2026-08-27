@@ -31,9 +31,9 @@ export default function AdminCalendarPage() {
       setLoading(true);
       setError(null);
       try {
-        const [vacRes, dashRes, settingsRes] = await Promise.all([
+        const [vacRes, usersRes, settingsRes] = await Promise.all([
           apiClient.getAllVacationsYearAdmin(year),
-          apiClient.getAdminDashboard(),
+          apiClient.getCompanyUsers(),
           apiClient.getSettings(),
         ]);
         if (cancelled) return;
@@ -44,9 +44,9 @@ export default function AdminCalendarPage() {
           setVacations(vacRes.data);
         }
 
-        if (dashRes.data?.users) {
+        if (usersRes.data?.users) {
           const map: Record<string, string> = {};
-          dashRes.data.users.forEach((u: any) => { map[u._id] = u.name; });
+          usersRes.data.users.forEach((u: any) => { map[u._id] = u.name; });
           setUsersMap(map);
         }
 

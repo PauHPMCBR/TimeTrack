@@ -1,6 +1,6 @@
 import type {
   AdminReplaceDayWorkSessionsRequest,
-  AdminWorkSessionsQuery,
+  AdminWorkSessionsQueryWithPagination,
   AdminWorkSessionInput,
   AppSettingsRequest,
   CopyYearlyVacationRequest,
@@ -16,7 +16,7 @@ import type {
   YearlyVacationAdminRequest,
   YearlyVacationResponse,
 } from '@/schemas/api'
-import { AdminWorkSessionRow, AppSettings, ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
+import { AdminWorkSessionsResponse, AppSettings, ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
 import { ApiResponse } from '@/types/apiErrors'
 import type { ErrorCode } from 'shared/src/types/response-errors'
 import { triggerDownload } from './csv'
@@ -240,12 +240,14 @@ class ApiClient {
     });
   }
 
-  async getAdminWorkSessions(params: AdminWorkSessionsQuery): Promise<ApiResponse<{ rows: AdminWorkSessionRow[] }>> {
+  async getAdminWorkSessions(params: AdminWorkSessionsQueryWithPagination): Promise<ApiResponse<AdminWorkSessionsResponse>> {
     const search = new URLSearchParams();
     search.set('period', params.period);
     if (params.date) search.set('date', params.date);
     if (params.year !== undefined) search.set('year', String(params.year));
     if (params.month !== undefined) search.set('month', String(params.month));
+    if (params.limit !== undefined) search.set('limit', String(params.limit));
+    if (params.offset !== undefined) search.set('offset', String(params.offset));
     return this.request(`/api/admin/work-sessions?${search.toString()}`);
   }
 
@@ -330,6 +332,10 @@ class ApiClient {
     return this.request(`/api/work-sessions/${userId}/day/${date.toISOString()}`);
   }
 
+  async getWorkSessionRange(userId: string, from: string, to: string): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+    return this.request(`/api/work-sessions/${userId}/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+  }
+
   async getMonthlyRecords(userId: string, month: number | string, year: number | string): Promise<ApiResponse<MonthlyWorkRecordResponse>> {
     return this.request(`/api/work-sessions/${userId}/month/${year}/${month}`);
   }
@@ -342,9 +348,13 @@ class ApiClient {
     return this.request(`/api/admin/dashboard`);
   }
 
-  async exportWorkSessions(userIds: string[]): Promise<ApiResponse<null>> {
+  async exportWorkSessions(userIds: string[], options?: { from?: string; to?: string }): Promise<ApiResponse<null>> {
     const token = localStorage.getItem('auth_token');
-    const endpoint = `/api/admin/export/work-sessions?userIds=${encodeURIComponent(userIds.join(','))}`;
+    const params = new URLSearchParams();
+    params.set('userIds', userIds.join(','));
+    if (options?.from) params.set('from', options.from);
+    if (options?.to) params.set('to', options.to);
+    const endpoint = `/api/admin/export/work-sessions?${params.toString()}`;
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {

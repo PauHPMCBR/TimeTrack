@@ -420,11 +420,17 @@
     "export": {
       "button": "Export CSV",
       "error": "Export failed.",
+      "from": "From",
       "selectAll": "Select all",
-      "selectedCount": "{count} selected"
+      "selectedCount": "{count} selected",
+      "to": "To"
     },
     "events": {
       "noData": "No records for this period.",
+      "pagination": {
+        "next": "Next page",
+        "previous": "Previous page"
+      },
       "period": {
         "day": "Day",
         "month": "Month",
@@ -562,6 +568,7 @@
     "PermissionVerificationError": "Error verifying permissions",
     "PostError": "Submission error",
     "PutError": "Modification error",
+    "RateLimited": "Too many attempts. Please try again later",
     "ShouldNotBeSet": "This parameter should not be set",
     "Success": "Operation successful",
     "TokenRequired": "Access token required",

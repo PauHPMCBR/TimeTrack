@@ -420,11 +420,17 @@
     "export": {
       "button": "Exporta CSV",
       "error": "Ha fallat l'exportació.",
+      "from": "Des de",
       "selectAll": "Selecciona-ho tot",
-      "selectedCount": "{count} seleccionats"
+      "selectedCount": "{count} seleccionats",
+      "to": "Fins a"
     },
     "events": {
       "noData": "No hi ha registres per a aquest període.",
+      "pagination": {
+        "next": "Pàgina següent",
+        "previous": "Pàgina anterior"
+      },
       "period": {
         "day": "Dia",
         "month": "Mes",
@@ -562,6 +568,7 @@
     "PermissionVerificationError": "Error verificant permisos",
     "PostError": "Error a l'enviament",
     "PutError": "Error al modificar",
+    "RateLimited": "S'han fet massa intents. Torna-ho a provar més tard",
     "ShouldNotBeSet": "Aquest paràmetre no hauria d'estar definit",
     "Success": "Operació realitzada amb èxit",
     "TokenRequired": "Token d'accés requerit",

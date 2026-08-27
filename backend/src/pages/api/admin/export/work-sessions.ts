@@ -2,7 +2,7 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
 import { WorkSession, User } from '@/models';
-import { responseErrorGet, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
+import { responseErrorGet, responseErrorIncorrectParameter, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
 import { validateQueryParams } from '@/lib/validation';
 import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
 
@@ -30,9 +30,29 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     const userIds = (req.query.userIds as string).split(',').filter(Boolean);
 
+    // Optional date range (inclusive, local day bounds).
+    const timestampFilter: Record<string, Date> = {};
+    if (req.query.from) {
+      const from = new Date(`${req.query.from}T00:00:00`);
+      if (isNaN(from.getTime())) {
+        return responseErrorIncorrectParameter(res, 'date', ['InvalidTimestamp']);
+      }
+      timestampFilter.$gte = from;
+    }
+    if (req.query.to) {
+      const to = new Date(`${req.query.to}T23:59:59.999`);
+      if (isNaN(to.getTime())) {
+        return responseErrorIncorrectParameter(res, 'date', ['InvalidTimestamp']);
+      }
+      timestampFilter.$lte = to;
+    }
+    const filter = Object.keys(timestampFilter).length > 0
+      ? { userId: { $in: userIds }, timestamp: timestampFilter }
+      : { userId: { $in: userIds } };
+
     const [users, sessions] = await Promise.all([
       User.find({ _id: { $in: userIds } }, 'name email dni').lean(),
-      WorkSession.find({ userId: { $in: userIds } })
+      WorkSession.find(filter)
         .select('userId timestamp type source reason notes')
         .sort({ timestamp: 1 })
         .lean(),

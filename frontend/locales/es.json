@@ -420,11 +420,17 @@
     "export": {
       "button": "Exportar CSV",
       "error": "Ha fallado la exportación.",
+      "from": "Desde",
       "selectAll": "Seleccionar todo",
-      "selectedCount": "{count} seleccionados"
+      "selectedCount": "{count} seleccionados",
+      "to": "Hasta"
     },
     "events": {
       "noData": "No hay registros para este período.",
+      "pagination": {
+        "next": "Página siguiente",
+        "previous": "Página anterior"
+      },
       "period": {
         "day": "Día",
         "month": "Mes",
@@ -562,6 +568,7 @@
     "PermissionVerificationError": "Error verificando permisos",
     "PostError": "Error en el envío",
     "PutError": "Error al modificar",
+    "RateLimited": "Se han hecho demasiados intentos. Vuelve a intentarlo más tarde",
     "ShouldNotBeSet": "Este parámetro no debería estar definido",
     "Success": "Operación realizada con éxito",
     "TokenRequired": "Token de acceso requerido",
