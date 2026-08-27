@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 /**
  * Common "dirty" flag for forms with a save feature. `markDirty()` is called on
@@ -9,8 +9,8 @@ import { useCallback, useState } from "react";
  * after a successful save or when (re)loading.
  */
 export function useDirty() {
-  const [dirty, setDirty] = useState(false);
-  const markDirty = useCallback(() => setDirty(true), []);
-  const resetDirty = useCallback(() => setDirty(false), []);
-  return { dirty, markDirty, resetDirty };
+    const [dirty, setDirty] = useState(false);
+    const markDirty = useCallback(() => setDirty(true), []);
+    const resetDirty = useCallback(() => setDirty(false), []);
+    return { dirty, markDirty, resetDirty };
 }

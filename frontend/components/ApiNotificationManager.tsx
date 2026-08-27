@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useApiNotifications } from "@/hooks/useApiNotifications";
+import { useApiNotifications } from '@/hooks/useApiNotifications';
 
 export function ApiNotificationManager() {
-  useApiNotifications();
-  return null;
+    useApiNotifications();
+    return null;
 }

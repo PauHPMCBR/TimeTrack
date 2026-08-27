@@ -2,176 +2,195 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockReq, mockRes } from '../../../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
-  default: vi.fn().mockResolvedValue({}),
+    default: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock('@/lib/auth', () => ({
-  requireRole: (roles: string[], handler: (req: unknown, res: unknown) => unknown) => {
-    return async (req: any, res: any) => {
-      req.user = { userId: 'admin-123', email: 'admin@example.com', role: 'admin' };
-      return handler(req, res);
-    };
-  },
-  AuthRequest: class {},
+    requireRole: (
+        roles: string[],
+        handler: (req: unknown, res: unknown) => unknown
+    ) => {
+        return async (req: any, res: any) => {
+            req.user = {
+                userId: 'admin-123',
+                email: 'admin@example.com',
+                role: 'admin',
+            };
+            return handler(req, res);
+        };
+    },
+    AuthRequest: class {},
 }));
 
 vi.mock('@/lib/validation', () => ({
-  validateRequestBody: () => (req: any, res: any, next: (err?: unknown) => void) => next(),
+    validateRequestBody:
+        () => (req: any, res: any, next: (err?: unknown) => void) =>
+            next(),
 }));
 
 vi.mock('@/models', () => ({
-  YearlyVacationDays: {
-    findOne: vi.fn(),
-    create: vi.fn(),
-    findByIdAndUpdate: vi.fn(),
-  },
+    YearlyVacationDays: {
+        findOne: vi.fn(),
+        create: vi.fn(),
+        findByIdAndUpdate: vi.fn(),
+    },
 }));
 
 import { YearlyVacationDays } from '@/models';
 import setYearlyHandler from '@/pages/api/admin/vacations/set-yearly';
 
 describe('POST /api/admin/vacations/set-yearly', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.resetModules();
-  });
-
-  it('should return 405 if method is not POST', async () => {
-    const req = mockReq({ method: 'GET' });
-    const res = mockRes();
-
-    await setYearlyHandler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(405);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'MethodNotAllowed',
-      details: {},
-    });
-  });
-
-  it('should return 400 if userId is provided', async () => {
-    const req = mockReq({
-      method: 'POST',
-      body: {
-        year: 2024,
-        obligatoryDays: ['2024-01-01'],
-        electiveDaysTotalCount: 22,
-        userId: 'some-user-id',  // Should not be set
-      },
-    });
-    const res = mockRes();
-
-    await setYearlyHandler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'IncorrectParameter',
-      details: {
-        incorrectParameter: 'userId',
-        reasons: ['ShouldNotBeSet'],
-      },
-    });
-  });
-
-  it('should return 400 if obligatory days are not in the year', async () => {
-    const req = mockReq({
-      method: 'POST',
-      body: {
-        year: 2024,
-        obligatoryDays: ['2025-01-01'],  // Not in 2024
-        electiveDaysTotalCount: 22,
-      },
-    });
-    const res = mockRes();
-
-    await setYearlyHandler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'IncorrectParameter',
-      details: {
-        incorrectParameter: 'obligatoryDays',
-        reasons: ['DatesNotInYear'],
-      },
-    });
-  });
-
-  it('should return 200 on successful update of existing config', async () => {
-    vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
-      _id: 'existing-vacation',
-      year: 2024,
-      obligatoryDays: [],
-      electiveDaysTotalCount: 20,
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    vi.mocked(YearlyVacationDays.findByIdAndUpdate).mockResolvedValue({});
-
-    const req = mockReq({
-      method: 'POST',
-      body: {
-        year: 2024,
-        obligatoryDays: ['2024-01-01'],
-        electiveDaysTotalCount: 22,
-      },
+    afterEach(() => {
+        vi.resetModules();
     });
-    const res = mockRes();
 
-    await setYearlyHandler(req, res);
+    it('should return 405 if method is not POST', async () => {
+        const req = mockReq({ method: 'GET' });
+        const res = mockRes();
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: 'YearlyVacationSaved',
-      year: 2024,
+        await setYearlyHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(405);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'MethodNotAllowed',
+            details: {},
+        });
     });
-  });
 
-  it('should return 200 on successful create of new config', async () => {
-    vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(null);
-    vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({});
+    it('should return 400 if userId is provided', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                year: 2024,
+                obligatoryDays: ['2024-01-01'],
+                electiveDaysTotalCount: 22,
+                userId: 'some-user-id', // Should not be set
+            },
+        });
+        const res = mockRes();
 
-    const req = mockReq({
-      method: 'POST',
-      body: {
-        year: 2025,
-        obligatoryDays: ['2025-01-01'],
-        electiveDaysTotalCount: 22,
-      },
+        await setYearlyHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'userId',
+                reasons: ['ShouldNotBeSet'],
+            },
+        });
     });
-    const res = mockRes();
 
-    await setYearlyHandler(req, res);
+    it('should return 400 if obligatory days are not in the year', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                year: 2024,
+                obligatoryDays: ['2025-01-01'], // Not in 2024
+                electiveDaysTotalCount: 22,
+            },
+        });
+        const res = mockRes();
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: 'YearlyVacationSaved',
-      year: 2025,
+        await setYearlyHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'obligatoryDays',
+                reasons: ['DatesNotInYear'],
+            },
+        });
     });
-  });
 
-  it('should return 500 on database error', async () => {
-    vi.mocked(YearlyVacationDays.findOne).mockRejectedValue(new Error('DB Error'));
+    it('should return 200 on successful update of existing config', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
+            _id: 'existing-vacation',
+            year: 2024,
+            obligatoryDays: [],
+            electiveDaysTotalCount: 20,
+        });
 
-    const req = mockReq({
-      method: 'POST',
-      body: {
-        year: 2024,
-        obligatoryDays: ['2024-01-01'],
-        electiveDaysTotalCount: 22,
-      },
+        vi.mocked(YearlyVacationDays.findByIdAndUpdate).mockResolvedValue({});
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                year: 2024,
+                obligatoryDays: ['2024-01-01'],
+                electiveDaysTotalCount: 22,
+            },
+        });
+        const res = mockRes();
+
+        await setYearlyHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: {
+                message: 'YearlyVacationSaved',
+                year: 2024,
+            },
+        });
     });
-    const res = mockRes();
 
-    await setYearlyHandler(req, res);
+    it('should return 200 on successful create of new config', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(null);
+        vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({});
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'PostError',
-      details: {},
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                year: 2025,
+                obligatoryDays: ['2025-01-01'],
+                electiveDaysTotalCount: 22,
+            },
+        });
+        const res = mockRes();
+
+        await setYearlyHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: {
+                message: 'YearlyVacationSaved',
+                year: 2025,
+            },
+        });
     });
-  });
+
+    it('should return 500 on database error', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockRejectedValue(
+            new Error('DB Error')
+        );
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                year: 2024,
+                obligatoryDays: ['2024-01-01'],
+                electiveDaysTotalCount: 22,
+            },
+        });
+        const res = mockRes();
+
+        await setYearlyHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'PostError',
+            details: {},
+        });
+    });
 });

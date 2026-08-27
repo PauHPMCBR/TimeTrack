@@ -1,4 +1,5 @@
-export type ErrorCode = 'MethodNotAllowed'
+export type ErrorCode =
+    | 'MethodNotAllowed'
     | 'GetError'
     | 'PostError'
     | 'PutError'
@@ -29,12 +30,28 @@ export type ErrorCode = 'MethodNotAllowed'
     | 'CheckInRegistered'
     | 'CheckOutRegistered'
     | 'YearlyVacationSaved'
-    | 'RateLimited'
-    ;
+    | 'RateLimited';
 
-export type IncorrectParameter = 'email' | 'password' | 'year' | 'month' | 'type' | 'userId' | 'obligatoryDays' | 'status' | 'members' | 'avatar' | 'dni' | 'expectedWorkHours' | 'fromYear' | 'toYear' | 'timestamp' | 'date';
+export type IncorrectParameter =
+    | 'email'
+    | 'password'
+    | 'year'
+    | 'month'
+    | 'type'
+    | 'userId'
+    | 'obligatoryDays'
+    | 'status'
+    | 'members'
+    | 'avatar'
+    | 'dni'
+    | 'expectedWorkHours'
+    | 'fromYear'
+    | 'toYear'
+    | 'timestamp'
+    | 'date';
 
-export type PasswordIncorrectParameterReason = 'LessThan12Characters'
+export type PasswordIncorrectParameterReason =
+    | 'LessThan12Characters'
     | 'MissingLowercase'
     | 'MissingUppercase'
     | 'MissingNumber'
@@ -42,20 +59,26 @@ export type PasswordIncorrectParameterReason = 'LessThan12Characters'
     | 'ContainsEmail'
     | 'ContainsUsername';
 
-export type CheckInIncorrectParameterReason = 'AlreadyCheckedIn'
-    | 'AlreadyCheckedOut'
-    | 'NoEntryToday';
+export type CheckInIncorrectParameterReason =
+    'AlreadyCheckedIn' | 'AlreadyCheckedOut' | 'NoEntryToday';
 
-export type EmailIncorrectParameterReason = 'AlreadyExists'
+export type EmailIncorrectParameterReason = 'AlreadyExists';
 
-export type IncorrectParameterReason = PasswordIncorrectParameterReason 
+export type IncorrectParameterReason =
+    | PasswordIncorrectParameterReason
     | CheckInIncorrectParameterReason
     | EmailIncorrectParameterReason
-    | 'ShouldNotBeSet' | 'DatesNotInYear' | 'SomeUsersNotFound'
-    | 'AvatarTooLarge' | 'InvalidAvatarFormat' // TODO translation
-    | 'NotInOrder' | 'OutOfDay' | 'InvalidTimestamp';
+    | 'ShouldNotBeSet'
+    | 'DatesNotInYear'
+    | 'SomeUsersNotFound'
+    | 'AvatarTooLarge'
+    | 'InvalidAvatarFormat' // TODO translation
+    | 'NotInOrder'
+    | 'OutOfDay'
+    | 'InvalidTimestamp';
 
-export type IllegalAction = 'DuplicateVacationRequest'
+export type IllegalAction =
+    | 'DuplicateVacationRequest'
     | 'AllVacationsUsed'
     | 'AlreadyObligatoryVacation'
     | 'ModifyingFromAnotherUser'

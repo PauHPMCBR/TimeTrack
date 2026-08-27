@@ -2,34 +2,39 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireSameGroupOrAdmin } from '@/lib/auth';
 import { Group } from '@/models';
-import { responseErrorGet, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
+import {
+    responseErrorGet,
+    responseErrorMethodNotAllowed,
+} from '@/lib/response-error-generator';
 import { validateQueryParams } from '@/lib/validation';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return responseErrorMethodNotAllowed(res);
-  }
+    if (req.method !== 'GET') {
+        return responseErrorMethodNotAllowed(res);
+    }
 
-  const validationMiddleware = validateQueryParams(UserIdParamSchema);
+    const validationMiddleware = validateQueryParams(UserIdParamSchema);
     await new Promise((resolve) => {
-      validationMiddleware(req, res, () => resolve(true));
+        validationMiddleware(req, res, () => resolve(true));
     });
     if (res.headersSent) return;
 
-  try {
-    await dbConnect();
-    const userId = req.query.userId as string;
+    try {
+        await dbConnect();
+        const userId = req.query.userId as string;
 
-    const groups = await Group.find({
-        members: userId,
-    }).sort({ name: 1 }).lean();
+        const groups = await Group.find({
+            members: userId,
+        })
+            .sort({ name: 1 })
+            .lean();
 
-    res.status(200).json({ groups: groups });
-  } catch (error) {
-    console.error('Get group error:', error);
-    return responseErrorGet(res);
-  }
+        res.status(200).json({ success: true, data: { groups: groups } });
+    } catch (error) {
+        console.error('Get group error:', error);
+        return responseErrorGet(res);
+    }
 }
 
 export default requireSameGroupOrAdmin(handler);

@@ -1,587 +1,587 @@
 {
-  "brand": {
-    "tagline": "Simple & secure time tracking"
-  },
-  "common": {
-    "back": "Back",
-    "cancel": "Cancel",
-    "close": "Close",
-    "loading": "Loading...",
-    "more": "more",
-    "next": "Next",
-    "noName": "No name",
-    "optional": "(optional)",
-    "prev": "Prev",
-    "save": "Save",
-    "saving": "Saving...",
-    "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?"
-  },
-  "tabs": {
-    "admin": "Admin",
-    "calendar": "Calendar",
-    "checkin": "Check-in",
-    "groups": "Groups",
-    "history": "History",
-    "profile": "Profile",
-    "vacations": "Vacations"
-  },
-  "time": {
-    "h": "h",
-    "m": "m"
-  },
-  "relative": {
-    "today": "Today",
-    "yesterday": "Yesterday"
-  },
-  "table": {
-    "date": "Date",
-    "hours": "Hours"
-  },
-  "header": {
-    "logOff": "Log Off",
-    "switchAccount": "Switch account"
-  },
-  "activity": {
-    "checkIn": "Check-in",
-    "checkOut": "Check-out",
-    "lunch": {
-      "end": "Lunch end",
-      "start": "Lunch start"
-    }
-  },
-  "login": {
-    "email": {
-      "placeholder": "Your email"
+    "brand": {
+        "tagline": "Simple & secure time tracking"
     },
-    "password": {
-      "placeholder": "Password",
-      "show": "Show"
+    "common": {
+        "back": "Back",
+        "cancel": "Cancel",
+        "close": "Close",
+        "loading": "Loading...",
+        "more": "more",
+        "next": "Next",
+        "noName": "No name",
+        "optional": "(optional)",
+        "prev": "Prev",
+        "save": "Save",
+        "saving": "Saving...",
+        "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?"
     },
-    "remember": "Remember me",
-    "submit": "Sign in",
-    "title": "Sign in"
-  },
-  "register": {
-    "btn": "Activate account",
-    "confirm": "Confirm password",
-    "email": "Email Address",
-    "error": {
-      "length": "Password must be at least 6 characters.",
-      "match": "Passwords do not match."
-    },
-    "name": "Full Name",
-    "password": "New password",
-    "saving": "Saving...",
-    "subtitle": "Create a password to activate your account.",
-    "success": "Account activated! You can now log in.",
-    "welcome": "Welcome!"
-  },
-  "checkin": {
-    "btnIn": "Check in",
-    "btnOut": "Check out",
-    "checkIn": "Check In",
-    "checkOut": "Check Out",
-    "confirmIn": "Check In",
-    "confirmOut": "Check Out",
-    "inProgress": "Session in progress",
-    "notIn": "Not checked in",
-    "notesLabel": "Notes",
-    "notesPlaceholder": "Add any additional notes...",
-    "reason": {
-      "break": "Break",
-      "errand": "Errand",
-      "lunch": "Lunch",
-      "meeting": "Meeting",
-      "other": "Other",
-      "personal": "Personal",
-      "work": "Work"
-    },
-    "reasonLabel": "Reason",
-    "sessions": "Sessions",
-    "title": "Check-in",
-    "todaySessions": "Today's Sessions",
-    "todaySummary": "Today's Summary",
-    "totalHours": "Total Hours"
-  },
-  "lunch": {
-    "noteHelper": "Add an optional note about the break.",
-    "noteModalTitle": "Lunch note",
-    "notePlaceholder": "Write the note here…"
-  },
-  "history": {
-    "avgPerDay": "Avg/day (week)",
-    "chart": {
-      "title": "Hours per week (last 6)"
-    },
-    "date": "Date",
-    "daysAbbr": "days",
-    "daysWithCheckins": "Days with check-in (recent)",
-    "export": {
-      "date": "Date",
-      "formatted": "Hours (formatted)",
-      "hours": "Hours (number)",
-      "label": "Export"
-    },
-    "hours": "Hours",
-    "monthly": {
-      "chartTitle": "Progress by week",
-      "daysWorked": "Days worked (Month)",
-      "title": "Monthly Summary",
-      "totalTime": "Total Time (Month)"
-    },
-    "noRecords": "No recent records",
-    "noRecordsMonth": "No data this month.",
-    "recent": {
-      "title": "Recent history (per day)"
-    },
-    "today": {
-      "title": "Today's history"
-    },
-    "week": "Week",
-    "weekAbbr": "Wk",
-    "weekHours": "Weekly hours",
-    "weekly": {
-      "chartTitle": "Hours per day (Mon-Sun)",
-      "daysWorked": "Days worked (Week)",
-      "title": "Weekly Summary",
-      "totalTime": "Total Time (Week)"
-    }
-  },
-  "calendar": {
-    "approvedBy": "Approved by",
-    "checkIn": "Check-in",
-    "checkOut": "Check-out",
-    "daysWithSessions": "Registered days",
-    "electiveVacation": "Elective vacations",
-    "legend": {
-      "holidays": "Holidays: border/ring with colored label",
-      "title": "Legend",
-      "today": "Today",
-      "weekends": "Weekends: light background"
-    },
-    "nextMonth": "Next month",
-    "noActivities": "No activity registered",
-    "notConfigured": "This year's vacations have not been configured by the admin yet.",
-    "notes": "Notes",
-    "obligatoryVacation": "Obligatory vacations",
-    "pendingVacation": "Pending vacations",
-    "prevMonth": "Previous month",
-    "reason": "Reason",
-    "rejectedVacation": "Rejected vacations",
-    "sessions": "sessions",
-    "teamVacation": "Team Vacation",
-    "totalHours": "Total hours",
-    "totalSessions": "Total sessions",
-    "vacations": "Vacations",
-    "weekDays": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
-    "workSessions": "Work sessions",
-    "viewFitxatges": "View fitxatges",
-    "workSummary": "Monthly summary"
-  },
-  "vacations": {
-    "balance": "Days Available",
-    "cancel": "Cancel",
-    "cancelModal": {
-      "body": "Are you sure you want to delete this request? This action cannot be undone.",
-      "confirm": "Delete",
-      "title": "Delete request?"
-    },
-    "consecutiveDays": "Consecutive days",
-    "date": "Date",
-    "day": "day",
-    "days": "days",
-    "empty": "No requests found.",
-    "history": "Request History",
-    "manageDesc": "Request time off and view history.",
-    "reason": "Reason (optional)",
-    "reasonPlaceholder": "Ex: Personal matters...",
-    "request": "Request Time Off",
-    "status": {
-      "approved": "Approved",
-      "cancelled": "Cancelled",
-      "pending": "Pending",
-      "rejected": "Rejected"
-    },
-    "submit": "Submit Request",
-    "success": "Request sent successfully!",
-    "title": "My Vacations",
-    "total": "Total yearly",
-    "used": "Used"
-  },
-  "groups": {
-    "empty": "You are not assigned to any group yet.",
-    "groupDescription": "Group Description",
-    "members": "Team Members",
-    "noDescription": "No description available.",
-    "notFound": "Group not found.",
-    "subtitle": "View teams and departments you belong to.",
-    "title": "My Groups"
-  },
-  "profile": {
-    "activity": "Recent Activity",
-    "admin": {
-      "createBtn": "Create New User",
-      "description": "Create new users and manage the team here.",
-      "title": "Admin Panel"
-    },
-    "avatar": {
-      "change": "Change photo",
-      "invalidFormat": "Unsupported format. Use JPG, PNG, WEBP or GIF.",
-      "tooLarge": "Image too large (max 10 MB).",
-      "uploadError": "Could not upload the photo. Please try again.",
-      "uploading": "Uploading...",
-      "updated": "Photo updated"
-    },
-    "change": "Toggle",
-    "errorLoading": "Error loading user",
-    "fallbackUser": "User",
-    "hoursToday": "Hours Today",
-    "dni": "ID number",
-    "notFound": "Profile not found.",
-    "preferences": "Preferences",
-    "signOut": "Sign out",
-    "prevWeeks": "Previous weeks",
-    "recentActivity": "Recent activity",
-    "role": {
-      "admin": "Administrator",
-      "employee": "Employee"
-    },
-    "status": {
-      "checkedInAgo": "Checked in {time} ago",
-      "label": "Status"
-    },
-    "statusActive": "Active (Working)",
-    "statusInactive": "Inactive",
-    "subtitle": "Profile & hours",
-    "theme": {
-      "label": "Theme",
-      "latte": "Latte",
-      "frappe": "Frappé",
-      "macchiato": "Macchiato",
-      "mocha": "Mocha"
-    },
-    "thisWeek": "This week",
-    "timeFormat": "Time format",
-    "title": "User profile",
-    "weeklyGoal": "Weekly goal"
-  },
-  "admin": {
-    "btn": {
-      "create": "Continue"
-    },
-    "copied": "Copied!",
-    "copy": "Copy link",
-    "create": {
-      "subtitle": "Enter the user's basic information.",
-      "title": "Register new employee"
-    },
-    "dashboard": {
-      "addUser": "Add user",
-      "quickActions": "Quick Actions",
-      "subtitle": "Employee overview",
-      "summaryDesc": "Global view of company status.",
-      "summaryTitle": "General Overview",
-      "title": "Team"
-    },
-    "form": {
-      "dni": "ID number",
-      "dniPlaceholder": "Ex: 12345678A",
-      "email": "Email address",
-      "expectedHours": "Expected work hours",
-      "customNonWorkDays": "Custom non-work days",
-      "name": "Full name",
-      "role": {
-        "label": "Role",
-        "admin": "Administrator",
-        "employee": "Employee"
-      }
-    },
-    "groups": {
-      "add": "New Department",
-      "addMembers": "Add members",
-      "clickHelper": "Click on users to add or remove them.",
-      "createSubtitle": "Define a new department to assign employees.",
-      "createTitle": "Create Department",
-      "delete": "Delete",
-      "deleteConfirmDesc": "Are you sure you want to delete this department? This action cannot be undone.",
-      "deleteConfirmTitle": "Delete department?",
-      "deleteError": "Error deleting department.",
-      "desc": "Description or Functions",
-      "descPlaceholder": "Ex: Development team...",
-      "edit": "Edit",
-      "editTitle": "Edit Department",
-      "empty": "No departments created yet.",
-      "members": "Members",
-      "membersTitle": "Department Members",
-        "noDesc": "No description",
-        "noMembers": "No members",
-      "name": "Department Name",
-      "namePlaceholder": "Ex: Barcelona Office",
-      "noUsers": "No available users found.",
-      "subtitle": "Manage the company's organizational structure.",
-      "title": "Departments"
-    },
-    "menu": {
-      "sections": {
-        "users": "Users & fitxatges",
-        "vacations": "Vacations",
-        "settings": "Global settings"
-      },
-      "calendar": {
-        "desc": "Monthly view of absences.",
-        "title": "Global Calendar"
-      },
-      "groups": {
-        "desc": "Organize employees by teams or offices.",
-        "title": "Groups / Departments",
-        "count": "groups"
-      },
-      "subtitle": "Select what you want to manage today.",
-      "title": "Admin Panel",
-      "users": {
-        "desc": "View team, current status, and new registrations.",
-        "title": "Employees",
-        "total": "total",
-        "working": "working"
-      },
-      "vacations": {
-        "desc": "Review and approve pending requests.",
-        "title": "Vacation Requests",
-        "pending": "pending",
-        "none": "no pending"
-      },
-      "yearlyvacations": {
-        "desc": "Asign obligatory vacations and amount of elective vacations",
-        "title": "Yearly vacations"
-      },
-      "settings": {
-        "desc": "Company-wide configuration (hours, non-working days...).",
-        "title": "Company Settings"
-      },
-      "events": {
-        "desc": "Employee check-in/out with anomaly detection.",
-        "title": "Fitxatges",
-        "anomalies": "anomalies",
-        "noAnomalies": "no anomalies"
-      }
-    },
-    "stats": {
-      "departments": "Departments",
-      "pendingVacations": "Pending Vacations",
-      "review": "Review",
-      "totalUsers": "Total Employees",
-      "workingNow": "Working Now"
-    },
-    "status": {
-      "offline": "Offline ({time})",
-      "workingSince": "Working since {time}"
-    },
-    "success": {
-      "desc": "Share this link with the employee to complete registration.",
-      "title": "User created!"
-    },
-    "users": {
-      "noName": "No name",
-      "notFound": "No users found.",
-      "pendingActivation": "Pending activation",
-      "workingNow": "Working now",
-      "customNonWorkDays": "Custom non-work days",
-      "registered": "Registered"
-    },
-    "usersEdit": {
-      "editAction": "Edit user",
-      "registrationLink": "Registration link (send this to the employee)",
-      "saved": "User updated successfully",
-      "subtitle": "Modify the employee's details.",
-      "title": "Edit user"
-    },
-    "sessionEditor": {
-      "addIn": "Add check-in",
-      "addOut": "Add check-out",
-      "hint": "Check-in/check-out order must be kept. Changes are applied with the save button.",
-      "noSessions": "No check-ins yet.",
-      "remove": "Remove event",
-      "removeLocked": "Cannot remove while keeping check-in/check-out order",
-      "title": "Edit events"
-    },
-    "settings": {
-      "toleranceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
-      "toleranceLabel": "Tolerance (hours)",
-      "defaultHoursHelp": "Expected work hours per day by default for new employees.",
-      "defaultHoursLabel": "Daily expected hours",
-      "endOfDayHelp": "End-of-day time to detect workers who haven't checked out.",
-      "endOfDayLabel": "End of day time",
-      "nonWorkingDaysHelp": "Days of the week when no work is expected (won't flag an anomaly).",
-      "nonWorkingDaysLabel": "Non-working days",
-      "saved": "Settings saved successfully",
-      "subtitle": "Configure the company-wide values.",
-      "title": "Company settings"
-    },
-    "export": {
-      "button": "Export CSV",
-      "error": "Export failed.",
-      "from": "From",
-      "selectAll": "Select all",
-      "selectedCount": "{count} selected",
-      "to": "To"
-    },
-    "events": {
-      "noData": "No records for this period.",
-      "pagination": {
-        "next": "Next page",
-        "previous": "Previous page"
-      },
-      "period": {
-        "day": "Day",
-        "month": "Month",
-        "week": "Week",
-        "year": "Year"
-      },
-      "status": {
-        "anomaly": "Anomaly",
-        "ok": "Completed",
-        "vacation": "Vacation",
-        "nonWorkingDay": "Non-working day"
-      },
-      "subtitle": "Check-in/out of all employees with anomaly detection.",
-      "table": {
-        "date": "Date",
-        "employee": "Employee",
-        "expected": "Expected",
-        "hours": "Hours",
-        "sessions": "Events"
-      },
-      "source": {
+    "tabs": {
         "admin": "Admin",
-        "automatic": "Automatic",
-        "user": "Employee"
-      },
-      "title": "Events"
+        "calendar": "Calendar",
+        "checkin": "Check-in",
+        "groups": "Groups",
+        "history": "History",
+        "profile": "Profile",
+        "vacations": "Vacations"
+    },
+    "time": {
+        "h": "h",
+        "m": "m"
+    },
+    "relative": {
+        "today": "Today",
+        "yesterday": "Yesterday"
+    },
+    "table": {
+        "date": "Date",
+        "hours": "Hours"
+    },
+    "header": {
+        "logOff": "Log Off",
+        "switchAccount": "Switch account"
+    },
+    "activity": {
+        "checkIn": "Check-in",
+        "checkOut": "Check-out",
+        "lunch": {
+            "end": "Lunch end",
+            "start": "Lunch start"
+        }
+    },
+    "login": {
+        "email": {
+            "placeholder": "Your email"
+        },
+        "password": {
+            "placeholder": "Password",
+            "show": "Show"
+        },
+        "remember": "Remember me",
+        "submit": "Sign in",
+        "title": "Sign in"
+    },
+    "register": {
+        "btn": "Activate account",
+        "confirm": "Confirm password",
+        "email": "Email Address",
+        "error": {
+            "length": "Password must be at least 6 characters.",
+            "match": "Passwords do not match."
+        },
+        "name": "Full Name",
+        "password": "New password",
+        "saving": "Saving...",
+        "subtitle": "Create a password to activate your account.",
+        "success": "Account activated! You can now log in.",
+        "welcome": "Welcome!"
+    },
+    "checkin": {
+        "btnIn": "Check in",
+        "btnOut": "Check out",
+        "checkIn": "Check In",
+        "checkOut": "Check Out",
+        "confirmIn": "Check In",
+        "confirmOut": "Check Out",
+        "inProgress": "Session in progress",
+        "notIn": "Not checked in",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Add any additional notes...",
+        "reason": {
+            "break": "Break",
+            "errand": "Errand",
+            "lunch": "Lunch",
+            "meeting": "Meeting",
+            "other": "Other",
+            "personal": "Personal",
+            "work": "Work"
+        },
+        "reasonLabel": "Reason",
+        "sessions": "Sessions",
+        "title": "Check-in",
+        "todaySessions": "Today's Sessions",
+        "todaySummary": "Today's Summary",
+        "totalHours": "Total Hours"
+    },
+    "lunch": {
+        "noteHelper": "Add an optional note about the break.",
+        "noteModalTitle": "Lunch note",
+        "notePlaceholder": "Write the note here…"
+    },
+    "history": {
+        "avgPerDay": "Avg/day (week)",
+        "chart": {
+            "title": "Hours per week (last 6)"
+        },
+        "date": "Date",
+        "daysAbbr": "days",
+        "daysWithCheckins": "Days with check-in (recent)",
+        "export": {
+            "date": "Date",
+            "formatted": "Hours (formatted)",
+            "hours": "Hours (number)",
+            "label": "Export"
+        },
+        "hours": "Hours",
+        "monthly": {
+            "chartTitle": "Progress by week",
+            "daysWorked": "Days worked (Month)",
+            "title": "Monthly Summary",
+            "totalTime": "Total Time (Month)"
+        },
+        "noRecords": "No recent records",
+        "noRecordsMonth": "No data this month.",
+        "recent": {
+            "title": "Recent history (per day)"
+        },
+        "today": {
+            "title": "Today's history"
+        },
+        "week": "Week",
+        "weekAbbr": "Wk",
+        "weekHours": "Weekly hours",
+        "weekly": {
+            "chartTitle": "Hours per day (Mon-Sun)",
+            "daysWorked": "Days worked (Week)",
+            "title": "Weekly Summary",
+            "totalTime": "Total Time (Week)"
+        }
+    },
+    "calendar": {
+        "approvedBy": "Approved by",
+        "checkIn": "Check-in",
+        "checkOut": "Check-out",
+        "daysWithSessions": "Registered days",
+        "electiveVacation": "Elective vacations",
+        "legend": {
+            "holidays": "Holidays: border/ring with colored label",
+            "title": "Legend",
+            "today": "Today",
+            "weekends": "Weekends: light background"
+        },
+        "nextMonth": "Next month",
+        "noActivities": "No activity registered",
+        "notConfigured": "This year's vacations have not been configured by the admin yet.",
+        "notes": "Notes",
+        "obligatoryVacation": "Obligatory vacations",
+        "pendingVacation": "Pending vacations",
+        "prevMonth": "Previous month",
+        "reason": "Reason",
+        "rejectedVacation": "Rejected vacations",
+        "sessions": "sessions",
+        "teamVacation": "Team Vacation",
+        "totalHours": "Total hours",
+        "totalSessions": "Total sessions",
+        "vacations": "Vacations",
+        "weekDays": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+        "workSessions": "Work sessions",
+        "viewFitxatges": "View fitxatges",
+        "workSummary": "Monthly summary"
     },
     "vacations": {
-      "allUsers": "All employees",
-      "approve": "Approve",
-      "approved": "Approved",
-      "cancelled": "Cancelled",
-      "empty": "No pending requests.",
-      "history": "History",
-      "pending": "Pending",
-      "reject": "Reject",
-      "rejected": "Rejected",
-      "status": {
-        "approved": "Approved",
-        "cancelled": "Cancelled",
-        "pending": "Pending",
-        "rejected": "Rejected"
-      },
-      "subtitle": "Manage team time-off requests.",
-      "title": "Vacation Requests",
-      "total": "Total",
-      "unknownUser": "Unknown User"
+        "balance": "Days Available",
+        "cancel": "Cancel",
+        "cancelModal": {
+            "body": "Are you sure you want to delete this request? This action cannot be undone.",
+            "confirm": "Delete",
+            "title": "Delete request?"
+        },
+        "consecutiveDays": "Consecutive days",
+        "date": "Date",
+        "day": "day",
+        "days": "days",
+        "empty": "No requests found.",
+        "history": "Request History",
+        "manageDesc": "Request time off and view history.",
+        "reason": "Reason (optional)",
+        "reasonPlaceholder": "Ex: Personal matters...",
+        "request": "Request Time Off",
+        "status": {
+            "approved": "Approved",
+            "cancelled": "Cancelled",
+            "pending": "Pending",
+            "rejected": "Rejected"
+        },
+        "submit": "Submit Request",
+        "success": "Request sent successfully!",
+        "title": "My Vacations",
+        "total": "Total yearly",
+        "used": "Used"
     },
-    "vacationsSetup": {
-      "addButton": "Add Date",
-      "addDate": "Add holiday date",
-      "copyButton": "Copy from {year}",
-      "copyNotFound": "No vacation settings found for year {year}.",
-      "copySubtitle": "Loads obligatory holidays and elective days from {year} into {toYear}. Changes are only saved when you press Save.",
-      "copySuccess": "Settings loaded from {year} into {toYear} (not saved yet)",
-      "copyTitle": "Copy settings from another year",
-      "dateExists": "This date is already added",
-      "days": "days",
-      "electiveDaysLabel": "Maximum elective days per employee",
-      "electiveHelp": "Employees can request elective vacation days up to this limit",
-      "electiveSubtitle": "Set the maximum number of elective vacation days per employee",
-      "electiveTitle": "Elective Days",
-      "invalidDate": "Invalid date format",
-      "manageObligatory": "Manage Obligatory Vacations",
-      "noDates": "No obligatory holidays set for this year",
-      "nonWorkingDay": "Non-working day",
-      "obligatoryReal": "Real obligatory days",
-      "obligatorySubtitle": "Set mandatory holidays for all employees",
-      "obligatoryTitle": "Obligatory Holidays",
-      "obligatoryTotal": "Obligatory days",
-      "saveSubtitleCreate": "Create vacation settings for {year}",
-      "saveSubtitleUpdate": "Update vacation settings for {year}",
-      "saveTitle": "Save Changes",
-      "subtitle": "Configure obligatory holidays and elective days for employees",
-      "success": "Vacation settings saved successfully!",
-      "title": "Vacation Settings",
-      "totalDays": "Total Days",
-      "unsavedHint": "Click Save to persist these changes.",
-      "unsavedWarning": "Unsaved changes for year {year}",
-      "weekdays": "Weekdays",
-      "weekends": "Weekends"
+    "groups": {
+        "empty": "You are not assigned to any group yet.",
+        "groupDescription": "Group Description",
+        "members": "Team Members",
+        "noDescription": "No description available.",
+        "notFound": "Group not found.",
+        "subtitle": "View teams and departments you belong to.",
+        "title": "My Groups"
+    },
+    "profile": {
+        "activity": "Recent Activity",
+        "admin": {
+            "createBtn": "Create New User",
+            "description": "Create new users and manage the team here.",
+            "title": "Admin Panel"
+        },
+        "avatar": {
+            "change": "Change photo",
+            "invalidFormat": "Unsupported format. Use JPG, PNG, WEBP or GIF.",
+            "tooLarge": "Image too large (max 10 MB).",
+            "uploadError": "Could not upload the photo. Please try again.",
+            "uploading": "Uploading...",
+            "updated": "Photo updated"
+        },
+        "change": "Toggle",
+        "errorLoading": "Error loading user",
+        "fallbackUser": "User",
+        "hoursToday": "Hours Today",
+        "dni": "ID number",
+        "notFound": "Profile not found.",
+        "preferences": "Preferences",
+        "signOut": "Sign out",
+        "prevWeeks": "Previous weeks",
+        "recentActivity": "Recent activity",
+        "role": {
+            "admin": "Administrator",
+            "employee": "Employee"
+        },
+        "status": {
+            "checkedInAgo": "Checked in {time} ago",
+            "label": "Status"
+        },
+        "statusActive": "Active (Working)",
+        "statusInactive": "Inactive",
+        "subtitle": "Profile & hours",
+        "theme": {
+            "label": "Theme",
+            "latte": "Latte",
+            "frappe": "Frappé",
+            "macchiato": "Macchiato",
+            "mocha": "Mocha"
+        },
+        "thisWeek": "This week",
+        "timeFormat": "Time format",
+        "title": "User profile",
+        "weeklyGoal": "Weekly goal"
+    },
+    "admin": {
+        "btn": {
+            "create": "Continue"
+        },
+        "copied": "Copied!",
+        "copy": "Copy link",
+        "create": {
+            "subtitle": "Enter the user's basic information.",
+            "title": "Register new employee"
+        },
+        "dashboard": {
+            "addUser": "Add user",
+            "quickActions": "Quick Actions",
+            "subtitle": "Employee overview",
+            "summaryDesc": "Global view of company status.",
+            "summaryTitle": "General Overview",
+            "title": "Team"
+        },
+        "form": {
+            "dni": "ID number",
+            "dniPlaceholder": "Ex: 12345678A",
+            "email": "Email address",
+            "expectedHours": "Expected work hours",
+            "customNonWorkDays": "Custom non-work days",
+            "name": "Full name",
+            "role": {
+                "label": "Role",
+                "admin": "Administrator",
+                "employee": "Employee"
+            }
+        },
+        "groups": {
+            "add": "New Department",
+            "addMembers": "Add members",
+            "clickHelper": "Click on users to add or remove them.",
+            "createSubtitle": "Define a new department to assign employees.",
+            "createTitle": "Create Department",
+            "delete": "Delete",
+            "deleteConfirmDesc": "Are you sure you want to delete this department? This action cannot be undone.",
+            "deleteConfirmTitle": "Delete department?",
+            "deleteError": "Error deleting department.",
+            "desc": "Description or Functions",
+            "descPlaceholder": "Ex: Development team...",
+            "edit": "Edit",
+            "editTitle": "Edit Department",
+            "empty": "No departments created yet.",
+            "members": "Members",
+            "membersTitle": "Department Members",
+            "noDesc": "No description",
+            "noMembers": "No members",
+            "name": "Department Name",
+            "namePlaceholder": "Ex: Barcelona Office",
+            "noUsers": "No available users found.",
+            "subtitle": "Manage the company's organizational structure.",
+            "title": "Departments"
+        },
+        "menu": {
+            "sections": {
+                "users": "Users & fitxatges",
+                "vacations": "Vacations",
+                "settings": "Global settings"
+            },
+            "calendar": {
+                "desc": "Monthly view of absences.",
+                "title": "Global Calendar"
+            },
+            "groups": {
+                "desc": "Organize employees by teams or offices.",
+                "title": "Groups / Departments",
+                "count": "groups"
+            },
+            "subtitle": "Select what you want to manage today.",
+            "title": "Admin Panel",
+            "users": {
+                "desc": "View team, current status, and new registrations.",
+                "title": "Employees",
+                "total": "total",
+                "working": "working"
+            },
+            "vacations": {
+                "desc": "Review and approve pending requests.",
+                "title": "Vacation Requests",
+                "pending": "pending",
+                "none": "no pending"
+            },
+            "yearlyvacations": {
+                "desc": "Asign obligatory vacations and amount of elective vacations",
+                "title": "Yearly vacations"
+            },
+            "settings": {
+                "desc": "Company-wide configuration (hours, non-working days...).",
+                "title": "Company Settings"
+            },
+            "events": {
+                "desc": "Employee check-in/out with anomaly detection.",
+                "title": "Fitxatges",
+                "anomalies": "anomalies",
+                "noAnomalies": "no anomalies"
+            }
+        },
+        "stats": {
+            "departments": "Departments",
+            "pendingVacations": "Pending Vacations",
+            "review": "Review",
+            "totalUsers": "Total Employees",
+            "workingNow": "Working Now"
+        },
+        "status": {
+            "offline": "Offline ({time})",
+            "workingSince": "Working since {time}"
+        },
+        "success": {
+            "desc": "Share this link with the employee to complete registration.",
+            "title": "User created!"
+        },
+        "users": {
+            "noName": "No name",
+            "notFound": "No users found.",
+            "pendingActivation": "Pending activation",
+            "workingNow": "Working now",
+            "customNonWorkDays": "Custom non-work days",
+            "registered": "Registered"
+        },
+        "usersEdit": {
+            "editAction": "Edit user",
+            "registrationLink": "Registration link (send this to the employee)",
+            "saved": "User updated successfully",
+            "subtitle": "Modify the employee's details.",
+            "title": "Edit user"
+        },
+        "sessionEditor": {
+            "addIn": "Add check-in",
+            "addOut": "Add check-out",
+            "hint": "Check-in/check-out order must be kept. Changes are applied with the save button.",
+            "noSessions": "No check-ins yet.",
+            "remove": "Remove event",
+            "removeLocked": "Cannot remove while keeping check-in/check-out order",
+            "title": "Edit events"
+        },
+        "settings": {
+            "toleranceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
+            "toleranceLabel": "Tolerance (hours)",
+            "defaultHoursHelp": "Expected work hours per day by default for new employees.",
+            "defaultHoursLabel": "Daily expected hours",
+            "endOfDayHelp": "End-of-day time to detect workers who haven't checked out.",
+            "endOfDayLabel": "End of day time",
+            "nonWorkingDaysHelp": "Days of the week when no work is expected (won't flag an anomaly).",
+            "nonWorkingDaysLabel": "Non-working days",
+            "saved": "Settings saved successfully",
+            "subtitle": "Configure the company-wide values.",
+            "title": "Company settings"
+        },
+        "export": {
+            "button": "Export CSV",
+            "error": "Export failed.",
+            "from": "From",
+            "selectAll": "Select all",
+            "selectedCount": "{count} selected",
+            "to": "To"
+        },
+        "events": {
+            "noData": "No records for this period.",
+            "pagination": {
+                "next": "Next page",
+                "previous": "Previous page"
+            },
+            "period": {
+                "day": "Day",
+                "month": "Month",
+                "week": "Week",
+                "year": "Year"
+            },
+            "status": {
+                "anomaly": "Anomaly",
+                "ok": "Completed",
+                "vacation": "Vacation",
+                "nonWorkingDay": "Non-working day"
+            },
+            "subtitle": "Check-in/out of all employees with anomaly detection.",
+            "table": {
+                "date": "Date",
+                "employee": "Employee",
+                "expected": "Expected",
+                "hours": "Hours",
+                "sessions": "Events"
+            },
+            "source": {
+                "admin": "Admin",
+                "automatic": "Automatic",
+                "user": "Employee"
+            },
+            "title": "Events"
+        },
+        "vacations": {
+            "allUsers": "All employees",
+            "approve": "Approve",
+            "approved": "Approved",
+            "cancelled": "Cancelled",
+            "empty": "No pending requests.",
+            "history": "History",
+            "pending": "Pending",
+            "reject": "Reject",
+            "rejected": "Rejected",
+            "status": {
+                "approved": "Approved",
+                "cancelled": "Cancelled",
+                "pending": "Pending",
+                "rejected": "Rejected"
+            },
+            "subtitle": "Manage team time-off requests.",
+            "title": "Vacation Requests",
+            "total": "Total",
+            "unknownUser": "Unknown User"
+        },
+        "vacationsSetup": {
+            "addButton": "Add Date",
+            "addDate": "Add holiday date",
+            "copyButton": "Copy from {year}",
+            "copyNotFound": "No vacation settings found for year {year}.",
+            "copySubtitle": "Loads obligatory holidays and elective days from {year} into {toYear}. Changes are only saved when you press Save.",
+            "copySuccess": "Settings loaded from {year} into {toYear} (not saved yet)",
+            "copyTitle": "Copy settings from another year",
+            "dateExists": "This date is already added",
+            "days": "days",
+            "electiveDaysLabel": "Maximum elective days per employee",
+            "electiveHelp": "Employees can request elective vacation days up to this limit",
+            "electiveSubtitle": "Set the maximum number of elective vacation days per employee",
+            "electiveTitle": "Elective Days",
+            "invalidDate": "Invalid date format",
+            "manageObligatory": "Manage Obligatory Vacations",
+            "noDates": "No obligatory holidays set for this year",
+            "nonWorkingDay": "Non-working day",
+            "obligatoryReal": "Real obligatory days",
+            "obligatorySubtitle": "Set mandatory holidays for all employees",
+            "obligatoryTitle": "Obligatory Holidays",
+            "obligatoryTotal": "Obligatory days",
+            "saveSubtitleCreate": "Create vacation settings for {year}",
+            "saveSubtitleUpdate": "Update vacation settings for {year}",
+            "saveTitle": "Save Changes",
+            "subtitle": "Configure obligatory holidays and elective days for employees",
+            "success": "Vacation settings saved successfully!",
+            "title": "Vacation Settings",
+            "totalDays": "Total Days",
+            "unsavedHint": "Click Save to persist these changes.",
+            "unsavedWarning": "Unsaved changes for year {year}",
+            "weekdays": "Weekdays",
+            "weekends": "Weekends"
+        }
+    },
+    "error": {
+        "AccountBlocked": "Account blocked",
+        "AiError": "AI Error",
+        "CheckInRegistered": "Check-in registered successfully",
+        "CheckOutRegistered": "Check-out registered successfully",
+        "DatesNotInYear": "Dates are not in the selected year",
+        "DeleteError": "Deletion error",
+        "EntryNotFound": "Record not found",
+        "GetError": "Request error",
+        "GroqApiKeyMissing": "Groq API KEY missing",
+        "GroupDeleted": "Group deleted successfully",
+        "IllegalAction": {
+            "AllVacationsUsed": "No more elective vacations available",
+            "AlreadyObligatoryVacation": "This day is already a mandatory holiday",
+            "DuplicateVacationRequest": "Duplicate vacation request"
+        },
+        "IncorrectParameter": {
+            "email": "email",
+            "message": "Incorrect parameter",
+            "month": "month",
+            "password": "password",
+            "reason": {
+                "AlreadyCheckedIn": "Already checked in",
+                "AlreadyCheckedOut": "Already checked out",
+                "AlreadyExists": "This email already exists",
+                "ContainsEmail": "Password contains email",
+                "ContainsUsername": "Password contains username",
+                "LessThan12Characters": "Password must be at least 12 characters long",
+                "MissingLowercase": "Password must contain a lowercase letter",
+                "MissingNumber": "Password must contain a number",
+                "MissingSign": "Password must contain a symbol",
+                "MissingUppercase": "Password must contain an uppercase letter",
+                "NoEntryToday": "No entry today",
+                "NotInOrder": "Events must alternate check-in/check-out",
+                "OutOfDay": "Time must be on the same day",
+                "InvalidTimestamp": "Invalid date and time"
+            },
+            "type": "type",
+            "year": "year"
+        },
+        "InsufficientPermissions": "Insufficient permissions",
+        "InternalError": "Internal error",
+        "InvalidCredentials": "Invalid credentials",
+        "InvalidRegisterToken": "Invalid register token",
+        "InvalidToken": "Invalid or expired token",
+        "MessageMissing": "Message missing",
+        "MethodNotAllowed": "Method not allowed",
+        "MissingParameter": "Missing parameters",
+        "ModifyingFromAnotherUser": "You cannot modify data from another user",
+        "NetworkError": "Network connection error",
+        "NoAccessToUser": "No access to this user",
+        "PermissionVerificationError": "Error verifying permissions",
+        "PostError": "Submission error",
+        "PutError": "Modification error",
+        "RateLimited": "Too many attempts. Please try again later",
+        "ShouldNotBeSet": "This parameter should not be set",
+        "Success": "Operation successful",
+        "TokenRequired": "Access token required",
+        "UnknownError": "Unknown error",
+        "UserNotFound": "User not found",
+        "ValidationError": "Validation error",
+        "YearlyVacationSaved": "Yearly vacation settings saved",
+        "partialVacation": "{created} days created, but {failed} failed.",
+        "vacationLimit": "Vacation limit exceeded or invalid"
+    },
+    "errorBoundary": {
+        "message": "An unexpected error occurred.",
+        "reload": "Reload page",
+        "title": "Something went wrong"
     }
-  },
-  "error": {
-    "AccountBlocked": "Account blocked",
-    "AiError": "AI Error",
-    "CheckInRegistered": "Check-in registered successfully",
-    "CheckOutRegistered": "Check-out registered successfully",
-    "DatesNotInYear": "Dates are not in the selected year",
-    "DeleteError": "Deletion error",
-    "EntryNotFound": "Record not found",
-    "GetError": "Request error",
-    "GroqApiKeyMissing": "Groq API KEY missing",
-    "GroupDeleted": "Group deleted successfully",
-    "IllegalAction": {
-      "AllVacationsUsed": "No more elective vacations available",
-      "AlreadyObligatoryVacation": "This day is already a mandatory holiday",
-      "DuplicateVacationRequest": "Duplicate vacation request"
-    },
-    "IncorrectParameter": {
-      "email": "email",
-      "message": "Incorrect parameter",
-      "month": "month",
-      "password": "password",
-      "reason": {
-        "AlreadyCheckedIn": "Already checked in",
-        "AlreadyCheckedOut": "Already checked out",
-        "AlreadyExists": "This email already exists",
-        "ContainsEmail": "Password contains email",
-        "ContainsUsername": "Password contains username",
-        "LessThan12Characters": "Password must be at least 12 characters long",
-        "MissingLowercase": "Password must contain a lowercase letter",
-        "MissingNumber": "Password must contain a number",
-        "MissingSign": "Password must contain a symbol",
-        "MissingUppercase": "Password must contain an uppercase letter",
-        "NoEntryToday": "No entry today",
-        "NotInOrder": "Events must alternate check-in/check-out",
-        "OutOfDay": "Time must be on the same day",
-        "InvalidTimestamp": "Invalid date and time"
-      },
-      "type": "type",
-      "year": "year"
-    },
-    "InsufficientPermissions": "Insufficient permissions",
-    "InternalError": "Internal error",
-    "InvalidCredentials": "Invalid credentials",
-    "InvalidRegisterToken": "Invalid register token",
-    "InvalidToken": "Invalid or expired token",
-    "MessageMissing": "Message missing",
-    "MethodNotAllowed": "Method not allowed",
-    "MissingParameter": "Missing parameters",
-    "ModifyingFromAnotherUser": "You cannot modify data from another user",
-    "NetworkError": "Network connection error",
-    "NoAccessToUser": "No access to this user",
-    "PermissionVerificationError": "Error verifying permissions",
-    "PostError": "Submission error",
-    "PutError": "Modification error",
-    "RateLimited": "Too many attempts. Please try again later",
-    "ShouldNotBeSet": "This parameter should not be set",
-    "Success": "Operation successful",
-    "TokenRequired": "Access token required",
-    "UnknownError": "Unknown error",
-    "UserNotFound": "User not found",
-    "ValidationError": "Validation error",
-    "YearlyVacationSaved": "Yearly vacation settings saved",
-    "partialVacation": "{created} days created, but {failed} failed.",
-    "vacationLimit": "Vacation limit exceeded or invalid"
-  },
-  "errorBoundary": {
-    "message": "An unexpected error occurred.",
-    "reload": "Reload page",
-    "title": "Something went wrong"
-  }
 }
