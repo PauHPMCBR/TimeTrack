@@ -43,6 +43,10 @@ vi.mock('@/lib/settings', () => ({
     }),
 }));
 
+vi.mock('@/lib/mail', () => ({
+    sendRegistrationInvite: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/models', () => ({
     User: {
         findOne: vi.fn(),
@@ -53,6 +57,7 @@ vi.mock('@/models', () => ({
 vi.stubEnv('FRONTEND_URL', 'http://localhost:3000');
 
 import { User } from '@/models';
+import { sendRegistrationInvite } from '@/lib/mail';
 import profileCreateHandler from '@/pages/api/profile/create';
 
 describe('POST /api/profile/create', () => {
@@ -143,6 +148,16 @@ describe('POST /api/profile/create', () => {
                     registrationLink: expect.any(String),
                     registrationToken: expect.any(String),
                 }),
+            })
+        );
+
+        expect(sendRegistrationInvite).toHaveBeenCalledWith(
+            expect.objectContaining({
+                to: 'new@example.com',
+                name: 'New User',
+                registrationLink: expect.stringContaining(
+                    'http://localhost:3000/register/'
+                ),
             })
         );
     });
