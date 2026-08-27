@@ -101,11 +101,10 @@ export default function AdminSettingsPage() {
 
             if (response.error) {
                 if (response.error === 'ValidationError') {
-                    const errors = (response.details.errors || []).map(
-                        (e: any) =>
-                            typeof e === 'string'
-                                ? e
-                                : e?.message || e?.code || JSON.stringify(e)
+                    const errors = (response.details?.errors || []).map((e) =>
+                        typeof e === 'string'
+                            ? e
+                            : e?.message || e?.code || JSON.stringify(e)
                     );
                     if (errors.length > 0) setValidationErrors(errors);
                     setError(t('error.ValidationError'));
@@ -125,9 +124,9 @@ export default function AdminSettingsPage() {
             setSuccess(true);
             resetDirty();
             setTimeout(() => setSuccess(false), 3000);
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            setError(err.message || t('error.PutError'));
+            setError(err instanceof Error ? err.message : t('error.PutError'));
         } finally {
             setSaving(false);
         }

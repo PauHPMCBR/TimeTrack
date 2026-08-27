@@ -205,12 +205,10 @@ describe('apiClient', () => {
         it('should fetch the avatar with the auth token and return a blob', async () => {
             const blob = new Blob(['image'], { type: 'image/jpeg' });
             localStorage.setItem('auth_token', 'token123');
-            global.fetch = vi
-                .fn()
-                .mockResolvedValue({
-                    ok: true,
-                    blob: () => Promise.resolve(blob),
-                }) as any;
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                blob: () => Promise.resolve(blob),
+            }) as any;
 
             const result = await apiClient.getAvatarBlob(
                 'user-1',

@@ -114,23 +114,24 @@ export default function CompleteRegistrationPage() {
             } else {
                 router.push('/login');
             }
-        } catch (err: any) {
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
             console.error(err);
-            if (err.message?.includes('MissingUppercase'))
+            if (message.includes('MissingUppercase'))
                 setError(t('error.IncorrectParameter.reason.MissingUppercase'));
-            else if (err.message?.includes('MissingLowercase'))
+            else if (message.includes('MissingLowercase'))
                 setError(t('error.IncorrectParameter.reason.MissingLowercase'));
-            else if (err.message?.includes('MissingNumber'))
+            else if (message.includes('MissingNumber'))
                 setError(t('error.IncorrectParameter.reason.MissingNumber'));
-            else if (err.message?.includes('MissingSign'))
+            else if (message.includes('MissingSign'))
                 setError(t('error.IncorrectParameter.reason.MissingSign'));
-            else if (err.message?.includes('email'))
+            else if (message.includes('email'))
                 setError(
                     t('error.IncorrectParameter.email') +
                         ' - ' +
                         t('error.IncorrectParameter.message')
                 );
-            else setError(err.message || t('error.PostError'));
+            else setError(message || t('error.PostError'));
         } finally {
             setLoading(false);
         }

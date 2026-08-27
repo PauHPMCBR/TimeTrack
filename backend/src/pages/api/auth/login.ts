@@ -8,7 +8,7 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { validateRequestBody, runValidation } from '@/lib/validation';
 import { LoginRequestSchema } from 'shared/src/schemas/api';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
@@ -20,12 +20,14 @@ export default withRateLimit(
         }
 
         try {
-            const validationMiddleware =
-                validateRequestBody(LoginRequestSchema);
-            await new Promise((resolve) => {
-                validationMiddleware(req, res, () => resolve(true));
-            });
-            if (res.headersSent) return;
+            if (
+                !(await runValidation(
+                    validateRequestBody(LoginRequestSchema),
+                    req,
+                    res
+                ))
+            )
+                return;
 
             await dbConnect();
             const { email, password } = req.body;
@@ -76,7 +78,11 @@ export default withRateLimit(
                 );
                 const newFailedAttempts = (user.failedLoginAttempts || 0) + 1;
 
-                const updateData: any = {
+                const updateData: {
+                    failedLoginAttempts: number;
+                    blocked?: boolean;
+                    blockedSince?: Date;
+                } = {
                     failedLoginAttempts: newFailedAttempts,
                 };
 
@@ -108,8 +114,11 @@ export default withRateLimit(
                     user: toPublicUser(user),
                 },
             });
-        } catch (error: any) {
-            console.error('Error stack:', error.stack);
+        } catch (error) {
+            console.error(
+                'Error stack:',
+                error instanceof Error ? error.stack : String(error)
+            );
             return responseErrorPost(res);
         }
     },

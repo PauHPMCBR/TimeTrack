@@ -18,7 +18,7 @@ export interface MissingParameterError {
 export interface ValidationError {
     error: 'ValidationError';
     details: {
-        errors?: string[];
+        errors?: (string | { message?: string; code?: string })[];
         message?: string;
     };
 }
@@ -38,16 +38,20 @@ export interface EntryNotFoundError {
     };
 }
 
-export type ErrorResponseType =
-    | IncorrectParameterError
-    | MissingParameterError
-    | ValidationError
-    | AccountBlockedError
-    | EntryNotFoundError
-    | { error: string; [key: string]: any };
+export type ErrorDetails = {
+    incorrectParameter?: string;
+    reasons?: string[];
+    missingParameter?: string;
+    errors?: (string | { message?: string; code?: string })[];
+    message?: string;
+    entry?: string;
+    blockedUntil?: string;
+    retryAfterSeconds?: number;
+    [key: string]: unknown;
+};
 
 export type ApiResponse<T> = {
     data?: T;
     error?: ErrorCode;
-    details?: any;
+    details?: ErrorDetails;
 };

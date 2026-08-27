@@ -8,7 +8,7 @@ import {
     responseErrorIncorrectParameter,
     responseErrorValidation,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { YearlyVacationAdminRequestSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
@@ -17,16 +17,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 
     try {
-        const validationMiddleware = validateRequestBody(
-            YearlyVacationAdminRequestSchema
-        );
-        await new Promise((resolve) => {
-            validationMiddleware(req, res, () => resolve(true));
-        });
-        if (res.headersSent) return;
-    } catch (error: any) {
+        if (
+            !(await runValidation(
+                validateRequestBody(YearlyVacationAdminRequestSchema),
+                req,
+                res
+            ))
+        )
+            return;
+    } catch (error) {
         console.error('Validation error:', error);
-        return responseErrorValidation(res, [error.message]);
+        return responseErrorValidation(res, [
+            error instanceof Error ? error.message : String(error),
+        ]);
     }
 
     try {

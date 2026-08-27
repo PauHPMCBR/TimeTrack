@@ -47,7 +47,7 @@ export function Alert({
 }: AlertProps) {
     const Icon = icons[variant];
 
-    function cn(...inputs: any[]) {
+    function cn(...inputs: (string | undefined)[]) {
         return inputs.filter(Boolean).join(' ');
     }
 

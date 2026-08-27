@@ -293,7 +293,9 @@ export type UserLoginResponse = z.infer<typeof UserLoginResponseSchema>;
 export const YearlyVacationsResponseSchema = z.object({
     year: z.number().int().gte(2000).lte(2100),
     electives: z.array(ElectiveVacationSchema.extend({ _id: z.string() })),
-    yearlyVacationDays: YearlyVacationDaysSchema.extend({ _id: z.string() }),
+    yearlyVacationDays: YearlyVacationDaysSchema.extend({
+        _id: z.string(),
+    }).nullable(),
 });
 export type YearlyVacationResponse = z.infer<
     typeof YearlyVacationsResponseSchema

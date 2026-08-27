@@ -45,7 +45,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
             const oldStatus = vacation.status;
 
-            const updateData: any = { status };
+            const updateData: {
+                status: string;
+                approvedBy?: string;
+                approvedAt?: Date;
+            } = { status };
             if (status === 'approved') {
                 updateData.approvedBy = req.user?.userId;
                 updateData.approvedAt = new Date();
@@ -134,7 +138,7 @@ async function updateUserYearlyVacationDays(
         }
     } else {
         const existingDates = userYearlyVacationDays.selectedElectiveDays.map(
-            (d: any) => {
+            (d: Date) => {
                 const d2 = new Date(d);
                 d2.setHours(0, 0, 0, 0);
                 return d2.getTime();
@@ -150,13 +154,13 @@ async function updateUserYearlyVacationDays(
                 vacationDate,
             ];
             newSelectedDays = newDays.sort(
-                (a: any, b: any) =>
+                (a: Date, b: Date) =>
                     new Date(a).getTime() - new Date(b).getTime()
             );
         } else if (!isApproved && dateExists) {
             newSelectedDays =
                 userYearlyVacationDays.selectedElectiveDays.filter(
-                    (selectedDate: any) => {
+                    (selectedDate: Date) => {
                         const normalizedSelectedDate = new Date(selectedDate);
                         normalizedSelectedDate.setHours(0, 0, 0, 0);
                         return (

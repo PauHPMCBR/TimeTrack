@@ -20,6 +20,13 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 vi.mock('@/lib/validation', () => ({
+    runValidation: async (middleware: any, req: any, res: any) => {
+        await new Promise((resolve) =>
+            middleware(req, res, () => resolve(true))
+        );
+        return !res.headersSent;
+    },
+
     validateQueryParams:
         () => (req: any, res: any, next: (err?: unknown) => void) =>
             next(),

@@ -7,7 +7,7 @@ import {
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
+import { runValidation, validateQueryParams } from '@/lib/validation';
 import { WorkSessionRangeQuerySchema } from 'shared/src/schemas/api';
 
 // Flat list of a user's work sessions within an inclusive date range (local
@@ -18,13 +18,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(
-        WorkSessionRangeQuerySchema
-    );
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateQueryParams(WorkSessionRangeQuerySchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();

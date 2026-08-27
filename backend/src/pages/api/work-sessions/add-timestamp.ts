@@ -7,8 +7,9 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { WorkSessionRequestSchema } from 'shared/src/schemas/api';
+import { computeDayHours } from 'shared/src/lib/work-hours';
 import { CheckInIncorrectParameterReason } from 'shared/src/types/response-errors';
 
 // The check-then-insert guard (verifyInOut → save) is racy: two concurrent
@@ -36,7 +37,9 @@ async function withUserLock<T>(
 // type (for the check_in/check_out guard) and the day's worked hours from it.
 // Day boundary is the server's local time — same convention as every other
 // date-bucketed endpoint in the app.
-async function getTodaySessions(userId: string | undefined): Promise<any[]> {
+async function getTodaySessions(
+    userId: string
+): Promise<InstanceType<typeof WorkSession>[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -47,7 +50,7 @@ async function getTodaySessions(userId: string | undefined): Promise<any[]> {
 }
 
 function verifyInOut(
-    lastSession: any,
+    lastSession: InstanceType<typeof WorkSession> | undefined,
     type: string
 ): CheckInIncorrectParameterReason | null {
     if (type === 'check_in') {
@@ -73,32 +76,19 @@ type CheckInOutResult =
           hoursWorked: number | null;
       };
 
-function computeTodayHours(sessions: any[]): number {
-    let totalMs = 0;
-    let lastCheckIn: Date | null = null;
-
-    for (const session of sessions) {
-        if (session.type === 'check_in') {
-            lastCheckIn = session.timestamp;
-        } else if (session.type === 'check_out' && lastCheckIn) {
-            totalMs += session.timestamp.getTime() - lastCheckIn.getTime();
-            lastCheckIn = null;
-        }
-    }
-
-    return totalMs / (1000 * 60 * 60);
-}
-
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateRequestBody(WorkSessionRequestSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateRequestBody(WorkSessionRequestSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     const { type, reason, notes } = req.body;
 
@@ -112,7 +102,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const result = await withUserLock<CheckInOutResult>(
             req.user!.userId,
             async () => {
-                const todaySessions = await getTodaySessions(req.user?.userId);
+                const todaySessions = await getTodaySessions(req.user!.userId);
                 const inOutCheckError = verifyInOut(
                     todaySessions[todaySessions.length - 1],
                     type
@@ -134,10 +124,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
                 let hoursWorked = null;
                 if (type === 'check_out') {
-                    hoursWorked = computeTodayHours([
+                    hoursWorked = computeDayHours([
                         ...todaySessions,
                         workSession,
-                    ]);
+                    ]).totalHours;
                 }
 
                 return { workSession, hoursWorked };

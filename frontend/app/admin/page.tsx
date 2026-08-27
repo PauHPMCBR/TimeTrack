@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
+import { AdminDashboardResponse } from '@/types';
 import Card from '@/components/ui/Card';
 import {
     UserPlus,
@@ -29,7 +30,7 @@ type MenuItem = {
 export default function AdminDashboard() {
     const { t } = useI18n();
 
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<AdminDashboardResponse | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

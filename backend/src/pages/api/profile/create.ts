@@ -8,7 +8,7 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { CreateUserRequestSchema } from 'shared/src/schemas/api';
 import { getAppSettings } from '@/lib/settings';
 
@@ -17,11 +17,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateRequestBody(CreateUserRequestSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateRequestBody(CreateUserRequestSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();

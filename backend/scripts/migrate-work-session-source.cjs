@@ -9,34 +9,14 @@
 //
 // It reads MONGODB_URI from the environment, falling back to backend/.env.
 
-const fs = require('node:fs');
 const path = require('node:path');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 
-function loadEnv() {
-    const envPath = path.join(__dirname, '..', '.env');
-    if (!fs.existsSync(envPath)) return {};
-    const env = {};
-    for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
-        const eq = trimmed.indexOf('=');
-        if (eq === -1) continue;
-        const key = trimmed.slice(0, eq).trim();
-        let value = trimmed.slice(eq + 1).trim();
-        if (
-            (value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))
-        ) {
-            value = value.slice(1, -1);
-        }
-        env[key] = value;
-    }
-    return env;
-}
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 async function main() {
-    const uri = process.env.MONGODB_URI || loadEnv().MONGODB_URI;
+    const uri = process.env.MONGODB_URI;
     if (!uri) {
         console.error(
             'MONGODB_URI not found. Set it in the environment or backend/.env'

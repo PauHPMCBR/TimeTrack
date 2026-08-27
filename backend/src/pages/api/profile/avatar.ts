@@ -8,7 +8,7 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { AvatarUploadRequestSchema } from 'shared/src/schemas/api';
 import { AVATAR_MAX_BYTES, sanitizeAvatar, saveAvatar } from '@/lib/storage';
 
@@ -23,11 +23,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateRequestBody(AvatarUploadRequestSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateRequestBody(AvatarUploadRequestSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     const dataUrl = req.body.dataUrl as string;
 

@@ -7,6 +7,7 @@ import {
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
 import { YearlyVacationResponse } from 'shared/src/schemas/api';
+import { ElectiveVacationRow, YearlyVacationRow } from '@/lib/rows';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -30,7 +31,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 userId: undefined,
                 year: year,
             }).lean(),
-        ])) as [any[], any];
+        ])) as unknown as [ElectiveVacationRow[], YearlyVacationRow | null];
 
         const response: YearlyVacationResponse = {
             year: year,

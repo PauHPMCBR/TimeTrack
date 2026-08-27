@@ -17,6 +17,7 @@ import { toLocalDateKey } from '@/lib/datetime';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { Download, Clock } from 'lucide-react';
 import { useThemeFlavor, type ThemeFlavor } from '@/lib/theme';
+import { computeDayHours } from 'shared/src/lib/work-hours';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
@@ -65,9 +66,6 @@ const CHART_COLORS: Record<
     },
 };
 
-function hoursBetween(a: Date, b: Date) {
-    return Math.max(0, (b.getTime() - a.getTime()) / 3_600_000);
-}
 function startOfWeek(d = new Date()) {
     const x = new Date(d);
     const day = (x.getDay() + 6) % 7; // monday=0
@@ -144,40 +142,27 @@ export default function HistoryAndStatsPage() {
         });
 
         sessionsByDate.forEach((daySessions, dateKey) => {
-            let totalHours = 0;
             const sortedSessions = daySessions.sort(
                 (a, b) =>
                     new Date(a.timestamp).getTime() -
                     new Date(b.timestamp).getTime()
             );
 
-            let checkInTime: Date | null = null;
-
-            sortedSessions.forEach((session) => {
-                if (session.type === 'check_in') {
-                    checkInTime = new Date(session.timestamp);
-                } else if (session.type === 'check_out' && checkInTime) {
-                    totalHours += hoursBetween(
-                        checkInTime,
-                        new Date(session.timestamp)
-                    );
-                    checkInTime = null;
-                }
-            });
-
             // Unmatched check-in: count until now if today, otherwise until end of
             // that day so forgotten check-outs don't inflate historical totals.
-            if (checkInTime) {
-                const isToday = dateKey === toLocalDateKey(new Date());
-                const endDate = isToday
-                    ? new Date()
-                    : (() => {
-                          const d = parseLocalDateKey(dateKey);
-                          d.setHours(23, 59, 59, 999);
-                          return d;
-                      })();
-                totalHours += hoursBetween(checkInTime, endDate);
-            }
+            const isToday = dateKey === toLocalDateKey(new Date());
+            const endDate = isToday
+                ? new Date()
+                : (() => {
+                      const d = parseLocalDateKey(dateKey);
+                      d.setHours(23, 59, 59, 999);
+                      return d;
+                  })();
+
+            const totalHours = computeDayHours(sortedSessions, {
+                countOpenUntil: endDate,
+                round: false,
+            }).totalHours;
 
             if (totalHours > 0) {
                 byDay.set(dateKey, totalHours);

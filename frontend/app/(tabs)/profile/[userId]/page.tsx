@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
+import { User } from '@/types';
 import {
     YearlyVacationResponse,
     MonthlyWorkRecordResponse,
@@ -23,7 +24,7 @@ export default function OtherUserProfilePage() {
     const userId = params?.userId as string;
     const locale = toLocale(lang);
 
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     const today = new Date();

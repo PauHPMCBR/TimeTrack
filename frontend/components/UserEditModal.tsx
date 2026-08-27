@@ -137,8 +137,8 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
 
         if (response.error) {
             if (response.error === 'IncorrectParameter') {
-                if (response.details.incorrectParameter === 'email') {
-                    if (response.details.reasons?.includes('AlreadyExists')) {
+                if (response.details?.incorrectParameter === 'email') {
+                    if (response.details?.reasons?.includes('AlreadyExists')) {
                         setError(
                             t('error.IncorrectParameter.reason.AlreadyExists')
                         );
@@ -153,7 +153,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                     setError(t('error.IncorrectParameter.message'));
                 }
             } else if (response.error === 'ValidationError') {
-                const errors = (response.details.errors || []).map((e: any) =>
+                const errors = (response.details?.errors || []).map((e) =>
                     typeof e === 'string'
                         ? e
                         : e?.message || e?.code || JSON.stringify(e)
