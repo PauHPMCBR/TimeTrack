@@ -50,7 +50,7 @@ export default function AdminCalendarPage() {
 
                 if (usersRes.data?.users) {
                     const map: Record<string, string> = {};
-                    usersRes.data.users.forEach((u: any) => {
+                    usersRes.data.users.forEach((u) => {
                         map[u._id] = u.name;
                     });
                     setUsersMap(map);

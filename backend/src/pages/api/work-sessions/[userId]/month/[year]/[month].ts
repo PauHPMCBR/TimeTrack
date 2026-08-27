@@ -6,22 +6,27 @@ import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
+import { runValidation, validateQueryParams } from '@/lib/validation';
 import {
     MonthlyWorkRecordResponse,
     YearMonthParamSchema,
 } from 'shared/src/schemas/api';
+import { computeDayHours } from 'shared/src/lib/work-hours';
+import { WorkSessionRow } from '@/lib/rows';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(YearMonthParamSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateQueryParams(YearMonthParamSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();
@@ -36,7 +41,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 ? new Date(startOfMonth.getFullYear() + 1, 0, 1)
                 : new Date(startOfMonth.getFullYear(), month, 1, 0, 0, 0);
 
-        const sessions = await WorkSession.find({
+        const sessions = (await WorkSession.find({
             userId: userId,
             timestamp: {
                 $gte: startOfMonth,
@@ -44,10 +49,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             },
         })
             .sort({ timestamp: 1 })
-            .lean();
+            .lean()) as unknown as WorkSessionRow[];
 
         // Initialize arrays with 32 elements (index 0 unused, 1-31 for days)
-        const sessionsByDay: any[][] = Array(32)
+        const sessionsByDay: WorkSessionRow[][] = Array(32)
             .fill(null)
             .map(() => []);
         const dailyStats = Array(32)
@@ -74,29 +79,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             // Sessions arrive globally sorted by timestamp, and grouping preserves
             // that order per day, so no re-sort is needed here.
 
-            let dayHours = 0;
-            let checkInTime: Date | null = null;
-
-            for (const session of daySessions) {
-                if (session.type === 'check_in') {
-                    checkInTime = new Date(session.timestamp);
-                } else if (session.type === 'check_out' && checkInTime) {
-                    const checkOutTime = new Date(session.timestamp);
-                    dayHours +=
-                        (checkOutTime.getTime() - checkInTime.getTime()) /
-                        (1000 * 60 * 60);
-                    checkInTime = null;
-                }
-            }
-
-            // If there's an unmatched check-in at the end of the day, calculate until end of day
-            if (checkInTime) {
-                const endOfDay = new Date(checkInTime);
-                endOfDay.setHours(23, 59, 59, 999);
-                dayHours +=
-                    (endOfDay.getTime() - checkInTime.getTime()) /
-                    (1000 * 60 * 60);
-            }
+            // An unmatched trailing check-in counts until end of day so forgotten
+            // check-outs don't undercount the day.
+            const endOfDay = new Date(
+                new Date(daySessions[0].timestamp).setHours(23, 59, 59, 999)
+            );
+            const dayHours = computeDayHours(daySessions, {
+                countOpenUntil: endOfDay,
+                round: false,
+            }).totalHours;
 
             dailyStats[day] = {
                 hoursWorked: Math.round(dayHours * 100) / 100,

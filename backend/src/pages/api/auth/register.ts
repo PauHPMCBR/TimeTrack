@@ -10,7 +10,7 @@ import {
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { PasswordIncorrectParameterReason } from 'shared/src/types/response-errors';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { RegisterRequestSchema } from 'shared/src/schemas/api';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
@@ -21,11 +21,14 @@ export default withRateLimit(
             return responseErrorMethodNotAllowed(res);
         }
 
-        const validationMiddleware = validateRequestBody(RegisterRequestSchema);
-        await new Promise((resolve) => {
-            validationMiddleware(req, res, () => resolve(true));
-        });
-        if (res.headersSent) return;
+        if (
+            !(await runValidation(
+                validateRequestBody(RegisterRequestSchema),
+                req,
+                res
+            ))
+        )
+            return;
 
         try {
             await dbConnect();
@@ -99,7 +102,7 @@ export default withRateLimit(
 
             user.failedLoginAttempts = 0;
             user.blocked = false;
-            user.blockedSince = undefined as any;
+            user.blockedSince = undefined;
             user.registered = true;
             user.password = password;
             await user.save();

@@ -10,12 +10,15 @@ export function responseError(
     res: NextApiResponse,
     code: number,
     error: ErrorCode,
-    details?: any
+    details?: unknown
 ) {
     // Only 5xx indicate a server fault worth logging; 4xx (incl. brute-force
     // attempts) are expected client errors and would only add noise.
     if (code >= 500) {
-        console.error('response error', JSON.stringify({ code, error, details }));
+        console.error(
+            'response error',
+            JSON.stringify({ code, error, details })
+        );
     }
     return res.status(code).json({
         success: false,
@@ -28,19 +31,19 @@ export function responseErrorMethodNotAllowed(res: NextApiResponse) {
     return responseError(res, 405, 'MethodNotAllowed');
 }
 
-export function responseErrorGet(res: NextApiResponse, details?: any) {
+export function responseErrorGet(res: NextApiResponse, details?: unknown) {
     return responseError(res, 500, 'GetError', details);
 }
 
-export function responseErrorPost(res: NextApiResponse, details?: any) {
+export function responseErrorPost(res: NextApiResponse, details?: unknown) {
     return responseError(res, 500, 'PostError', details);
 }
 
-export function responseErrorPut(res: NextApiResponse, details?: any) {
+export function responseErrorPut(res: NextApiResponse, details?: unknown) {
     return responseError(res, 500, 'PutError', details);
 }
 
-export function responseErrorDelete(res: NextApiResponse, details?: any) {
+export function responseErrorDelete(res: NextApiResponse, details?: unknown) {
     return responseError(res, 500, 'DeleteError', details);
 }
 

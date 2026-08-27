@@ -60,8 +60,15 @@ export const validateQueryParams = (schema: ZodSchema) => {
     };
 };
 
-export const validateResponse = (schema: ZodSchema) => {
-    return (data: any) => {
-        return schema.parse(data);
-    };
-};
+/**
+ * Runs a validation middleware and resolves when it's done. Returns false when
+ * the middleware already sent an error response, so handlers can early-return.
+ */
+export async function runValidation(
+    middleware: (req: NextApiRequest, res: NextApiResponse, next: Next) => void,
+    req: NextApiRequest,
+    res: NextApiResponse
+): Promise<boolean> {
+    await new Promise((resolve) => middleware(req, res, () => resolve(true)));
+    return !res.headersSent;
+}

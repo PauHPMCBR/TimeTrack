@@ -6,6 +6,13 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/validation', () => ({
+    runValidation: async (middleware: any, req: any, res: any) => {
+        await new Promise((resolve) =>
+            middleware(req, res, () => resolve(true))
+        );
+        return !res.headersSent;
+    },
+
     validateRequestBody:
         () => (req: any, res: any, next: (err?: unknown) => void) =>
             next(),

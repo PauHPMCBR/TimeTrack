@@ -3,15 +3,13 @@ import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
 import { User, Group, WorkSession, ElectiveVacation } from '@/models';
 import { getAppSettings } from '@/lib/settings';
-import { computeDayHours } from '@/lib/work-hours';
+import { computeDayHours } from 'shared/src/lib/work-hours';
+import { dateKey } from '@/lib/date-key';
+import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
 import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-
-function dateKey(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -26,9 +24,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             'name email dni role registered groups expectedWorkHours workDays avatar'
         )
             .sort({ name: 1 })
-            .lean()) as any[];
+            .lean()) as unknown as UserRow[];
 
-        const groups = (await Group.find({}).sort({ name: 1 }).lean()) as any[];
+        const groups = (await Group.find({})
+            .sort({ name: 1 })
+            .lean()) as unknown as GroupRow[];
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -45,8 +45,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const workingUserIds = new Set(
             latestSessions
-                .filter((s: any) => s.latest.type === 'check_in')
-                .map((s: any) => s._id)
+                .filter((s) => s.latest.type === 'check_in')
+                .map((s) => s._id)
         );
 
         // Current week (Mon..Sun) sessions for the anomaly count.
@@ -57,12 +57,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         weekEnd.setDate(monday.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);
 
-        const weekSessions = await WorkSession.find({
+        const weekSessions = (await WorkSession.find({
             timestamp: { $gte: monday, $lte: weekEnd },
         })
             .sort({ timestamp: 1 })
-            .lean();
-        const sessionsByUserDay = new Map<string, any[]>();
+            .lean()) as unknown as WorkSessionRow[];
+        const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
         for (const s of weekSessions) {
             const key = `${s.userId}:${dateKey(new Date(s.timestamp))}`;
             const list = sessionsByUserDay.get(key) ?? [];

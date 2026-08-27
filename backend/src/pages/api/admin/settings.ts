@@ -8,7 +8,7 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { AppSettingsRequestSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
@@ -25,13 +25,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             return responseErrorGet(res);
         }
     } else if (req.method === 'PUT') {
-        const validationMiddleware = validateRequestBody(
-            AppSettingsRequestSchema
-        );
-        await new Promise((resolve) => {
-            validationMiddleware(req, res, () => resolve(true));
-        });
-        if (res.headersSent) return;
+        if (
+            !(await runValidation(
+                validateRequestBody(AppSettingsRequestSchema),
+                req,
+                res
+            ))
+        )
+            return;
 
         try {
             await dbConnect();

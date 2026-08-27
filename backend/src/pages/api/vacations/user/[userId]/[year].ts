@@ -6,7 +6,8 @@ import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
+import { runValidation, validateQueryParams } from '@/lib/validation';
+import { ElectiveVacationRow, YearlyVacationRow } from '@/lib/rows';
 import {
     UserYearParamSchema,
     YearlyVacationResponse,
@@ -17,11 +18,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(UserYearParamSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateQueryParams(UserYearParamSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();
@@ -46,20 +50,24 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     year: year,
                     userId: userId,
                 }).lean(),
-            ])) as [any[], any, any];
+            ])) as unknown as [
+                ElectiveVacationRow[],
+                YearlyVacationRow | null,
+                YearlyVacationRow | null,
+            ];
 
         let yearlyVacationDays = yearlyVacationDaysResult;
 
         if (!yearlyVacationDays) {
             if (globalSettings) {
-                yearlyVacationDays = await YearlyVacationDays.create({
+                yearlyVacationDays = (await YearlyVacationDays.create({
                     userId: userId,
                     year: year,
                     obligatoryDays: globalSettings.obligatoryDays,
                     electiveDaysTotalCount:
                         globalSettings.electiveDaysTotalCount,
                     selectedElectiveDays: [],
-                });
+                })) as unknown as YearlyVacationRow;
             }
         } else {
             if (globalSettings) {

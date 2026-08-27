@@ -6,7 +6,7 @@ import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
+import { runValidation, validateQueryParams } from '@/lib/validation';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
@@ -14,11 +14,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(UserIdParamSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(validateQueryParams(UserIdParamSchema), req, res))
+    )
+        return;
 
     try {
         await dbConnect();

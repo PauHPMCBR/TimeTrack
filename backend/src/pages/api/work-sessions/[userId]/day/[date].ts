@@ -7,18 +7,15 @@ import {
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
 import { DateParamSchema } from 'shared/src/schemas/api';
-import { validateQueryParams } from '@/lib/validation';
+import { runValidation, validateQueryParams } from '@/lib/validation';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(DateParamSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (!(await runValidation(validateQueryParams(DateParamSchema), req, res)))
+        return;
 
     try {
         await dbConnect();

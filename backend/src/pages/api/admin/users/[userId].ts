@@ -10,7 +10,11 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
-import { validateQueryParams, validateRequestBody } from '@/lib/validation';
+import {
+    runValidation,
+    validateQueryParams,
+    validateRequestBody,
+} from '@/lib/validation';
 import {
     UpdateUserRequestSchema,
     UserIdParamSchema,
@@ -18,11 +22,14 @@ import {
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
-        const queryValidation = validateQueryParams(UserIdParamSchema);
-        await new Promise((resolve) => {
-            queryValidation(req, res, () => resolve(true));
-        });
-        if (res.headersSent) return;
+        if (
+            !(await runValidation(
+                validateQueryParams(UserIdParamSchema),
+                req,
+                res
+            ))
+        )
+            return;
 
         try {
             await dbConnect();
@@ -59,17 +66,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const queryValidation = validateQueryParams(UserIdParamSchema);
-    await new Promise((resolve) => {
-        queryValidation(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(validateQueryParams(UserIdParamSchema), req, res))
+    )
+        return;
 
-    const bodyValidation = validateRequestBody(UpdateUserRequestSchema);
-    await new Promise((resolve) => {
-        bodyValidation(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateRequestBody(UpdateUserRequestSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();

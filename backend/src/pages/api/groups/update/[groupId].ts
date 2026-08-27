@@ -11,27 +11,35 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
-import { validateQueryParams, validateRequestBody } from '@/lib/validation';
+import {
+    runValidation,
+    validateQueryParams,
+    validateRequestBody,
+} from '@/lib/validation';
 import {
     GroupIdParamSchema,
     CreateGroupRequestSchema,
 } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
-    const validationMiddleware = validateQueryParams(GroupIdParamSchema);
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateQueryParams(GroupIdParamSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     if (req.method === 'PUT') {
-        const validationMiddleware2 = validateRequestBody(
-            CreateGroupRequestSchema
-        );
-        await new Promise((resolve) => {
-            validationMiddleware2(req, res, () => resolve(true));
-        });
-        if (res.headersSent) return;
+        if (
+            !(await runValidation(
+                validateRequestBody(CreateGroupRequestSchema),
+                req,
+                res
+            ))
+        )
+            return;
 
         try {
             await dbConnect();

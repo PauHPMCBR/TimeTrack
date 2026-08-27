@@ -72,9 +72,9 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
 
             if (response.error) {
                 if (response.error === 'IncorrectParameter') {
-                    if (response.details.incorrectParameter === 'email') {
+                    if (response.details?.incorrectParameter === 'email') {
                         if (
-                            response.details.reasons?.includes('AlreadyExists')
+                            response.details?.reasons?.includes('AlreadyExists')
                         ) {
                             setError(
                                 t(
@@ -92,13 +92,13 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
                         setError(t('error.IncorrectParameter.message'));
                     }
                 } else if (response.error === 'MissingParameter') {
-                    if (response.details.missingParameter === 'email') {
+                    if (response.details?.missingParameter === 'email') {
                         setError(
                             t('error.MissingParameter') +
                                 ': ' +
                                 t('error.IncorrectParameter.email')
                         );
-                    } else if (response.details.missingParameter === 'name') {
+                    } else if (response.details?.missingParameter === 'name') {
                         setError(
                             t('error.MissingParameter') +
                                 ': ' +
@@ -106,17 +106,16 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
                         );
                     }
                 } else if (response.error === 'ValidationError') {
-                    const errors = (response.details.errors || []).map(
-                        (e: any) =>
-                            typeof e === 'string'
-                                ? e
-                                : e?.message || e?.code || JSON.stringify(e)
+                    const errors = (response.details?.errors || []).map((e) =>
+                        typeof e === 'string'
+                            ? e
+                            : e?.message || e?.code || JSON.stringify(e)
                     );
                     if (errors.length > 0) {
                         setValidationErrors(errors);
                         setError(t('error.ValidationError'));
-                    } else if (response.details.message) {
-                        setError(response.details.message);
+                    } else if (response.details?.message) {
+                        setError(response.details?.message);
                     } else {
                         setError(t('error.ValidationError'));
                     }
@@ -140,9 +139,9 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
             } else {
                 setError('User created, but no invitation link was received.');
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            setError(err.message || t('error.PostError'));
+            setError(err instanceof Error ? err.message : t('error.PostError'));
         } finally {
             setLoading(false);
         }

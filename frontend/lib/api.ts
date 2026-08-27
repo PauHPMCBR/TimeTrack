@@ -18,15 +18,17 @@ import type {
 } from '@/schemas/api';
 import {
     AdminWorkSessionsResponse,
+    AdminDashboardResponse,
     AppSettings,
     ElectiveVacation,
     Group,
+    TeamVacation,
     User,
     WorkSession,
     WorksessionReason,
     YearlyVacationDays,
 } from '@/types';
-import { ApiResponse } from '@/types/apiErrors';
+import { ApiResponse, ErrorDetails } from '@/types/apiErrors';
 import type { ErrorCode } from 'shared/src/types/response-errors';
 import { triggerDownload } from './csv';
 import { toLocalDateKey } from './datetime';
@@ -36,7 +38,7 @@ const API_BASE_URL =
 
 class ApiClient {
     private currentUser: User | undefined = undefined;
-    private errorListener: ((error: string, details?: any) => void) | null =
+    private errorListener: ((error: string, details?: unknown) => void) | null =
         null;
     private reasonsPromise: Promise<
         ApiResponse<{ reasons: WorksessionReason[] }>
@@ -44,7 +46,7 @@ class ApiClient {
     private avatarCache = new Map<string, Promise<Blob | null>>();
 
     setErrorListener(
-        listener: ((error: string, details?: any) => void) | null
+        listener: ((error: string, details?: unknown) => void) | null
     ) {
         this.errorListener = listener;
     }
@@ -74,7 +76,7 @@ class ApiClient {
                 localStorage.setItem('auth_token', refreshedToken);
             }
 
-            let data: any;
+            let data: { error?: string; details?: unknown; data?: unknown };
             try {
                 data = await response.json();
             } catch (e) {
@@ -82,25 +84,28 @@ class ApiClient {
             }
 
             if (!response.ok) {
-                const error =
-                    data.error || response.statusText || 'Request failed';
-                const result = {
-                    error,
-                    details: data.details ?? {},
+                const result: ApiResponse<T> = {
+                    error: (data.error ||
+                        response.statusText ||
+                        'Request failed') as ErrorCode,
+                    details: (data.details ?? {}) as ErrorDetails,
                 };
                 if (this.errorListener) {
-                    this.errorListener(result.error, result.details);
+                    this.errorListener(
+                        result.error ?? 'Request failed',
+                        result.details
+                    );
                 }
                 return result;
             }
 
             if (data.data) {
-                return { data: data.data };
+                return { data: data.data as T };
             }
 
-            return { data };
+            return { data: data as unknown as T };
         } catch (error) {
-            const result: ApiResponse<any> = { error: 'NetworkError' };
+            const result: ApiResponse<T> = { error: 'NetworkError' };
             if (this.errorListener && result.error) {
                 this.errorListener(result.error);
             }
@@ -345,7 +350,7 @@ class ApiClient {
     }
 
     async getCurrentlyWorking(): Promise<
-        ApiResponse<{ count: number; users: any[] }>
+        ApiResponse<{ count: number; users: User[] }>
     > {
         return this.request(`/api/admin/currently-working`);
     }
@@ -403,7 +408,7 @@ class ApiClient {
 
     async getTeamVacations(
         year: number | string
-    ): Promise<ApiResponse<{ vacations: any[] }>> {
+    ): Promise<ApiResponse<{ vacations: TeamVacation[] }>> {
         return this.request(`/api/groups/team-vacations?year=${year}`);
     }
 
@@ -463,7 +468,7 @@ class ApiClient {
         return this.request(`/api/admin/users`);
     }
 
-    async getAdminDashboard(): Promise<ApiResponse<any>> {
+    async getAdminDashboard(): Promise<ApiResponse<AdminDashboardResponse>> {
         return this.request(`/api/admin/dashboard`);
     }
 
@@ -493,12 +498,15 @@ class ApiClient {
                 const error = (data.error ||
                     response.statusText ||
                     'Request failed') as ErrorCode;
-                const result = {
+                const result: ApiResponse<null> = {
                     error,
-                    details: data.details ?? {},
+                    details: (data.details ?? {}) as ErrorDetails,
                 };
                 if (this.errorListener) {
-                    this.errorListener(result.error, result.details);
+                    this.errorListener(
+                        result.error ?? 'Request failed',
+                        result.details
+                    );
                 }
                 return result;
             }

@@ -7,7 +7,7 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { validateRequestBody } from '@/lib/validation';
+import { runValidation, validateRequestBody } from '@/lib/validation';
 import { ElectiveVacationRequestSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
@@ -15,13 +15,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateRequestBody(
-        ElectiveVacationRequestSchema
-    );
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateRequestBody(ElectiveVacationRequestSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();
@@ -98,7 +99,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         }
 
         const isObligatoryDay = yearlyVacationDays.obligatoryDays.some(
-            (obligatoryDate: any) => {
+            (obligatoryDate: Date) => {
                 const obligatory = new Date(obligatoryDate);
                 return obligatory >= startOfDay && obligatory <= endOfDay;
             }

@@ -2,7 +2,7 @@ import {
     YearlyVacationResponse,
     MonthlyWorkRecordResponse,
 } from '@/schemas/api';
-import { ElectiveVacation, WorkSession } from '.';
+import { ElectiveVacation, TeamVacation, WorkSession } from '.';
 
 export type VacationEvent = {
     type:
@@ -37,7 +37,7 @@ export interface CalendarProps {
     onDayDetailAction?: (date: Date) => void;
     vacations: YearlyVacationResponse | null;
     workSessions: MonthlyWorkRecordResponse | null;
-    teamVacations?: any[];
+    teamVacations?: TeamVacation[];
     usersMap?: Record<string, string>;
     nonWorkingDays?: number[];
     loading?: boolean;

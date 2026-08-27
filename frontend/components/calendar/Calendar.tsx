@@ -166,7 +166,7 @@ export function Calendar({
                             type: 'team',
                             label:
                                 vacUserName || t('calendar.electiveVacation'),
-                            userName: vacUserName,
+                            userName: vacUserName ?? undefined,
                         });
                     }
                 });

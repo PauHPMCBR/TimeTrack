@@ -1,11 +1,10 @@
 import path from 'path';
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: import('next').NextConfig = {
     turbopack: {
         root: path.join(__dirname, '..'),
     },
-    webpack: (config: { resolve: { alias: any } }) => {
+    webpack: (config) => {
         config.resolve.alias = {
             ...config.resolve.alias,
             '@': __dirname,

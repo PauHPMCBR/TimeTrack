@@ -25,6 +25,23 @@ export type YearlyVacationDays = z.infer<typeof YearlyVacationDaysSchema> & {
 export type AppSettings = z.infer<typeof AppSettingsSchema> & { _id: string };
 export type { AdminWorkSessionRow };
 
+export type PopulatedUserRef = { _id: string; name: string; email: string };
+export type TeamVacation = Omit<ElectiveVacation, 'userId'> & {
+    userId: string | PopulatedUserRef;
+};
+
+export type AdminDashboardUser = User & { workingNow: boolean };
+
+export type AdminDashboardResponse = {
+    users: AdminDashboardUser[];
+    groups: Group[];
+    usersCount: number;
+    groupsCount: number;
+    pendingVacations: number;
+    currentlyWorking: number;
+    anomalyCount: number;
+};
+
 export type AdminWorkSessionsResponse = {
     rows: AdminWorkSessionRow[];
     total?: number;

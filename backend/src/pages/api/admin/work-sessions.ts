@@ -10,10 +10,16 @@ import {
 import { getAppSettings } from '@/lib/settings';
 import { runInTransaction } from '@/lib/transaction';
 import {
+    UserRow,
+    WorkSessionRow,
+    ElectiveVacationRow,
+    YearlyVacationRow,
+} from '@/lib/rows';
+import {
     computeDayHours,
     isWithinBenevolence,
     isCoherentSequence,
-} from '@/lib/work-hours';
+} from 'shared/src/lib/work-hours';
 import {
     responseErrorEntryNotFound,
     responseErrorGet,
@@ -21,7 +27,11 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
-import { validateQueryParams, validateRequestBody } from '@/lib/validation';
+import {
+    runValidation,
+    validateQueryParams,
+    validateRequestBody,
+} from '@/lib/validation';
 import {
     AdminWorkSessionsQueryWithPaginationSchema,
     AdminWorkSessionsQuery,
@@ -30,20 +40,18 @@ import {
     AdminReplaceDayWorkSessionsRequestSchema,
     WorkSessionRowStatus,
 } from 'shared/src/schemas/api';
-
-function dateKey(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+import { dateKey } from '@/lib/date-key';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'PUT') {
-        const bodyValidation = validateRequestBody(
-            AdminReplaceDayWorkSessionsRequestSchema
-        );
-        await new Promise((resolve) => {
-            bodyValidation(req, res, () => resolve(true));
-        });
-        if (res.headersSent) return;
+        if (
+            !(await runValidation(
+                validateRequestBody(AdminReplaceDayWorkSessionsRequestSchema),
+                req,
+                res
+            ))
+        )
+            return;
 
         try {
             await dbConnect();
@@ -132,13 +140,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(
-        AdminWorkSessionsQueryWithPaginationSchema
-    );
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateQueryParams(AdminWorkSessionsQueryWithPaginationSchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();
@@ -212,9 +221,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     year: { $in: Array.from(yearSet) },
                 }).lean(),
                 getAppSettings(),
-            ])) as [any[], any[], any[], any[], any];
+            ])) as unknown as [
+                UserRow[],
+                WorkSessionRow[],
+                ElectiveVacationRow[],
+                YearlyVacationRow[],
+                Awaited<ReturnType<typeof getAppSettings>>,
+            ];
 
-        const sessionsByUserDay = new Map<string, any[]>();
+        const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
         for (const session of sessions) {
             const key = `${session.userId}:${dateKey(new Date(session.timestamp))}`;
             const list = sessionsByUserDay.get(key) ?? [];

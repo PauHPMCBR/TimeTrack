@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api';
 import { WorkSessionRequest } from '@/schemas/api';
 import { WorkSession, WorksessionReason, User } from '@/types';
 import { toLocalDateKey, formatHM } from '@/lib/datetime';
+import { computeDayHours } from 'shared/src/lib/work-hours';
 import Card from '@/components/ui/Card';
 
 export default function CheckInPage() {
@@ -23,7 +24,7 @@ export default function CheckInPage() {
 
     const [now, setNow] = useState(() => Date.now());
 
-    const refreshSessions = async (user: any) => {
+    const refreshSessions = async (user: User) => {
         if (!user) return;
         try {
             const today = new Date();
@@ -103,27 +104,14 @@ export default function CheckInPage() {
     }, [isActiveSession]);
 
     const todaySummary = useMemo(() => {
-        let totalMs = 0;
-        let checkInTime: Date | null = null;
-
-        todaySessions.forEach((session) => {
-            if (session.type === 'check_in') {
-                checkInTime = new Date(session.timestamp);
-            } else if (session.type === 'check_out' && checkInTime) {
-                totalMs +=
-                    new Date(session.timestamp).getTime() -
-                    checkInTime.getTime();
-                checkInTime = null;
-            }
-        });
-
-        if (checkInTime !== null) {
-            totalMs += now - (checkInTime as Date).getTime();
-        }
+        const totalHours = computeDayHours(todaySessions, {
+            countOpenUntil: new Date(now),
+            round: false,
+        }).totalHours;
 
         return {
-            totalHours: totalMs / 3_600_000,
-            totalMs: totalMs,
+            totalHours,
+            totalMs: Math.round(totalHours * 3_600_000),
             sessions: todaySessions,
         };
     }, [todaySessions, now]);

@@ -43,17 +43,15 @@ export default function LoginForm() {
             } else {
                 throw new Error('UnknownError');
             }
-        } catch (err: any) {
-            if (err.errors && err.errors.length > 0) {
-                setError(err.errors[0].message);
+        } catch (err) {
+            const error = err as Error & { errors?: { message?: string }[] };
+            if (error.errors && error.errors.length > 0) {
+                setError(error.errors[0].message ?? t('error.NetworkError'));
             } else {
-                const translationKey = `error.${err.message}`;
+                const message = error.message || t('error.NetworkError');
+                const translationKey = `error.${message}`;
                 const translated = t(translationKey);
-                setError(
-                    translated !== translationKey
-                        ? translated
-                        : err.message || t('error.NetworkError')
-                );
+                setError(translated !== translationKey ? translated : message);
             }
         } finally {
             setLoading(false);

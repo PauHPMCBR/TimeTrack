@@ -7,7 +7,8 @@ import {
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { validateQueryParams } from '@/lib/validation';
+import { runValidation, validateQueryParams } from '@/lib/validation';
+import { UserRow, WorkSessionRow } from '@/lib/rows';
 import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
 
 function escapeCsvField(value: unknown): string {
@@ -23,13 +24,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         return responseErrorMethodNotAllowed(res);
     }
 
-    const validationMiddleware = validateQueryParams(
-        AdminExportWorkSessionsQuerySchema
-    );
-    await new Promise((resolve) => {
-        validationMiddleware(req, res, () => resolve(true));
-    });
-    if (res.headersSent) return;
+    if (
+        !(await runValidation(
+            validateQueryParams(AdminExportWorkSessionsQuerySchema),
+            req,
+            res
+        ))
+    )
+        return;
 
     try {
         await dbConnect();
@@ -69,7 +71,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 .select('userId timestamp type source reason notes')
                 .sort({ timestamp: 1 })
                 .lean(),
-        ])) as [any[], any[]];
+        ])) as unknown as [UserRow[], WorkSessionRow[]];
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
         const headers = [

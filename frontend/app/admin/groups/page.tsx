@@ -40,8 +40,8 @@ export default function GroupsListPage() {
                 apiClient.getAllGroups(),
                 apiClient.getAdminDashboard(),
             ]);
-            if (groupsRes.data && (groupsRes.data as any).groups) {
-                setGroups((groupsRes.data as any).groups);
+            if (groupsRes.data?.groups) {
+                setGroups(groupsRes.data.groups);
             }
             if (dashRes.data?.users) {
                 setUsers(dashRes.data.users);

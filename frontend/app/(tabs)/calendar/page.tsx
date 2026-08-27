@@ -7,6 +7,7 @@ import {
     YearlyVacationResponse,
     MonthlyWorkRecordResponse,
 } from '@/schemas/api';
+import { TeamVacation } from '@/types';
 import { useRouter } from 'next/navigation';
 import { localeTag } from '@/lib/datetime';
 import { Calendar } from '@/components/calendar/Calendar';
@@ -27,7 +28,7 @@ export default function CalendarPage() {
     );
     const [workSessions, setWorkSessions] =
         useState<MonthlyWorkRecordResponse | null>(null);
-    const [teamVacations, setTeamVacations] = useState<any[]>([]);
+    const [teamVacations, setTeamVacations] = useState<TeamVacation[]>([]);
     const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([6, 0]);
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export default function CalendarPage() {
                 if (teamVacationsRes.data && teamVacationsRes.data.vacations) {
                     // Filter out self to not duplicate
                     const others = teamVacationsRes.data.vacations.filter(
-                        (v: any) => {
+                        (v) => {
                             const vUserId =
                                 typeof v.userId === 'object'
                                     ? v.userId._id

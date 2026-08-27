@@ -37,7 +37,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             YearlyVacationDays,
             WorkSessionReason,
         })) {
-            results[name] = await (model as any).syncIndexes();
+            results[name] = await model.syncIndexes();
         }
 
         res.status(200).json({ success: true, data: { indexes: results } });
