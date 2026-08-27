@@ -9,48 +9,57 @@
 //
 // It reads MONGODB_URI from the environment, falling back to backend/.env.
 
-const fs = require("node:fs");
-const path = require("node:path");
-const mongoose = require("mongoose");
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
 
 function loadEnv() {
-  const envPath = path.join(__dirname, "..", ".env");
-  if (!fs.existsSync(envPath)) return {};
-  const env = {};
-  for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    let value = trimmed.slice(eq + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
+    const envPath = path.join(__dirname, '..', '.env');
+    if (!fs.existsSync(envPath)) return {};
+    const env = {};
+    for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq === -1) continue;
+        const key = trimmed.slice(0, eq).trim();
+        let value = trimmed.slice(eq + 1).trim();
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+        env[key] = value;
     }
-    env[key] = value;
-  }
-  return env;
+    return env;
 }
 
 async function main() {
-  const uri = process.env.MONGODB_URI || loadEnv().MONGODB_URI;
-  if (!uri) {
-    console.error("MONGODB_URI not found. Set it in the environment or backend/.env");
-    process.exit(1);
-  }
+    const uri = process.env.MONGODB_URI || loadEnv().MONGODB_URI;
+    if (!uri) {
+        console.error(
+            'MONGODB_URI not found. Set it in the environment or backend/.env'
+        );
+        process.exit(1);
+    }
 
-  await mongoose.connect(uri);
+    await mongoose.connect(uri);
 
-  const result = await mongoose.connection.collection("worksessions").updateMany(
-    { source: { $exists: false } },
-    { $set: { source: "user" } }
-  );
+    const result = await mongoose.connection
+        .collection('worksessions')
+        .updateMany(
+            { source: { $exists: false } },
+            { $set: { source: 'user' } }
+        );
 
-  console.log(`Backfilled ${result.modifiedCount} work session(s) to source='user'`);
-  await mongoose.disconnect();
+    console.log(
+        `Backfilled ${result.modifiedCount} work session(s) to source='user'`
+    );
+    await mongoose.disconnect();
 }
 
 main().catch((err) => {
-  console.error("Migration failed:", err);
-  process.exit(1);
+    console.error('Migration failed:', err);
+    process.exit(1);
 });

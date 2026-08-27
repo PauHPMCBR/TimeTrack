@@ -1,587 +1,587 @@
 {
-  "brand": {
-    "tagline": "Registre de jornada simple i segur"
-  },
-  "common": {
-    "back": "Tornar",
-    "cancel": "Cancel·lar",
-    "close": "Tanca",
-    "loading": "Carregant...",
-    "more": "més",
-    "next": "Seg",
-    "noName": "Sense nom",
-    "optional": "(opcional)",
-    "prev": "Ant",
-    "save": "Desar",
-    "saving": "Guardant...",
-    "unsavedChangesConfirm": "Tens canvis sense desar. Vols sortir sense desar?"
-  },
-  "tabs": {
-    "admin": "Admin",
-    "calendar": "Calendari",
-    "checkin": "Fitxar",
-    "groups": "Grups",
-    "history": "Historial",
-    "profile": "Perfil",
-    "vacations": "Vacances"
-  },
-  "time": {
-    "h": "h",
-    "m": "m"
-  },
-  "relative": {
-    "today": "Avui",
-    "yesterday": "Ahir"
-  },
-  "table": {
-    "date": "Data",
-    "hours": "Hores"
-  },
-  "header": {
-    "logOff": "Tanca la sessió",
-    "switchAccount": "Canvia de compte"
-  },
-  "activity": {
-    "checkIn": "Fitxatge d'entrada",
-    "checkOut": "Fitxatge de sortida",
-    "lunch": {
-      "end": "Fi dinar",
-      "start": "Inici dinar"
-    }
-  },
-  "login": {
-    "email": {
-      "placeholder": "El teu correu"
+    "brand": {
+        "tagline": "Registre de jornada simple i segur"
     },
-    "password": {
-      "placeholder": "Contrasenya",
-      "show": "Mostra"
+    "common": {
+        "back": "Tornar",
+        "cancel": "Cancel·lar",
+        "close": "Tanca",
+        "loading": "Carregant...",
+        "more": "més",
+        "next": "Seg",
+        "noName": "Sense nom",
+        "optional": "(opcional)",
+        "prev": "Ant",
+        "save": "Desar",
+        "saving": "Guardant...",
+        "unsavedChangesConfirm": "Tens canvis sense desar. Vols sortir sense desar?"
     },
-    "remember": "Recorda'm",
-    "submit": "Entrar",
-    "title": "Inicia sessió"
-  },
-  "register": {
-    "btn": "Activar compte",
-    "confirm": "Confirma la contrasenya",
-    "email": "Correu electrònic",
-    "error": {
-      "length": "La contrasenya ha de tenir almenys 6 caràcters.",
-      "match": "Les contrasenyes no coincideixen."
-    },
-    "name": "Nom complet",
-    "password": "Nova contrasenya",
-    "saving": "Guardant...",
-    "subtitle": "Crea una contrasenya per activar el teu compte.",
-    "success": "Compte activat! Ara pots iniciar sessió.",
-    "welcome": "Benvingut/da!"
-  },
-  "checkin": {
-    "btnIn": "Fitxar entrada",
-    "btnOut": "Fitxar sortida",
-    "checkIn": "Entrar",
-    "checkOut": "Sortir",
-    "confirmIn": "Entrar",
-    "confirmOut": "Sortir",
-    "inProgress": "Sessió en curs",
-    "notIn": "No has fitxat",
-    "notesLabel": "Notes",
-    "notesPlaceholder": "Afegeix notes addicionals...",
-    "reason": {
-      "break": "Descans",
-      "errand": "Encàrreg",
-      "lunch": "Dinar",
-      "meeting": "Reunió",
-      "other": "Altre",
-      "personal": "Personal",
-      "work": "Treballar"
-    },
-    "reasonLabel": "Raó",
-    "sessions": "Sessions",
-    "title": "Fitxatge",
-    "todaySessions": "Sessions d'avui",
-    "todaySummary": "Resum d'avui",
-    "totalHours": "Hores totals"
-  },
-  "lunch": {
-    "noteHelper": "Afegeix una nota opcional sobre la pausa.",
-    "noteModalTitle": "Nota del dinar",
-    "notePlaceholder": "Escriu la nota aquí…"
-  },
-  "history": {
-    "avgPerDay": "Mitjana/dia (setmana)",
-    "chart": {
-      "title": "Hores per setmana (últimes 6)"
-    },
-    "date": "Data",
-    "daysAbbr": "dies",
-    "daysWithCheckins": "Dies amb fitxatge (últims)",
-    "export": {
-      "date": "Data",
-      "formatted": "Hores (formatat)",
-      "hours": "Hores (número)",
-      "label": "Exportar"
-    },
-    "hours": "Hores",
-    "monthly": {
-      "chartTitle": "Progrés per setmanes",
-      "daysWorked": "Dies treballats (Mes)",
-      "title": "Resum Mensual",
-      "totalTime": "Total Temps (Mes)"
-    },
-    "noRecords": "No hi ha registres",
-    "noRecordsMonth": "No hi ha dades aquest mes.",
-    "recent": {
-      "title": "Historial recent (per dia)"
-    },
-    "today": {
-      "title": "Historial d'avui"
-    },
-    "week": "Setmana",
-    "weekAbbr": "Set",
-    "weekHours": "Hores setmanals",
-    "weekly": {
-      "chartTitle": "Hores per dia (dl-dg)",
-      "daysWorked": "Dies treballats (Setmana)",
-      "title": "Resum Setmanal",
-      "totalTime": "Total Temps (Setmana)"
-    }
-  },
-  "calendar": {
-    "approvedBy": "Aprovat per",
-    "checkIn": "Entrada",
-    "checkOut": "Sortida",
-    "daysWithSessions": "Dies amb registre",
-    "electiveVacation": "Vacances aprovades",
-    "legend": {
-      "holidays": "Festius: vora/anelleta amb color amb etiqueta",
-      "title": "Llegenda",
-      "today": "Avui",
-      "weekends": "Caps de setmana: fons lleuger"
-    },
-    "nextMonth": "Mes següent",
-    "noActivities": "Cap activitat registrada",
-    "notConfigured": "Les vacances d'aquest any encara no han estat configurades per l'administrador.",
-    "notes": "Notes",
-    "obligatoryVacation": "Festius / Obligatoris",
-    "pendingVacation": "Vacances pendents",
-    "prevMonth": "Mes anterior",
-    "reason": "Motiu",
-    "rejectedVacation": "Vacances rebutjades",
-    "sessions": "sessions",
-    "teamVacation": "Vacances de l'Equip",
-    "totalHours": "Hores totals",
-    "totalSessions": "Sessions totals",
-    "vacations": "Vacances",
-    "weekDays": "Dl,Dt,Dc,Dj,Dv,Ds,Dg",
-    "workSessions": "Sessions de treball",
-    "viewFitxatges": "Veure fitxatges",
-    "workSummary": "Resum del mes"
-  },
-  "vacations": {
-    "balance": "Dies Disponibles",
-    "cancel": "Cancel·lar",
-    "cancelModal": {
-      "body": "Estàs segur que vols eliminar aquesta sol·licitud? Aquesta acció no es pot desfer.",
-      "confirm": "Eliminar",
-      "title": "Eliminar sol·licitud?"
-    },
-    "consecutiveDays": "Dies consecutius",
-    "date": "Data",
-    "day": "dia",
-    "days": "dies",
-    "empty": "No tens cap sol·licitud registrada.",
-    "history": "Historial de Sol·licituds",
-    "manageDesc": "Demanar dies de festa i veure l'historial.",
-    "reason": "Motiu (opcional)",
-    "reasonPlaceholder": "Ex: Assumptes personals...",
-    "request": "Demanar Vacances",
-    "status": {
-      "approved": "Aprovada",
-      "cancelled": "Cancel·lada",
-      "pending": "Pendent",
-      "rejected": "Rebutjada"
-    },
-    "submit": "Enviar Sol·licitud",
-    "success": "Sol·licitud enviada correctament!",
-    "title": "Les meves Vacances",
-    "total": "Total anual",
-    "used": "Gastats"
-  },
-  "groups": {
-    "empty": "Encara no estàs assignat a cap grup.",
-    "groupDescription": "Descripció del Grup",
-    "members": "Membres de l'Equip",
-    "noDescription": "No hi ha descripció disponible.",
-    "notFound": "Grup no trobat.",
-    "subtitle": "Consulta els equips i departaments als quals pertanys.",
-    "title": "Els meus Grups"
-  },
-  "profile": {
-    "activity": "Activitat Recent",
-    "admin": {
-      "createBtn": "Crear Nou Usuari",
-      "description": "Crea nous usuaris i gestiona l'equip des d'aquí.",
-      "title": "Panell d'Administració"
-    },
-    "avatar": {
-      "change": "Canvia la foto",
-      "invalidFormat": "Format no compatible. Fes servir JPG, PNG, WEBP o GIF.",
-      "tooLarge": "La imatge és massa gran (màxim 10 MB).",
-      "uploadError": "No s'ha pogut pujar la foto. Torna-ho a provar.",
-      "uploading": "Pujant...",
-      "updated": "Foto actualitzada"
-    },
-    "change": "Canvia",
-    "errorLoading": "Error carregant l'usuari",
-    "fallbackUser": "Usuari",
-    "hoursToday": "Hores Avui",
-    "dni": "DNI",
-    "notFound": "Perfil no trobat.",
-    "preferences": "Preferències",
-    "signOut": "Tanca la sessió",
-    "prevWeeks": "Setmanes anteriors",
-    "recentActivity": "Activitat recent",
-    "role": {
-      "admin": "Administrador",
-      "employee": "Empleat"
-    },
-    "status": {
-      "checkedInAgo": "Fitxat fa {time}",
-      "label": "Estat"
-    },
-    "statusActive": "Actiu (Treballant)",
-    "statusInactive": "No actiu",
-    "subtitle": "Perfil i hores",
-    "theme": {
-      "label": "Tema",
-      "latte": "Latte",
-      "frappe": "Frappé",
-      "macchiato": "Macchiato",
-      "mocha": "Mocha"
-    },
-    "thisWeek": "Aquesta setmana",
-    "timeFormat": "Format d'hora",
-    "title": "Perfil d'usuari",
-    "weeklyGoal": "Objectiu setmanal"
-  },
-  "admin": {
-    "btn": {
-      "create": "Continuar"
-    },
-    "copied": "Copiat!",
-    "copy": "Copiar enllaç",
-    "create": {
-      "subtitle": "Introdueix la informació bàsica de l'usuari.",
-      "title": "Registrar nou empleat"
-    },
-    "dashboard": {
-      "addUser": "Afegir usuari",
-      "quickActions": "Accions Ràpides",
-      "subtitle": "Visió general dels empleats",
-      "summaryDesc": "Visió global de l'estat de l'empresa.",
-      "summaryTitle": "Resum General",
-      "title": "Equip"
-    },
-    "form": {
-      "dni": "DNI",
-      "dniPlaceholder": "Ex: 12345678A",
-      "email": "Correu electrònic",
-      "expectedHours": "Hores setmanals esperades",
-      "customNonWorkDays": "Dies no laborables personalitzats",
-      "name": "Nom complet",
-      "role": {
-        "label": "Rol",
-        "admin": "Administrador",
-        "employee": "Empleat"
-      }
-    },
-    "groups": {
-      "add": "Nou Departament",
-      "addMembers": "Afegir membres",
-      "clickHelper": "Fes clic als usuaris per afegir-los o treure'ls.",
-      "createSubtitle": "Defineix un nou departament per assignar-hi empleats.",
-      "createTitle": "Crear Departament",
-      "delete": "Eliminar",
-      "deleteConfirmDesc": "Estàs segur que vols eliminar aquest departament? Aquesta acció no es pot desfer.",
-      "deleteConfirmTitle": "Eliminar departament?",
-      "deleteError": "Error al eliminar el departament.",
-      "desc": "Descripció o Funcions",
-      "descPlaceholder": "Ex: Equip de desenvolupament...",
-      "edit": "Editar",
-      "editTitle": "Editar Departament",
-      "empty": "Encara no hi ha departaments creats.",
-      "members": "Membres",
-      "membersTitle": "Membres del departament",
-        "noDesc": "Sense descripció",
-        "noMembers": "Sense membres",
-      "name": "Nom del Departament",
-      "namePlaceholder": "Ex: Oficina Barcelona",
-      "noUsers": "No s'han trobat usuaris disponibles.",
-      "subtitle": "Gestiona l'estructura organitzativa de l'empresa.",
-      "title": "Departaments"
-    },
-    "menu": {
-      "sections": {
-        "users": "Usuaris i fitxatges",
-        "vacations": "Vacances",
-        "settings": "Configuració global"
-      },
-      "calendar": {
-        "desc": "Visió mensual de les absències.",
-        "title": "Calendari Global"
-      },
-      "groups": {
-        "desc": "Organitza els empleats per equips o oficines.",
-        "title": "Grups / Departaments",
-        "count": "grups"
-      },
-      "subtitle": "Selecciona què vols gestionar avui.",
-      "title": "Panell d'Administració",
-      "users": {
-        "desc": "Veure l'equip, estat actual i nous registres.",
-        "title": "Empleats",
-        "total": "en total",
-        "working": "treballant"
-      },
-      "vacations": {
-        "desc": "Revisar i aprovar sol·licituds pendents.",
-        "title": "Sol·licituds de vacances",
-        "pending": "pendents",
-        "none": "cap de pendent"
-      },
-      "yearlyvacations": {
-        "desc": "Assigna vacances obligatòries i quantitat de vacances d'elecció",
-        "title": "Vacances anuals"
-      },
-      "settings": {
-        "desc": "Configuració general de l'empresa (hores, dies no laborables...).",
-        "title": "Configuració de l'empresa"
-      },
-      "events": {
-        "desc": "Fitxatges d'entrada i sortida amb detecció d'anomalies.",
-        "title": "Fitxatges",
-        "anomalies": "anomalies",
-        "noAnomalies": "sense anomalies"
-      }
-    },
-    "stats": {
-      "departments": "Departaments",
-      "pendingVacations": "Vacances Pendents",
-      "review": "Revisar",
-      "totalUsers": "Total Empleats",
-      "workingNow": "Treballant Ara"
-    },
-    "status": {
-      "offline": "Desconnectat ({time})",
-      "workingSince": "Treballant des de {time}"
-    },
-    "success": {
-      "desc": "Comparteix aquest enllaç amb l'empleat per finalitzar el registre.",
-      "title": "Usuari creat!"
-    },
-    "users": {
-      "noName": "Sense nom",
-      "notFound": "No s'han trobat usuaris.",
-      "pendingActivation": "Activació pendent",
-      "workingNow": "Treballant ara",
-      "customNonWorkDays": "Dies no laborables personalitzats",
-      "registered": "Registrat"
-    },
-    "usersEdit": {
-      "editAction": "Editar usuari",
-      "registrationLink": "Enllaç de registre (envia'l a l'empleat)",
-      "saved": "Usuari actualitzat correctament",
-      "subtitle": "Modifica les dades de l'empleat.",
-      "title": "Editar usuari"
-    },
-    "sessionEditor": {
-      "addIn": "Afegir entrada",
-      "addOut": "Afegir sortida",
-      "hint": "L'ordre d'entrades i sortides s'ha de mantenir. Els canvis es desen amb el botó de desar.",
-      "noSessions": "Encara no hi ha cap fitxatge.",
-      "remove": "Eliminar fitxatge",
-      "removeLocked": "No es pot eliminar per mantenir l'ordre entrades/sortides",
-      "title": "Editar fitxatges"
-    },
-    "settings": {
-      "toleranceHelp": "Marge de tolerància respecte a les hores esperades abans de marcar una anomalia.",
-      "toleranceLabel": "Tolerància (hores)",
-      "defaultHoursHelp": "Hores de treball esperades per dia per defecte per als nous empleats.",
-      "defaultHoursLabel": "Hores diàries esperades",
-      "endOfDayHelp": "Hora límit del dia per detectar treballadors sense sortir.",
-      "endOfDayLabel": "Hora de fi de dia",
-      "nonWorkingDaysHelp": "Dies de la setmana en què no s'espera treball (no es marcarà cap anomalia).",
-      "nonWorkingDaysLabel": "Dies no laborables",
-      "saved": "Configuració desada correctament",
-      "subtitle": "Configura els valors generals de l'empresa.",
-      "title": "Configuració de l'empresa"
-    },
-    "export": {
-      "button": "Exporta CSV",
-      "error": "Ha fallat l'exportació.",
-      "from": "Des de",
-      "selectAll": "Selecciona-ho tot",
-      "selectedCount": "{count} seleccionats",
-      "to": "Fins a"
-    },
-    "events": {
-      "noData": "No hi ha registres per a aquest període.",
-      "pagination": {
-        "next": "Pàgina següent",
-        "previous": "Pàgina anterior"
-      },
-      "period": {
-        "day": "Dia",
-        "month": "Mes",
-        "week": "Setmana",
-        "year": "Any"
-      },
-      "status": {
-        "anomaly": "Anomalia",
-        "ok": "Complert",
-        "vacation": "Vacances",
-        "nonWorkingDay": "Dia no laborable"
-      },
-      "subtitle": "Fitxatges de tots els empleats amb detecció d'anomalies.",
-      "table": {
-        "date": "Data",
-        "employee": "Empleat",
-        "expected": "Esperades",
-        "hours": "Hores",
-        "sessions": "Fitxatges"
-      },
-      "source": {
+    "tabs": {
         "admin": "Admin",
-        "automatic": "Automàtic",
-        "user": "Empleat"
-      },
-      "title": "Fitxatges"
+        "calendar": "Calendari",
+        "checkin": "Fitxar",
+        "groups": "Grups",
+        "history": "Historial",
+        "profile": "Perfil",
+        "vacations": "Vacances"
+    },
+    "time": {
+        "h": "h",
+        "m": "m"
+    },
+    "relative": {
+        "today": "Avui",
+        "yesterday": "Ahir"
+    },
+    "table": {
+        "date": "Data",
+        "hours": "Hores"
+    },
+    "header": {
+        "logOff": "Tanca la sessió",
+        "switchAccount": "Canvia de compte"
+    },
+    "activity": {
+        "checkIn": "Fitxatge d'entrada",
+        "checkOut": "Fitxatge de sortida",
+        "lunch": {
+            "end": "Fi dinar",
+            "start": "Inici dinar"
+        }
+    },
+    "login": {
+        "email": {
+            "placeholder": "El teu correu"
+        },
+        "password": {
+            "placeholder": "Contrasenya",
+            "show": "Mostra"
+        },
+        "remember": "Recorda'm",
+        "submit": "Entrar",
+        "title": "Inicia sessió"
+    },
+    "register": {
+        "btn": "Activar compte",
+        "confirm": "Confirma la contrasenya",
+        "email": "Correu electrònic",
+        "error": {
+            "length": "La contrasenya ha de tenir almenys 6 caràcters.",
+            "match": "Les contrasenyes no coincideixen."
+        },
+        "name": "Nom complet",
+        "password": "Nova contrasenya",
+        "saving": "Guardant...",
+        "subtitle": "Crea una contrasenya per activar el teu compte.",
+        "success": "Compte activat! Ara pots iniciar sessió.",
+        "welcome": "Benvingut/da!"
+    },
+    "checkin": {
+        "btnIn": "Fitxar entrada",
+        "btnOut": "Fitxar sortida",
+        "checkIn": "Entrar",
+        "checkOut": "Sortir",
+        "confirmIn": "Entrar",
+        "confirmOut": "Sortir",
+        "inProgress": "Sessió en curs",
+        "notIn": "No has fitxat",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Afegeix notes addicionals...",
+        "reason": {
+            "break": "Descans",
+            "errand": "Encàrreg",
+            "lunch": "Dinar",
+            "meeting": "Reunió",
+            "other": "Altre",
+            "personal": "Personal",
+            "work": "Treballar"
+        },
+        "reasonLabel": "Raó",
+        "sessions": "Sessions",
+        "title": "Fitxatge",
+        "todaySessions": "Sessions d'avui",
+        "todaySummary": "Resum d'avui",
+        "totalHours": "Hores totals"
+    },
+    "lunch": {
+        "noteHelper": "Afegeix una nota opcional sobre la pausa.",
+        "noteModalTitle": "Nota del dinar",
+        "notePlaceholder": "Escriu la nota aquí…"
+    },
+    "history": {
+        "avgPerDay": "Mitjana/dia (setmana)",
+        "chart": {
+            "title": "Hores per setmana (últimes 6)"
+        },
+        "date": "Data",
+        "daysAbbr": "dies",
+        "daysWithCheckins": "Dies amb fitxatge (últims)",
+        "export": {
+            "date": "Data",
+            "formatted": "Hores (formatat)",
+            "hours": "Hores (número)",
+            "label": "Exportar"
+        },
+        "hours": "Hores",
+        "monthly": {
+            "chartTitle": "Progrés per setmanes",
+            "daysWorked": "Dies treballats (Mes)",
+            "title": "Resum Mensual",
+            "totalTime": "Total Temps (Mes)"
+        },
+        "noRecords": "No hi ha registres",
+        "noRecordsMonth": "No hi ha dades aquest mes.",
+        "recent": {
+            "title": "Historial recent (per dia)"
+        },
+        "today": {
+            "title": "Historial d'avui"
+        },
+        "week": "Setmana",
+        "weekAbbr": "Set",
+        "weekHours": "Hores setmanals",
+        "weekly": {
+            "chartTitle": "Hores per dia (dl-dg)",
+            "daysWorked": "Dies treballats (Setmana)",
+            "title": "Resum Setmanal",
+            "totalTime": "Total Temps (Setmana)"
+        }
+    },
+    "calendar": {
+        "approvedBy": "Aprovat per",
+        "checkIn": "Entrada",
+        "checkOut": "Sortida",
+        "daysWithSessions": "Dies amb registre",
+        "electiveVacation": "Vacances aprovades",
+        "legend": {
+            "holidays": "Festius: vora/anelleta amb color amb etiqueta",
+            "title": "Llegenda",
+            "today": "Avui",
+            "weekends": "Caps de setmana: fons lleuger"
+        },
+        "nextMonth": "Mes següent",
+        "noActivities": "Cap activitat registrada",
+        "notConfigured": "Les vacances d'aquest any encara no han estat configurades per l'administrador.",
+        "notes": "Notes",
+        "obligatoryVacation": "Festius / Obligatoris",
+        "pendingVacation": "Vacances pendents",
+        "prevMonth": "Mes anterior",
+        "reason": "Motiu",
+        "rejectedVacation": "Vacances rebutjades",
+        "sessions": "sessions",
+        "teamVacation": "Vacances de l'Equip",
+        "totalHours": "Hores totals",
+        "totalSessions": "Sessions totals",
+        "vacations": "Vacances",
+        "weekDays": "Dl,Dt,Dc,Dj,Dv,Ds,Dg",
+        "workSessions": "Sessions de treball",
+        "viewFitxatges": "Veure fitxatges",
+        "workSummary": "Resum del mes"
     },
     "vacations": {
-      "allUsers": "Tots els empleats",
-      "approve": "Aprovar",
-      "approved": "Aprovades",
-      "cancelled": "Cancel·lades",
-      "empty": "No hi ha sol·licituds pendents.",
-      "history": "Historial",
-      "pending": "Pendents",
-      "reject": "Rebutjar",
-      "rejected": "Rebutjades",
-      "status": {
-        "approved": "Aprovada",
-        "cancelled": "Cancel·lada",
-        "pending": "Pendent",
-        "rejected": "Rebutjada"
-      },
-      "subtitle": "Gestiona les peticions de l'equip.",
-      "title": "Sol·licituds de Vacances",
-      "total": "Total",
-      "unknownUser": "Usuari desconegut"
+        "balance": "Dies Disponibles",
+        "cancel": "Cancel·lar",
+        "cancelModal": {
+            "body": "Estàs segur que vols eliminar aquesta sol·licitud? Aquesta acció no es pot desfer.",
+            "confirm": "Eliminar",
+            "title": "Eliminar sol·licitud?"
+        },
+        "consecutiveDays": "Dies consecutius",
+        "date": "Data",
+        "day": "dia",
+        "days": "dies",
+        "empty": "No tens cap sol·licitud registrada.",
+        "history": "Historial de Sol·licituds",
+        "manageDesc": "Demanar dies de festa i veure l'historial.",
+        "reason": "Motiu (opcional)",
+        "reasonPlaceholder": "Ex: Assumptes personals...",
+        "request": "Demanar Vacances",
+        "status": {
+            "approved": "Aprovada",
+            "cancelled": "Cancel·lada",
+            "pending": "Pendent",
+            "rejected": "Rebutjada"
+        },
+        "submit": "Enviar Sol·licitud",
+        "success": "Sol·licitud enviada correctament!",
+        "title": "Les meves Vacances",
+        "total": "Total anual",
+        "used": "Gastats"
     },
-    "vacationsSetup": {
-      "addButton": "Afegir Data",
-      "addDate": "Afegir data de festiu",
-      "copyButton": "Copiar de {year}",
-      "copyNotFound": "No hi ha configuració de vacances per a l'any {year}.",
-      "copySubtitle": "Carrega els festius i els dies electius de l'any {year} a l'any {toYear}. Els canvis només es desen amb el botó de desar.",
-      "copySuccess": "Configuració carregada de {year} a {toYear} (encara no desada)",
-      "copyTitle": "Copiar configuració d'un altre any",
-      "dateExists": "Aquesta data ja està afegida",
-      "days": "dies",
-      "electiveDaysLabel": "Màxim de dies electius per empleat",
-      "electiveHelp": "Els empleats poden sol·licitar dies de vacances electives fins a aquest límit",
-      "electiveSubtitle": "Estableix el nombre màxim de dies de vacances electives per empleat",
-      "electiveTitle": "Dies Electius",
-      "invalidDate": "Format de data invàlid",
-      "manageObligatory": "Gestionar Vacances Obligatòries",
-      "noDates": "No hi ha festius obligatoris establerts per a aquest any",
-      "nonWorkingDay": "Dia no laborable",
-      "obligatoryReal": "Festius obligatoris reals",
-      "obligatorySubtitle": "Estableix festius obligatoris per a tots els empleats",
-      "obligatoryTitle": "Festius Obligatoris",
-      "obligatoryTotal": "Dies obligatoris",
-      "saveSubtitleCreate": "Crear configuració de vacances per a {year}",
-      "saveSubtitleUpdate": "Actualitzar configuració de vacances per a {year}",
-      "saveTitle": "Guardar Canvis",
-      "subtitle": "Configura festius obligatoris i dies electius per als empleats",
-      "success": "Configuració de vacances guardada correctament!",
-      "title": "Configuració de Vacances",
-      "totalDays": "Dies Totals",
-      "unsavedHint": "Prem Desa per persistir aquests canvis.",
-      "unsavedWarning": "Canvis sense desar per a l'any {year}",
-      "weekdays": "Dies laborables",
-      "weekends": "Cap de setmana"
+    "groups": {
+        "empty": "Encara no estàs assignat a cap grup.",
+        "groupDescription": "Descripció del Grup",
+        "members": "Membres de l'Equip",
+        "noDescription": "No hi ha descripció disponible.",
+        "notFound": "Grup no trobat.",
+        "subtitle": "Consulta els equips i departaments als quals pertanys.",
+        "title": "Els meus Grups"
+    },
+    "profile": {
+        "activity": "Activitat Recent",
+        "admin": {
+            "createBtn": "Crear Nou Usuari",
+            "description": "Crea nous usuaris i gestiona l'equip des d'aquí.",
+            "title": "Panell d'Administració"
+        },
+        "avatar": {
+            "change": "Canvia la foto",
+            "invalidFormat": "Format no compatible. Fes servir JPG, PNG, WEBP o GIF.",
+            "tooLarge": "La imatge és massa gran (màxim 10 MB).",
+            "uploadError": "No s'ha pogut pujar la foto. Torna-ho a provar.",
+            "uploading": "Pujant...",
+            "updated": "Foto actualitzada"
+        },
+        "change": "Canvia",
+        "errorLoading": "Error carregant l'usuari",
+        "fallbackUser": "Usuari",
+        "hoursToday": "Hores Avui",
+        "dni": "DNI",
+        "notFound": "Perfil no trobat.",
+        "preferences": "Preferències",
+        "signOut": "Tanca la sessió",
+        "prevWeeks": "Setmanes anteriors",
+        "recentActivity": "Activitat recent",
+        "role": {
+            "admin": "Administrador",
+            "employee": "Empleat"
+        },
+        "status": {
+            "checkedInAgo": "Fitxat fa {time}",
+            "label": "Estat"
+        },
+        "statusActive": "Actiu (Treballant)",
+        "statusInactive": "No actiu",
+        "subtitle": "Perfil i hores",
+        "theme": {
+            "label": "Tema",
+            "latte": "Latte",
+            "frappe": "Frappé",
+            "macchiato": "Macchiato",
+            "mocha": "Mocha"
+        },
+        "thisWeek": "Aquesta setmana",
+        "timeFormat": "Format d'hora",
+        "title": "Perfil d'usuari",
+        "weeklyGoal": "Objectiu setmanal"
+    },
+    "admin": {
+        "btn": {
+            "create": "Continuar"
+        },
+        "copied": "Copiat!",
+        "copy": "Copiar enllaç",
+        "create": {
+            "subtitle": "Introdueix la informació bàsica de l'usuari.",
+            "title": "Registrar nou empleat"
+        },
+        "dashboard": {
+            "addUser": "Afegir usuari",
+            "quickActions": "Accions Ràpides",
+            "subtitle": "Visió general dels empleats",
+            "summaryDesc": "Visió global de l'estat de l'empresa.",
+            "summaryTitle": "Resum General",
+            "title": "Equip"
+        },
+        "form": {
+            "dni": "DNI",
+            "dniPlaceholder": "Ex: 12345678A",
+            "email": "Correu electrònic",
+            "expectedHours": "Hores setmanals esperades",
+            "customNonWorkDays": "Dies no laborables personalitzats",
+            "name": "Nom complet",
+            "role": {
+                "label": "Rol",
+                "admin": "Administrador",
+                "employee": "Empleat"
+            }
+        },
+        "groups": {
+            "add": "Nou Departament",
+            "addMembers": "Afegir membres",
+            "clickHelper": "Fes clic als usuaris per afegir-los o treure'ls.",
+            "createSubtitle": "Defineix un nou departament per assignar-hi empleats.",
+            "createTitle": "Crear Departament",
+            "delete": "Eliminar",
+            "deleteConfirmDesc": "Estàs segur que vols eliminar aquest departament? Aquesta acció no es pot desfer.",
+            "deleteConfirmTitle": "Eliminar departament?",
+            "deleteError": "Error al eliminar el departament.",
+            "desc": "Descripció o Funcions",
+            "descPlaceholder": "Ex: Equip de desenvolupament...",
+            "edit": "Editar",
+            "editTitle": "Editar Departament",
+            "empty": "Encara no hi ha departaments creats.",
+            "members": "Membres",
+            "membersTitle": "Membres del departament",
+            "noDesc": "Sense descripció",
+            "noMembers": "Sense membres",
+            "name": "Nom del Departament",
+            "namePlaceholder": "Ex: Oficina Barcelona",
+            "noUsers": "No s'han trobat usuaris disponibles.",
+            "subtitle": "Gestiona l'estructura organitzativa de l'empresa.",
+            "title": "Departaments"
+        },
+        "menu": {
+            "sections": {
+                "users": "Usuaris i fitxatges",
+                "vacations": "Vacances",
+                "settings": "Configuració global"
+            },
+            "calendar": {
+                "desc": "Visió mensual de les absències.",
+                "title": "Calendari Global"
+            },
+            "groups": {
+                "desc": "Organitza els empleats per equips o oficines.",
+                "title": "Grups / Departaments",
+                "count": "grups"
+            },
+            "subtitle": "Selecciona què vols gestionar avui.",
+            "title": "Panell d'Administració",
+            "users": {
+                "desc": "Veure l'equip, estat actual i nous registres.",
+                "title": "Empleats",
+                "total": "en total",
+                "working": "treballant"
+            },
+            "vacations": {
+                "desc": "Revisar i aprovar sol·licituds pendents.",
+                "title": "Sol·licituds de vacances",
+                "pending": "pendents",
+                "none": "cap de pendent"
+            },
+            "yearlyvacations": {
+                "desc": "Assigna vacances obligatòries i quantitat de vacances d'elecció",
+                "title": "Vacances anuals"
+            },
+            "settings": {
+                "desc": "Configuració general de l'empresa (hores, dies no laborables...).",
+                "title": "Configuració de l'empresa"
+            },
+            "events": {
+                "desc": "Fitxatges d'entrada i sortida amb detecció d'anomalies.",
+                "title": "Fitxatges",
+                "anomalies": "anomalies",
+                "noAnomalies": "sense anomalies"
+            }
+        },
+        "stats": {
+            "departments": "Departaments",
+            "pendingVacations": "Vacances Pendents",
+            "review": "Revisar",
+            "totalUsers": "Total Empleats",
+            "workingNow": "Treballant Ara"
+        },
+        "status": {
+            "offline": "Desconnectat ({time})",
+            "workingSince": "Treballant des de {time}"
+        },
+        "success": {
+            "desc": "Comparteix aquest enllaç amb l'empleat per finalitzar el registre.",
+            "title": "Usuari creat!"
+        },
+        "users": {
+            "noName": "Sense nom",
+            "notFound": "No s'han trobat usuaris.",
+            "pendingActivation": "Activació pendent",
+            "workingNow": "Treballant ara",
+            "customNonWorkDays": "Dies no laborables personalitzats",
+            "registered": "Registrat"
+        },
+        "usersEdit": {
+            "editAction": "Editar usuari",
+            "registrationLink": "Enllaç de registre (envia'l a l'empleat)",
+            "saved": "Usuari actualitzat correctament",
+            "subtitle": "Modifica les dades de l'empleat.",
+            "title": "Editar usuari"
+        },
+        "sessionEditor": {
+            "addIn": "Afegir entrada",
+            "addOut": "Afegir sortida",
+            "hint": "L'ordre d'entrades i sortides s'ha de mantenir. Els canvis es desen amb el botó de desar.",
+            "noSessions": "Encara no hi ha cap fitxatge.",
+            "remove": "Eliminar fitxatge",
+            "removeLocked": "No es pot eliminar per mantenir l'ordre entrades/sortides",
+            "title": "Editar fitxatges"
+        },
+        "settings": {
+            "toleranceHelp": "Marge de tolerància respecte a les hores esperades abans de marcar una anomalia.",
+            "toleranceLabel": "Tolerància (hores)",
+            "defaultHoursHelp": "Hores de treball esperades per dia per defecte per als nous empleats.",
+            "defaultHoursLabel": "Hores diàries esperades",
+            "endOfDayHelp": "Hora límit del dia per detectar treballadors sense sortir.",
+            "endOfDayLabel": "Hora de fi de dia",
+            "nonWorkingDaysHelp": "Dies de la setmana en què no s'espera treball (no es marcarà cap anomalia).",
+            "nonWorkingDaysLabel": "Dies no laborables",
+            "saved": "Configuració desada correctament",
+            "subtitle": "Configura els valors generals de l'empresa.",
+            "title": "Configuració de l'empresa"
+        },
+        "export": {
+            "button": "Exporta CSV",
+            "error": "Ha fallat l'exportació.",
+            "from": "Des de",
+            "selectAll": "Selecciona-ho tot",
+            "selectedCount": "{count} seleccionats",
+            "to": "Fins a"
+        },
+        "events": {
+            "noData": "No hi ha registres per a aquest període.",
+            "pagination": {
+                "next": "Pàgina següent",
+                "previous": "Pàgina anterior"
+            },
+            "period": {
+                "day": "Dia",
+                "month": "Mes",
+                "week": "Setmana",
+                "year": "Any"
+            },
+            "status": {
+                "anomaly": "Anomalia",
+                "ok": "Complert",
+                "vacation": "Vacances",
+                "nonWorkingDay": "Dia no laborable"
+            },
+            "subtitle": "Fitxatges de tots els empleats amb detecció d'anomalies.",
+            "table": {
+                "date": "Data",
+                "employee": "Empleat",
+                "expected": "Esperades",
+                "hours": "Hores",
+                "sessions": "Fitxatges"
+            },
+            "source": {
+                "admin": "Admin",
+                "automatic": "Automàtic",
+                "user": "Empleat"
+            },
+            "title": "Fitxatges"
+        },
+        "vacations": {
+            "allUsers": "Tots els empleats",
+            "approve": "Aprovar",
+            "approved": "Aprovades",
+            "cancelled": "Cancel·lades",
+            "empty": "No hi ha sol·licituds pendents.",
+            "history": "Historial",
+            "pending": "Pendents",
+            "reject": "Rebutjar",
+            "rejected": "Rebutjades",
+            "status": {
+                "approved": "Aprovada",
+                "cancelled": "Cancel·lada",
+                "pending": "Pendent",
+                "rejected": "Rebutjada"
+            },
+            "subtitle": "Gestiona les peticions de l'equip.",
+            "title": "Sol·licituds de Vacances",
+            "total": "Total",
+            "unknownUser": "Usuari desconegut"
+        },
+        "vacationsSetup": {
+            "addButton": "Afegir Data",
+            "addDate": "Afegir data de festiu",
+            "copyButton": "Copiar de {year}",
+            "copyNotFound": "No hi ha configuració de vacances per a l'any {year}.",
+            "copySubtitle": "Carrega els festius i els dies electius de l'any {year} a l'any {toYear}. Els canvis només es desen amb el botó de desar.",
+            "copySuccess": "Configuració carregada de {year} a {toYear} (encara no desada)",
+            "copyTitle": "Copiar configuració d'un altre any",
+            "dateExists": "Aquesta data ja està afegida",
+            "days": "dies",
+            "electiveDaysLabel": "Màxim de dies electius per empleat",
+            "electiveHelp": "Els empleats poden sol·licitar dies de vacances electives fins a aquest límit",
+            "electiveSubtitle": "Estableix el nombre màxim de dies de vacances electives per empleat",
+            "electiveTitle": "Dies Electius",
+            "invalidDate": "Format de data invàlid",
+            "manageObligatory": "Gestionar Vacances Obligatòries",
+            "noDates": "No hi ha festius obligatoris establerts per a aquest any",
+            "nonWorkingDay": "Dia no laborable",
+            "obligatoryReal": "Festius obligatoris reals",
+            "obligatorySubtitle": "Estableix festius obligatoris per a tots els empleats",
+            "obligatoryTitle": "Festius Obligatoris",
+            "obligatoryTotal": "Dies obligatoris",
+            "saveSubtitleCreate": "Crear configuració de vacances per a {year}",
+            "saveSubtitleUpdate": "Actualitzar configuració de vacances per a {year}",
+            "saveTitle": "Guardar Canvis",
+            "subtitle": "Configura festius obligatoris i dies electius per als empleats",
+            "success": "Configuració de vacances guardada correctament!",
+            "title": "Configuració de Vacances",
+            "totalDays": "Dies Totals",
+            "unsavedHint": "Prem Desa per persistir aquests canvis.",
+            "unsavedWarning": "Canvis sense desar per a l'any {year}",
+            "weekdays": "Dies laborables",
+            "weekends": "Cap de setmana"
+        }
+    },
+    "error": {
+        "AccountBlocked": "Compte bloquejat",
+        "AiError": "Error de la IA",
+        "CheckInRegistered": "Entrada registrada correctament",
+        "CheckOutRegistered": "Sortida registrada correctament",
+        "DatesNotInYear": "Les dates no pertanyen a l'any seleccionat",
+        "DeleteError": "Erorr al el·liminar",
+        "EntryNotFound": "Registre no trobat",
+        "GetError": "Error de petició",
+        "GroqApiKeyMissing": "Falta API KEY de Groq",
+        "GroupDeleted": "Grup eliminat correctament",
+        "IllegalAction": {
+            "AllVacationsUsed": "No queden més vacances d'elecció lliures",
+            "AlreadyObligatoryVacation": "Aquest dia ja és festiu obligatori",
+            "DuplicateVacationRequest": "Petició de vacances duplicada"
+        },
+        "IncorrectParameter": {
+            "email": "correu electrònic",
+            "message": "Paràmetre incorrecte",
+            "month": "mes",
+            "password": "contrassenya",
+            "reason": {
+                "AlreadyCheckedIn": "Ja s'ha fitxat entrada",
+                "AlreadyCheckedOut": "Ja s'ha fitxat sortida",
+                "AlreadyExists": "Aquest correu electrònic ja existeix",
+                "ContainsEmail": "La contrassenya conté el correu electrònic",
+                "ContainsUsername": "La contrassenya conté el nom d'usuari",
+                "LessThan12Characters": "La contrassenya ha de tenir més de 12 caràcters",
+                "MissingLowercase": "La contrassenya ha de contenir una lletra minúscula",
+                "MissingNumber": "La contrassenya ha de contenir un número",
+                "MissingSign": "La contrassenya ha de contenir un símbol",
+                "MissingUppercase": "La contrassenya ha de contenir una lletra majúscula",
+                "NoEntryToday": "No hi ha cap entrada avui",
+                "NotInOrder": "Els fitxatges han de ser alternats (entrada/sortida)",
+                "OutOfDay": "L'hora ha de ser del mateix dia",
+                "InvalidTimestamp": "Data i hora no vàlides"
+            },
+            "type": "tipus",
+            "year": "any"
+        },
+        "InsufficientPermissions": "Permisos insuficients",
+        "InternalError": "Error intern",
+        "InvalidCredentials": "Credencials invàlids",
+        "InvalidRegisterToken": "Token de registre invàlid",
+        "InvalidToken": "Token invàlid o expirat",
+        "MessageMissing": "Falta el missatge",
+        "MethodNotAllowed": "Mètode no permès",
+        "MissingParameter": "Falten paràmetres",
+        "ModifyingFromAnotherUser": "No pots modificar dades d'un altre usuari",
+        "NetworkError": "Error de connexió amb el servidor",
+        "NoAccessToUser": "No tens accés a aquest usuari",
+        "PermissionVerificationError": "Error verificant permisos",
+        "PostError": "Error a l'enviament",
+        "PutError": "Error al modificar",
+        "RateLimited": "S'han fet massa intents. Torna-ho a provar més tard",
+        "ShouldNotBeSet": "Aquest paràmetre no hauria d'estar definit",
+        "Success": "Operació realitzada amb èxit",
+        "TokenRequired": "Token d'accés requerit",
+        "UnknownError": "Error desconegut",
+        "UserNotFound": "Usuari no trobat",
+        "ValidationError": "Error en validació",
+        "YearlyVacationSaved": "Configuració de vacances anuals desada",
+        "partialVacation": "S'han creat {created} dies, però {failed} han fallat.",
+        "vacationLimit": "Dies de festa excedits o no vàlids"
+    },
+    "errorBoundary": {
+        "message": "S'ha produït un error inesperat.",
+        "reload": "Recarregar pàgina",
+        "title": "Alguna cosa ha anat malament"
     }
-  },
-  "error": {
-    "AccountBlocked": "Compte bloquejat",
-    "AiError": "Error de la IA",
-    "CheckInRegistered": "Entrada registrada correctament",
-    "CheckOutRegistered": "Sortida registrada correctament",
-    "DatesNotInYear": "Les dates no pertanyen a l'any seleccionat",
-    "DeleteError": "Erorr al el·liminar",
-    "EntryNotFound": "Registre no trobat",
-    "GetError": "Error de petició",
-    "GroqApiKeyMissing": "Falta API KEY de Groq",
-    "GroupDeleted": "Grup eliminat correctament",
-    "IllegalAction": {
-      "AllVacationsUsed": "No queden més vacances d'elecció lliures",
-      "AlreadyObligatoryVacation": "Aquest dia ja és festiu obligatori",
-      "DuplicateVacationRequest": "Petició de vacances duplicada"
-    },
-    "IncorrectParameter": {
-      "email": "correu electrònic",
-      "message": "Paràmetre incorrecte",
-      "month": "mes",
-      "password": "contrassenya",
-      "reason": {
-        "AlreadyCheckedIn": "Ja s'ha fitxat entrada",
-        "AlreadyCheckedOut": "Ja s'ha fitxat sortida",
-        "AlreadyExists": "Aquest correu electrònic ja existeix",
-        "ContainsEmail": "La contrassenya conté el correu electrònic",
-        "ContainsUsername": "La contrassenya conté el nom d'usuari",
-        "LessThan12Characters": "La contrassenya ha de tenir més de 12 caràcters",
-        "MissingLowercase": "La contrassenya ha de contenir una lletra minúscula",
-        "MissingNumber": "La contrassenya ha de contenir un número",
-        "MissingSign": "La contrassenya ha de contenir un símbol",
-        "MissingUppercase": "La contrassenya ha de contenir una lletra majúscula",
-        "NoEntryToday": "No hi ha cap entrada avui",
-        "NotInOrder": "Els fitxatges han de ser alternats (entrada/sortida)",
-        "OutOfDay": "L'hora ha de ser del mateix dia",
-        "InvalidTimestamp": "Data i hora no vàlides"
-      },
-      "type": "tipus",
-      "year": "any"
-    },
-    "InsufficientPermissions": "Permisos insuficients",
-    "InternalError": "Error intern",
-    "InvalidCredentials": "Credencials invàlids",
-    "InvalidRegisterToken": "Token de registre invàlid",
-    "InvalidToken": "Token invàlid o expirat",
-    "MessageMissing": "Falta el missatge",
-    "MethodNotAllowed": "Mètode no permès",
-    "MissingParameter": "Falten paràmetres",
-    "ModifyingFromAnotherUser": "No pots modificar dades d'un altre usuari",
-    "NetworkError": "Error de connexió amb el servidor",
-    "NoAccessToUser": "No tens accés a aquest usuari",
-    "PermissionVerificationError": "Error verificant permisos",
-    "PostError": "Error a l'enviament",
-    "PutError": "Error al modificar",
-    "RateLimited": "S'han fet massa intents. Torna-ho a provar més tard",
-    "ShouldNotBeSet": "Aquest paràmetre no hauria d'estar definit",
-    "Success": "Operació realitzada amb èxit",
-    "TokenRequired": "Token d'accés requerit",
-    "UnknownError": "Error desconegut",
-    "UserNotFound": "Usuari no trobat",
-    "ValidationError": "Error en validació",
-    "YearlyVacationSaved": "Configuració de vacances anuals desada",
-    "partialVacation": "S'han creat {created} dies, però {failed} han fallat.",
-    "vacationLimit": "Dies de festa excedits o no vàlids"
-  },
-  "errorBoundary": {
-    "message": "S'ha produït un error inesperat.",
-    "reload": "Recarregar pàgina",
-    "title": "Alguna cosa ha anat malament"
-  }
 }

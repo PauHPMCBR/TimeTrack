@@ -2,43 +2,46 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { Group, User } from '@/models';
-import { responseErrorMethodNotAllowed, responseErrorPost } from '@/lib/response-error-generator';
+import {
+    responseErrorMethodNotAllowed,
+    responseErrorPost,
+} from '@/lib/response-error-generator';
 import { validateRequestBody } from '@/lib/validation';
 import { CreateGroupRequestSchema } from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return responseErrorMethodNotAllowed(res);
-  }
-
-  const validationMiddleware = validateRequestBody(CreateGroupRequestSchema);
-       await new Promise((resolve) => {
-          validationMiddleware(req, res, () => resolve(true));
-       });
-       if (res.headersSent) return;
-
-  try {
-    await dbConnect();
-    const { name, description, members } = req.body;
-
-    const group = await Group.create({
-      name,
-      description,
-      members: members || [],
-    });
-
-    if (members && members.length > 0) {
-      await User.updateMany(
-        { _id: { $in: members } },
-        { $addToSet: { groups: group._id } }
-      );
+    if (req.method !== 'POST') {
+        return responseErrorMethodNotAllowed(res);
     }
 
-    res.status(201).json({ group: group });
-  } catch (error) {
-    console.error('Create group error:', error);
-    return responseErrorPost(res);
-  }
+    const validationMiddleware = validateRequestBody(CreateGroupRequestSchema);
+    await new Promise((resolve) => {
+        validationMiddleware(req, res, () => resolve(true));
+    });
+    if (res.headersSent) return;
+
+    try {
+        await dbConnect();
+        const { name, description, members } = req.body;
+
+        const group = await Group.create({
+            name,
+            description,
+            members: members || [],
+        });
+
+        if (members && members.length > 0) {
+            await User.updateMany(
+                { _id: { $in: members } },
+                { $addToSet: { groups: group._id } }
+            );
+        }
+
+        res.status(201).json({ success: true, data: { group: group } });
+    } catch (error) {
+        console.error('Create group error:', error);
+        return responseErrorPost(res);
+    }
 }
 
 export default requireRole(['admin'], handler);

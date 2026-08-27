@@ -7,11 +7,11 @@ import sharp from 'sharp';
 // at the path given by DATA_DIR, so files never live inside the container and
 // survive container recreation / redeploys.
 export function getDataDir(): string {
-  return process.env.DATA_DIR || path.join(process.cwd(), 'data');
+    return process.env.DATA_DIR || path.join(process.cwd(), 'data');
 }
 
 function avatarsDir(): string {
-  return path.join(getDataDir(), 'avatars');
+    return path.join(getDataDir(), 'avatars');
 }
 
 // Input limits. We are lenient about what users upload (any common image
@@ -36,44 +36,47 @@ export const AVATAR_MIME = 'image/jpeg';
 // produce false rotations when a photo's EXIF tag is stale/wrong, so we keep
 // the raw pixel orientation as uploaded.
 export async function sanitizeAvatar(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer)
-    .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover' })
-    .flatten({ background: { r: 255, g: 255, b: 255 } })
-    .jpeg({ quality: 85 })
-    .toBuffer();
+    return sharp(buffer)
+        .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover' })
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
+        .jpeg({ quality: 85 })
+        .toBuffer();
 }
 
 function sanitizeFilename(filename: string): string {
-  return path.basename(filename);
+    return path.basename(filename);
 }
 
 export async function readAvatar(filename: string): Promise<Buffer> {
-  return fs.readFile(path.join(avatarsDir(), sanitizeFilename(filename)));
+    return fs.readFile(path.join(avatarsDir(), sanitizeFilename(filename)));
 }
 
 export async function deleteUserAvatars(userId: string): Promise<void> {
-  const dir = avatarsDir();
-  let entries: string[];
-  try {
-    entries = await fs.readdir(dir);
-  } catch {
-    return;
-  }
-  const prefix = `${userId}-`;
-  await Promise.all(
-    entries
-      .filter(f => f.startsWith(prefix))
-      .map(f => fs.rm(path.join(dir, f), { force: true }))
-  );
+    const dir = avatarsDir();
+    let entries: string[];
+    try {
+        entries = await fs.readdir(dir);
+    } catch {
+        return;
+    }
+    const prefix = `${userId}-`;
+    await Promise.all(
+        entries
+            .filter((f) => f.startsWith(prefix))
+            .map((f) => fs.rm(path.join(dir, f), { force: true }))
+    );
 }
 
 // Saves an already-sanitized avatar for a user, removing any previous one, and
 // returns the filename (unique per upload so browsers can cache it immutably).
-export async function saveAvatar(userId: string, image: Buffer): Promise<string> {
-  const dir = avatarsDir();
-  await fs.mkdir(dir, { recursive: true });
-  await deleteUserAvatars(userId);
-  const filename = `${userId}-${Date.now()}.${AVATAR_EXT}`;
-  await fs.writeFile(path.join(dir, filename), image);
-  return filename;
+export async function saveAvatar(
+    userId: string,
+    image: Buffer
+): Promise<string> {
+    const dir = avatarsDir();
+    await fs.mkdir(dir, { recursive: true });
+    await deleteUserAvatars(userId);
+    const filename = `${userId}-${Date.now()}.${AVATAR_EXT}`;
+    await fs.writeFile(path.join(dir, filename), image);
+    return filename;
 }

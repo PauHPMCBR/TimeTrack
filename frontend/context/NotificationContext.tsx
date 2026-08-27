@@ -1,77 +1,110 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from "react";
-import { Alert } from "@/components/ui/Alert";
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useCallback,
+    useRef,
+    ReactNode,
+} from 'react';
+import { Alert } from '@/components/ui/Alert';
 
-type NotificationType = "info" | "success" | "warning" | "error";
+type NotificationType = 'info' | 'success' | 'warning' | 'error';
 
 interface Notification {
-  id: string;
-  type: NotificationType;
-  title?: string;
-  message: string;
+    id: string;
+    type: NotificationType;
+    title?: string;
+    message: string;
 }
 
 interface NotificationContextType {
-  showNotification: (params: { type?: NotificationType; title?: string; message: string }) => void;
-  hideNotification: (id: string) => void;
+    showNotification: (params: {
+        type?: NotificationType;
+        title?: string;
+        message: string;
+    }) => void;
+    hideNotification: (id: string) => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+    undefined
+);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+        new Map()
+    );
 
-  const hideNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    const timer = timers.current.get(id);
-    if (timer) {
-      clearTimeout(timer);
-      timers.current.delete(id);
-    }
-  }, []);
+    const hideNotification = useCallback((id: string) => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        const timer = timers.current.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            timers.current.delete(id);
+        }
+    }, []);
 
-  const showNotification = useCallback(
-    ({ type = "info", title, message }: { type?: NotificationType; title?: string; message: string }) => {
-      const id = Math.random().toString(36).substring(2, 9);
-      setNotifications((prev) => [...prev, { id, type, title, message }]);
+    const showNotification = useCallback(
+        ({
+            type = 'info',
+            title,
+            message,
+        }: {
+            type?: NotificationType;
+            title?: string;
+            message: string;
+        }) => {
+            const id = Math.random().toString(36).substring(2, 9);
+            setNotifications((prev) => [...prev, { id, type, title, message }]);
 
-      if (type === "success" || type === "info") {
-        const timer = setTimeout(() => {
-          timers.current.delete(id);
-          hideNotification(id);
-        }, 5000);
-        timers.current.set(id, timer);
-      }
-    },
-    [hideNotification]
-  );
+            if (type === 'success' || type === 'info') {
+                const timer = setTimeout(() => {
+                    timers.current.delete(id);
+                    hideNotification(id);
+                }, 5000);
+                timers.current.set(id, timer);
+            }
+        },
+        [hideNotification]
+    );
 
-  return (
-    <NotificationContext.Provider value={{ showNotification, hideNotification }}>
-      {children}
-      <div role="status" aria-live="polite" className="fixed bottom-4 right-4 z-[9999] w-full max-w-sm flex flex-col-reverse gap-2 pointer-events-none">
-        {notifications.map((n) => (
-          <div key={n.id} className="pointer-events-auto">
-            <Alert
-              variant={n.type === "error" ? "destructive" : n.type}
-              title={n.title}
-              onClose={() => hideNotification(n.id)}
+    return (
+        <NotificationContext.Provider
+            value={{ showNotification, hideNotification }}
+        >
+            {children}
+            <div
+                role="status"
+                aria-live="polite"
+                className="fixed bottom-4 right-4 z-[9999] w-full max-w-sm flex flex-col-reverse gap-2 pointer-events-none"
             >
-              {n.message}
-            </Alert>
-          </div>
-        ))}
-      </div>
-    </NotificationContext.Provider>
-  );
+                {notifications.map((n) => (
+                    <div key={n.id} className="pointer-events-auto">
+                        <Alert
+                            variant={
+                                n.type === 'error' ? 'destructive' : n.type
+                            }
+                            title={n.title}
+                            onClose={() => hideNotification(n.id)}
+                        >
+                            {n.message}
+                        </Alert>
+                    </div>
+                ))}
+            </div>
+        </NotificationContext.Provider>
+    );
 }
 
 export function useNotifications() {
-  const context = useContext(NotificationContext);
-  if (context === undefined) {
-    throw new Error("useNotifications must be used within a NotificationProvider");
-  }
-  return context;
+    const context = useContext(NotificationContext);
+    if (context === undefined) {
+        throw new Error(
+            'useNotifications must be used within a NotificationProvider'
+        );
+    }
+    return context;
 }
