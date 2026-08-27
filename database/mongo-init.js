@@ -43,32 +43,206 @@ if (process.env.SEED_DEMO === '1') {
 
   print('Seeding demo data...');
 
+  const now = new Date();
+
+  // Fixed demo password for all registered employees (bcryptjs hash).
+  //   Email: <name>@demo.com   Password: Password123!
+  const DEMO_PASSWORD_HASH = '$2a$12$qLBbrH0xrSwZaO083YmxqugjsKjFqDB/mGTg0r9Au6Zs9PmjvNqKe';
+
+  // --- Object ids referenced across collections ---------------------------------
+  const ids = {
+    anna: ObjectId(), berta: ObjectId(), carles: ObjectId(),
+    diana: ObjectId(), marc: ObjectId(), elena: ObjectId(), admin: ObjectId(),
+  };
+  const groups = { dev: ObjectId(), design: ObjectId(), marketing: ObjectId() };
+
+  // --- Time helpers (all dates are local) ---------------------------------------
+  const dayAt = (offset, hour = 0, minute = 0) => {
+    const d = new Date();
+    d.setHours(hour, minute, 0, 0);
+    d.setDate(d.getDate() + offset);
+    return d;
+  };
+
+  // Most recent Thursday strictly before today → company holiday (no one works).
+  const todayDow = new Date().getDay();
+  const daysSinceThursday = (todayDow + 3) % 7;
+  const holidayOffset = -(daysSinceThursday === 0 ? 7 : daysSinceThursday);
+
+  // Past weekday offsets (most recent first), skipping the holiday.
+  const weekdayOffsets = [];
+  {
+    let n = 1;
+    while (weekdayOffsets.length < 10) {
+      const t = new Date(now);
+      t.setDate(now.getDate() - n);
+      const dow = t.getDay();
+      if (dow !== 0 && dow !== 6 && -n !== holidayOffset) weekdayOffsets.push(-n);
+      n++;
+    }
+  }
+  const [w0, w1, w2, w3, w4, w5, w6, w7] = weekdayOffsets;
+
+  // Future weekday offsets (next first).
+  const futureWeekdayOffsets = [];
+  {
+    let n = 1;
+    while (futureWeekdayOffsets.length < 6) {
+      const t = new Date(now);
+      t.setDate(now.getDate() + n);
+      const dow = t.getDay();
+      if (dow !== 0 && dow !== 6) futureWeekdayOffsets.push(n);
+      n++;
+    }
+  }
+  const [f0, f1, f2, f3, f4, f5] = futureWeekdayOffsets;
+
+  // --- Groups -------------------------------------------------------------------
   db.groups.insertMany([
-    { name: 'Development', description: 'Software development team', members: [], createdAt: new Date(), updatedAt: new Date() },
-    { name: 'Design', description: 'UI/UX design team', members: [], createdAt: new Date(), updatedAt: new Date() },
-    { name: 'Marketing', description: 'Marketing and communications', members: [], createdAt: new Date(), updatedAt: new Date() }
+    { _id: groups.dev, name: 'Development', description: 'Software development team', members: [ids.anna, ids.carles, ids.elena], createdAt: now, updatedAt: now },
+    { _id: groups.design, name: 'Design', description: 'UI/UX design team', members: [ids.berta, ids.marc], createdAt: now, updatedAt: now },
+    { _id: groups.marketing, name: 'Marketing', description: 'Marketing and communications', members: [ids.diana], createdAt: now, updatedAt: now }
   ]);
   print('Demo groups created');
 
-  // Global yearly vacation template
-  const year = new Date().getFullYear();
+  // --- Employees (registered, can log in with Password123!) ----------------------
+  const employee = (id, name, email, dni, expectedWorkHours, groupIds) => ({
+    _id: id, name, email,
+    password: DEMO_PASSWORD_HASH,
+    registrationToken: null,
+    registered: true,
+    role: 'employee',
+    groups: groupIds,
+    dni,
+    expectedWorkHours,
+    failedLoginAttempts: 0,
+    blocked: false,
+    createdAt: now,
+    updatedAt: now
+  });
+
+  db.users.insertMany([
+    employee(ids.anna, 'Anna Torres', 'anna@demo.com', '11111111A', 8, [groups.dev]),
+    employee(ids.berta, 'Berta Puig', 'berta@demo.com', '22222222B', 8, [groups.design]),
+    employee(ids.carles, 'Carles Vila', 'carles@demo.com', '33333333C', 7.5, [groups.dev]),
+    employee(ids.diana, 'Diana Roca', 'diana@demo.com', '44444444D', 8, [groups.marketing]),
+    employee(ids.marc, 'Marc Soler', 'marc@demo.com', '55555555E', 6, [groups.design]),
+    employee(ids.elena, 'Elena Grau', 'elena@demo.com', '66666666F', 8, [groups.dev])
+  ]);
+  print('Demo employees created (password: Password123!)');
+
+  // --- Work sessions (mix of every status the admin view can show) --------------
+  const sessions = [];
+  const addSession = (userId, type, offset, hour, minute = 0) => {
+    sessions.push({ userId: userId.toString(), type, source: 'user', timestamp: dayAt(offset, hour, minute), createdAt: now, updatedAt: now });
+  };
+  const session = (userId, offset, startHour, endHour, startMinute = 0, endMinute = 0) => {
+    addSession(userId, 'check_in', offset, startHour, startMinute);
+    addSession(userId, 'check_out', offset, endHour, endMinute);
+  };
+
+  // Anna (8h): mostly ok, forgot_check_out, hours_over, hours_short, a lunch-break day
+  session(ids.anna, w0, 9, 17);
+  session(ids.anna, w1, 9, 17);
+  addSession(ids.anna, 'check_in', w2, 9);            // forgot_check_out
+  session(ids.anna, w3, 9, 19, 0, 30);               // hours_over (10.5h)
+  addSession(ids.anna, 'check_in', w4, 9);            // lunch-break day (8h total):
+  addSession(ids.anna, 'check_out', w4, 13);          //   9→13 (4h)
+  addSession(ids.anna, 'check_in', w4, 14);           //   14→18 (4h)
+  addSession(ids.anna, 'check_out', w4, 18);
+  session(ids.anna, w5, 10, 14, 30, 30);             // hours_short (4h)
+  session(ids.anna, w6, 9, 17);
+  session(ids.anna, w7, 9, 17);
+  session(ids.anna, 0, 9, 17);                       // today, completed
+
+  // Berta (8h): ok, forgot_check_in, still working today
+  session(ids.berta, w0, 9, 17);
+  addSession(ids.berta, 'check_out', w1, 17);        // forgot_check_in
+  session(ids.berta, w2, 9, 17);
+  session(ids.berta, w3, 9, 17);
+  session(ids.berta, w4, 9, 17);
+  addSession(ids.berta, 'check_in', 0, 9);           // today, still working
+
+  // Carles (7.5h): ok, hours_over, still working today
+  session(ids.carles, w0, 9, 16, 0, 30);             // 7.5h ok
+  session(ids.carles, w1, 9, 18);                    // hours_over (9h)
+  session(ids.carles, w2, 9, 16, 0, 30);
+  session(ids.carles, w3, 9, 16, 0, 30);
+  addSession(ids.carles, 'check_in', 0, 9);          // today, still working
+
+  // Diana (8h): hours_short, a full missing day, ok
+  session(ids.diana, w0, 9, 13);                     // hours_short (4h)
+  // w1 intentionally left empty → missing day (hours_short)
+  session(ids.diana, w2, 9, 17);                     // ok
+
+  // Marc (6h part-time): ok, forgot_check_out, hours_over
+  session(ids.marc, w0, 9, 15);                      // 6h ok
+  addSession(ids.marc, 'check_in', w1, 9);           // forgot_check_out
+  session(ids.marc, w2, 9, 17);                      // hours_over (8h)
+  session(ids.marc, w3, 9, 15);                      // ok
+  session(ids.marc, 0, 9, 15);                       // today, completed
+
+  // Elena (8h): approved vacation on w0/w1, otherwise ok, still working today
+  session(ids.elena, w2, 9, 17);
+  session(ids.elena, w3, 9, 17);
+  session(ids.elena, w4, 9, 17);
+  addSession(ids.elena, 'check_in', 0, 9, 30);       // today, still working
+
+  db.worksessions.insertMany(sessions);
+  print(`Work sessions created (${sessions.length} events)`);
+
+  // --- Vacations ----------------------------------------------------------------
+  const approvedBy = ids.admin.toString();
+  const vacations = [];
+  const addVacation = (userId, offset, status, reason = '') => {
+    const doc = {
+      userId: userId.toString(),
+      date: dayAt(offset, 0, 0),
+      status,
+      reason,
+      createdAt: now,
+      updatedAt: now
+    };
+    if (status === 'approved') {
+      doc.approvedBy = approvedBy;
+      doc.approvedAt = now;
+    }
+    vacations.push(doc);
+  };
+
+  addVacation(ids.elena, w0, 'approved');            // past approved → shows in history
+  addVacation(ids.elena, w1, 'approved');
+  addVacation(ids.diana, f0, 'approved');
+  addVacation(ids.diana, f1, 'approved');
+  addVacation(ids.diana, f2, 'approved');
+  addVacation(ids.carles, f0, 'approved');
+  addVacation(ids.carles, f1, 'approved');
+  addVacation(ids.elena, f2, 'approved');
+  addVacation(ids.elena, f3, 'approved');
+  addVacation(ids.berta, f4, 'pending');
+  addVacation(ids.marc, f5, 'rejected');
+
+  db.electivevacations.insertMany(vacations);
+  print(`Vacations created (${vacations.length} requests)`);
+
+  // --- Global yearly vacation template (obligatory holiday) ---------------------
   db.yearlyvacationdays.insertOne({
-    year,
-    obligatoryDays: [],
+    year: now.getFullYear(),
+    obligatoryDays: [dayAt(holidayOffset, 0, 0)],
     electiveDaysTotalCount: 22,
     selectedElectiveDays: [],
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: now,
+    updatedAt: now
   });
-  print(`Global yearly vacation settings for ${year} created`);
+  print(`Global yearly vacation settings for ${now.getFullYear()} created (1 obligatory day)`);
 
-  // Global company settings (lazily created by the backend if missing)
+  // Global company settings
   db.appsettings.insertOne({
     defaultExpectedHours: 8,
     benevolenceHours: 1,
     endOfDayHour: 20,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: now,
+    updatedAt: now
   });
   print('Company settings created');
 
@@ -80,25 +254,25 @@ if (process.env.SEED_DEMO === '1') {
   ]);
   print('Work session reasons created');
 
-  // Create the initial admin as UNREGISTERED. Open the printed link in the
-  // browser to choose a real password (hashed properly by the backend).
-  const registrationToken = crypto.randomBytes(32).toString('hex');
+  // Create the initial admin as a registered user with the demo password.
   db.users.insertOne({
     name: 'System Administrator',
     email: 'admin@company.com',
-    registrationToken,
-    registered: false,
+    password: DEMO_PASSWORD_HASH,
+    registrationToken: null,
+    registered: true,
     role: 'admin',
     groups: [],
     dni: '00000000A',
     expectedWorkHours: 8,
     failedLoginAttempts: 0,
     blocked: false,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: now,
+    updatedAt: now
   });
-  print('Demo admin user created (unregistered).');
-  print(`Complete registration at: http://localhost:3000/register/${registrationToken}`);
+  print('Demo admin user created (registered).');
+  print('Admin login: admin@company.com / Password123!');
+  print('Demo employees: anna@demo.com, berta@demo.com, carles@demo.com, diana@demo.com, marc@demo.com, elena@demo.com (password: Password123!)');
 } else {
   print('SEED_DEMO not enabled - skipping demo data.');
 }

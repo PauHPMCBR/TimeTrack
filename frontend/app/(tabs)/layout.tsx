@@ -20,7 +20,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <main className="mx-auto w-full max-w-3xl animate-fade-in px-4 pb-24 pt-4 sm:pb-28">
+        <main className="mx-auto w-full max-w-6xl animate-fade-in px-4 pb-24 pt-4 sm:pb-28">
           {children}
         </main>
 

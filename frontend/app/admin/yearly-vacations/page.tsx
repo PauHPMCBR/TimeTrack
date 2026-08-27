@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useUnsavedChanges } from "@/lib/useUnsavedChanges";
+import { useDirty } from "@/lib/useDirty";
+import AdminBackButton from "../../../components/AdminBackButton";
 import { YearlyVacationAdminRequest } from "@/schemas/api";
 import Button from "@/components/ui/Button";
-import { ChevronRight, ChevronLeft, X, Copy } from "lucide-react";
+import TextField from "@/components/ui/TextField";
+import { ChevronRight, ChevronLeft, X, Copy, TriangleAlert } from "lucide-react";
 
 export default function AdminObligatoryVacationsPage() {
   const { t } = useI18n();
@@ -23,6 +25,10 @@ export default function AdminObligatoryVacationsPage() {
   const [electiveDaysTotalCount, setElectiveDaysTotalCount] = useState<number>(0);
   const [newDate, setNewDate] = useState<string>("");
   const [copying, setCopying] = useState(false);
+  const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([6, 0]);
+  const { dirty, markDirty, resetDirty } = useDirty();
+
+  useUnsavedChanges(dirty);
 
   const fetchYearlyVacations = async () => {
     try {
@@ -49,6 +55,7 @@ export default function AdminObligatoryVacationsPage() {
       console.error("Error loading yearly vacations:", error);
       setError(t("error.GetError") || "Error loading data");
     } finally {
+      resetDirty();
       setLoading(false);
     }
   };
@@ -57,7 +64,17 @@ export default function AdminObligatoryVacationsPage() {
     fetchYearlyVacations();
   }, [year]);
 
+  // Fetch the company's non-working days for highlighting.
+  useEffect(() => {
+    apiClient.getSettings().then((res) => {
+      if (!res.error && res.data?.settings) {
+        setNonWorkingDays(res.data.settings.nonWorkingDays ?? [6, 0]);
+      }
+    });
+  }, []);
+
   const handleYearChange = (newYear: number) => {
+    if (dirty && !window.confirm(t("common.unsavedChangesConfirm"))) return;
     setYear(newYear);
   };
 
@@ -83,6 +100,7 @@ export default function AdminObligatoryVacationsPage() {
 
     const newDays = [...obligatoryDays, date].sort((a, b) => a.getTime() - b.getTime());
     setObligatoryDays(newDays);
+    markDirty();
     setNewDate("");
     setError(null);
   };
@@ -91,6 +109,7 @@ export default function AdminObligatoryVacationsPage() {
     const newDays = [...obligatoryDays];
     newDays.splice(index, 1);
     setObligatoryDays(newDays);
+    markDirty();
   };
 
   const handleSave = async () => {
@@ -116,6 +135,7 @@ export default function AdminObligatoryVacationsPage() {
         setSuccess(successMessage);
         
         setVacationDays(vacationData);
+        resetDirty();
         
         setTimeout(() => setSuccess(null), 3000);
       }
@@ -133,15 +153,17 @@ export default function AdminObligatoryVacationsPage() {
       setError(null);
       setSuccess(null);
 
-      const res = await apiClient.copyYearlyVacations({ toYear: year });
+      // Load the previous year's data into the current editing state without
+      // persisting anything — only "Save" writes to the database.
+      const res = await apiClient.getYearlyVacationsGlobal(year - 1);
 
-      if (res.error) {
-        setError(res.error === 'EntryNotFound'
-          ? t("admin.vacationsSetup.copyNotFound").replace("{year}", (year - 1).toString())
-          : t(`error.${res.error}`) || res.error || t("error.PostError"));
+      if (res.error || !res.data?.vacations) {
+        setError(t("admin.vacationsSetup.copyNotFound").replace("{year}", (year - 1).toString()));
       } else {
+        setObligatoryDays(res.data.vacations.obligatoryDays.map(date => new Date(date)));
+        setElectiveDaysTotalCount(res.data.vacations.electiveDaysTotalCount);
+        markDirty();
         setSuccess(t("admin.vacationsSetup.copySuccess").replace("{year}", (year - 1).toString()).replace("{toYear}", year.toString()));
-        await fetchYearlyVacations();
         setTimeout(() => setSuccess(null), 4000);
       }
     } catch (error) {
@@ -161,6 +183,10 @@ export default function AdminObligatoryVacationsPage() {
     });
   };
 
+  const isNonWorkingDay = (date: Date) => nonWorkingDays.includes(date.getDay());
+
+  const realObligatoryCount = obligatoryDays.filter((d) => !isNonWorkingDay(d)).length;
+
   const datesByMonth = () => {
     const groups: Record<string, Date[]> = {};
     
@@ -178,17 +204,9 @@ export default function AdminObligatoryVacationsPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       
-      {/* HEADER */}
-      <header className="flex w-full items-center justify-between px-6 py-4">
-        <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          {t("common.back")}
-        </Link>
-        <LanguageSwitcher />
-      </header>
-
       {/* CONTENT */}
       <div className="mx-auto max-w-4xl px-4 py-6">
+        <AdminBackButton />
         
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -208,7 +226,7 @@ export default function AdminObligatoryVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading || saving}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
               </button>
               
               <div className="min-w-[100px] text-center">
@@ -220,7 +238,7 @@ export default function AdminObligatoryVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading || saving}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -258,6 +276,21 @@ export default function AdminObligatoryVacationsPage() {
         ) : (
           <div className="space-y-8">
 
+            {/* --- UNSAVED CHANGES WARNING --- */}
+            {dirty && (
+              <section className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+                <TriangleAlert size={20} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <div className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    {t("admin.vacationsSetup.unsavedWarning").replace("{year}", year.toString())}
+                  </div>
+                  <div className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
+                    {t("admin.vacationsSetup.unsavedHint")}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* --- COPY FROM PREVIOUS YEAR --- */}
             <section className="rounded-2xl border border-dashed border-zinc-300 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -279,7 +312,7 @@ export default function AdminObligatoryVacationsPage() {
                   className="shrink-0"
                 >
                   <Copy size={16} />
-                  {copying ? t("common.loading") : t("admin.vacationsSetup.copyButton")}
+                  {copying ? t("common.loading") : t("admin.vacationsSetup.copyButton").replace("{year}", (year - 1).toString())}
                 </Button>
               </div>
             </section>
@@ -294,29 +327,34 @@ export default function AdminObligatoryVacationsPage() {
                 <p className="mt-1 text-sm text-zinc-500">
                   {t("admin.vacationsSetup.obligatorySubtitle")}
                 </p>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-full bg-blue-100 px-2.5 py-0.5 font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    {t("admin.vacationsSetup.obligatoryTotal")}: {obligatoryDays.length}
+                  </span>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    {t("admin.vacationsSetup.obligatoryReal")}: {realObligatoryCount}
+                  </span>
+                </div>
               </div>
 
               {/* Add new date form */}
               <div className="mb-6 flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
-                  <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {t("admin.vacationsSetup.addDate")}
-                  </label>
-                  <input
+                  <TextField
+                    label={t("admin.vacationsSetup.addDate")}
                     type="date"
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:text-white"
                   />
                 </div>
                 <div className="flex items-end">
-                  <button
+                  <Button
                     onClick={handleAddDate}
                     disabled={!newDate || saving}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    variant="primary"
                   >
                     {t("admin.vacationsSetup.addButton")}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -335,18 +373,21 @@ export default function AdminObligatoryVacationsPage() {
                         </h3>
                       </div>
                       <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                        {dates.map((date) => (
-                          <div key={date.toISOString()} className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                        {dates.map((date) => {
+                          const nonWorking = isNonWorkingDay(date);
+                          return (
+                          <div key={date.toISOString()} className={`flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${nonWorking ? 'bg-red-50/60 dark:bg-red-950/20' : ''}`}>
                             <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${nonWorking ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>
                                 <span className="text-sm font-medium">{date.getDate()}</span>
                               </div>
                               <div>
                                 <div className="text-sm font-medium text-zinc-900 dark:text-white">
                                   {formatDate(date)}
                                 </div>
-                                <div className="text-xs text-zinc-500">
+                                <div className={`text-xs ${nonWorking ? 'text-red-500 dark:text-red-400' : 'text-zinc-500'}`}>
                                   {date.toLocaleDateString('en-US', { weekday: 'long' })}
+                                  {nonWorking ? ` · ${t("admin.vacationsSetup.nonWorkingDay")}` : ""}
                                 </div>
                               </div>
                             </div>
@@ -358,7 +399,8 @@ export default function AdminObligatoryVacationsPage() {
                               <X className="h-4 w-4" />
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -391,6 +433,7 @@ export default function AdminObligatoryVacationsPage() {
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
                       setElectiveDaysTotalCount(Math.min(30, Math.max(0, value)));
+                      markDirty();
                     }}
                     className="w-24 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-center text-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 dark:border-zinc-700 dark:text-white"
                   />

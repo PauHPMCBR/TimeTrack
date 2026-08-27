@@ -44,7 +44,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const registrationLink = `${frontendUrl}/register/${registrationToken}`;
+    const inviteParams = new URLSearchParams({ name, email });
+    const registrationLink = `${frontendUrl}/register/${registrationToken}?${inviteParams.toString()}`;
 
     res.status(201).json({
       success: true,

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { ElectiveVacation, YearlyVacationDays } from "@/types";
-import { ChevronLeft, Check, Timer, Layers, AlertTriangle, AlertCircle, Trash2, CalendarDays } from "lucide-react";
+import { Check, Timer, Layers, AlertTriangle, AlertCircle, Trash2, CalendarDays } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -213,20 +213,13 @@ export default function MyVacationsPage() {
   if (loading) return <div className="p-10 text-center animate-pulse text-zinc-500">{t("common.loading")}</div>;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-10 relative">
-      
-      <header className="flex w-full items-center px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-10">
-        <Link href="/profile" className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          {t("common.back") || "Tornar"}
-        </Link>
-        <h1 className="text-lg font-semibold text-zinc-900 dark:text-white mx-auto">
-            {t("vacations.title")}
-        </h1>
-        <div className="w-10"></div> 
-      </header>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{t("vacations.title")}</h1>
+        <p className="mt-1 text-sm text-zinc-500">{t("vacations.manageDesc")}</p>
+      </div>
 
-      <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+      <div className="space-y-8">
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Card className="relative overflow-hidden p-6">
@@ -410,9 +403,11 @@ export default function MyVacationsPage() {
 
       </div>
 
-      {isCancelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
+      {isCancelModalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
             
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30">
                 <Trash2 size={24} />
@@ -444,8 +439,9 @@ export default function MyVacationsPage() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
     </div>
   );

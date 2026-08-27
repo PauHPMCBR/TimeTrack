@@ -31,20 +31,22 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     const userIds = (req.query.userIds as string).split(',').filter(Boolean);
 
     const [users, sessions] = await Promise.all([
-      User.find({ _id: { $in: userIds } }, 'name email').lean(),
+      User.find({ _id: { $in: userIds } }, 'name email dni').lean(),
       WorkSession.find({ userId: { $in: userIds } })
-        .select('userId timestamp type reason notes')
+        .select('userId timestamp type source reason notes')
         .sort({ timestamp: 1 })
         .lean(),
     ]) as [any[], any[]];
     const userMap = new Map(users.map(u => [u._id.toString(), u]));
 
-    const headers = ['Name', 'Email', 'Timestamp', 'Type', 'Reason', 'Notes'];
+    const headers = ['Name', 'DNI', 'Email', 'Timestamp', 'Type', 'Source', 'Reason', 'Notes'];
     const rows = sessions.map(s => [
       userMap.get(s.userId.toString())?.name ?? '',
+      userMap.get(s.userId.toString())?.dni ?? '',
       userMap.get(s.userId.toString())?.email ?? '',
       new Date(s.timestamp).toISOString(),
       s.type,
+      s.source ?? 'user',
       s.reason ?? '',
       s.notes ?? '',
     ]);

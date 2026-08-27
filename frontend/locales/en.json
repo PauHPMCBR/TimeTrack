@@ -13,7 +13,8 @@
     "optional": "(optional)",
     "prev": "Prev",
     "save": "Save",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?"
   },
   "tabs": {
     "admin": "Admin",
@@ -21,7 +22,8 @@
     "checkin": "Check-in",
     "groups": "Groups",
     "history": "History",
-    "profile": "Profile"
+    "profile": "Profile",
+    "vacations": "Vacations"
   },
   "time": {
     "h": "h",
@@ -137,7 +139,7 @@
     },
     "week": "Week",
     "weekAbbr": "Wk",
-    "weekHours": "Hours this week",
+    "weekHours": "Weekly hours",
     "weekly": {
       "chartTitle": "Hours per day (Mon-Sun)",
       "daysWorked": "Days worked (Week)",
@@ -173,6 +175,7 @@
     "vacations": "Vacations",
     "weekDays": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
     "workSessions": "Work sessions",
+    "viewFitxatges": "View fitxatges",
     "workSummary": "Monthly summary"
   },
   "vacations": {
@@ -233,8 +236,10 @@
     "errorLoading": "Error loading user",
     "fallbackUser": "User",
     "hoursToday": "Hours Today",
+    "dni": "ID number",
     "notFound": "Profile not found.",
     "preferences": "Preferences",
+    "signOut": "Sign out",
     "prevWeeks": "Previous weeks",
     "recentActivity": "Recent activity",
     "role": {
@@ -270,7 +275,6 @@
       "subtitle": "Enter the user's basic information.",
       "title": "Register new employee"
     },
-    "createAnother": "Create another user",
     "dashboard": {
       "addUser": "Add user",
       "quickActions": "Quick Actions",
@@ -284,6 +288,7 @@
       "dniPlaceholder": "Ex: 12345678A",
       "email": "Email address",
       "expectedHours": "Expected work hours",
+      "customNonWorkDays": "Custom non-work days",
       "name": "Full name",
       "role": {
         "label": "Role",
@@ -308,6 +313,8 @@
       "empty": "No departments created yet.",
       "members": "Members",
       "membersTitle": "Department Members",
+        "noDesc": "No description",
+        "noMembers": "No members",
       "name": "Department Name",
       "namePlaceholder": "Ex: Barcelona Office",
       "noUsers": "No available users found.",
@@ -315,31 +322,47 @@
       "title": "Departments"
     },
     "menu": {
+      "sections": {
+        "users": "Users & fitxatges",
+        "vacations": "Vacations",
+        "settings": "Global settings"
+      },
       "calendar": {
         "desc": "Monthly view of absences.",
         "title": "Global Calendar"
       },
       "groups": {
         "desc": "Organize employees by teams or offices.",
-        "title": "Manage Groups"
+        "title": "Groups / Departments",
+        "count": "groups"
       },
       "subtitle": "Select what you want to manage today.",
       "title": "Admin Panel",
       "users": {
         "desc": "View team, current status, and new registrations.",
-        "title": "Manage Users"
+        "title": "Employees",
+        "total": "total",
+        "working": "working"
       },
       "vacations": {
         "desc": "Review and approve pending requests.",
-        "title": "Manage Vacations"
+        "title": "Vacation Requests",
+        "pending": "pending",
+        "none": "no pending"
       },
       "yearlyvacations": {
         "desc": "Asign obligatory vacations and amount of elective vacations",
         "title": "Yearly vacations"
       },
       "settings": {
-        "desc": "Company-wide configuration (hours, benevolence...).",
-        "title": "Settings"
+        "desc": "Company-wide configuration (hours, non-working days...).",
+        "title": "Company Settings"
+      },
+      "events": {
+        "desc": "Employee check-in/out with anomaly detection.",
+        "title": "Fitxatges",
+        "anomalies": "anomalies",
+        "noAnomalies": "no anomalies"
       }
     },
     "stats": {
@@ -361,21 +384,35 @@
       "noName": "No name",
       "notFound": "No users found.",
       "pendingActivation": "Pending activation",
+      "workingNow": "Working now",
+      "customNonWorkDays": "Custom non-work days",
       "registered": "Registered"
     },
     "usersEdit": {
       "editAction": "Edit user",
+      "registrationLink": "Registration link (send this to the employee)",
       "saved": "User updated successfully",
       "subtitle": "Modify the employee's details.",
       "title": "Edit user"
     },
+    "sessionEditor": {
+      "addIn": "Add check-in",
+      "addOut": "Add check-out",
+      "hint": "Check-in/check-out order must be kept. Changes are applied with the save button.",
+      "noSessions": "No check-ins yet.",
+      "remove": "Remove event",
+      "removeLocked": "Cannot remove while keeping check-in/check-out order",
+      "title": "Edit events"
+    },
     "settings": {
-      "benevolenceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
-      "benevolenceLabel": "Deviation benevolence (hours)",
-      "defaultHoursHelp": "Expected work hours by default for new employees.",
-      "defaultHoursLabel": "Default expected hours",
-      "endOfDayHelp": "End-of-day hour to detect workers who haven't checked out.",
-      "endOfDayLabel": "End of day hour",
+      "toleranceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
+      "toleranceLabel": "Tolerance (hours)",
+      "defaultHoursHelp": "Expected work hours per day by default for new employees.",
+      "defaultHoursLabel": "Daily expected hours",
+      "endOfDayHelp": "End-of-day time to detect workers who haven't checked out.",
+      "endOfDayLabel": "End of day time",
+      "nonWorkingDaysHelp": "Days of the week when no work is expected (won't flag an anomaly).",
+      "nonWorkingDaysLabel": "Non-working days",
       "saved": "Settings saved successfully",
       "subtitle": "Configure the company-wide values.",
       "title": "Company settings"
@@ -386,7 +423,37 @@
       "selectAll": "Select all",
       "selectedCount": "{count} selected"
     },
+    "events": {
+      "noData": "No records for this period.",
+      "period": {
+        "day": "Day",
+        "month": "Month",
+        "week": "Week",
+        "year": "Year"
+      },
+      "status": {
+        "anomaly": "Anomaly",
+        "ok": "Completed",
+        "vacation": "Vacation",
+        "nonWorkingDay": "Non-working day"
+      },
+      "subtitle": "Check-in/out of all employees with anomaly detection.",
+      "table": {
+        "date": "Date",
+        "employee": "Employee",
+        "expected": "Expected",
+        "hours": "Hours",
+        "sessions": "Events"
+      },
+      "source": {
+        "admin": "Admin",
+        "automatic": "Automatic",
+        "user": "Employee"
+      },
+      "title": "Events"
+    },
     "vacations": {
+      "allUsers": "All employees",
       "approve": "Approve",
       "approved": "Approved",
       "cancelled": "Cancelled",
@@ -411,8 +478,8 @@
       "addDate": "Add holiday date",
       "copyButton": "Copy from {year}",
       "copyNotFound": "No vacation settings found for year {year}.",
-      "copySubtitle": "Copies obligatory holidays and elective days from {year} to {toYear}.",
-      "copySuccess": "Settings copied from {year} to {toYear} successfully",
+      "copySubtitle": "Loads obligatory holidays and elective days from {year} into {toYear}. Changes are only saved when you press Save.",
+      "copySuccess": "Settings loaded from {year} into {toYear} (not saved yet)",
       "copyTitle": "Copy settings from another year",
       "dateExists": "This date is already added",
       "days": "days",
@@ -423,8 +490,11 @@
       "invalidDate": "Invalid date format",
       "manageObligatory": "Manage Obligatory Vacations",
       "noDates": "No obligatory holidays set for this year",
+      "nonWorkingDay": "Non-working day",
+      "obligatoryReal": "Real obligatory days",
       "obligatorySubtitle": "Set mandatory holidays for all employees",
       "obligatoryTitle": "Obligatory Holidays",
+      "obligatoryTotal": "Obligatory days",
       "saveSubtitleCreate": "Create vacation settings for {year}",
       "saveSubtitleUpdate": "Update vacation settings for {year}",
       "saveTitle": "Save Changes",
@@ -432,6 +502,8 @@
       "success": "Vacation settings saved successfully!",
       "title": "Vacation Settings",
       "totalDays": "Total Days",
+      "unsavedHint": "Click Save to persist these changes.",
+      "unsavedWarning": "Unsaved changes for year {year}",
       "weekdays": "Weekdays",
       "weekends": "Weekends"
     }
@@ -468,7 +540,10 @@
         "MissingNumber": "Password must contain a number",
         "MissingSign": "Password must contain a symbol",
         "MissingUppercase": "Password must contain an uppercase letter",
-        "NoEntryToday": "No entry today"
+        "NoEntryToday": "No entry today",
+        "NotInOrder": "Events must alternate check-in/check-out",
+        "OutOfDay": "Time must be on the same day",
+        "InvalidTimestamp": "Invalid date and time"
       },
       "type": "type",
       "year": "year"

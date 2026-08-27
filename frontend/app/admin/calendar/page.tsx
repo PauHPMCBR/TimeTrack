@@ -1,155 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/app/i18n";
-import { apiClient } from "@/lib/api"; 
-import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
-import Card from "@/components/ui/Card";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { apiClient } from "@/lib/api";
+import { YearlyVacationResponse } from "@/schemas/api";
+import { localeTag, toLocalDateKey } from "@/lib/datetime";
+import AdminBackButton from "../../../components/AdminBackButton";
+import { Calendar } from "@/components/calendar/Calendar";
 
-export default function GlobalCalendarPage() {
+export default function AdminCalendarPage() {
   const { t, lang } = useI18n();
-  
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [vacations, setVacations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const locale = localeTag(lang);
+  const router = useRouter();
 
-  const year = currentDate.getFullYear();
+  const today = new Date();
+  const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [vacations, setVacations] = useState<YearlyVacationResponse | null>(null);
+  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
+  const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([6, 0]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const year = cursor.getFullYear();
 
   useEffect(() => {
     let cancelled = false;
-    const loadData = async () => {
+
+    const load = async () => {
       setLoading(true);
-      const res = await apiClient.getAllVacationsYearAdmin(year);
-      if (!cancelled && res.data && res.data.electives) {
-        setVacations(res.data.electives);
+      setError(null);
+      try {
+        const [vacRes, dashRes, settingsRes] = await Promise.all([
+          apiClient.getAllVacationsYearAdmin(year),
+          apiClient.getAdminDashboard(),
+          apiClient.getSettings(),
+        ]);
+        if (cancelled) return;
+
+        if (vacRes.error) {
+          setError(t(`error.${vacRes.error}`) || t("error.GetError"));
+        } else if (vacRes.data) {
+          setVacations(vacRes.data);
+        }
+
+        if (dashRes.data?.users) {
+          const map: Record<string, string> = {};
+          dashRes.data.users.forEach((u: any) => { map[u._id] = u.name; });
+          setUsersMap(map);
+        }
+
+        if (!settingsRes.error && settingsRes.data?.settings) {
+          setNonWorkingDays(settingsRes.data.settings.nonWorkingDays ?? [6, 0]);
+        }
+      } catch (err) {
+        console.error("Error loading global calendar:", err);
+        if (!cancelled) setError(t("error.GetError"));
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
     };
-    loadData();
+
+    load();
     return () => {
       cancelled = true;
     };
-  }, [year]);
+  }, [year, t]);
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    return new Date(year, month + 1, 0).getDate();
+  const goToFitxatges = (date: Date) => {
+    router.push(`/admin/events?date=${toLocalDateKey(date)}&period=day`);
   };
-
-  const getFirstDayOfMonth = (date: Date) => {
-    const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-    return day === 0 ? 6 : day - 1; 
-  };
-
-  const changeMonth = (offset: number) => {
-    const newDate = new Date(currentDate.setMonth(currentDate.getMonth() + offset));
-    setCurrentDate(new Date(newDate));
-  };
-
-  const locale = lang === 'en' ? 'en-US' : (lang === 'ca' ? 'ca-ES' : 'es-ES');
-  
-  const monthOnly = currentDate.toLocaleString(locale, { month: 'long' });
-  
-  const monthCapitalized = monthOnly.charAt(0).toUpperCase() + monthOnly.slice(1);
-  
-  const monthName = `${monthCapitalized} ${currentDate.getFullYear()}`;
-
-  // `t("calendar.weekDays")` is stored as a comma-separated string in the dictionaries.
-  // Ensure we always have an array to call `.map` on during render (avoid prerender errors).
-  const _weekDaysRaw = t("calendar.weekDays");
-  let weekDays: string[] = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
-  if (Array.isArray(_weekDaysRaw)) {
-    weekDays = _weekDaysRaw as string[];
-  } else if (typeof _weekDaysRaw === "string") {
-    weekDays = _weekDaysRaw.split(",").map(s => s.trim()).filter(Boolean);
-  }
-  
-  const daysInMonth = getDaysInMonth(currentDate);
-  const firstDay = getFirstDayOfMonth(currentDate);
-  const blanks = Array(firstDay).fill(null);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      
-      <header className="flex w-full items-center justify-between px-6 py-4">
-        <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          {t("common.back")}
-        </Link>
-        <LanguageSwitcher />
-      </header>
+    <div className="space-y-6">
+      <AdminBackButton />
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        {loading && <p className="mb-2 text-sm text-zinc-500 animate-pulse">{t("common.loading")}</p>}
-
-        <div className="mb-8 flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{monthName}</h1>
-            
-            <div className="flex gap-2">
-                <button onClick={() => changeMonth(-1)} className="p-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
-                    <ChevronRight className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-                </button>
-                <button onClick={() => changeMonth(1)} className="p-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
-                    <ChevronLeft className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-                </button>
-            </div>
-        </div>
-
-        <Card className="overflow-hidden">
-            <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
-                {weekDays.map((day) => (
-                    <div key={day} className="py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                        {day}
-                    </div>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-7 auto-rows-fr">
-                {blanks.map((_, i) => (
-                    <div key={`blank-${i}`} className="min-h-[120px] border-b border-r border-zinc-100 bg-zinc-50/50 p-2 dark:border-zinc-800 dark:bg-zinc-900/20"></div>
-                ))}
-
-                {days.map((day) => {
-                    const dayVacations = vacations.filter(v => {
-                        const vDate = new Date(v.date);
-                        return vDate.getDate() === day && 
-                               vDate.getMonth() === currentDate.getMonth() && 
-                               vDate.getFullYear() === currentDate.getFullYear();
-                    });
-
-                    return (
-                        <div key={day} className="min-h-[120px] border-b border-r border-zinc-100 p-2 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/30">
-                            <div className="mb-2 text-sm font-medium text-zinc-400">
-                                {day}
-                            </div>
-                            
-                            <div className="space-y-1">
-                                {dayVacations.map((v) => (
-                                    <div 
-                                        key={v._id} 
-                                        className={`truncate rounded px-1.5 py-0.5 text-xs font-medium ${
-                                            v.status === 'approved' 
-                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                                                : v.status === 'rejected'
-                                                ? 'bg-red-50 text-red-400 line-through opacity-50'
-                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                                        }`}
-                                        title={`${v.userId?.name} (${v.status})`}
-                                    >
-                                        {v.userId?.name || "???"}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </Card>
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{t("admin.menu.calendar.title")}</h1>
+        <p className="mt-1 text-sm text-zinc-500">{t("admin.menu.calendar.desc")}</p>
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      <Calendar
+        cursor={cursor}
+        onMonthChange={setCursor}
+        vacations={vacations}
+        workSessions={null}
+        teamVacations={[]}
+        usersMap={usersMap}
+        nonWorkingDays={nonWorkingDays}
+        loading={loading}
+        showWorkSessions={false}
+        showVacations={true}
+        onDayDetailAction={goToFitxatges}
+        locale={locale}
+        t={t}
+      />
     </div>
   );
 }

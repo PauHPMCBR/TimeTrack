@@ -16,6 +16,7 @@ export const UserSchema = z.object({
   groups: z.array(z.string()).default([]),
   dni: z.string().min(1, 'DNI is required').max(20),
   expectedWorkHours: z.number().positive().default(8),
+  workDays: z.array(z.number().int().min(0).max(6)).optional(),
   avatar: z.string().optional(),
   failedLoginAttempts: z.number().int().gte(0).default(0),
   blocked: z.boolean().default(false),
@@ -28,7 +29,9 @@ export const UserSchema = z.object({
 export const AppSettingsSchema = z.object({
   defaultExpectedHours: z.number().positive().default(8),
   benevolenceHours: z.number().gte(0).default(1),
-  endOfDayHour: z.number().min(0).max(24).default(17),
+  toleranceHours: z.number().gte(0).optional(),
+  endOfDayHour: z.number().min(0).max(24).default(20),
+  nonWorkingDays: z.array(z.number().int().min(0).max(6)).default([6, 0]),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
@@ -45,6 +48,7 @@ export const GroupSchema = z.object({
 
 // Work Session Schemas
 export const WorkSessionTypeSchema = z.enum(['check_in', 'check_out']);
+export const WorkSessionSourceSchema = z.enum(['user', 'admin', 'automatic']);
 export const WorkSessionReasonSchema = z.object({
   type: WorkSessionTypeSchema,
   reasonId: z.string(),
@@ -56,6 +60,7 @@ export const WorkSessionSchema = z.object({
   userId: z.string(),
   type: WorkSessionTypeSchema,
   timestamp: z.date().default(() => new Date()),
+  source: WorkSessionSourceSchema.default('user'),
   reason: z.string().max(500).optional(),
   notes: z.string().max(1000).optional(),
   //ipAddress: z.string().optional(),

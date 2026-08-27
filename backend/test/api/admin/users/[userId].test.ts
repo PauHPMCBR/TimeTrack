@@ -44,8 +44,8 @@ describe('PUT /api/admin/users/[userId]', () => {
     vi.resetModules();
   });
 
-  it('should return 405 if method is not PUT', async () => {
-    const req = mockReq({ method: 'GET', query: { userId: 'user-1' } });
+  it('should return 405 if method is not PUT or GET', async () => {
+    const req = mockReq({ method: 'DELETE', query: { userId: 'user-1' } });
     const res = mockRes();
 
     await updateUserHandler(req, res);
@@ -55,6 +55,46 @@ describe('PUT /api/admin/users/[userId]', () => {
       error: 'MethodNotAllowed',
       details: {},
     });
+  });
+
+  it('should return the registration link for a non-activated user (GET)', async () => {
+    vi.mocked(User.findById).mockResolvedValue({
+      _id: 'user-1',
+      name: 'Anna',
+      email: 'anna@example.com',
+      registered: false,
+      registrationToken: 'tok123',
+    });
+
+    const req = mockReq({ method: 'GET', query: { userId: 'user-1' } });
+    const res = mockRes();
+
+    await updateUserHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.success).toBe(true);
+    expect(payload.data.registrationLink).toContain('/register/tok123');
+    expect(payload.data.registrationLink).toContain('anna%40example.com');
+  });
+
+  it('should return null registration link for an activated user (GET)', async () => {
+    vi.mocked(User.findById).mockResolvedValue({
+      _id: 'user-1',
+      name: 'Anna',
+      email: 'anna@example.com',
+      registered: true,
+      registrationToken: 'tok123',
+    });
+
+    const req = mockReq({ method: 'GET', query: { userId: 'user-1' } });
+    const res = mockRes();
+
+    await updateUserHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data.registrationLink).toBeNull();
   });
 
   it('should return 404 if user does not exist', async () => {

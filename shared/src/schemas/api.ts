@@ -29,6 +29,7 @@ export const UpdateUserRequestSchema = z.object({
   role: z.enum(['employee', 'admin']).optional(),
   dni: z.string().min(1, 'DNI is required').max(20),
   expectedWorkHours: z.number().positive().optional(),
+  workDays: z.array(z.number().int().min(0).max(6)).optional(),
 }).refine(data => Object.keys(data).length > 0, 'At least one field is required');
 export type UpdateUserRequest = z.infer<typeof UpdateUserRequestSchema>;
 
@@ -41,7 +42,9 @@ export type CopyYearlyVacationRequest = z.infer<typeof CopyYearlyVacationRequest
 export const AppSettingsRequestSchema = z.object({
   defaultExpectedHours: z.number().positive().optional(),
   benevolenceHours: z.number().gte(0).optional(),
+  toleranceHours: z.number().gte(0).optional(),
   endOfDayHour: z.number().min(0).max(24).optional(),
+  nonWorkingDays: z.array(z.number().int().min(0).max(6)).optional(),
 }).refine(data => Object.keys(data).length > 0, 'At least one field is required');
 export type AppSettingsRequest = z.infer<typeof AppSettingsRequestSchema>;
 
@@ -111,6 +114,60 @@ export const AdminExportWorkSessionsQuerySchema = z.object({
   userIds: z.string().min(1, 'At least one user id is required'),
 });
 export type AdminExportWorkSessionsQuery = z.infer<typeof AdminExportWorkSessionsQuerySchema>;
+
+export const WorkSessionAnomalySchema = z.enum([
+  'forgot_check_out',
+  'forgot_check_in',
+  'hours_short',
+  'hours_over',
+]);
+export type WorkSessionAnomaly = z.infer<typeof WorkSessionAnomalySchema>;
+
+export const WorkSessionRowStatusSchema = z.enum(['vacation', 'ok', 'anomaly', 'nonWorkingDay']);
+export type WorkSessionRowStatus = z.infer<typeof WorkSessionRowStatusSchema>;
+
+export const AdminWorkSessionRowSchema = z.object({
+  userId: z.string(),
+  userName: z.string(),
+  date: z.string(), // YYYY-MM-DD (local)
+  totalHours: z.number().gte(0),
+  expectedHours: z.number().positive(),
+  sessions: z.array(WorkSessionSchema.extend({ _id: z.string() })),
+  status: WorkSessionRowStatusSchema,
+  anomalies: z.array(WorkSessionAnomalySchema),
+});
+export type AdminWorkSessionRow = z.infer<typeof AdminWorkSessionRowSchema>;
+
+export const AdminWorkSessionsQuerySchema = z.object({
+  period: z.enum(['day', 'week', 'month', 'year']),
+  date: z.string().optional(),
+  year: z.coerce.number().int().gte(2000).lte(2100).optional(),
+  month: z.coerce.number().int().gte(1).lte(12).optional(),
+}).superRefine((data, ctx) => {
+  if ((data.period === 'day' || data.period === 'week') && !data.date) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['date'], message: 'Date is required for day/week periods' });
+  }
+  if (data.period === 'month' && (data.year === undefined || data.month === undefined)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['year'], message: 'Year and month are required for month period' });
+  }
+  if (data.period === 'year' && data.year === undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['year'], message: 'Year is required for year period' });
+  }
+});
+export type AdminWorkSessionsQuery = z.infer<typeof AdminWorkSessionsQuerySchema>;
+
+export const AdminWorkSessionInputSchema = z.object({
+  type: WorkSessionTypeSchema,
+  timestamp: z.string().min(1, 'Timestamp is required'),
+});
+export type AdminWorkSessionInput = z.infer<typeof AdminWorkSessionInputSchema>;
+
+export const AdminReplaceDayWorkSessionsRequestSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  date: z.string().min(1, 'Date is required'),
+  sessions: z.array(AdminWorkSessionInputSchema),
+});
+export type AdminReplaceDayWorkSessionsRequest = z.infer<typeof AdminReplaceDayWorkSessionsRequestSchema>;
 
 export const UserLoginResponseSchema = z.object({
   user: UserSchema,
