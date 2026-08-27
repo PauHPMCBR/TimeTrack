@@ -24,7 +24,7 @@ export default async function handler(
 
   try {
     await dbConnect();
-    const { registrationToken, email, name, password } = req.body;
+    const { registrationToken, email, password } = req.body;
 
     const user = await User.findOne({ 
       registrationToken,
@@ -38,6 +38,9 @@ export default async function handler(
     if (user.email !== email) {
       return responseErrorIncorrectParameter(res, 'email');
     }
+
+    // The name is fixed by the admin when creating the user and cannot be changed.
+    const name = user.name;
 
     if (!password) {
       return responseErrorMissingParameter(res, 'password');
@@ -87,7 +90,6 @@ export default async function handler(
       return responseErrorIncorrectParameter(res, 'email', ['AlreadyExists']);
     }
 
-    user.name = name;
     user.failedLoginAttempts = 0;
     user.blocked = false;
     user.blockedSince = undefined as any;

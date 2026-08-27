@@ -58,6 +58,20 @@ describe('Database Schemas', () => {
       }
     });
 
+    it('should accept workDays', () => {
+      const result = UserSchema.safeParse({
+        name: 'John Doe',
+        email: 'john@example.com',
+        registrationToken: 'token123',
+        dni: '12345678A',
+        workDays: [1, 2, 3, 4, 5],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.workDays).toEqual([1, 2, 3, 4, 5]);
+      }
+    });
+
     it('should reject missing dni', () => {
       const result = UserSchema.safeParse({
         name: 'John Doe',
@@ -105,8 +119,26 @@ describe('Database Schemas', () => {
       if (result.success) {
         expect(result.data.defaultExpectedHours).toBe(8);
         expect(result.data.benevolenceHours).toBe(1);
-        expect(result.data.endOfDayHour).toBe(17);
+        expect(result.data.endOfDayHour).toBe(20);
+        expect(result.data.nonWorkingDays).toEqual([6, 0]);
       }
+    });
+
+    it('should accept nonWorkingDays and toleranceHours', () => {
+      const result = AppSettingsSchema.safeParse({
+        nonWorkingDays: [5, 6],
+        toleranceHours: 2,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.nonWorkingDays).toEqual([5, 6]);
+        expect(result.data.toleranceHours).toBe(2);
+      }
+    });
+
+    it('should reject an invalid nonWorkingDays value', () => {
+      const result = AppSettingsSchema.safeParse({ nonWorkingDays: [7] });
+      expect(result.success).toBe(false);
     });
 
     it('should reject negative benevolence', () => {
@@ -169,6 +201,43 @@ describe('Database Schemas', () => {
         notes: 'Feeling productive',
       });
       expect(result.success).toBe(true);
+    });
+
+    it('should default source to user', () => {
+      const result = WorkSessionSchema.safeParse({
+        userId: 'user123',
+        type: 'check_in',
+        timestamp: new Date(),
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.source).toBe('user');
+      }
+    });
+
+    it('should accept user, admin and automatic sources', () => {
+      for (const source of ['user', 'admin', 'automatic']) {
+        const result = WorkSessionSchema.safeParse({
+          userId: 'user123',
+          type: 'check_out',
+          timestamp: new Date(),
+          source,
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.source).toBe(source);
+        }
+      }
+    });
+
+    it('should reject an invalid source', () => {
+      const result = WorkSessionSchema.safeParse({
+        userId: 'user123',
+        type: 'check_in',
+        timestamp: new Date(),
+        source: 'system',
+      });
+      expect(result.success).toBe(false);
     });
   });
 

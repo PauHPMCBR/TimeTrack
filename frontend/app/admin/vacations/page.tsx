@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import Link from "next/link";
 import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api"; 
-import LanguageSwitcher from "../../../components/LanguageSwitcher"; 
 import { ElectiveVacation, User } from "@/types";
 import { Alert } from "@/components/ui/Alert";
 import Card from "@/components/ui/Card";
+import AdminBackButton from "../../../components/AdminBackButton";
 import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 
 // 1. DEFINIM EL TIPUS PER A LES VACANCES AGRUPADES
@@ -30,6 +29,7 @@ export default function AdminVacationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
+  const [filterUserId, setFilterUserId] = useState<string>('all');
   const [processingIds, setProcessingIds] = useState<string[]>([]); // Per evitar doble click
   const fetchSeq = useRef(0); // ignora respostes obsoletes en canvis ràpids d'any
 
@@ -169,20 +169,25 @@ export default function AdminVacationsPage() {
   };
 
   // 4. APLIQUEM L'AGRUPACIÓ
-  // Primer filtrem per estat, DESPRÉS agrupem
-  const pendingGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'pending')), [requests]);
-  const approvedGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'approved')), [requests]);
-  const rejectedGroups = useMemo(() => groupRequests(requests.filter(r => r.status === 'rejected')), [requests]);
+  // Primer filtrem per usuari i estat, DESPRÉS agrupem
+  const filteredRequests = useMemo(
+    () => (filterUserId === 'all' ? requests : requests.filter(r => r.userId === filterUserId)),
+    [requests, filterUserId]
+  );
+
+  const pendingGroups = useMemo(() => groupRequests(filteredRequests.filter(r => r.status === 'pending')), [filteredRequests]);
+  const approvedGroups = useMemo(() => groupRequests(filteredRequests.filter(r => r.status === 'approved')), [filteredRequests]);
+  const rejectedGroups = useMemo(() => groupRequests(filteredRequests.filter(r => r.status === 'rejected')), [filteredRequests]);
 
   // Statistics (Basat en dies individuals, no grups)
   const stats = useMemo(() => ({
-    total: requests.length,
-    pending: requests.filter(r => r.status === 'pending').length,
-    approved: requests.filter(r => r.status === 'approved').length,
-    rejected: requests.filter(r => r.status === 'rejected').length,
-    cancelled: requests.filter(r => r.status === 'cancelled').length,
+    total: filteredRequests.length,
+    pending: filteredRequests.filter(r => r.status === 'pending').length,
+    approved: filteredRequests.filter(r => r.status === 'approved').length,
+    rejected: filteredRequests.filter(r => r.status === 'rejected').length,
+    cancelled: filteredRequests.filter(r => r.status === 'cancelled').length,
     obligatoryDays: obligatoryDays.length,
-  }), [requests, obligatoryDays]);
+  }), [filteredRequests, obligatoryDays]);
 
   const formatDateRange = (start: Date, end: Date) => {
     const s = start.toLocaleDateString();
@@ -193,18 +198,9 @@ export default function AdminVacationsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      
-      {/* HEADER */}
-      <header className="flex w-full items-center justify-between px-6 py-4">
-        <Link href="/admin" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          {t("common.back")}
-        </Link>
-        <LanguageSwitcher />
-      </header>
-
       {/* CONTENT */}
       <div className="mx-auto max-w-4xl px-4 py-6">
+        <AdminBackButton />
         
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -215,12 +211,23 @@ export default function AdminVacationsPage() {
             
             {/* Year selector */}
             <div className="flex items-center gap-2">
+              <select
+                value={filterUserId}
+                onChange={(e) => setFilterUserId(e.target.value)}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+              >
+                <option value="all">{t("admin.vacations.allUsers")}</option>
+                {users.map((u) => (
+                  <option key={u._id} value={u._id}>{u.name}</option>
+                ))}
+              </select>
+
               <button 
                 onClick={() => handleYearChange(year - 1)}
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
               </button>
               
               <div className="min-w-[100px] text-center">
@@ -232,7 +239,7 @@ export default function AdminVacationsPage() {
                 className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 disabled={loading}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>

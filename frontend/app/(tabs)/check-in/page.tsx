@@ -268,7 +268,7 @@ export default function CheckInPage() {
                   <div key={session._id || index} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className={`w-3 h-3 rounded-full ${
-                        session.type === 'check_in' ? 'bg-green-500' : 'bg-red-400'
+                        session.type === 'check_in' ? 'bg-green-500' : 'bg-red-500'
                       }`}></div>
                       <div>
                         <div className="font-medium">

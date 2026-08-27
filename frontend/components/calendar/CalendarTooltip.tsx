@@ -100,7 +100,7 @@ export function CalendarTooltip({ date, vacationEvents, workEvent, position, loc
                       <div className={`font-medium text-sm ${
                         session.type === 'check_in' 
                           ? 'text-green-600 dark:text-green-400' 
-                          : 'text-blue-600 dark:text-blue-400'
+                          : 'text-red-600 dark:text-red-400'
                       }`}>
                         {session.type === 'check_in' ? t('calendar.checkIn') : t('calendar.checkOut')}
                       </div>

@@ -33,12 +33,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     try {
       await dbConnect();
-      const { defaultExpectedHours, benevolenceHours, endOfDayHour } = req.body;
+      const { defaultExpectedHours, benevolenceHours, toleranceHours, endOfDayHour, nonWorkingDays } = req.body;
 
       const update: Record<string, unknown> = { updatedAt: new Date() };
       if (defaultExpectedHours !== undefined) update.defaultExpectedHours = defaultExpectedHours;
       if (benevolenceHours !== undefined) update.benevolenceHours = benevolenceHours;
+      if (toleranceHours !== undefined) update.toleranceHours = toleranceHours;
       if (endOfDayHour !== undefined) update.endOfDayHour = endOfDayHour;
+      if (nonWorkingDays !== undefined) update.nonWorkingDays = nonWorkingDays;
 
       const existing = await AppSettings.findOne({});
       if (existing) {

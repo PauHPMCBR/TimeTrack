@@ -1,4 +1,7 @@
 import type {
+  AdminReplaceDayWorkSessionsRequest,
+  AdminWorkSessionsQuery,
+  AdminWorkSessionInput,
   AppSettingsRequest,
   CopyYearlyVacationRequest,
   CreateGroupRequest,
@@ -13,7 +16,7 @@ import type {
   YearlyVacationAdminRequest,
   YearlyVacationResponse,
 } from '@/schemas/api'
-import { AppSettings, ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
+import { AdminWorkSessionRow, AppSettings, ElectiveVacation, Group, User, WorkSession, WorksessionReason, YearlyVacationDays } from '@/types'
 import { ApiResponse } from '@/types/apiErrors'
 import type { ErrorCode } from 'shared/src/types/response-errors'
 import { triggerDownload } from './csv'
@@ -211,8 +214,16 @@ class ApiClient {
     });
   }
 
+  async getUserRegistrationLink(userId: string): Promise<ApiResponse<{ registrationLink: string | null }>> {
+    return this.request(`/api/admin/users/${userId}`);
+  }
+
   async getSettings(): Promise<ApiResponse<{ settings: AppSettings }>> {
     return this.request(`/api/admin/settings`);
+  }
+
+  async getPublicSettings(): Promise<ApiResponse<{ settings: AppSettings }>> {
+    return this.request(`/api/settings`);
   }
 
   async updateSettings(params: AppSettingsRequest): Promise<ApiResponse<{ settings: AppSettings }>> {
@@ -226,6 +237,23 @@ class ApiClient {
     return this.request(`/api/admin/vacations/copy`, {
       method: 'POST',
       body: JSON.stringify(params),
+    });
+  }
+
+  async getAdminWorkSessions(params: AdminWorkSessionsQuery): Promise<ApiResponse<{ rows: AdminWorkSessionRow[] }>> {
+    const search = new URLSearchParams();
+    search.set('period', params.period);
+    if (params.date) search.set('date', params.date);
+    if (params.year !== undefined) search.set('year', String(params.year));
+    if (params.month !== undefined) search.set('month', String(params.month));
+    return this.request(`/api/admin/work-sessions?${search.toString()}`);
+  }
+
+  async replaceDayWorkSessions(userId: string, date: string, sessions: AdminWorkSessionInput[]): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+    const body: AdminReplaceDayWorkSessionsRequest = { userId, date, sessions };
+    return this.request(`/api/admin/work-sessions`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
     });
   }
 
@@ -308,6 +336,10 @@ class ApiClient {
 
   async getCompanyUsers(): Promise<ApiResponse<{ users: User[] }>> {
     return this.request(`/api/admin/users`);
+  }
+
+  async getAdminDashboard(): Promise<ApiResponse<any>> {
+    return this.request(`/api/admin/dashboard`);
   }
 
   async exportWorkSessions(userIds: string[]): Promise<ApiResponse<null>> {

@@ -6,8 +6,9 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { WorkSession, User } from "@/types";
 import { formatHM, toLocalDateKey } from "@/lib/datetime";
-import { usePathname } from "next/navigation";
-import { Building2, Users, ShieldCheck, LayoutGrid, ChevronRight, Camera } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Users, ChevronRight, Camera, LogOut } from "lucide-react";
+import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/Avatar";
 
@@ -41,6 +42,7 @@ const applyTheme = (theme: ThemeFlavor) => {
 export default function ProfilePage() {
   const { t } = useI18n();
   const pathname = usePathname();
+  const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<WorkSession[]>([]);
@@ -238,6 +240,7 @@ export default function ProfilePage() {
         <div>
           <div className="text-lg font-semibold text-zinc-900 dark:text-white">{displayName}</div>
           <div className="text-sm text-zinc-500">{user.email}</div>
+          <div className="text-sm text-zinc-500">{t("profile.dni")}: {user.dni}</div>
           <div className="mt-1 inline-block rounded-md border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
              {user.role || "Employee"}
           </div>
@@ -283,27 +286,6 @@ export default function ProfilePage() {
         </Card>
       </div>
 
-      <Link 
-        href="/vacations" 
-        className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 hover:border-indigo-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50 dark:hover:border-indigo-700"
-      >
-        <div className="flex items-center gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
-                <Building2 size={24} />
-            </div>
-            <div>
-                <div className="font-semibold text-zinc-900 dark:text-white text-lg">
-                    {t("vacations.title")}
-                </div>
-                <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {t("vacations.manageDesc") || "Demanar festa i veure l'historial"}
-                </div>
-            </div>
-        </div>
-        
-        <ChevronRight className="h-5 w-5 text-zinc-400" />
-      </Link>
-      
       <Link 
         href="/groups" 
         className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 hover:border-indigo-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50 dark:hover:border-indigo-700"
@@ -362,27 +344,17 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {user.role === 'admin' && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-900/10">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-indigo-900 dark:text-indigo-300">
-            <ShieldCheck size={16} />
-            {t("profile.admin.title")}
-          </div>
-          
-          <div className="text-sm text-indigo-800/80 dark:text-indigo-200/70 mb-4">
-            {t("profile.admin.description")}
-          </div>
-
-          <Link
-            href="/admin"
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
-          >
-            <LayoutGrid size={16} />
-            {t("profile.admin.title")}
-          </Link>
-        </div>
-      )}
-
+      <Button
+        variant="danger"
+        className="w-full"
+        onClick={() => {
+          apiClient.logoff();
+          router.push("/");
+        }}
+      >
+        <LogOut size={16} />
+        {t("profile.signOut")}
+      </Button>
     </section>
   );
 }

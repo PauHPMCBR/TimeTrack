@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarProps, CalendarDayData, VacationEvent } from "@/types/calendar";
 import { CalendarDay } from "./CalendarDay";
 import { CalendarTooltip, getVacationClass } from "./CalendarTooltip";
+import { weekDayShortLabels } from "@/lib/datetime";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
@@ -34,9 +36,12 @@ export function Calendar({
   cursor,
   onMonthChange,
   onDayClick,
+  onDayDetailAction,
   vacations,
   workSessions,
   teamVacations = [],
+  usersMap,
+  nonWorkingDays = [6, 0],
   loading = false,
   showWorkSessions = true,
   showVacations = true,
@@ -59,6 +64,8 @@ export function Calendar({
   const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" })
     .format(cursor)
     .replace(/^./, (c) => c.toLocaleUpperCase(locale));
+
+  const weekdayLabels = useMemo(() => weekDayShortLabels(locale), [locale]);
 
   const prevMonth = () => onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1));
   const nextMonth = () => onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1));
@@ -93,22 +100,25 @@ export function Calendar({
     }) || [];
     
     electiveRequests.forEach(elective => {
+      const userName = usersMap ? usersMap[elective.userId] : undefined;
+      const label = userName ?? t('calendar.electiveVacation');
+
       if (elective.status === 'approved') {
         events.push({
           type: 'elective-approved',
-          label: t('calendar.electiveVacation'),
+          label: label,
           elective: elective
         });
       } else if (elective.status === 'pending') {
         events.push({
           type: 'elective-pending',
-          label: t('calendar.pendingVacation'),
+          label: label,
           elective: elective
         });
       } else if (elective.status === 'rejected') {
         events.push({
           type: 'elective-rejected',
-          label: t('calendar.rejectedVacation'),
+          label: label,
           elective: elective
         });
       }
@@ -140,7 +150,7 @@ export function Calendar({
     }
 
     return events;
-  }, [vacations, teamVacations, showVacations, t]);
+  }, [vacations, teamVacations, showVacations, usersMap, t]);
 
   const getWorkSessionsForDay = useCallback((date: Date) => {
     if (!workSessions || !showWorkSessions) return null;
@@ -172,11 +182,11 @@ export function Calendar({
         vacationEvents: getVacationsForDay(date),
         workEvent: getWorkSessionsForDay(date),
         isToday: key === ymd(today),
-        isWeekend: [6, 0].includes(date.getDay())
+        isWeekend: nonWorkingDays.includes(date.getDay())
       });
     });
     return map;
-  }, [rows, getVacationsForDay, getWorkSessionsForDay, today]);
+  }, [rows, getVacationsForDay, getWorkSessionsForDay, today, nonWorkingDays]);
 
   const handleDayHover = useCallback((date: Date, event: React.MouseEvent) => {
     setHoveredDay(date);
@@ -220,11 +230,13 @@ export function Calendar({
       )}
 
       {/* Modal for clicked day */}
-      {selectedDay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {selectedDay &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Backdrop - click outside to close */}
-          <div 
-            className="absolute inset-0 bg-black/20"
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={closeModal}
           />
           {/* Modal container */}
@@ -240,7 +252,15 @@ export function Calendar({
                 isModal={true}
               />
             </div>
-            <div className="border-t border-zinc-200 dark:border-zinc-700 p-4 flex justify-end">
+            <div className="border-t border-zinc-200 dark:border-zinc-700 p-4 flex justify-end gap-2">
+              {onDayDetailAction && (
+                <Button
+                  onClick={() => onDayDetailAction(selectedDay)}
+                  variant="soft"
+                >
+                  {t('calendar.viewFitxatges')}
+                </Button>
+              )}
               <Button
                 onClick={closeModal}
                 variant="primary"
@@ -249,7 +269,8 @@ export function Calendar({
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Navigation */}
@@ -280,7 +301,7 @@ export function Calendar({
       {/* Calendar Grid */}
       <Card className="overflow-hidden">
         <div className="grid grid-cols-7 border-b border-zinc-200 text-center text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-          {["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"].map((d) => (
+          {weekdayLabels.map((d) => (
             <div key={d} className="px-2 py-2">{d}</div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export default function Modal({
   open,
@@ -13,17 +14,20 @@ export default function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  // Portal to <body> so position:fixed is viewport-relative even when a parent
+  // has a transform (e.g. the layout's fade-in animation would otherwise make
+  // the modal cover only the content area, not the top toolbar).
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-[100] flex items-center justify-center"
       aria-modal="true"
       role="dialog"
     >
       {/* backdrop */}
       <div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -42,6 +46,7 @@ export default function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

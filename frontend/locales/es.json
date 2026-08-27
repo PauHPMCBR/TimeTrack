@@ -13,7 +13,8 @@
     "optional": "(opcional)",
     "prev": "Ant",
     "save": "Guardar",
-    "saving": "Guardando..."
+    "saving": "Guardando...",
+    "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Salir sin guardar?"
   },
   "tabs": {
     "admin": "Admin",
@@ -21,7 +22,8 @@
     "checkin": "Fichar",
     "groups": "Grupos",
     "history": "Historial",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "vacations": "Vacaciones"
   },
   "time": {
     "h": "h",
@@ -137,7 +139,7 @@
     },
     "week": "Semana",
     "weekAbbr": "Sem",
-    "weekHours": "Horas esta semana",
+    "weekHours": "Horas semanales",
     "weekly": {
       "chartTitle": "Horas por día (lu-do)",
       "daysWorked": "Días trabajados (Semana)",
@@ -173,6 +175,7 @@
     "vacations": "Vacaciones",
     "weekDays": "Lu,Ma,Mi,Ju,Vi,Sa,Do",
     "workSessions": "Sesiones de trabajo",
+    "viewFitxatges": "Ver fichajes",
     "workSummary": "Resumen del mes"
   },
   "vacations": {
@@ -233,8 +236,10 @@
     "errorLoading": "Error al cargar el usuario",
     "fallbackUser": "Usuario",
     "hoursToday": "Horas Hoy",
+    "dni": "DNI",
     "notFound": "Perfil no encontrado.",
     "preferences": "Preferencias",
+    "signOut": "Cerrar sesión",
     "prevWeeks": "Semanas anteriores",
     "recentActivity": "Actividad reciente",
     "role": {
@@ -267,10 +272,9 @@
     "copied": "¡Copiado!",
     "copy": "Copiar enlace",
     "create": {
-      "subtitle": "Introduce los datos básicos del usuario.",
-      "title": "Dar de alta empleado"
+      "subtitle": "Introduce la información básica del usuario.",
+      "title": "Registrar nuevo empleado"
     },
-    "createAnother": "Crear otro usuario",
     "dashboard": {
       "addUser": "Añadir usuario",
       "quickActions": "Acciones Rápidas",
@@ -284,6 +288,7 @@
       "dniPlaceholder": "Ej: 12345678A",
       "email": "Correo electrónico",
       "expectedHours": "Horas semanales esperadas",
+      "customNonWorkDays": "Días no laborables personalizados",
       "name": "Nombre completo",
       "role": {
         "label": "Rol",
@@ -308,6 +313,8 @@
       "empty": "Aún no hay departamentos creados.",
       "members": "Miembros",
       "membersTitle": "Miembros del departamento",
+        "noDesc": "Sin descripción",
+        "noMembers": "Sin miembros",
       "name": "Nombre del Departamento",
       "namePlaceholder": "Ej: Oficina Barcelona",
       "noUsers": "No se han encontrado usuarios disponibles.",
@@ -315,31 +322,47 @@
       "title": "Departamentos"
     },
     "menu": {
+      "sections": {
+        "users": "Usuarios y fichajes",
+        "vacations": "Vacaciones",
+        "settings": "Configuración global"
+      },
       "calendar": {
         "desc": "Visión mensual de las ausencias.",
         "title": "Calendario Global"
       },
       "groups": {
         "desc": "Organiza los empleados por equipos u oficinas.",
-        "title": "Gestionar Grupos"
+        "title": "Grupos / Departamentos",
+        "count": "grupos"
       },
       "subtitle": "Selecciona qué quieres gestionar hoy.",
       "title": "Panel de Administración",
       "users": {
         "desc": "Ver el equipo, estado actual y nuevos registros.",
-        "title": "Gestionar Usuarios"
+        "title": "Empleados",
+        "total": "en total",
+        "working": "trabajando"
       },
       "vacations": {
         "desc": "Revisar y aprobar solicitudes pendientes.",
-        "title": "Gestionar Vacaciones"
+        "title": "Solicitudes de vacaciones",
+        "pending": "pendientes",
+        "none": "ninguna pendiente"
       },
       "yearlyvacations": {
         "desc": "Asigna vacaciones obligatorias y cantidad de vacaciones de elección",
         "title": "Vacaciones anuales"
       },
       "settings": {
-        "desc": "Configuración general de la empresa (horas, benevolencia...).",
-        "title": "Configuración"
+        "desc": "Configuración general de la empresa (horas, días no laborables...).",
+        "title": "Configuración de la empresa"
+      },
+      "events": {
+        "desc": "Fichajes de entrada y salida con detección de anomalías.",
+        "title": "Fichajes",
+        "anomalies": "anomalías",
+        "noAnomalies": "sin anomalías"
       }
     },
     "stats": {
@@ -361,21 +384,35 @@
       "noName": "Sin nombre",
       "notFound": "No se han encontrado usuarios.",
       "pendingActivation": "Activación pendiente",
+      "workingNow": "Trabajando ahora",
+      "customNonWorkDays": "Días no laborables personalizados",
       "registered": "Registrado"
     },
     "usersEdit": {
       "editAction": "Editar usuario",
+      "registrationLink": "Enlace de registro (envíalo al empleado)",
       "saved": "Usuario actualizado correctamente",
       "subtitle": "Modifica los datos del empleado.",
       "title": "Editar usuario"
     },
+    "sessionEditor": {
+      "addIn": "Añadir entrada",
+      "addOut": "Añadir salida",
+      "hint": "El orden de entradas y salidas debe mantenerse. Los cambios se aplican con el botón de guardar.",
+      "noSessions": "Aún no hay ningún fichaje.",
+      "remove": "Eliminar fichaje",
+      "removeLocked": "No se puede eliminar para mantener el orden entradas/salidas",
+      "title": "Editar fichajes"
+    },
     "settings": {
-      "benevolenceHelp": "Margen de tolerancia respecto a las horas esperadas antes de marcar una anomalía.",
-      "benevolenceLabel": "Benevolencia de desviación (horas)",
-      "defaultHoursHelp": "Horas de trabajo esperadas por defecto para los nuevos empleados.",
-      "defaultHoursLabel": "Horas esperadas por defecto",
+      "toleranceHelp": "Margen de tolerancia respecto a las horas esperadas antes de marcar una anomalía.",
+      "toleranceLabel": "Tolerancia (horas)",
+      "defaultHoursHelp": "Horas de trabajo esperadas por día por defecto para los nuevos empleados.",
+      "defaultHoursLabel": "Horas diarias esperadas",
       "endOfDayHelp": "Hora límite del día para detectar trabajadores sin salir.",
       "endOfDayLabel": "Hora de fin de día",
+      "nonWorkingDaysHelp": "Días de la semana en los que no se espera trabajo (no se marcará anomalía).",
+      "nonWorkingDaysLabel": "Días no laborables",
       "saved": "Configuración guardada correctamente",
       "subtitle": "Configura los valores generales de la empresa.",
       "title": "Configuración de la empresa"
@@ -386,7 +423,37 @@
       "selectAll": "Seleccionar todo",
       "selectedCount": "{count} seleccionados"
     },
+    "events": {
+      "noData": "No hay registros para este período.",
+      "period": {
+        "day": "Día",
+        "month": "Mes",
+        "week": "Semana",
+        "year": "Año"
+      },
+      "status": {
+        "anomaly": "Anomalía",
+        "ok": "Cumplido",
+        "vacation": "Vacaciones",
+        "nonWorkingDay": "Día no laborable"
+      },
+      "subtitle": "Fichajes de todos los empleados con detección de anomalías.",
+      "table": {
+        "date": "Fecha",
+        "employee": "Empleado",
+        "expected": "Esperadas",
+        "hours": "Horas",
+        "sessions": "Fichajes"
+      },
+      "source": {
+        "admin": "Admin",
+        "automatic": "Automático",
+        "user": "Empleado"
+      },
+      "title": "Fichajes"
+    },
     "vacations": {
+      "allUsers": "Todos los empleados",
       "approve": "Aprobar",
       "approved": "Aprobadas",
       "cancelled": "Canceladas",
@@ -411,8 +478,8 @@
       "addDate": "Añadir fecha de festivo",
       "copyButton": "Copiar de {year}",
       "copyNotFound": "No hay configuración de vacaciones para el año {year}.",
-      "copySubtitle": "Copia los festivos y los días electivos del año {year} al año {toYear}.",
-      "copySuccess": "Configuración copiada de {year} a {toYear} correctamente",
+      "copySubtitle": "Carga los festivos y los días electivos del año {year} al año {toYear}. Los cambios solo se guardan con el botón Guardar.",
+      "copySuccess": "Configuración cargada de {year} a {toYear} (aún no guardada)",
       "copyTitle": "Copiar configuración de otro año",
       "dateExists": "Esta fecha ya está añadida",
       "days": "días",
@@ -423,8 +490,11 @@
       "invalidDate": "Formato de fecha inválido",
       "manageObligatory": "Gestionar Vacaciones Obligatorias",
       "noDates": "No hay festivos obligatorios establecidos para este año",
+      "nonWorkingDay": "Día no laborable",
+      "obligatoryReal": "Festivos obligatorios reales",
       "obligatorySubtitle": "Establece festivos obligatorios para todos los empleados",
       "obligatoryTitle": "Festivos Obligatorios",
+      "obligatoryTotal": "Días obligatorios",
       "saveSubtitleCreate": "Crear configuración de vacaciones para {year}",
       "saveSubtitleUpdate": "Actualizar configuración de vacaciones para {year}",
       "saveTitle": "Guardar Cambios",
@@ -432,6 +502,8 @@
       "success": "¡Configuración de vacaciones guardada exitosamente!",
       "title": "Configuración de Vacaciones",
       "totalDays": "Días Totales",
+      "unsavedHint": "Pulsa Guardar para persistir estos cambios.",
+      "unsavedWarning": "Cambios sin guardar para el año {year}",
       "weekdays": "Días laborables",
       "weekends": "Fines de semana"
     }
@@ -468,7 +540,10 @@
         "MissingNumber": "La contraseña debe contener un número",
         "MissingSign": "La contraseña debe contener un símbolo",
         "MissingUppercase": "La contraseña debe contener una letra mayúscula",
-        "NoEntryToday": "No hay entrada hoy"
+        "NoEntryToday": "No hay entrada hoy",
+        "NotInOrder": "Los fichajes deben alternarse (entrada/salida)",
+        "OutOfDay": "La hora debe ser del mismo día",
+        "InvalidTimestamp": "Fecha y hora no válidas"
       },
       "type": "tipo",
       "year": "año"

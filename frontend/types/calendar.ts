@@ -26,9 +26,12 @@ export interface CalendarProps {
   cursor: Date;
   onMonthChange: (newCursor: Date) => void;
   onDayClick?: (date: Date) => void;
+  onDayDetailAction?: (date: Date) => void;
   vacations: YearlyVacationResponse | null;
   workSessions: MonthlyWorkRecordResponse | null;
   teamVacations?: any[];
+  usersMap?: Record<string, string>;
+  nonWorkingDays?: number[];
   loading?: boolean;
   showWorkSessions?: boolean;
   showVacations?: boolean;

@@ -45,7 +45,6 @@ zYearlyVacationDays.index({ userId: 1, year: 1 }, { unique: true });
 zYearlyVacationDays.index({ year: 1 });
 
 const zAppSettings = zodSchema(AppSettingsSchema);
-zAppSettings.index({ _id: 1 });
 
 // Export models
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);

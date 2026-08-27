@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/api";
 import LanguageSwitcher from "../../../components/LanguageSwitcher";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import TextField from "@/components/ui/TextField";
 
 export default function CompleteRegistrationPage() {
   const { t } = useI18n();
@@ -127,62 +128,37 @@ if (res.error) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* 1. NAME FIELD */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {t("register.name")}
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
-              />
-            </div>
+            <TextField
+              label={t("register.name")}
+              type="text"
+              required
+              readOnly
+              value={formData.name}
+            />
 
-            {/* 2. EMAIL FIELD */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {t("register.email")}
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
-              />
-            </div>
+            <TextField
+              label={t("register.email")}
+              type="email"
+              required
+              readOnly
+              value={formData.email}
+            />
 
-            {/* 3. PASSWORD */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {t("register.password")}
-              </label>
-              <input
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
-              />
-            </div>
+            <TextField
+              label={t("register.password")}
+              type="password"
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+            />
 
-            {/* 4. CONFIRM PASSWORD */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {t("register.confirm")}
-              </label>
-              <input
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
-              />
-            </div>
+            <TextField
+              label={t("register.confirm")}
+              type="password"
+              required
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+            />
 
             {error && (
               <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">

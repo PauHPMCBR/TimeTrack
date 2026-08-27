@@ -63,6 +63,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
       userId: req.user!.userId,
       type,
       timestamp: new Date(),
+      source: 'user',
       reason,
       notes,
     });

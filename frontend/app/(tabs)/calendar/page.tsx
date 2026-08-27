@@ -5,24 +5,22 @@ import { useI18n } from "@/app/i18n";
 import { apiClient } from "@/lib/api";
 import { YearlyVacationResponse, MonthlyWorkRecordResponse } from "@/schemas/api";
 import { useRouter } from "next/navigation";
+import { localeTag } from "@/lib/datetime";
 import { Calendar } from "@/components/calendar/Calendar";
 import { Alert } from "@/components/ui/Alert";
 import Card from "@/components/ui/Card";
 
-function toLocale(lang: "ca" | "es" | "en"): string {
-  return lang === "ca" ? "ca-ES" : lang === "es" ? "es-ES" : "en-US";
-}
-
 export default function CalendarPage() {
   const router = useRouter();
   const { t, lang } = useI18n();
-  const locale = toLocale(lang);
+  const locale = localeTag(lang);
 
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [vacations, setVacations] = useState<YearlyVacationResponse | null>(null);
   const [workSessions, setWorkSessions] = useState<MonthlyWorkRecordResponse | null>(null);
   const [teamVacations, setTeamVacations] = useState<any[]>([]);
+  const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([6, 0]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -48,10 +46,11 @@ export default function CalendarPage() {
         const year = cursor.getFullYear();
         const month = cursor.getMonth() + 1;
 
-        const [vacationsResponse, workSessionsResponse, teamVacationsRes] = await Promise.all([
+        const [vacationsResponse, workSessionsResponse, teamVacationsRes, settingsRes] = await Promise.all([
           apiClient.getUserVacations(user._id, year),
           apiClient.getMonthlyRecords(user._id, month, year),
           apiClient.getTeamVacations(year),
+          apiClient.getPublicSettings(),
         ]);
         if (cancelled) return;
 
@@ -74,6 +73,14 @@ export default function CalendarPage() {
             return vUserId !== user._id;
           });
           setTeamVacations(others);
+        }
+
+        // Non-working days: prefer the user's own override, else the company default.
+        const allDays = [0, 1, 2, 3, 4, 5, 6];
+        if (user.workDays && user.workDays.length > 0) {
+          setNonWorkingDays(allDays.filter((d) => !user.workDays!.includes(d)));
+        } else if (!settingsRes.error && settingsRes.data?.settings) {
+          setNonWorkingDays(settingsRes.data.settings.nonWorkingDays ?? [6, 0]);
         }
       } catch (error) {
         console.error('Failed to fetch calendar data:', error);
@@ -112,6 +119,7 @@ export default function CalendarPage() {
         vacations={vacations}
         workSessions={workSessions}
         teamVacations={teamVacations}
+        nonWorkingDays={nonWorkingDays}
         loading={loading}
         showWorkSessions={true}
         showVacations={true}

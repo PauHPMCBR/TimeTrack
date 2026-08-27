@@ -62,6 +62,8 @@ describe('/api/admin/settings', () => {
       defaultExpectedHours: 8,
       benevolenceHours: 1,
       endOfDayHour: 17,
+      toleranceHours: 1,
+      nonWorkingDays: [6, 0],
     });
 
     const req = mockReq({ method: 'GET' });
@@ -77,6 +79,8 @@ describe('/api/admin/settings', () => {
           defaultExpectedHours: 8,
           benevolenceHours: 1,
           endOfDayHour: 17,
+          toleranceHours: 1,
+          nonWorkingDays: [6, 0],
         },
       },
     });
@@ -88,6 +92,8 @@ describe('/api/admin/settings', () => {
       defaultExpectedHours: 9,
       benevolenceHours: 2,
       endOfDayHour: 18,
+      toleranceHours: 1,
+      nonWorkingDays: [6, 0],
     });
 
     const req = mockReq({
@@ -115,6 +121,8 @@ describe('/api/admin/settings', () => {
           defaultExpectedHours: 9,
           benevolenceHours: 2,
           endOfDayHour: 18,
+          toleranceHours: 1,
+          nonWorkingDays: [6, 0],
         },
       },
     });
@@ -126,6 +134,8 @@ describe('/api/admin/settings', () => {
       defaultExpectedHours: 8,
       benevolenceHours: 1,
       endOfDayHour: 17,
+      toleranceHours: 1,
+      nonWorkingDays: [6, 0],
     });
 
     const req = mockReq({

@@ -62,12 +62,12 @@ describe('GET /api/admin/export/work-sessions', () => {
 
   it('should return CSV with sessions sorted by timestamp', async () => {
     const mockUsers = [
-      { _id: 'user-1', name: 'Alice', email: 'alice@example.com' },
-      { _id: 'user-2', name: 'Bob', email: 'bob@example.com' },
+      { _id: 'user-1', name: 'Alice', email: 'alice@example.com', dni: '11111111A' },
+      { _id: 'user-2', name: 'Bob', email: 'bob@example.com', dni: '22222222B' },
     ];
     const mockSessions = [
-      { _id: 's2', userId: 'user-2', type: 'check_in', timestamp: new Date('2024-01-15T08:00:00Z'), reason: 'Work, from home', notes: 'note' },
-      { _id: 's1', userId: 'user-1', type: 'check_out', timestamp: new Date('2024-01-14T17:00:00Z') },
+      { _id: 's2', userId: 'user-2', type: 'check_in', timestamp: new Date('2024-01-15T08:00:00Z'), source: 'user', reason: 'Work, from home', notes: 'note' },
+      { _id: 's1', userId: 'user-1', type: 'check_out', timestamp: new Date('2024-01-14T17:00:00Z'), source: 'admin' },
     ];
 
     vi.mocked(User.find).mockReturnValue({ lean: vi.fn().mockResolvedValue(mockUsers) } as any);
@@ -97,9 +97,9 @@ describe('GET /api/admin/export/work-sessions', () => {
     expect(res.status).toHaveBeenCalledWith(200);
 
     const csv = res.send.mock.calls[0][0] as string;
-    expect(csv).toContain('Name,Email,Timestamp,Type,Reason,Notes');
-    expect(csv).toContain('Alice,alice@example.com');
-    expect(csv).toContain('Bob,bob@example.com');
+    expect(csv).toContain('Name,DNI,Email,Timestamp,Type,Source,Reason,Notes');
+    expect(csv).toContain('Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,admin,');
+    expect(csv).toContain('Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,user,"Work, from home",note');
     expect(csv).toContain('"Work, from home"');
     expect(csv.indexOf('2024-01-14')).toBeLessThan(csv.indexOf('2024-01-15'));
   });

@@ -21,3 +21,13 @@ export function localeTag(lang: string): string {
     default: return "ca-ES";
   }
 }
+
+/** Short weekday labels in Mon..Sun order for a BCP-47 locale. */
+export function weekDayShortLabels(locale: string): string[] {
+  const base = new Date(2024, 0, 1); // 2024-01-01 is a Monday
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
+  });
+}

@@ -4,6 +4,14 @@ import { ZodSchema } from 'zod/v3';
 
 type Next = (err?: unknown) => void;
 
+function toErrorMessages(errors: unknown[]): string[] {
+  return errors.map((e) => {
+    if (typeof e === 'string') return e;
+    if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message);
+    return 'Validation failed';
+  });
+}
+
 export const validateRequestBody = (schema: ZodSchema) => {
   return (req: NextApiRequest, res: NextApiResponse, next: Next) => {
     try {
@@ -20,7 +28,7 @@ export const validateRequestBody = (schema: ZodSchema) => {
       return next();
     } catch (error) {
       const zodError = error as { errors?: unknown[]; message?: string };
-      responseErrorValidation(res, (zodError.errors ?? []) as string[], zodError.message ?? 'Validation failed');
+      responseErrorValidation(res, toErrorMessages(zodError.errors ?? []), zodError.message ?? 'Validation failed');
       return next();
     }
   };
@@ -33,7 +41,7 @@ export const validateQueryParams = (schema: ZodSchema) => {
       return next();
     } catch (error) {
       const zodError = error as { errors?: unknown[]; message?: string };
-      responseErrorValidation(res, (zodError.errors ?? []) as string[], zodError.message ?? 'Validation failed');
+      responseErrorValidation(res, toErrorMessages(zodError.errors ?? []), zodError.message ?? 'Validation failed');
       return next();
     }
   };
