@@ -541,7 +541,7 @@
                 "AlreadyExists": "Este correo electrónico ya existe",
                 "ContainsEmail": "La contraseña contiene el correo electrónico",
                 "ContainsUsername": "La contraseña contiene el nombre de usuario",
-                "LessThan12Characters": "La contraseña debe tener más de 12 caracteres",
+                "TooShort": "La contraseña debe tener al menos 8 caracteres",
                 "MissingLowercase": "La contraseña debe contener una letra minúscula",
                 "MissingNumber": "La contraseña debe contener un número",
                 "MissingSign": "La contraseña debe contener un símbolo",

@@ -51,7 +51,7 @@ export type IncorrectParameter =
     | 'date';
 
 export type PasswordIncorrectParameterReason =
-    | 'LessThan12Characters'
+    | 'TooShort'
     | 'MissingLowercase'
     | 'MissingUppercase'
     | 'MissingNumber'

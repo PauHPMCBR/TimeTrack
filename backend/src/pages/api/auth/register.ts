@@ -54,8 +54,8 @@ export default withRateLimit(
             const pwd = String(password);
             const errors: PasswordIncorrectParameterReason[] = [];
 
-            if (pwd.length < 12) {
-                errors.push('LessThan12Characters');
+            if (pwd.length < 8) {
+                errors.push('TooShort');
             }
             if (!/[a-z]/.test(pwd)) {
                 errors.push('MissingLowercase');

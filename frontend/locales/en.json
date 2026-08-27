@@ -541,7 +541,7 @@
                 "AlreadyExists": "This email already exists",
                 "ContainsEmail": "Password contains email",
                 "ContainsUsername": "Password contains username",
-                "LessThan12Characters": "Password must be at least 12 characters long",
+                "TooShort": "Password must be at least 8 characters long",
                 "MissingLowercase": "Password must contain a lowercase letter",
                 "MissingNumber": "Password must contain a number",
                 "MissingSign": "Password must contain a symbol",

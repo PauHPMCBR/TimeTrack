@@ -17,7 +17,7 @@ export const RegisterRequestSchema = z.object({
     registrationToken: z.string().min(1, 'Registration token is required'),
     email: z.string().email('Invalid email format'),
     name: z.string().min(1, 'Name is required'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 
