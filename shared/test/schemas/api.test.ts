@@ -40,7 +40,7 @@ describe('API Schemas', () => {
                 registrationToken: 'abc123',
                 email: 'test@example.com',
                 name: 'Test User',
-                password: 'password123',
+                password: 'SecurePass123!',
             });
             expect(result.success).toBe(true);
         });
@@ -50,7 +50,17 @@ describe('API Schemas', () => {
                 registrationToken: 'abc123',
                 email: 'test@example.com',
                 name: '',
-                password: 'password123',
+                password: 'SecurePass123!',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject password shorter than 8 characters', () => {
+            const result = RegisterRequestSchema.safeParse({
+                registrationToken: 'abc123',
+                email: 'test@example.com',
+                name: 'Test User',
+                password: 'short1!',
             });
             expect(result.success).toBe(false);
         });

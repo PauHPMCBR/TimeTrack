@@ -541,7 +541,7 @@
                 "AlreadyExists": "Aquest correu electrònic ja existeix",
                 "ContainsEmail": "La contrassenya conté el correu electrònic",
                 "ContainsUsername": "La contrassenya conté el nom d'usuari",
-                "LessThan12Characters": "La contrassenya ha de tenir més de 12 caràcters",
+                "TooShort": "La contrassenya ha de tenir com a mínim 8 caràcters",
                 "MissingLowercase": "La contrassenya ha de contenir una lletra minúscula",
                 "MissingNumber": "La contrassenya ha de contenir un número",
                 "MissingSign": "La contrassenya ha de contenir un símbol",

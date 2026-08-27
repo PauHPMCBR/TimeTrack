@@ -50,8 +50,8 @@ export default function CompleteRegistrationPage() {
             setError(t('register.error.match'));
             return;
         }
-        if (formData.password.length < 12) {
-            setError(t('error.IncorrectParameter.reason.LessThan12Characters'));
+        if (formData.password.length < 8) {
+            setError(t('error.IncorrectParameter.reason.TooShort'));
             return;
         }
 

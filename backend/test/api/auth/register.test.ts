@@ -138,7 +138,7 @@ describe('POST /api/auth/register', () => {
             error: 'IncorrectParameter',
             details: {
                 incorrectParameter: 'password',
-                reasons: ['LessThan12Characters'],
+                reasons: ['TooShort'],
             },
         });
     });

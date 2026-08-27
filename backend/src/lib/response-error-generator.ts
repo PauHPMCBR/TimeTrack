@@ -12,7 +12,11 @@ export function responseError(
     error: ErrorCode,
     details?: any
 ) {
-    console.warn('response error', JSON.stringify({ code, error, details }));
+    // Only 5xx indicate a server fault worth logging; 4xx (incl. brute-force
+    // attempts) are expected client errors and would only add noise.
+    if (code >= 500) {
+        console.error('response error', JSON.stringify({ code, error, details }));
+    }
     return res.status(code).json({
         success: false,
         error: error,
