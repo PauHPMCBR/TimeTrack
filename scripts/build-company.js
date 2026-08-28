@@ -33,10 +33,11 @@
 //     name: MOBE                 // optional, default TimeTrack360
 //     iconFile: /path/icon.png   // optional
 //     faviconFile: /path/favicon.png  // optional
-import { readFileSync, cpSync, rmSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, rmSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
+import sharp from "sharp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
@@ -99,22 +100,30 @@ export function resolveDomain({ infraDir = DEFAULT_INFRA_DIR, flag, env }) {
   return flag || env || readDotEnv(join(infraDir, ".env")).DOMAIN;
 }
 
-export function stageBranding(cfg, dir = brandingDir) {
+// Normalizes a branding source into a true PNG (any input format: PNG, AVIF,
+// WebP, JPEG, ...). This matters because the Dockerfile bakes the file as
+// "icon.png" / "favicon.png" and serves it as image/png — an AVIF file just
+// renamed to .png (a common mistake) would not render in strict browsers.
+async function toPng(inputPath, outputPath) {
+  await sharp(inputPath, { failOn: "none" }).png().toFile(outputPath);
+}
+
+export async function stageBranding(cfg, dir = brandingDir) {
   mkdirSync(dir, { recursive: true });
   rmSync(join(dir, "icon.png"), { force: true });
   rmSync(join(dir, "favicon.png"), { force: true });
   if (cfg.iconFile) {
-    cpSync(resolve(cfg.iconFile), join(dir, "icon.png"));
+    await toPng(resolve(cfg.iconFile), join(dir, "icon.png"));
   }
   if (cfg.faviconFile) {
-    cpSync(resolve(cfg.faviconFile), join(dir, "favicon.png"));
+    await toPng(resolve(cfg.faviconFile), join(dir, "favicon.png"));
   }
 }
 
-export function buildFrontend(cfg, domain, root = repoRoot) {
+export async function buildFrontend(cfg, domain, root = repoRoot) {
   const appName = cfg.name || "TimeTrack360";
   const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
-  stageBranding(cfg);
+  await stageBranding(cfg);
   execFileSync(
     "docker",
     [
@@ -198,7 +207,7 @@ if (isMain) {
     process.exit(1);
   }
 
-  buildFrontend(cfg, domain);
+  await buildFrontend(cfg, domain);
 
   if (args.backend) {
     buildBackend();
