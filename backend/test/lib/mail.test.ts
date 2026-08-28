@@ -3,6 +3,7 @@ import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
 import {
     buildMessage,
     getCompanyLanguage,
+    getSenderDisplayName,
     sendRegistrationInvite,
 } from '@/lib/mail';
 
@@ -25,6 +26,11 @@ const REMINDER_VARS = {
     companyName: 'ACME',
     date: '2026-08-27',
     anomalies: ['forgot_check_out', 'hours_short'] as WorkSessionAnomaly[],
+    times: [
+        { time: '09:02', type: 'check_in' },
+        { time: '13:30', type: 'check_out' },
+        { time: '14:00', type: 'check_in' },
+    ] as { time: string; type: 'check_in' | 'check_out' }[],
     autoTimetable: '09:00 – 17:00',
     applyAutoUrl: 'http://localhost:3000/check-in?applyAuto=1&date=2026-08-27',
 };
@@ -51,6 +57,28 @@ describe('mail (email sending)', () => {
         it('falls back to ca for unsupported values', () => {
             vi.stubEnv('COMPANY_LANGUAGE', 'fr');
             expect(getCompanyLanguage()).toBe('ca');
+        });
+    });
+
+    describe('getSenderDisplayName', () => {
+        it('is "<company> Registre Jornada" in Catalan by default', () => {
+            vi.stubEnv('COMPANY_NAME', 'ACME');
+            vi.stubEnv('COMPANY_LANGUAGE', 'ca');
+            expect(getSenderDisplayName()).toBe('ACME Registre Jornada');
+        });
+
+        it('translates the tagline for Spanish and English', () => {
+            vi.stubEnv('COMPANY_NAME', 'ACME');
+            vi.stubEnv('COMPANY_LANGUAGE', 'es');
+            expect(getSenderDisplayName()).toBe('ACME Registro Jornada');
+            vi.stubEnv('COMPANY_LANGUAGE', 'en');
+            expect(getSenderDisplayName()).toBe('ACME Time tracking');
+        });
+
+        it('uses the default company name when COMPANY_NAME is unset', () => {
+            vi.stubEnv('COMPANY_NAME', '');
+            vi.stubEnv('COMPANY_LANGUAGE', 'ca');
+            expect(getSenderDisplayName()).toBe('TimeTrack360 Registre Jornada');
         });
     });
 
@@ -119,20 +147,36 @@ describe('mail (email sending)', () => {
     });
 
     describe('inconsistencyReminder', () => {
-        it('puts the CTA button first and the anomaly details below it', () => {
+        it('puts the CTA button first, then the times, then the anomalies', () => {
             const message = buildMessage(
                 'inconsistencyReminder',
                 'ca',
                 REMINDER_VARS
             );
             const buttonIndex = message.html.indexOf('Aplica');
+            const timesIndex = message.html.indexOf('09:02');
             const anomalyIndex = message.html.indexOf('entrada sense sortida');
-            const timesIndex = message.html.indexOf('09:00');
             expect(buttonIndex).toBeGreaterThan(-1);
-            expect(anomalyIndex).toBeGreaterThan(-1);
             expect(timesIndex).toBeGreaterThan(-1);
-            expect(buttonIndex).toBeLessThan(anomalyIndex);
+            expect(anomalyIndex).toBeGreaterThan(-1);
             expect(buttonIndex).toBeLessThan(timesIndex);
+            expect(timesIndex).toBeLessThan(anomalyIndex);
+        });
+
+        it('renders every check-in/out time in order with its label', () => {
+            const message = buildMessage(
+                'inconsistencyReminder',
+                'en',
+                REMINDER_VARS
+            );
+            const caOut = message.html.indexOf('13:30');
+            const caIn = message.html.indexOf('14:00');
+            expect(caOut).toBeGreaterThan(-1);
+            expect(caIn).toBeGreaterThan(-1);
+            expect(caOut).toBeLessThan(caIn);
+            expect(message.html).toContain('Check-in');
+            expect(message.html).toContain('Check-out');
+            expect(message.text).toContain('09:02 — Check-in');
         });
 
         it('translates anomaly + auto times and links to the check-in page', () => {

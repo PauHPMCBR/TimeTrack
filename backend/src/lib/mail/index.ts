@@ -13,6 +13,7 @@ import {
 import {
     buildInconsistencyReminderMessage,
     InconsistencyReminderVars,
+    ReminderSessionTime,
 } from './templates/inconsistencyReminder';
 
 export type { EmailLanguage };
@@ -20,6 +21,7 @@ export type {
     RegistrationVars,
     PasswordResetVars,
     InconsistencyReminderVars,
+    ReminderSessionTime,
 };
 
 export type EmailKind =
@@ -39,6 +41,17 @@ export function getCompanyLanguage(): EmailLanguage {
 
 export function getCompanyName(): string {
     return process.env.COMPANY_NAME || 'TimeTrack360';
+}
+
+/** "<Company> Registre Jornada" — translated sender display name for the From header. */
+const SENDER_TAGLINES: Record<EmailLanguage, string> = {
+    ca: 'Registre Jornada',
+    es: 'Registro Jornada',
+    en: 'Time tracking',
+};
+
+export function getSenderDisplayName(): string {
+    return `${getCompanyName()} ${SENDER_TAGLINES[getCompanyLanguage()]}`;
 }
 
 type AnyVars =
@@ -106,7 +119,7 @@ export async function sendMail(input: SendMailInput): Promise<void> {
         return;
     }
 
-    const fromName = process.env.EMAIL_FROM_NAME || getCompanyName();
+    const fromName = getSenderDisplayName();
     const from = process.env.EMAIL_FROM || 'no-reply@registrejornada.fyi';
 
     await smtp.sendMail({
@@ -187,6 +200,7 @@ export interface InconsistencyReminderInput {
     name: string;
     date: string;
     anomalies: WorkSessionAnomaly[];
+    times: ReminderSessionTime[]; // the day's actual check-in/out times, in order
     autoTimetable: string; // human-readable, e.g. "09:00 – 17:00" or "09:00 – 13:00, 15:00 – 19:00"
     applyAutoUrl: string;
     companyName?: string;
@@ -201,6 +215,7 @@ export function sendInconsistencyReminder(
             input.companyName || process.env.COMPANY_NAME || getCompanyName(),
         date: input.date,
         anomalies: input.anomalies,
+        times: input.times,
         autoTimetable: input.autoTimetable,
         applyAutoUrl: input.applyAutoUrl,
     };

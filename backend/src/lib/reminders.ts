@@ -31,6 +31,12 @@ function formatTimetable(timetable: AutoScheduleEntry[]): string {
         .join(', ');
 }
 
+/** "HH:MM" (local) wall-clock time of a session timestamp. */
+function formatClockTime(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export interface ReminderSummary {
     date: string;
     scannedUsers: number;
@@ -96,6 +102,10 @@ export async function runDailyInconsistencyReminder(
 
         const timetable = getAutoTimetable(user);
         const autoTimetable = formatTimetable(timetable);
+        const times = sessions.map((s) => ({
+            time: formatClockTime(new Date(s.timestamp)),
+            type: s.type,
+        }));
         const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
         const applyAutoUrl = `${frontendUrl}/check-in?applyAuto=1&date=${dateKeyStr}`;
 
@@ -104,6 +114,7 @@ export async function runDailyInconsistencyReminder(
             name: user.name,
             date: dateKeyStr,
             anomalies,
+            times,
             autoTimetable,
             applyAutoUrl,
         });
