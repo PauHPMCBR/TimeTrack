@@ -75,17 +75,17 @@ export default function LoginForm() {
             className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
         >
             <div className="mb-6 flex flex-col items-center">
-                <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white">
-                    {APP_ICON_URL ? (
-                        <img
-                            src={APP_ICON_URL}
-                            alt={APP_NAME}
-                            className="h-10 w-10 rounded-2xl object-contain"
-                        />
-                    ) : (
+                {APP_ICON_URL ? (
+                    <img
+                        src={APP_ICON_URL}
+                        alt={APP_NAME}
+                        className="mb-2 h-12 w-auto object-contain"
+                    />
+                ) : (
+                    <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white">
                         <Clock size={20} />
-                    )}
-                </div>
+                    </div>
+                )}
                 <div className="text-2xl font-bold">{APP_NAME}</div>
                 <div className="text-xs text-zinc-500">
                     {t('brand.tagline')}

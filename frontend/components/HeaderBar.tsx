@@ -8,6 +8,7 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { User } from '@/types';
 import { REMEMBERED_EMAIL_KEY } from '@/lib/storage';
+import { APP_NAME, APP_ICON_URL, APP_ICON_TOOLBAR_URL } from '@/lib/brand';
 
 export default function HeaderBar() {
     const { t } = useI18n();
@@ -37,8 +38,24 @@ export default function HeaderBar() {
             : 'U';
 
     return (
-        <div className="w-full flex items-center justify-between px-2 sm:px-3">
+        <div className="relative w-full flex items-center justify-between px-2 sm:px-3">
             <LanguageSwitcher />
+
+            {APP_ICON_URL ? (
+                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <img
+                        src={APP_ICON_TOOLBAR_URL || APP_ICON_URL}
+                        alt={APP_NAME}
+                        className="h-6 w-auto sm:h-7"
+                    />
+                </div>
+            ) : (
+                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:block">
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">
+                        {APP_NAME}
+                    </span>
+                </div>
+            )}
 
             <div className="relative">
                 <button

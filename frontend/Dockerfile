@@ -21,6 +21,9 @@ COPY frontend ./frontend
 # copied; icon.png / favicon.png inside it override the defaults if present.
 COPY branding ./branding
 
+# ImageMagick is used below to derive a small toolbar-sized logo variant.
+RUN apk add --no-cache imagemagick
+
 ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 
@@ -30,6 +33,7 @@ ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 # NEXT_PUBLIC_* URL vars stay empty (=> stock branding) unless branding files
 # are provided; they are set in the build step below via brand.env.
 ENV NEXT_PUBLIC_APP_ICON_URL=
+ENV NEXT_PUBLIC_APP_ICON_TOOLBAR_URL=
 ENV NEXT_PUBLIC_FAVICON_URL=
 
 WORKDIR /app/frontend
@@ -37,10 +41,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy branding files into public/ and record the baked local paths in
 # /app/brand.env, which is sourced before `next build` (so Next inlines them).
+# icon.png is kept at full resolution (login + email footer); a 32px-height
+# variant is generated for the top toolbar so small renders don't download the
+# full image.
 RUN mkdir -p public/brand && rm -f /app/brand.env && { \
       if [ -f /app/branding/icon.png ]; then \
         cp /app/branding/icon.png public/brand/icon.png && \
-        echo "NEXT_PUBLIC_APP_ICON_URL=/brand/icon.png" >> /app/brand.env; \
+        convert /app/branding/icon.png -resize x128 public/brand/icon-toolbar.png && \
+        echo "NEXT_PUBLIC_APP_ICON_URL=/brand/icon.png" >> /app/brand.env && \
+        echo "NEXT_PUBLIC_APP_ICON_TOOLBAR_URL=/brand/icon-toolbar.png" >> /app/brand.env; \
       fi; \
       if [ -f /app/branding/favicon.png ]; then \
         cp /app/branding/favicon.png public/brand/favicon.png && \
