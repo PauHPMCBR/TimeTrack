@@ -406,6 +406,10 @@
                 "title": "Fichajes",
                 "anomalies": "anomalías",
                 "noAnomalies": "sin anomalías"
+            },
+            "monthlyApprovals": {
+                "title": "Confirmación mensual",
+                "desc": "Registro de confirmaciones mensuales del registro de jornada."
             }
         },
         "stats": {
@@ -462,7 +466,9 @@
             "reminderLabel": "Recordatorio de fichaje inconsistente por correo",
             "saved": "Configuración guardada correctamente",
             "subtitle": "Configura los valores generales de la empresa.",
-            "title": "Configuración de la empresa"
+            "title": "Configuración de la empresa",
+            "approvalReminderDaysLabel": "Días antes del recordatorio de confirmación",
+            "approvalReminderDaysHelp": "Días de espera desde la solicitud de confirmación mensual antes de enviar un recordatorio a la persona trabajadora (recordatorio único)."
         },
         "export": {
             "button": "Exportar CSV",
@@ -641,5 +647,35 @@
         "message": "Se ha producido un error inesperado.",
         "reload": "Recargar página",
         "title": "Algo ha salido mal"
+    },
+    "monthlyApprovals": {
+        "bannerTitle": "Confirmación del registro mensual",
+        "bannerDesc": "La administración ha revisado tu registro de jornada de los siguientes meses y espera que lo confirmes:",
+        "approve": "Confirmar",
+        "confirmApprove": "¿Confirmas que el registro de jornada de",
+        "bannerNote": "Al confirmar, declaras que los registros del mes son correctos. El mes queda bloqueado; para cualquier corrección, contacta con la administración.",
+        "adminTitle": "Confirmación mensual del registro",
+        "adminSubtitle": "Revisa los registros del mes y ábrelo para que cada persona trabajadora lo confirme. Los meses confirmados quedan bloqueados.",
+        "openTitle": "Abrir un mes para confirmación",
+        "openDesc": "Envía a cada persona trabajadora una solicitud para confirmar su registro del mes seleccionado. Los meses con anomalías pendientes no se pueden abrir.",
+        "month": "Mes",
+        "year": "Año",
+        "openAction": "Abrir para confirmación",
+        "openedCount": "{count} persona(s) notificadas correctamente.",
+        "blockedTitle": "No se han podido abrir (anomalías pendientes):",
+        "registryTitle": "Registro de confirmaciones",
+        "empty": "Todavía no hay ninguna confirmación mensual.",
+        "requestedAt": "Solicitado",
+        "approvedAt": "Confirmado",
+        "statusApproved": "Confirmado",
+        "statusPending": "Pendiente",
+        "revoke": "Revocar",
+        "confirmRevoke": "¿Seguro que quieres revocar la confirmación de",
+        "anomaly": {
+            "forgot_check_out": "entrada sin salida",
+            "forgot_check_in": "salida sin entrada",
+            "hours_short": "horas de menos",
+            "hours_over": "horas de más"
+        }
     }
 }

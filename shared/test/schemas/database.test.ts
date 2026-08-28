@@ -10,6 +10,7 @@ import {
     UserRoleSchema,
     WorkSessionReasonSchema,
     AppSettingsSchema,
+    MonthlyApprovalSchema,
 } from '../../src/schemas/database';
 
 describe('Database Schemas', () => {
@@ -290,6 +291,58 @@ describe('Database Schemas', () => {
                 type: 'check_in',
                 timestamp: new Date(),
                 version: 0,
+            });
+            expect(result.success).toBe(false);
+        });
+    });
+
+    describe('MonthlyApprovalSchema', () => {
+        it('should validate a pending approval', () => {
+            const result = MonthlyApprovalSchema.safeParse({
+                userId: 'user123',
+                year: 2025,
+                month: 7,
+                requestedAt: new Date(),
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.status).toBe('pending');
+                expect(result.data.approvedAt).toBeUndefined();
+                expect(result.data.reminderSentAt).toBeUndefined();
+            }
+        });
+
+        it('should accept an approved approval with audit fields', () => {
+            const result = MonthlyApprovalSchema.safeParse({
+                userId: 'user123',
+                year: 2025,
+                month: 7,
+                status: 'approved',
+                requestedAt: new Date(),
+                approvedAt: new Date(),
+                reminderSentAt: new Date(),
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.status).toBe('approved');
+            }
+        });
+
+        it('should reject months outside 1-12', () => {
+            const result = MonthlyApprovalSchema.safeParse({
+                userId: 'user123',
+                year: 2025,
+                month: 13,
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject an invalid status', () => {
+            const result = MonthlyApprovalSchema.safeParse({
+                userId: 'user123',
+                year: 2025,
+                month: 7,
+                status: 'rejected',
             });
             expect(result.success).toBe(false);
         });

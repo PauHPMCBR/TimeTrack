@@ -44,6 +44,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 endOfDayHour,
                 nonWorkingDays,
                 inconsistencyReminderEnabled,
+                monthlyApprovalReminderDays,
             } = req.body;
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
@@ -59,6 +60,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             if (inconsistencyReminderEnabled !== undefined)
                 update.inconsistencyReminderEnabled =
                     inconsistencyReminderEnabled;
+            if (monthlyApprovalReminderDays !== undefined)
+                update.monthlyApprovalReminderDays =
+                    monthlyApprovalReminderDays;
 
             const existing = await AppSettings.findOne({});
             if (existing) {

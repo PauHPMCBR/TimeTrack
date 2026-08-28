@@ -63,6 +63,7 @@ vi.mock('@/models', () => ({
     WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
+    MonthlyApproval: { findOne: vi.fn().mockResolvedValue(null) },
 }));
 
 import {

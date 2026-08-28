@@ -87,4 +87,10 @@ export type IllegalAction =
     | 'AlreadyObligatoryVacation'
     | 'ModifyingFromAnotherUser'
     | 'NoVacationConfig'
-    | 'FutureDate';
+    | 'FutureDate'
+    // Monthly record confirmation
+    | 'MonthNotPast'
+    | 'MonthStillHasAnomalies'
+    | 'MonthAlreadyApproved'
+    | 'MonthNotOpen'
+    | 'MonthApprovedLocked';

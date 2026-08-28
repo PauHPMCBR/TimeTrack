@@ -5,6 +5,10 @@ import { getAppSettings } from '@/lib/settings';
 import { dateKey } from '@/lib/date-key';
 import { dayRange } from '@/lib/date-range';
 import {
+    runMonthlyAdminReview,
+    runMonthlyApprovalReminders,
+} from '@/lib/monthly-approvals';
+import {
     getAutoTimetable,
     AutoScheduleEntry,
 } from '@/lib/auto-schedule';
@@ -158,6 +162,12 @@ export function scheduleDailyReminder(): void {
             const settings = await getAppSettings();
             const now = new Date();
             const todayKey = dateKey(now);
+
+            // Monthly record confirmation jobs run regardless of working days:
+            // the admin review mail fires once per month; approval reminders
+            // are checked daily against their requestedAt.
+            await runMonthlyAdminReview(now);
+            await runMonthlyApprovalReminders(now);
 
             // Toggle off: skip without marking the day done, so re-enabling
             // later (still after end of day) fires for today.

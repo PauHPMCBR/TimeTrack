@@ -24,6 +24,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/Modal';
 import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
 import TimetableList from '@/components/autoTimetable/TimetableList';
+import MonthlyApprovalsBanner from '@/components/MonthlyApprovalsBanner';
 import { timetableText } from '@/lib/timetable';
 import { Zap } from 'lucide-react';
 
@@ -273,6 +274,7 @@ export default function CheckInPage() {
 
     return (
         <section className="space-y-6">
+            <MonthlyApprovalsBanner />
             <Card className="p-5">
                 <h1 className="text-lg font-semibold">
                     {t('checkin.todaySummary')}

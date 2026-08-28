@@ -16,6 +16,7 @@ import {
     DEFAULT_BENEVOLENCE_HOURS,
     DEFAULT_END_OF_DAY_HOUR,
     DEFAULT_EXPECTED_WORK_HOURS,
+    DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     DEFAULT_NON_WORKING_DAYS,
 } from 'shared/src/lib/defaults';
 import { Check } from 'lucide-react';
@@ -26,6 +27,7 @@ type FormState = {
     endOfDayHour: number;
     nonWorkingDays: number[];
     inconsistencyReminderEnabled: boolean;
+    monthlyApprovalReminderDays: number;
 };
 
 export default function AdminSettingsPage() {
@@ -37,6 +39,7 @@ export default function AdminSettingsPage() {
         endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
         nonWorkingDays: [...DEFAULT_NON_WORKING_DAYS],
         inconsistencyReminderEnabled: true,
+        monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -76,6 +79,9 @@ export default function AdminSettingsPage() {
                             s.nonWorkingDays ?? [...DEFAULT_NON_WORKING_DAYS],
                         inconsistencyReminderEnabled:
                             s.inconsistencyReminderEnabled ?? true,
+                        monthlyApprovalReminderDays:
+                            s.monthlyApprovalReminderDays ??
+                            DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
                     });
                 }
             } catch (err) {
@@ -112,6 +118,8 @@ export default function AdminSettingsPage() {
                 nonWorkingDays: formData.nonWorkingDays,
                 inconsistencyReminderEnabled:
                     formData.inconsistencyReminderEnabled,
+                monthlyApprovalReminderDays:
+                    formData.monthlyApprovalReminderDays,
             });
 
             if (response.error) {
@@ -253,6 +261,31 @@ export default function AdminSettingsPage() {
                                 <p className="mt-1.5 text-xs text-zinc-500">
                                     {t('admin.settings.nonWorkingDaysHelp')}
                                 </p>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <div className="flex-1">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t('admin.settings.approvalReminderDaysLabel')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={60}
+                                        value={formData.monthlyApprovalReminderDays}
+                                        onChange={(e) =>
+                                            updateForm({
+                                                monthlyApprovalReminderDays: Number(
+                                                    e.target.value
+                                                ),
+                                            })
+                                        }
+                                        className="w-28 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                    />
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.approvalReminderDaysHelp')}
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">

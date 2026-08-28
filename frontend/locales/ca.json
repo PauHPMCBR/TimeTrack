@@ -105,7 +105,7 @@
         "confirmOut": "Sortir",
         "inProgress": "Sessió en curs",
         "notIn": "No has fitxat",
-"notesLabel": "Notes",
+        "notesLabel": "Notes",
         "notesPlaceholder": "Afegeix notes addicionals...",
         "reasonLabel": "Raó",
         "sessions": "Sessions",
@@ -406,6 +406,10 @@
                 "title": "Fitxatges",
                 "anomalies": "anomalies",
                 "noAnomalies": "sense anomalies"
+            },
+            "monthlyApprovals": {
+                "title": "Confirmació mensual",
+                "desc": "Registre de confirmacions mensuals del registre de jornada."
             }
         },
         "stats": {
@@ -462,7 +466,9 @@
             "reminderLabel": "Recordatori de fitxatge inconsistent per correu",
             "saved": "Configuració desada correctament",
             "subtitle": "Configura els valors generals de l'empresa.",
-            "title": "Configuració de l'empresa"
+            "title": "Configuració de l'empresa",
+            "approvalReminderDaysLabel": "Dies abans del recordatori de confirmació",
+            "approvalReminderDaysHelp": "Dies d'espera des de la sol·licitud de confirmació mensual abans d'enviar un recordatori a la persona treballadora (recordatori únic)."
         },
         "export": {
             "button": "Exporta CSV",
@@ -641,5 +647,35 @@
         "message": "S'ha produït un error inesperat.",
         "reload": "Recarregar pàgina",
         "title": "Alguna cosa ha anat malament"
+    },
+    "monthlyApprovals": {
+        "bannerTitle": "Confirmació del registre mensual",
+        "bannerDesc": "L'administració ha revisat el teu registre de jornada dels següents mesos i espera que el confirmis:",
+        "approve": "Confirmar",
+        "confirmApprove": "Confirmes que el registre de jornada de",
+        "bannerNote": "En confirmar, declares que els registres del mes són correctes. El mes queda bloquejat; per qualsevol correcció, contacta amb l'administració.",
+        "adminTitle": "Confirmació mensual del registre",
+        "adminSubtitle": "Revisa els registres del mes i obre'l perquè cada persona treballadora el confirmi. Els mesos confirmats queden bloquejats.",
+        "openTitle": "Obrir un mes per a confirmació",
+        "openDesc": "Envia a cada persona treballadora una sol·licitud per confirmar el seu registre del mes seleccionat. Els mesos amb anomalies pendents no es poden obrir.",
+        "month": "Mes",
+        "year": "Any",
+        "openAction": "Obrir per a confirmació",
+        "openedCount": "{count} persona(es) notificades correctament.",
+        "blockedTitle": "No s'han pogut obrir (anomalies pendents):",
+        "registryTitle": "Registre de confirmacions",
+        "empty": "Encara no hi ha cap confirmació mensual.",
+        "requestedAt": "Sol·licitat",
+        "approvedAt": "Confirmat",
+        "statusApproved": "Confirmat",
+        "statusPending": "Pendent",
+        "revoke": "Revocar",
+        "confirmRevoke": "Segur que vols revocar la confirmació de",
+        "anomaly": {
+            "forgot_check_out": "entrada sense sortida",
+            "forgot_check_in": "sortida sense entrada",
+            "hours_short": "hores de menys",
+            "hours_over": "hores de més"
+        }
     }
 }
