@@ -83,6 +83,7 @@ describe('/api/admin/settings', () => {
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
             inconsistencyReminderEnabled: true,
+            monthlyApprovalReminderDays: 5,
         });
 
         const req = mockReq({ method: 'GET' });
@@ -101,6 +102,7 @@ describe('/api/admin/settings', () => {
                     toleranceHours: 1,
                     nonWorkingDays: [6, 0],
                     inconsistencyReminderEnabled: true,
+                    monthlyApprovalReminderDays: 5,
                 },
             },
         });
@@ -115,6 +117,7 @@ describe('/api/admin/settings', () => {
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
             inconsistencyReminderEnabled: false,
+            monthlyApprovalReminderDays: 5,
         });
 
         const req = mockReq({
@@ -144,6 +147,7 @@ describe('/api/admin/settings', () => {
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
             inconsistencyReminderEnabled: true,
+            monthlyApprovalReminderDays: 5,
         });
 
         const req = mockReq({
@@ -178,6 +182,7 @@ describe('/api/admin/settings', () => {
                     toleranceHours: 1,
                     nonWorkingDays: [6, 0],
                     inconsistencyReminderEnabled: true,
+                    monthlyApprovalReminderDays: 5,
                 },
             },
         });
@@ -192,6 +197,7 @@ describe('/api/admin/settings', () => {
             toleranceHours: 1,
             nonWorkingDays: [6, 0],
             inconsistencyReminderEnabled: true,
+            monthlyApprovalReminderDays: 5,
         });
 
         const req = mockReq({

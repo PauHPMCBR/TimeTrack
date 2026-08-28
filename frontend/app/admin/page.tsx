@@ -14,6 +14,7 @@ import {
     Calendar,
     Settings,
     ClipboardList,
+    ShieldCheck,
 } from 'lucide-react';
 
 type MenuItem = {
@@ -111,6 +112,14 @@ export default function AdminDashboard() {
             iconColor: 'text-cyan-600 dark:text-cyan-400',
             bgColor: 'bg-cyan-50 dark:bg-cyan-900/20',
             icon: <Calendar size={24} />,
+        },
+        {
+            title: t('admin.menu.monthlyApprovals.title'),
+            desc: t('admin.menu.monthlyApprovals.desc'),
+            href: '/admin/monthly-approvals',
+            iconColor: 'text-teal-600 dark:text-teal-400',
+            bgColor: 'bg-teal-50 dark:bg-teal-900/20',
+            icon: <ShieldCheck size={24} />,
         },
         {
             title: t('admin.menu.settings.title'),

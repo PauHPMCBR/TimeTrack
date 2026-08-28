@@ -9,6 +9,10 @@ import type {
     ElectiveVacationRequest,
     ForgotPasswordRequest,
     LoginRequest,
+    MonthlyApprovalOpenRequest,
+    MonthlyApprovalOpenResult,
+    MonthlyApprovalRevokeRequest,
+    MonthlyApprovalRow,
     MonthlyWorkRecordResponse,
     RegisterRequest,
     ResetPasswordRequest,
@@ -531,6 +535,46 @@ class ApiClient {
 
     async getAdminDashboard(): Promise<ApiResponse<AdminDashboardResponse>> {
         return this.request(`/api/admin/dashboard`);
+    }
+
+    // --- Monthly record confirmation (registro de jornada) ---
+
+    async getMonthlyApprovals(
+        userId: string
+    ): Promise<ApiResponse<{ approvals: MonthlyApprovalRow[] }>> {
+        return this.request(`/api/monthly-approvals/user/${userId}`);
+    }
+
+    async approveMonthlyRecord(
+        approvalId: string
+    ): Promise<ApiResponse<{ approval: MonthlyApprovalRow }>> {
+        return this.request(`/api/monthly-approvals/${approvalId}/approve`, {
+            method: 'POST',
+        });
+    }
+
+    async getAdminMonthlyApprovals(): Promise<
+        ApiResponse<{ approvals: MonthlyApprovalRow[] }>
+    > {
+        return this.request(`/api/admin/monthly-approvals`);
+    }
+
+    async openMonthlyApprovals(
+        input: MonthlyApprovalOpenRequest
+    ): Promise<ApiResponse<MonthlyApprovalOpenResult>> {
+        return this.request(`/api/admin/monthly-approvals/open`, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+    }
+
+    async revokeMonthlyApproval(
+        input: MonthlyApprovalRevokeRequest
+    ): Promise<ApiResponse<Record<string, never>>> {
+        return this.request(`/api/admin/monthly-approvals/revoke`, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
     }
 
     async exportWorkSessions(

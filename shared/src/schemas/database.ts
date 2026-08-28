@@ -5,6 +5,7 @@ import {
     DEFAULT_CHECK_OUT_TIME,
     DEFAULT_END_OF_DAY_HOUR,
     DEFAULT_EXPECTED_WORK_HOURS,
+    DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     DEFAULT_NON_WORKING_DAYS,
 } from '../lib/defaults';
 
@@ -82,6 +83,20 @@ export const AppSettingsSchema = z.object({
         .default(DEFAULT_NON_WORKING_DAYS),
     // Send the end-of-day inconsistency-reminder email (on by default).
     inconsistencyReminderEnabled: z.boolean().default(true),
+    // Days to wait after an approval request before reminding the worker
+    // (single reminder) about their pending monthly record confirmation.
+    monthlyApprovalReminderDays: z
+        .number()
+        .int()
+        .min(1)
+        .max(60)
+        .default(DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS),
+    // Month key (YYYY-MM) of the last end-of-month "review the month's times"
+    // mail sent to admins. Empty string = never sent. `.optional()` because
+    // zod-mongoose compiles `z.string().default('')` to a `required: true`
+    // String path whose required validator rejects empty strings (same
+    // workaround as lastInconsistencyReminder).
+    lastMonthlyReviewReminder: z.string().default('').optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });
@@ -150,6 +165,27 @@ export const YearlyVacationDaysSchema = z.object({
     obligatoryDays: z.array(z.date()),
     electiveDaysTotalCount: z.number().gte(0),
     selectedElectiveDays: z.array(z.date()),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+});
+
+// Monthly record confirmation (registro de jornada): a document per
+// (user, year, month) exists only once the admin has opened that month for
+// the worker's approval. 'approved' months are hard-locked: no writes to that
+// user's work sessions in that month until the admin revokes the approval.
+export const MonthlyApprovalStatusSchema = z.enum(['pending', 'approved']);
+export type MonthlyApprovalStatus = z.infer<typeof MonthlyApprovalStatusSchema>;
+export const MonthlyApprovalSchema = z.object({
+    userId: z.string(),
+    year: z.number().int(),
+    month: z.number().int().min(1).max(12),
+    status: MonthlyApprovalStatusSchema.default('pending'),
+    // When the admin opened the month for approval.
+    requestedAt: z.date().optional(),
+    // When the worker confirmed the month in the app.
+    approvedAt: z.date().optional(),
+    // Set once the (single) X-days reminder has been sent.
+    reminderSentAt: z.date().optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

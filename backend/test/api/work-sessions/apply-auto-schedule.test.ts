@@ -54,6 +54,7 @@ vi.mock('@/models', () => {
     return {
         User: { findById: vi.fn() },
         WorkSession,
+        MonthlyApproval: { findOne: vi.fn().mockResolvedValue(null) },
     };
 });
 

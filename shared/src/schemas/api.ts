@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
     AutoScheduleEntrySchema,
     ElectiveVacationSchema,
+    MonthlyApprovalSchema,
     UserRoleSchema,
     UserSchema,
     WorkSessionSchema,
@@ -91,6 +92,7 @@ export const AppSettingsRequestSchema = z
         endOfDayHour: z.number().min(0).max(24).optional(),
         nonWorkingDays: z.array(z.number().int().min(0).max(6)).optional(),
         inconsistencyReminderEnabled: z.boolean().optional(),
+        monthlyApprovalReminderDays: z.number().int().min(1).max(60).optional(),
     })
     .refine(
         (data) => Object.keys(data).length > 0,
@@ -410,4 +412,49 @@ export const MonthlyWorkRecordResponseSchema = z.object({
 });
 export type MonthlyWorkRecordResponse = z.infer<
     typeof MonthlyWorkRecordResponseSchema
+>;
+
+// ---------------------------------------------------------------------------
+// Monthly record confirmation (registro de jornada)
+// ---------------------------------------------------------------------------
+
+export const MonthlyApprovalOpenRequestSchema = z.object({
+    year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
+    month: z.number().int().gte(1).lte(12),
+    // Users to open the month for. Omitted = all registered employees.
+    userIds: z.array(z.string()).optional(),
+});
+export type MonthlyApprovalOpenRequest = z.infer<
+    typeof MonthlyApprovalOpenRequestSchema
+>;
+
+export const MonthlyApprovalRevokeRequestSchema = z.object({
+    userId: z.string().min(1, 'User ID is required'),
+    year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
+    month: z.number().int().gte(1).lte(12),
+});
+export type MonthlyApprovalRevokeRequest = z.infer<
+    typeof MonthlyApprovalRevokeRequestSchema
+>;
+
+export const MonthlyApprovalRowSchema = MonthlyApprovalSchema.extend({
+    _id: z.string(),
+    userName: z.string().optional(),
+});
+export type MonthlyApprovalRow = z.infer<typeof MonthlyApprovalRowSchema>;
+
+// POST /api/admin/monthly-approvals/open — per-user outcome.
+export const MonthlyApprovalOpenResultSchema = z.object({
+    opened: z.array(MonthlyApprovalRowSchema),
+    // Users that could not be opened: their month still has anomalies.
+    blocked: z.array(
+        z.object({
+            userId: z.string(),
+            userName: z.string().optional(),
+            anomalies: z.array(WorkSessionAnomalySchema),
+        })
+    ),
+});
+export type MonthlyApprovalOpenResult = z.infer<
+    typeof MonthlyApprovalOpenResultSchema
 >;

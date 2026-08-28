@@ -4,6 +4,7 @@ import {
     WorkSessionSourceSchema,
     WorkSessionStatusSchema,
     WorkSessionTypeSchema,
+    MonthlyApprovalStatusSchema,
 } from '../schemas/database';
 
 // Canonical enum values derived from the shared Zod schemas (single source of
@@ -32,6 +33,10 @@ export const VACATION_PENDING = VACATION_STATUSES.pending;
 export const VACATION_APPROVED = VACATION_STATUSES.approved;
 export const VACATION_REJECTED = VACATION_STATUSES.rejected;
 export const VACATION_CANCELLED = VACATION_STATUSES.cancelled;
+
+export const MONTHLY_APPROVAL_STATUSES = MonthlyApprovalStatusSchema.enum;
+export const APPROVAL_PENDING = MONTHLY_APPROVAL_STATUSES.pending;
+export const APPROVAL_APPROVED = MONTHLY_APPROVAL_STATUSES.approved;
 
 // Audit "why" recorded in `notes` on documents created by the replacement
 // flows (kept as fixed, non-localized strings: they are part of the record).

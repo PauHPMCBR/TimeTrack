@@ -15,6 +15,11 @@ import {
     InconsistencyReminderVars,
     ReminderSessionTime,
 } from './templates/inconsistencyReminder';
+import {
+    buildAdminMonthlyReviewMessage,
+    buildWorkerMonthlyApprovalMessage,
+    MonthlyApprovalPeriod,
+} from './templates/monthlyApprovals';
 
 export type { EmailLanguage };
 export type {
@@ -22,12 +27,16 @@ export type {
     PasswordResetVars,
     InconsistencyReminderVars,
     ReminderSessionTime,
+    MonthlyApprovalPeriod,
 };
 
 export type EmailKind =
     | 'registration'
     | 'passwordReset'
-    | 'inconsistencyReminder';
+    | 'inconsistencyReminder'
+    | 'adminMonthlyReview'
+    | 'monthlyApprovalRequest'
+    | 'monthlyApprovalReminder';
 
 const SUPPORTED_LANGUAGES: EmailLanguage[] = ['ca', 'en', 'es'];
 const DEFAULT_LANGUAGE: EmailLanguage = 'ca';
@@ -57,7 +66,9 @@ export function getSenderDisplayName(): string {
 type AnyVars =
     | RegistrationVars
     | PasswordResetVars
-    | InconsistencyReminderVars;
+    | InconsistencyReminderVars
+    | AdminMonthlyReviewVars
+    | WorkerMonthlyApprovalVars;
 
 export function buildMessage(
     kind: EmailKind,
@@ -73,6 +84,23 @@ export function buildMessage(
             return buildInconsistencyReminderMessage(
                 lang,
                 vars as InconsistencyReminderVars
+            );
+        case 'adminMonthlyReview':
+            return buildAdminMonthlyReviewMessage(
+                lang,
+                vars as AdminMonthlyReviewVars
+            );
+        case 'monthlyApprovalRequest':
+            return buildWorkerMonthlyApprovalMessage(
+                'request',
+                lang,
+                vars as WorkerMonthlyApprovalVars
+            );
+        case 'monthlyApprovalReminder':
+            return buildWorkerMonthlyApprovalMessage(
+                'reminder',
+                lang,
+                vars as WorkerMonthlyApprovalVars
             );
     }
 }
@@ -220,4 +248,70 @@ export function sendInconsistencyReminder(
         applyAutoUrl: input.applyAutoUrl,
     };
     return sendEmail('inconsistencyReminder', { to: input.to, vars });
+}
+
+export interface AdminMonthlyReviewVars {
+    companyName: string;
+    period: MonthlyApprovalPeriod;
+    reviewUrl: string;
+}
+
+export interface WorkerMonthlyApprovalVars {
+    companyName: string;
+    name: string;
+    period: MonthlyApprovalPeriod;
+    approveUrl: string;
+}
+
+export interface AdminMonthlyReviewInput {
+    to: string;
+    period: MonthlyApprovalPeriod;
+    reviewUrl: string;
+    companyName?: string;
+}
+
+export function sendAdminMonthlyReview(
+    input: AdminMonthlyReviewInput
+): Promise<void> {
+    const vars: AdminMonthlyReviewVars = {
+        companyName:
+            input.companyName || process.env.COMPANY_NAME || getCompanyName(),
+        period: input.period,
+        reviewUrl: input.reviewUrl,
+    };
+    return sendEmail('adminMonthlyReview', { to: input.to, vars });
+}
+
+export interface MonthlyApprovalRequestInput {
+    to: string;
+    name: string;
+    period: MonthlyApprovalPeriod;
+    approveUrl: string;
+    companyName?: string;
+}
+
+export function sendMonthlyApprovalRequest(
+    input: MonthlyApprovalRequestInput
+): Promise<void> {
+    const vars: WorkerMonthlyApprovalVars = {
+        companyName:
+            input.companyName || process.env.COMPANY_NAME || getCompanyName(),
+        name: input.name,
+        period: input.period,
+        approveUrl: input.approveUrl,
+    };
+    return sendEmail('monthlyApprovalRequest', { to: input.to, vars });
+}
+
+export function sendMonthlyApprovalReminder(
+    input: MonthlyApprovalRequestInput
+): Promise<void> {
+    const vars: WorkerMonthlyApprovalVars = {
+        companyName:
+            input.companyName || process.env.COMPANY_NAME || getCompanyName(),
+        name: input.name,
+        period: input.period,
+        approveUrl: input.approveUrl,
+    };
+    return sendEmail('monthlyApprovalReminder', { to: input.to, vars });
 }

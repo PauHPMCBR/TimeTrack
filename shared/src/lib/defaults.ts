@@ -16,3 +16,6 @@ export const DEFAULT_CHECK_OUT_HOUR = 17;
 export const DEFAULT_FRONTEND_URL = 'http://localhost:3000';
 // Validity window (hours) for password-reset tokens.
 export const RESET_TOKEN_TTL_HOURS = 1;
+// Days to wait before reminding a worker about a pending monthly
+// record confirmation (single reminder).
+export const DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS = 5;

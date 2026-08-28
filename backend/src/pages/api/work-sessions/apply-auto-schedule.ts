@@ -14,6 +14,7 @@ import { computeDayHours } from 'shared/src/lib/work-hours';
 import { withUserLock } from '@/lib/user-lock';
 import { dateKey } from '@/lib/date-key';
 import { dayRange, dayTimestamp } from '@/lib/date-range';
+import { isMonthApproved } from '@/lib/monthly-approvals';
 import {
     getAutoTimetable,
     AutoScheduleEntry,
@@ -59,6 +60,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         if (requestedDate > dateKey(new Date())) {
             return responseErrorIllegalAction(res, 'FutureDate');
+        }
+
+        // Hard lock: an approved month is the worker's confirmed record —
+        // the automatic timetable cannot overwrite any day in it.
+        const [requestYear, requestMonth] = requestedDate
+            .split('-')
+            .map(Number);
+        if (await isMonthApproved(req.user!.userId, requestYear, requestMonth)) {
+            return responseErrorIllegalAction(res, 'MonthApprovedLocked');
         }
 
         const user = (await User.findById(

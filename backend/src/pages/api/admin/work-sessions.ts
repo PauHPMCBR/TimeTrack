@@ -32,6 +32,7 @@ import {
 import {
     responseErrorEntryNotFound,
     responseErrorGet,
+    responseErrorIllegalAction,
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
     responseErrorPut,
@@ -51,6 +52,7 @@ import {
 } from 'shared/src/schemas/api';
 import { dateKey } from '@/lib/date-key';
 import { withUserLock } from '@/lib/user-lock';
+import { isMonthApproved } from '@/lib/monthly-approvals';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'PUT') {
@@ -79,6 +81,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 return responseErrorIncorrectParameter(res, 'date', [
                     'InvalidTimestamp',
                 ]);
+            }
+
+            // Hard lock: an approved month is the worker's confirmed record —
+            // it must be revoked before any edit (new approval cycle).
+            if (
+                await isMonthApproved(
+                    userId,
+                    dayStart.getFullYear(),
+                    dayStart.getMonth() + 1
+                )
+            ) {
+                return responseErrorIllegalAction(res, 'MonthApprovedLocked');
             }
 
             const parsed = sessions.map((s) => ({

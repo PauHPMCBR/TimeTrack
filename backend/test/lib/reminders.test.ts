@@ -159,6 +159,7 @@ describe('runDailyInconsistencyReminder', () => {
             endOfDayHour: 20,
             nonWorkingDays: [6, 0],
             inconsistencyReminderEnabled: false,
+            monthlyApprovalReminderDays: 5,
         });
 
         const summary = await runDailyInconsistencyReminder(DATE);

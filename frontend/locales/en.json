@@ -406,6 +406,10 @@
                 "title": "Fitxatges",
                 "anomalies": "anomalies",
                 "noAnomalies": "no anomalies"
+            },
+            "monthlyApprovals": {
+                "title": "Monthly confirmation",
+                "desc": "Registry of monthly time record confirmations."
             }
         },
         "stats": {
@@ -462,7 +466,9 @@
             "reminderLabel": "Inconsistent check-in/out email reminder",
             "saved": "Settings saved successfully",
             "subtitle": "Configure the company-wide values.",
-            "title": "Company settings"
+            "title": "Company settings",
+            "approvalReminderDaysLabel": "Days before confirmation reminder",
+            "approvalReminderDaysHelp": "Days to wait after a monthly confirmation request before sending a reminder to the worker (single reminder)."
         },
         "export": {
             "button": "Export CSV",
@@ -641,5 +647,35 @@
         "message": "An unexpected error occurred.",
         "reload": "Reload page",
         "title": "Something went wrong"
+    },
+    "monthlyApprovals": {
+        "bannerTitle": "Monthly record confirmation",
+        "bannerDesc": "The administration has reviewed your time record for the following months and asks you to confirm them:",
+        "approve": "Confirm",
+        "confirmApprove": "Do you confirm the time record for",
+        "bannerNote": "By confirming, you declare the month's records are correct. The month is then locked; for any correction, contact the administration.",
+        "adminTitle": "Monthly record confirmation",
+        "adminSubtitle": "Review the month's records and open it so each worker confirms it. Confirmed months are locked.",
+        "openTitle": "Open a month for confirmation",
+        "openDesc": "Sends each worker a request to confirm their record of the selected month. Months with pending anomalies cannot be opened.",
+        "month": "Month",
+        "year": "Year",
+        "openAction": "Open for confirmation",
+        "openedCount": "{count} worker(s) notified successfully.",
+        "blockedTitle": "Could not be opened (pending anomalies):",
+        "registryTitle": "Confirmation registry",
+        "empty": "No monthly confirmations yet.",
+        "requestedAt": "Requested",
+        "approvedAt": "Confirmed",
+        "statusApproved": "Confirmed",
+        "statusPending": "Pending",
+        "revoke": "Revoke",
+        "confirmRevoke": "Revoke the confirmation of",
+        "anomaly": {
+            "forgot_check_out": "check-in without check-out",
+            "forgot_check_in": "check-out without check-in",
+            "hours_short": "fewer hours than expected",
+            "hours_over": "more hours than expected"
+        }
     }
 }

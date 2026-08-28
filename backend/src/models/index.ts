@@ -8,6 +8,7 @@ import {
     YearlyVacationDaysSchema,
     WorkSessionReasonSchema,
     AppSettingsSchema,
+    MonthlyApprovalSchema,
 } from 'shared/src/schemas/database';
 import { extendZod, zodSchema } from '@zodyac/zod-mongoose';
 import { z } from 'zod';
@@ -58,6 +59,12 @@ zYearlyVacationDays.index({ year: 1 });
 
 const zAppSettings = zodSchema(AppSettingsSchema);
 
+const zMonthlyApprovalSchema = zodSchema(MonthlyApprovalSchema);
+// One approval document per (user, year, month).
+zMonthlyApprovalSchema.index({ userId: 1, year: 1, month: 1 }, { unique: true });
+// Reminder scans look for pending docs by requestedAt.
+zMonthlyApprovalSchema.index({ status: 1, requestedAt: 1 });
+
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);
 export const WorkSessionReason =
     mongoose.models.WorkSessionReason ||
@@ -74,4 +81,8 @@ export const YearlyVacationDays =
     mongoose.models.YearlyVacationDays ||
     mongoose.model('YearlyVacationDays', zYearlyVacationDays);
 export const AppSettings =
-    mongoose.models.AppSettings || mongoose.model('AppSettings', zAppSettings);
+    mongoose.models.AppSettings ||
+    mongoose.model('AppSettings', zAppSettings);
+export const MonthlyApproval =
+    mongoose.models.MonthlyApproval ||
+    mongoose.model('MonthlyApproval', zMonthlyApprovalSchema);

@@ -4,6 +4,7 @@ import {
     DEFAULT_BENEVOLENCE_HOURS,
     DEFAULT_END_OF_DAY_HOUR,
     DEFAULT_EXPECTED_WORK_HOURS,
+    DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     DEFAULT_NON_WORKING_DAYS,
 } from 'shared/src/lib/defaults';
 
@@ -14,6 +15,7 @@ export interface AppSettingsValues {
     endOfDayHour: number;
     nonWorkingDays: number[];
     inconsistencyReminderEnabled: boolean;
+    monthlyApprovalReminderDays: number;
 }
 
 const DEFAULTS: AppSettingsValues = {
@@ -23,6 +25,7 @@ const DEFAULTS: AppSettingsValues = {
     endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
     nonWorkingDays: DEFAULT_NON_WORKING_DAYS,
     inconsistencyReminderEnabled: true,
+    monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
 };
 
 const CACHE_TTL_MS = 60 * 1000;
@@ -65,6 +68,9 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
         inconsistencyReminderEnabled:
             settings.inconsistencyReminderEnabled ??
             DEFAULTS.inconsistencyReminderEnabled,
+        monthlyApprovalReminderDays:
+            settings.monthlyApprovalReminderDays ??
+            DEFAULTS.monthlyApprovalReminderDays,
     };
     cachedAt = Date.now();
 
