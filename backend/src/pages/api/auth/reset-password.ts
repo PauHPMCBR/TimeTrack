@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import { signToken } from '@/lib/auth';
 import { User } from '@/models';
@@ -64,16 +65,30 @@ export default withRateLimit(
                 return responseErrorIncorrectParameter(res, 'password', errors);
             }
 
-            user.password = password;
-            // Null (not undefined): Mongoose drops `undefined` on save, which
-            // would leave the used token reusable.
-            user.resetPasswordToken = null;
-            user.resetPasswordExpires = null;
-            user.failedLoginAttempts = 0;
-            user.blocked = false;
-            user.blockedSince = null;
-            user.updatedAt = new Date();
-            await user.save();
+            // Persist with a targeted update instead of `user.save()`: a full
+            // save re-validates every path (incl. required fields a legacy user
+            // document may lack, e.g. `dni` on bootstrap-inserted admins) and
+            // would 500. `updateOne` skips validators; the password is hashed
+            // here to match what the pre-save hook does (cost 12).
+            const hashedPassword = await bcrypt.hash(String(password), 12);
+            await User.updateOne(
+                { _id: user._id },
+                {
+                    $set: {
+                        password: hashedPassword,
+                        failedLoginAttempts: 0,
+                        blocked: false,
+                        updatedAt: new Date(),
+                    },
+                    $unset: {
+                        // Null/undefined would leave a stale (possibly reusable)
+                        // token behind; $unset removes the fields entirely.
+                        resetPasswordToken: 1,
+                        resetPasswordExpires: 1,
+                        blockedSince: 1,
+                    },
+                }
+            );
 
             const jwt = signToken({
                 userId: user._id.toString(),

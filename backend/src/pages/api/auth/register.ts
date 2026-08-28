@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import { signToken } from '@/lib/auth';
 import { User } from '@/models';
@@ -75,12 +76,27 @@ export default withRateLimit(
                 ]);
             }
 
-            user.failedLoginAttempts = 0;
-            user.blocked = false;
-            user.blockedSince = undefined;
+            // Persist with a targeted update instead of `user.save()`: a full save
+            // re-validates every path (incl. required fields a bootstrap-inserted
+            // user document may lack, e.g. `dni`) and would 500. The password is
+            // hashed here to match the pre-save hook (cost 12).
+            const hashedPassword = await bcrypt.hash(String(password), 12);
+            await User.updateOne(
+                { _id: user._id },
+                {
+                    $set: {
+                        password: hashedPassword,
+                        registered: true,
+                        failedLoginAttempts: 0,
+                        blocked: false,
+                        updatedAt: new Date(),
+                    },
+                    $unset: { blockedSince: 1 },
+                }
+            );
+
+            // Reflect the new state on the in-memory doc used for the response.
             user.registered = true;
-            user.password = password;
-            await user.save();
 
             const token = signToken({
                 userId: user._id.toString(),
