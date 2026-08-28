@@ -1,7 +1,7 @@
 import { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE, CHECK_IN } from 'shared/src/lib/constants';
+import { ADMIN_ROLE, CHECK_IN, SESSION_REPLACED } from 'shared/src/lib/constants';
 import { WorkSession, User } from '@/models';
 import { startOfDay } from '@/lib/date-range';
 import {
@@ -23,6 +23,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             {
                 $match: {
                     timestamp: { $gte: today },
+                    status: { $ne: SESSION_REPLACED },
                 },
             },
             {

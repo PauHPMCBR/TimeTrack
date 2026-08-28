@@ -1,7 +1,7 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE, SOURCE_USER } from 'shared/src/lib/constants';
+import { ADMIN_ROLE, SOURCE_USER, SESSION_REPLACED } from 'shared/src/lib/constants';
 import { WorkSession, User } from '@/models';
 import {
     responseErrorGet,
@@ -63,8 +63,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         }
         const filter =
             Object.keys(timestampFilter).length > 0
-                ? { userId: { $in: userIds }, timestamp: timestampFilter }
-                : { userId: { $in: userIds } };
+                ? {
+                      userId: { $in: userIds },
+                      timestamp: timestampFilter,
+                      status: { $ne: SESSION_REPLACED },
+                  }
+                : {
+                      userId: { $in: userIds },
+                      status: { $ne: SESSION_REPLACED },
+                  };
 
         const [users, sessions] = (await Promise.all([
             User.find({ _id: { $in: userIds } }, 'name email dni').lean(),

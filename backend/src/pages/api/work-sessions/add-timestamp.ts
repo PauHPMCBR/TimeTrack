@@ -17,12 +17,15 @@ import {
     CHECK_IN,
     CHECK_OUT,
     SOURCE_USER,
+    SESSION_ACTIVE,
+    SESSION_REPLACED,
 } from 'shared/src/lib/constants';
 
-// Fetches today's sessions once (ascending) and derives both the last-session
-// type (for the check_in/check_out guard) and the day's worked hours from it.
-// Day boundary is the server's local time — same convention as every other
-// date-bucketed endpoint in the app.
+// Fetches today's active sessions once (ascending) and derives both the
+// last-session type (for the check_in/check_out guard) and the day's worked
+// hours from it. Day boundary is the server's local time — same convention as
+// every other date-bucketed endpoint in the app. Replaced versions of the day
+// are excluded: only the current record drives the in/out guard.
 async function getTodaySessions(
     userId: string
 ): Promise<InstanceType<typeof WorkSession>[]> {
@@ -31,6 +34,7 @@ async function getTodaySessions(
     return WorkSession.find({
         userId: userId,
         timestamp: { $gte: start, $lt: end },
+        status: { $ne: SESSION_REPLACED },
     }).sort({ timestamp: 1 });
 }
 
@@ -102,6 +106,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     timestamp: new Date(),
                     source: SOURCE_USER,
                     notes,
+                    // Join the day's current version (all active docs of a
+                    // day share it); days never touched by a replacement
+                    // (or legacy days) are version 1.
+                    version: todaySessions[0]?.version ?? 1,
+                    status: SESSION_ACTIVE,
                 });
 
                 await workSession.save();

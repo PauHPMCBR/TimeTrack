@@ -35,10 +35,13 @@ vi.mock('@/lib/user-lock', () => ({
     withUserLock: async (_userId: string, fn: () => unknown) => fn(),
 }));
 
-const { savedDocs, deleteMany } = vi.hoisted(() => {
+const { savedDocs, find, updateMany } = vi.hoisted(() => {
     const savedDocs: any[] = [];
-    const deleteMany = vi.fn().mockResolvedValue({});
-    return { savedDocs, deleteMany };
+    const find = vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue([]),
+    });
+    const updateMany = vi.fn().mockResolvedValue({});
+    return { savedDocs, find, updateMany };
 });
 
 vi.mock('@/models', () => {
@@ -46,14 +49,15 @@ vi.mock('@/models', () => {
         savedDocs.push(doc);
         return { ...doc, save: vi.fn().mockResolvedValue(doc) };
     });
-    (WorkSession as any).deleteMany = deleteMany;
+    (WorkSession as any).find = find;
+    (WorkSession as any).updateMany = updateMany;
     return {
         User: { findById: vi.fn() },
         WorkSession,
     };
 });
 
-import { User, WorkSession } from '@/models';
+import { User } from '@/models';
 import applyAutoScheduleHandler from '@/pages/api/work-sessions/apply-auto-schedule';
 
 function mockUser(user: any) {
@@ -66,6 +70,9 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         savedDocs.length = 0;
+        find.mockReturnValue({
+            lean: vi.fn().mockResolvedValue([]),
+        });
     });
 
     afterEach(() => {
@@ -88,12 +95,16 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
 
         await applyAutoScheduleHandler(req, res);
 
-        expect((WorkSession as any).deleteMany).toHaveBeenCalledTimes(1);
+        // On a fresh day there is nothing to supersede.
+        expect(updateMany).not.toHaveBeenCalled();
         expect(savedDocs).toHaveLength(4);
         expect(savedDocs[0]).toMatchObject({
             userId: 'user-123',
             type: 'check_in',
             source: 'automatic',
+            version: 1,
+            status: 'active',
+            notes: 'Automatic timetable applied',
             timestamp: new Date(2026, 7, 27, 8, 30, 0),
         });
         expect(savedDocs[1]).toMatchObject({
@@ -125,6 +136,50 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
                 }),
             })
         );
+    });
+
+    it('flags existing sessions as replaced instead of deleting them', async () => {
+        mockUser({
+            autoTimetable: [{ checkIn: '09:00', checkOut: '17:00' }],
+        });
+        // The day already has an active version 2 (original punches plus a
+        // later correction); it must be superseded, never deleted.
+        find.mockReturnValue({
+            lean: vi.fn().mockResolvedValue([
+                {
+                    _id: 's1',
+                    type: 'check_in',
+                    timestamp: new Date(2026, 7, 27, 8, 50, 0),
+                    version: 2,
+                    status: 'active',
+                },
+            ]),
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: { date: '2026-08-27' },
+        });
+        const res = mockRes();
+
+        await applyAutoScheduleHandler(req, res);
+
+        expect(updateMany).toHaveBeenCalledWith(
+            { _id: { $in: ['s1'] } },
+            expect.objectContaining({
+                $set: expect.objectContaining({
+                    status: 'replaced',
+                    replacedByVersion: 3,
+                }),
+            })
+        );
+        expect(savedDocs).toHaveLength(2);
+        expect(savedDocs[0]).toMatchObject({
+            version: 3,
+            status: 'active',
+            notes: 'Automatic timetable applied',
+        });
+        expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('falls back to the default 09:00-17:00 timetable when the user has none', async () => {

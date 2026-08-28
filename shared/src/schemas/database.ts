@@ -97,6 +97,11 @@ export const GroupSchema = z.object({
 export const WorkSessionTypeSchema = z.enum(['check_in', 'check_out']);
 export type WorkSessionType = z.infer<typeof WorkSessionTypeSchema>;
 export const WorkSessionSourceSchema = z.enum(['user', 'admin', 'automatic']);
+// Day versioning: replacing a day's sessions never deletes the old ones — they
+// are flagged as 'replaced' and kept for audit (registro de jornada requires a
+// non-manipulable, traceable record; CT 101/2019).
+export const WorkSessionStatusSchema = z.enum(['active', 'replaced']);
+export type WorkSessionStatus = z.infer<typeof WorkSessionStatusSchema>;
 export const WorkSessionReasonSchema = z.object({
     type: WorkSessionTypeSchema,
     reasonId: z.string(),
@@ -110,6 +115,13 @@ export const WorkSessionSchema = z.object({
     timestamp: z.date().default(() => new Date()),
     source: WorkSessionSourceSchema.default('user'),
     notes: z.string().max(1000).optional(),
+    // Version of the (user, day) sequence this document belongs to. Documents
+    // created before versioning have no version field: treat them as v1.
+    version: z.number().int().min(1).default(1),
+    status: WorkSessionStatusSchema.default('active'),
+    // Set on superseded documents: which version replaced them, and when.
+    replacedByVersion: z.number().int().min(1).optional(),
+    replacedAt: z.date().optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

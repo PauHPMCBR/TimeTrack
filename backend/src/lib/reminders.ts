@@ -9,7 +9,7 @@ import {
     AutoScheduleEntry,
 } from '@/lib/auto-schedule';
 import { sendInconsistencyReminder } from '@/lib/mail';
-import { MS_PER_MINUTE } from 'shared/src/lib/constants';
+import { MS_PER_MINUTE, SESSION_REPLACED } from 'shared/src/lib/constants';
 import {
     DEFAULT_BENEVOLENCE_HOURS,
     DEFAULT_FRONTEND_URL,
@@ -77,6 +77,7 @@ export async function runDailyInconsistencyReminder(
         const sessions = (await WorkSession.find({
             userId: user._id.toString(),
             timestamp: { $gte: start, $lt: end },
+            status: { $ne: SESSION_REPLACED },
         })
             .sort({ timestamp: 1 })
             .lean()) as unknown as DaySessionLike[];

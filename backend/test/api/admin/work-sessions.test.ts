@@ -60,7 +60,7 @@ const simpleChain = (result: unknown) => ({
 
 vi.mock('@/models', () => ({
     User: { find: vi.fn(), findById: vi.fn() },
-    WorkSession: { find: vi.fn(), deleteMany: vi.fn(), insertMany: vi.fn() },
+    WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
 }));
@@ -531,9 +531,9 @@ describe('GET /api/admin/work-sessions', () => {
 
         it('should replace the day sessions on success', async () => {
             vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
-            vi.mocked(WorkSession.deleteMany).mockResolvedValue({
-                deletedCount: 0,
-            } as any);
+            // No previous sessions for that day (fresh day).
+            vi.mocked(WorkSession.find).mockResolvedValue([] as any);
+            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
             vi.mocked(WorkSession.insertMany).mockResolvedValue([
                 { _id: 'x1', userId: 'u1', type: 'check_in', timestamp: at(9) },
                 {
@@ -560,21 +560,24 @@ describe('GET /api/admin/work-sessions', () => {
             await adminWorkSessionsHandler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(WorkSession.deleteMany).toHaveBeenCalledWith(
-                expect.objectContaining({ userId: 'u1' }),
-                undefined
-            );
+            // Nothing is ever deleted: on a fresh day there is nothing to
+            // supersede and no updateMany happens.
+            expect(WorkSession.updateMany).not.toHaveBeenCalled();
             expect(WorkSession.insertMany).toHaveBeenCalledWith(
                 expect.arrayContaining([
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_in',
                         source: 'admin',
+                        version: 1,
+                        status: 'active',
                     }),
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_out',
                         source: 'admin',
+                        version: 1,
+                        status: 'active',
                     }),
                 ])
             );
@@ -585,6 +588,110 @@ describe('GET /api/admin/work-sessions', () => {
                         workSessions: expect.any(Array),
                     }),
                 })
+            );
+        });
+
+        it('should flag previous versions as replaced instead of deleting them', async () => {
+            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
+            // The day already has an active version 3 (e.g. an auto-timetable
+            // applied earlier over the original punches).
+            vi.mocked(WorkSession.find).mockResolvedValue([
+                {
+                    _id: 's1',
+                    userId: 'u1',
+                    type: 'check_in',
+                    timestamp: at(9),
+                    version: 3,
+                    status: 'active',
+                },
+                {
+                    _id: 's2',
+                    userId: 'u1',
+                    type: 'check_out',
+                    timestamp: at(17),
+                    version: 3,
+                    status: 'active',
+                },
+            ] as any);
+            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
+            vi.mocked(WorkSession.insertMany).mockResolvedValue([] as any);
+
+            const req = mockReq({
+                method: 'PUT',
+                body: {
+                    userId: 'u1',
+                    date: '2025-06-09',
+                    reason: 'Worker requested correction',
+                    sessions: [
+                        { type: 'check_in', timestamp: at(8).toISOString() },
+                        { type: 'check_out', timestamp: at(16).toISOString() },
+                    ],
+                },
+            });
+            const res = mockRes();
+
+            await adminWorkSessionsHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            // The old set is flagged replaced, pointing at the new version.
+            expect(WorkSession.updateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['s1', 's2'] } },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        status: 'replaced',
+                        replacedByVersion: 4,
+                    }),
+                }),
+                undefined
+            );
+            // The new set becomes version 4, with the source marking the
+            // admin authorship and the reason stored in notes.
+            expect(WorkSession.insertMany).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        userId: 'u1',
+                        type: 'check_in',
+                        source: 'admin',
+                        version: 4,
+                        status: 'active',
+                        notes: 'Worker requested correction',
+                    }),
+                    expect.objectContaining({
+                        type: 'check_out',
+                        version: 4,
+                        notes: 'Worker requested correction',
+                    }),
+                ])
+            );
+        });
+
+        it('should default the audit reason when the admin does not provide one', async () => {
+            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
+            vi.mocked(WorkSession.find).mockResolvedValue([] as any);
+            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
+            vi.mocked(WorkSession.insertMany).mockResolvedValue([] as any);
+
+            const req = mockReq({
+                method: 'PUT',
+                body: {
+                    userId: 'u1',
+                    date: '2025-06-09',
+                    sessions: [
+                        { type: 'check_in', timestamp: at(9).toISOString() },
+                        { type: 'check_out', timestamp: at(17).toISOString() },
+                    ],
+                },
+            });
+            const res = mockRes();
+
+            await adminWorkSessionsHandler(req, res);
+
+            expect(WorkSession.insertMany).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        notes: 'Admin day correction',
+                    }),
+                ])
             );
         });
 
