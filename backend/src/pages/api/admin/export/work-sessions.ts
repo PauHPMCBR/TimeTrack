@@ -69,7 +69,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const [users, sessions] = (await Promise.all([
             User.find({ _id: { $in: userIds } }, 'name email dni').lean(),
             WorkSession.find(filter)
-                .select('userId timestamp type source reason notes')
+                .select('userId timestamp type source notes')
                 .sort({ timestamp: 1 })
                 .lean(),
         ])) as unknown as [UserRow[], WorkSessionRow[]];
@@ -82,7 +82,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             'Timestamp',
             'Type',
             'Source',
-            'Reason',
             'Notes',
         ];
         const rows = sessions.map((s) => [
@@ -92,7 +91,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             new Date(s.timestamp).toISOString(),
             s.type,
             s.source ?? SOURCE_USER,
-            s.reason ?? '',
             s.notes ?? '',
         ]);
 

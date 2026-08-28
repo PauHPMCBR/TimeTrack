@@ -75,7 +75,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     )
         return;
 
-    const { type, reason, notes } = req.body;
+    const { type, notes } = req.body;
 
     try {
         await dbConnect();
@@ -101,7 +101,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     type,
                     timestamp: new Date(),
                     source: SOURCE_USER,
-                    reason,
                     notes,
                 });
 

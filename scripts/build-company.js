@@ -8,8 +8,8 @@
 // NOT part of company configs: it is resolved from (highest priority first):
 //   1. the --domain CLI flag,
 //   2. the DEPLOY_DOMAIN environment variable,
-//   3. a gitignored deployment config at deploy-docs/config.json
-//      ({ "domain": "example.com" }).
+//   3. the `DOMAIN` line in /opt/timetrack/.env (the infra dir, overridable
+//      with INFRA_DIR).
 // This keeps company configs deployment-agnostic and keeps the real domain out
 // of anything pushed to a public repo.
 //
@@ -33,9 +33,6 @@
 //     name: MOBE                 // optional, default TimeTrack360
 //     iconFile: /path/icon.png   // optional
 //     faviconFile: /path/favicon.png  // optional
-//
-// (Legacy: `--config <company.json>` still works for a standalone JSON config,
-// but the compose file is now the preferred, centralised source.)
 import { readFileSync, cpSync, rmSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -45,8 +42,30 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const brandingDir = join(repoRoot, "branding");
 
-export function readCompanyConfig(path) {
-  return JSON.parse(readFileSync(resolve(path), "utf8"));
+// Infra dir holds the shared compose + .env (root domain, secrets). Overridable
+// with INFRA_DIR for other layouts.
+export const DEFAULT_INFRA_DIR = process.env.INFRA_DIR || "/opt/timetrack";
+
+// Reads KEY=VALUE lines from a .env file (no shell parsing, no exports).
+export function readDotEnv(path) {
+  const out = {};
+  if (!existsSync(path)) return out;
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    out[key] = value;
+  }
+  return out;
 }
 
 // Reads the `x-company` extension block from a docker compose file via
@@ -76,17 +95,8 @@ export function readCompanyFromCompose(composePath) {
   };
 }
 
-export function resolveDomain({ repoRoot: root = repoRoot, flag, env }) {
-  let domain = flag || env;
-  const cfgPath = join(root, "deploy-docs", "config.json");
-  if (!domain && existsSync(cfgPath)) {
-    try {
-      domain = JSON.parse(readFileSync(cfgPath, "utf8")).domain;
-    } catch {
-      domain = undefined;
-    }
-  }
-  return domain;
+export function resolveDomain({ infraDir = DEFAULT_INFRA_DIR, flag, env }) {
+  return flag || env || readDotEnv(join(infraDir, ".env")).DOMAIN;
 }
 
 export function stageBranding(cfg, dir = brandingDir) {
@@ -123,19 +133,6 @@ export function buildFrontend(cfg, domain, root = repoRoot) {
   );
 }
 
-export const COMPANY_LANGUAGES = ["ca", "en", "es"];
-
-export function resolveCompanyLanguage(cfg) {
-  const lang = String(cfg.language || "ca").toLowerCase();
-  if (!COMPANY_LANGUAGES.includes(lang)) {
-    console.warn(
-      `Warning: unknown language "${cfg.language}" (supported: ${COMPANY_LANGUAGES.join(", ")}); using "ca".`
-    );
-    return "ca";
-  }
-  return lang;
-}
-
 export function buildBackend(root = repoRoot) {
   execFileSync("docker", ["build", "-f", "backend/Dockerfile", "-t", "registre-jornada-backend:latest", "."], {
     cwd: root,
@@ -170,8 +167,7 @@ const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv
 if (isMain) {
   function usage() {
     console.error(
-      "Usage: node scripts/build-company.js --compose /path/to/compose.yml [--backend] [--domain <root-domain>] [--push-tag <registry>]\n" +
-        "       (legacy: --config /path/to/company.json)"
+      "Usage: node scripts/build-company.js --compose /path/to/compose.yml [--backend] [--domain <root-domain>] [--push-tag <registry>]"
     );
     process.exit(1);
   }
@@ -179,20 +175,17 @@ if (isMain) {
   const argv = process.argv.slice(2);
   const args = {};
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--config") args.config = argv[++i];
-    else if (argv[i] === "--compose") args.compose = argv[++i];
+    if (argv[i] === "--compose") args.compose = argv[++i];
     else if (argv[i] === "--backend") args.backend = true;
     else if (argv[i] === "--push-tag") args.pushTag = argv[++i];
     else if (argv[i] === "--domain") args.domain = argv[++i];
     else usage();
   }
-  if (!args.config && !args.compose) usage();
+  if (!args.compose) usage();
 
-  const cfg = args.compose
-    ? readCompanyFromCompose(args.compose)
-    : readCompanyConfig(args.config);
+  const cfg = readCompanyFromCompose(args.compose);
   if (!cfg.subdomain) {
-    console.error("The company config must include 'subdomain'.");
+    console.error("The company compose's x-company block must include 'subdomain'.");
     process.exit(1);
   }
 
@@ -200,7 +193,7 @@ if (isMain) {
   if (!domain) {
     console.error(
       "No root domain configured. Pass --domain <root-domain>, set DEPLOY_DOMAIN,\n" +
-        "or create deploy-docs/config.json with { \"domain\": \"example.com\" }."
+        "or add DOMAIN=<root-domain> to /opt/timetrack/.env."
     );
     process.exit(1);
   }

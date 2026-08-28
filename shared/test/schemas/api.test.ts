@@ -114,10 +114,9 @@ describe('API Schemas', () => {
             expect(result.success).toBe(true);
         });
 
-        it('should validate correct check_out with reason', () => {
+        it('should validate correct check_out with notes', () => {
             const result = WorkSessionRequestSchema.safeParse({
                 type: 'check_out',
-                reason: 'Doctor appointment',
                 notes: 'Some notes',
             });
             expect(result.success).toBe(true);

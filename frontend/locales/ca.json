@@ -105,17 +105,8 @@
         "confirmOut": "Sortir",
         "inProgress": "Sessió en curs",
         "notIn": "No has fitxat",
-        "notesLabel": "Notes",
+"notesLabel": "Notes",
         "notesPlaceholder": "Afegeix notes addicionals...",
-        "reason": {
-            "break": "Descans",
-            "errand": "Encàrreg",
-            "lunch": "Dinar",
-            "meeting": "Reunió",
-            "other": "Altre",
-            "personal": "Personal",
-            "work": "Treballar"
-        },
         "reasonLabel": "Raó",
         "sessions": "Sessions",
         "title": "Fitxatge",

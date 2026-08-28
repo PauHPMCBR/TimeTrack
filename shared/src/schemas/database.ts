@@ -109,7 +109,6 @@ export const WorkSessionSchema = z.object({
     type: WorkSessionTypeSchema,
     timestamp: z.date().default(() => new Date()),
     source: WorkSessionSourceSchema.default('user'),
-    reason: z.string().max(500).optional(),
     notes: z.string().max(1000).optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),

@@ -222,7 +222,6 @@ export default function HistoryAndStatsPage() {
             'Email',
             'Timestamp',
             'Type',
-            'Reason',
             'Notes',
         ];
         const rows = [...workSessions]
@@ -236,7 +235,6 @@ export default function HistoryAndStatsPage() {
                 user?.email ?? '',
                 new Date(s.timestamp).toISOString(),
                 s.type,
-                s.reason ?? '',
                 s.notes ?? '',
             ]);
         downloadCsv(
