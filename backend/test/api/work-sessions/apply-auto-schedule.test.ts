@@ -162,4 +162,26 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
             details: { entry: 'User' },
         });
     });
+
+    it('rejects future dates', async () => {
+        mockUser({
+            autoTimetable: [{ checkIn: '09:00', checkOut: '17:00' }],
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: { date: '2099-01-01' },
+        });
+        const res = mockRes();
+
+        await applyAutoScheduleHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IllegalAction',
+            details: { illegalAction: 'FutureDate' },
+        });
+        expect(savedDocs).toHaveLength(0);
+    });
 });

@@ -46,7 +46,7 @@ export default function BottomNav() {
     const cols = items.length;
 
     return (
-        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200/70 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-zinc-900">
             <div
                 className="mx-auto grid h-16 max-w-3xl"
                 style={{

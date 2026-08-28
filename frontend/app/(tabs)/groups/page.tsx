@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { Group } from '@/types';
-import { Users, ChevronRight } from 'lucide-react';
+import { Users, ChevronRight, ChevronLeft } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function UserGroupsPage() {
@@ -35,13 +35,22 @@ export default function UserGroupsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {t('groups.title')}
-                </h1>
-                <p className="mt-1 text-sm text-zinc-500">
-                    {t('groups.subtitle')}
-                </p>
+            <div className="flex items-center gap-2">
+                <Link
+                    href="/profile"
+                    className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    aria-label={t('groups.backToProfile')}
+                >
+                    <ChevronLeft size={24} />
+                </Link>
+                <div>
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        {t('groups.title')}
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-500">
+                        {t('groups.subtitle')}
+                    </p>
+                </div>
             </div>
 
             <div className="grid gap-4">

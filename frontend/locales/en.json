@@ -127,9 +127,13 @@
         "autoApplyConfirmCancel": "Cancel",
         "autoApplyConfirmConfirm": "Yes, apply it",
         "autoApplyConfirmTitle": "Apply the automatic timetable?",
+        "autoApplyDate": "Apply date",
         "autoApplyFailed": "Couldn't apply the automatic timetable.",
         "autoApplied": "Automatic timetable applied.",
         "autoAddInterval": "Add interval",
+        "autoCancel": "Cancel",
+        "autoConfigure": "Configure",
+        "autoFutureDate": "The timetable can't be applied to a future date.",
         "autoRemoveInterval": "Remove",
         "autoCheckIn": "Check-in",
         "autoCheckOut": "Check-out",
@@ -245,6 +249,7 @@
         "used": "Used"
     },
     "groups": {
+        "backToProfile": "Back to profile",
         "empty": "You are not assigned to any group yet.",
         "groupDescription": "Group Description",
         "members": "Team Members",
@@ -267,6 +272,9 @@
             "uploadError": "Could not upload the photo. Please try again.",
             "uploading": "Uploading...",
             "updated": "Photo updated"
+        },
+        "autoTimetable": {
+            "edit": "Edit automatic timetable"
         },
         "change": "Toggle",
         "errorLoading": "Error loading user",
@@ -291,10 +299,8 @@
         "subtitle": "Profile & hours",
         "theme": {
             "label": "Theme",
-            "latte": "Latte",
-            "frappe": "Frappé",
-            "macchiato": "Macchiato",
-            "mocha": "Mocha"
+            "light": "Light",
+            "dark": "Dark"
         },
         "thisWeek": "This week",
         "title": "User profile",

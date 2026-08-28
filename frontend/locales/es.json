@@ -127,9 +127,13 @@
         "autoApplyConfirmCancel": "Cancelar",
         "autoApplyConfirmConfirm": "Sí, aplicar",
         "autoApplyConfirmTitle": "¿Aplicar el horario automático?",
+        "autoApplyDate": "Fecha de aplicación",
         "autoApplyFailed": "No se pudo aplicar el horario automático.",
         "autoApplied": "Horario automático aplicado.",
         "autoAddInterval": "Añadir intervalo",
+        "autoCancel": "Cancelar",
+        "autoConfigure": "Configurar",
+        "autoFutureDate": "No se puede aplicar el horario a una fecha futura.",
         "autoRemoveInterval": "Quitar",
         "autoCheckIn": "Entrada",
         "autoCheckOut": "Salida",
@@ -245,6 +249,7 @@
         "used": "Gastados"
     },
     "groups": {
+        "backToProfile": "Volver al perfil",
         "empty": "Aún no estás asignado a ningún grupo.",
         "groupDescription": "Descripción del Grupo",
         "members": "Miembros del Equipo",
@@ -267,6 +272,9 @@
             "uploadError": "No se pudo subir la foto. Inténtalo de nuevo.",
             "uploading": "Subiendo...",
             "updated": "Foto actualizada"
+        },
+        "autoTimetable": {
+            "edit": "Editar horario automático"
         },
         "change": "Cambiar",
         "errorLoading": "Error al cargar el usuario",
@@ -291,10 +299,8 @@
         "subtitle": "Perfil y horas",
         "theme": {
             "label": "Tema",
-            "latte": "Latte",
-            "frappe": "Frappé",
-            "macchiato": "Macchiato",
-            "mocha": "Mocha"
+            "light": "Claro",
+            "dark": "Oscuro"
         },
         "thisWeek": "Esta semana",
         "title": "Perfil de usuario",

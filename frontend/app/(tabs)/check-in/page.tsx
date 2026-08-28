@@ -21,6 +21,11 @@ import {
 } from 'shared/src/lib/defaults';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/Modal';
+import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
+import TimetableList from '@/components/autoTimetable/TimetableList';
+import { timetableText } from '@/lib/timetable';
+import { Zap } from 'lucide-react';
 
 export default function CheckInPage() {
     const { t, lang } = useI18n();
@@ -42,12 +47,14 @@ export default function CheckInPage() {
     const [autoTimetable, setAutoTimetable] = useState<
         { checkIn: string; checkOut: string }[]
     >([{ checkIn: DEFAULT_CHECK_IN_TIME, checkOut: DEFAULT_CHECK_OUT_TIME }]);
-    const [autoSaving, setAutoSaving] = useState(false);
+    const [autoModalOpen, setAutoModalOpen] = useState(false);
+    const [autoApplyOpen, setAutoApplyOpen] = useState(false);
+    const [autoApplyDate, setAutoApplyDate] = useState(() =>
+        toLocalDateKey(new Date())
+    );
     const [autoApplying, setAutoApplying] = useState(false);
     const [autoMessage, setAutoMessage] = useState<string | null>(null);
     const [autoError, setAutoError] = useState<string | null>(null);
-    const [showAutoConfirm, setShowAutoConfirm] = useState(false);
-    const [applyDate, setApplyDate] = useState<string | null>(null);
 
     const refreshSessions = async (user: User) => {
         if (!user) return;
@@ -188,76 +195,47 @@ export default function CheckInPage() {
 
         if (searchParams.get('applyAuto') === '1') {
             const d = searchParams.get('date');
-            setApplyDate(
+            setAutoApplyDate(
                 d && DATE_KEY_REGEX.test(d) ? d : toLocalDateKey(new Date())
             );
-            setShowAutoConfirm(true);
+            setAutoApplyOpen(true);
             // Drop the flag so a refresh doesn't re-open the dialog.
             window.history.replaceState({}, '', window.location.pathname);
         }
     }, [currentUser, loading, searchParams]);
 
-    const updateTimetableEntry = (
-        index: number,
-        field: 'checkIn' | 'checkOut',
-        value: string
+    const saveAutoSchedule = async (
+        next: { checkIn: string; checkOut: string }[]
     ) => {
-        setAutoTimetable((prev) =>
-            prev.map((e, i) => (i === index ? { ...e, [field]: value } : e))
-        );
-    };
-
-    const addTimetableInterval = () => {
-        setAutoTimetable((prev) => [
-            ...prev,
-            {
-                checkIn: DEFAULT_CHECK_IN_TIME,
-                checkOut: DEFAULT_CHECK_OUT_TIME,
-            },
-        ]);
-    };
-
-    const removeTimetableInterval = (index: number) => {
-        setAutoTimetable((prev) =>
-            prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)
-        );
-    };
-
-    const timetableText = autoTimetable
-        .map((e) => `${e.checkIn} – ${e.checkOut}`)
-        .join(', ');
-
-    const saveAutoSchedule = async () => {
-        if (!currentUser) return;
-        setAutoSaving(true);
-        setAutoMessage(null);
-        setAutoError(null);
-        const res = await apiClient.updateMyProfile({ autoTimetable });
+        if (!currentUser) return false;
+        const res = await apiClient.updateMyProfile({ autoTimetable: next });
         if (res.data) {
+            setAutoTimetable(next);
             setCurrentUser((prev) =>
-                prev ? { ...prev, autoTimetable } : prev
+                prev ? { ...prev, autoTimetable: next } : prev
             );
-            setAutoMessage(t('checkin.autoSaved'));
-        } else {
-            setAutoError(t('checkin.autoSaveFailed'));
+            return true;
         }
-        setAutoSaving(false);
+        return false;
     };
 
     const applyAutoSchedule = async () => {
-        if (!applyDate || !currentUser) return;
+        if (!currentUser) return;
+        if (autoApplyDate > toLocalDateKey(new Date())) {
+            setAutoError(t('checkin.autoFutureDate'));
+            return;
+        }
         setAutoApplying(true);
-        setAutoMessage(null);
         setAutoError(null);
-        const res = await apiClient.applyAutoSchedule({ date: applyDate });
+        const res = await apiClient.applyAutoSchedule({ date: autoApplyDate });
+        setAutoApplying(false);
         if (res.data) {
-            setShowAutoConfirm(false);
+            setAutoApplyOpen(false);
             setAutoMessage(t('checkin.autoApplied'));
             await refreshSessions(currentUser);
         } else {
             setAutoError(t('checkin.autoApplyFailed'));
         }
-        setAutoApplying(false);
     };
 
     const handleCheckInOut = async () => {
@@ -389,103 +367,55 @@ export default function CheckInPage() {
                 </div>
             </Card>
 
-            <Card className="p-5">
-                <h2 className="text-lg font-semibold">
-                    {t('checkin.autoTitle')}
-                </h2>
-                <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-                    {t('checkin.autoSubtitle')}
-                </p>
-
-                <div className="space-y-3">
-                    {autoTimetable.map((entry, index) => (
-                        <div
-                            key={index}
-                            className="flex items-end gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700"
-                        >
-                            <div className="flex-1">
-                                <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {t('checkin.autoCheckIn')}
-                                </label>
-                                <input
-                                    type="time"
-                                    value={entry.checkIn}
-                                    onChange={(e) =>
-                                        updateTimetableEntry(
-                                            index,
-                                            'checkIn',
-                                            e.target.value
-                                        )
-                                    }
-                                    className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700 transition-colors"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {t('checkin.autoCheckOut')}
-                                </label>
-                                <input
-                                    type="time"
-                                    value={entry.checkOut}
-                                    onChange={(e) =>
-                                        updateTimetableEntry(
-                                            index,
-                                            'checkOut',
-                                            e.target.value
-                                        )
-                                    }
-                                    className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700 transition-colors"
-                                />
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={autoTimetable.length <= 1}
-                                onClick={() => removeTimetableInterval(index)}
-                            >
-                                {t('checkin.autoRemoveInterval')}
-                            </Button>
-                        </div>
-                    ))}
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={addTimetableInterval}
-                    >
-                        {t('checkin.autoAddInterval')}
-                    </Button>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                    <Button
-                        variant="secondary"
-                        disabled={autoSaving}
-                        onClick={saveAutoSchedule}
-                    >
-                        {t('checkin.autoSave')}
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={() => {
-                            setApplyDate(toLocalDateKey(new Date()));
-                            setShowAutoConfirm(true);
-                        }}
-                    >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+                <Button
+                    variant="primary"
+                    onClick={() => {
+                        setAutoError(null);
+                        setAutoMessage(null);
+                        setAutoApplyOpen(true);
+                    }}
+                    className="relative w-full flex-none overflow-hidden rounded-2xl px-5 py-4 sm:w-48 sm:px-6 sm:py-5"
+                >
+                    <Zap
+                        size={100}
+                        strokeWidth={1.25}
+                        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/20"
+                    />
+                    <span className="relative text-xl font-semibold leading-tight">
                         {t('checkin.autoApply')}
-                    </Button>
-                </div>
+                    </span>
+                </Button>
 
-                {autoMessage && (
-                    <div className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                        {autoMessage}
+                <Card className="flex-1 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-2">
+                            <h2 className="text-lg font-semibold">
+                                {t('checkin.autoTitle')}
+                            </h2>
+                            <TimetableList timetable={autoTimetable} />
+                        </div>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setAutoModalOpen(true)}
+                        >
+                            {t('checkin.autoConfigure')}
+                        </Button>
                     </div>
-                )}
-                {autoError && (
-                    <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                        {autoError}
-                    </div>
-                )}
-            </Card>
+                </Card>
+            </div>
+
+            {autoMessage && (
+                <div className="rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                    {autoMessage}
+                </div>
+            )}
+            {autoError && (
+                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {autoError}
+                </div>
+            )}
 
             {todaySummary.sessions.length > 0 && (
                 <Card className="p-5">
@@ -555,42 +485,61 @@ export default function CheckInPage() {
                 </Card>
             )}
 
-            {showAutoConfirm && applyDate && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-                    onClick={() => setShowAutoConfirm(false)}
-                >
-                    <div
-                        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h3 className="text-lg font-semibold">
-                            {t('checkin.autoApplyConfirmTitle')}
-                        </h3>
-                        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                            {t('checkin.autoApplyConfirmBody', {
-                                date: applyDate,
-                                timetable: timetableText,
-                            })}
-                        </p>
-                        <div className="mt-4 flex justify-end gap-2">
-                            <Button
-                                variant="secondary"
-                                onClick={() => setShowAutoConfirm(false)}
-                            >
-                                {t('checkin.autoApplyConfirmCancel')}
-                            </Button>
-                            <Button
-                                variant="primary"
-                                disabled={autoApplying}
-                                onClick={applyAutoSchedule}
-                            >
-                                {t('checkin.autoApplyConfirmConfirm')}
-                            </Button>
+            <AutoTimetableModal
+                open={autoModalOpen}
+                timetable={autoTimetable}
+                onClose={() => setAutoModalOpen(false)}
+                onSave={saveAutoSchedule}
+            />
+
+            <Modal
+                open={autoApplyOpen}
+                title={t('checkin.autoApplyConfirmTitle')}
+                onClose={() => setAutoApplyOpen(false)}
+            >
+                <div className="space-y-4">
+                    <label className="block text-sm text-zinc-700 dark:text-zinc-300">
+                        {t('checkin.autoApplyDate')}
+                        <input
+                            type="date"
+                            value={autoApplyDate}
+                            max={toLocalDateKey(new Date())}
+                            onChange={(e) => setAutoApplyDate(e.target.value)}
+                            className="mt-1 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700 transition-colors"
+                        />
+                    </label>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        {t('checkin.autoApplyConfirmBody', {
+                            date: autoApplyDate,
+                            timetable: timetableText(autoTimetable),
+                        })}
+                    </p>
+
+                    {autoError && (
+                        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                            {autoError}
                         </div>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setAutoApplyOpen(false)}
+                        >
+                            {t('checkin.autoApplyConfirmCancel')}
+                        </Button>
+                        <Button
+                            variant="primary"
+                            disabled={autoApplying}
+                            onClick={applyAutoSchedule}
+                        >
+                            {autoApplying
+                                ? t('common.saving')
+                                : t('checkin.autoApplyConfirmConfirm')}
+                        </Button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </section>
     );
 }
