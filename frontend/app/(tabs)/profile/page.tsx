@@ -25,6 +25,7 @@ import { Users, ChevronRight, Camera, LogOut } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/Avatar';
+import PasswordField from '@/components/ui/PasswordField';
 
 const AVATAR_TYPES = [
     'image/jpeg',
@@ -448,26 +449,23 @@ export default function ProfilePage() {
                 </div>
 
                 <form onSubmit={handlePasswordChange} className="space-y-3">
-                    <input
-                        type="password"
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
+                    <PasswordField
                         placeholder={t('profile.password.current')}
+                        autoComplete="current-password"
                         value={pwdCurrent}
                         onChange={(e) => setPwdCurrent(e.target.value)}
                         required
                     />
-                    <input
-                        type="password"
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
+                    <PasswordField
                         placeholder={t('profile.password.new')}
+                        autoComplete="new-password"
                         value={pwdNew}
                         onChange={(e) => setPwdNew(e.target.value)}
                         required
                     />
-                    <input
-                        type="password"
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
+                    <PasswordField
                         placeholder={t('profile.password.confirm')}
+                        autoComplete="new-password"
                         value={pwdConfirm}
                         onChange={(e) => setPwdConfirm(e.target.value)}
                         required

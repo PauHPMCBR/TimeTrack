@@ -11,6 +11,7 @@ import { LoginRequestSchema } from '@/schemas/api';
 import { REMEMBERED_EMAIL_KEY } from '@/lib/storage';
 import { Clock } from 'lucide-react';
 import Button from './ui/Button';
+import PasswordField from './ui/PasswordField';
 
 export default function LoginForm() {
     const router = useRouter();
@@ -19,7 +20,6 @@ export default function LoginForm() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [show, setShow] = useState(false);
     const [remember, setRemember] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -106,22 +106,11 @@ export default function LoginForm() {
                     required
                 />
 
-                <div className="relative">
-                    <input
-                        type={show ? 'text' : 'password'}
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
-                        placeholder={t('login.password.placeholder')}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShow((s) => !s)}
-                        className="absolute inset-y-0 right-2 my-auto rounded px-2 text-xs text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                    >
-                        {t('login.password.show')}
-                    </button>
-                </div>
+                <PasswordField
+                    placeholder={t('login.password.placeholder')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
 
                 <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                     <input

@@ -8,6 +8,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
+import PasswordField from '@/components/ui/PasswordField';
 
 export default function ResetPasswordPage() {
     const { t } = useI18n();
@@ -134,18 +135,18 @@ export default function ResetPasswordPage() {
                                 value={urlEmail}
                             />
 
-                            <TextField
+                            <PasswordField
                                 label={t('resetPassword.password')}
-                                type="password"
                                 required
+                                autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
 
-                            <TextField
+                            <PasswordField
                                 label={t('resetPassword.confirm')}
-                                type="password"
                                 required
+                                autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(e) =>
                                     setConfirmPassword(e.target.value)

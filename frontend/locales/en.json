@@ -14,7 +14,11 @@
         "prev": "Prev",
         "save": "Save",
         "saving": "Saving...",
-        "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?"
+        "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?",
+        "password": {
+            "show": "Show password",
+            "hide": "Hide password"
+        }
     },
     "tabs": {
         "admin": "Admin",
@@ -54,8 +58,7 @@
             "placeholder": "Your email"
         },
         "password": {
-            "placeholder": "Password",
-            "show": "Show"
+            "placeholder": "Password"
         },
         "remember": "Remember me",
         "submit": "Sign in",
