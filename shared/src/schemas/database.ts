@@ -59,8 +59,11 @@ export const UserSchema = z.object({
         .array(AutoScheduleEntrySchema)
         .default(DEFAULT_AUTO_TIMETABLE),
     // Date key (YYYY-MM-DD, local) of the last inconsistency-reminder email.
-    // Empty string = never reminded yet. Always present.
-    lastInconsistencyReminder: z.string().default(''),
+    // Empty string = never reminded yet. `.optional()` because zod-mongoose
+    // compiles `z.string().default('')` to a `required: true` String path, and
+    // Mongoose's required validator rejects empty strings — which would make
+    // every `User.save()` fail. The default is still applied on creation.
+    lastInconsistencyReminder: z.string().default('').optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

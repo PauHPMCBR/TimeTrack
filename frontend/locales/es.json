@@ -14,7 +14,11 @@
         "prev": "Ant",
         "save": "Guardar",
         "saving": "Guardando...",
-        "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Salir sin guardar?"
+        "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Salir sin guardar?",
+        "password": {
+            "show": "Mostrar contraseña",
+            "hide": "Ocultar contraseña"
+        }
     },
     "tabs": {
         "admin": "Admin",
@@ -54,8 +58,7 @@
             "placeholder": "Tu correo electrónico"
         },
         "password": {
-            "placeholder": "Contraseña",
-            "show": "Mostrar"
+            "placeholder": "Contraseña"
         },
         "remember": "Recuérdame",
         "submit": "Entrar",

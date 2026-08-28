@@ -1,6 +1,6 @@
 import type { InputHTMLAttributes } from 'react';
 
-const inputClass =
+export const inputClass =
     'w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white dark:focus:border-indigo-400 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-600 disabled:dark:bg-zinc-800 disabled:dark:text-zinc-400 readOnly:cursor-not-allowed readOnly:bg-zinc-100 readOnly:text-zinc-600 readOnly:dark:bg-zinc-800 readOnly:dark:text-zinc-400';
 
 export type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {

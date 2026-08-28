@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button';
 import HoursMinutesInput from '@/components/ui/HoursMinutesInput';
 import Label from '@/components/ui/Label';
 import TextField from '@/components/ui/TextField';
+import PasswordField from '@/components/ui/PasswordField';
 import RoleSelector from '@/components/ui/RoleSelector';
 import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
 import { EMPLOYEE_ROLE } from 'shared/src/lib/constants';
@@ -324,9 +325,8 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                         onChange={(e) => update({ dni: e.target.value })}
                     />
 
-                    <TextField
+                    <PasswordField
                         label={t('admin.usersEdit.passwordLabel')}
-                        type="password"
                         placeholder={t('admin.usersEdit.passwordPlaceholder')}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}

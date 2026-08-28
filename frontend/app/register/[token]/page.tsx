@@ -8,6 +8,7 @@ import LanguageSwitcher from '../../../components/LanguageSwitcher';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
+import PasswordField from '@/components/ui/PasswordField';
 
 export default function CompleteRegistrationPage() {
     const { t } = useI18n();
@@ -173,10 +174,10 @@ export default function CompleteRegistrationPage() {
                             value={formData.email}
                         />
 
-                        <TextField
+                        <PasswordField
                             label={t('register.password')}
-                            type="password"
                             required
+                            autoComplete="new-password"
                             value={formData.password}
                             onChange={(e) =>
                                 setFormData({
@@ -186,10 +187,10 @@ export default function CompleteRegistrationPage() {
                             }
                         />
 
-                        <TextField
+                        <PasswordField
                             label={t('register.confirm')}
-                            type="password"
                             required
+                            autoComplete="new-password"
                             value={formData.confirmPassword}
                             onChange={(e) =>
                                 setFormData({
