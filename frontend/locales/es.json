@@ -107,15 +107,6 @@
         "notIn": "No has fichado",
         "notesLabel": "Notas",
         "notesPlaceholder": "Añade notas addicionales...",
-        "reason": {
-            "break": "Descanso",
-            "errand": "Recado",
-            "lunch": "Comida",
-            "meeting": "Reunión",
-            "other": "Otra",
-            "personal": "Personal",
-            "work": "Trabajo"
-        },
         "reasonLabel": "Razón",
         "sessions": "Sesiones",
         "title": "Fichaje",

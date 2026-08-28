@@ -115,7 +115,6 @@ export type CreateGroupRequest = z.infer<typeof CreateGroupRequestSchema>;
 
 export const WorkSessionRequestSchema = z.object({
     type: WorkSessionTypeSchema,
-    reason: z.string().max(500).optional(),
     notes: z.string().max(1000).optional(),
 });
 export type WorkSessionRequest = z.infer<typeof WorkSessionRequestSchema>;

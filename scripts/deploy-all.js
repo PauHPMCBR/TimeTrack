@@ -16,7 +16,7 @@
 //   --skip-backend    don't rebuild the shared backend image
 //   --skip-health     don't wait for /api/health after recreating
 //   --dir <path>      companies base dir (default: $COMPANIES_DIR or /opt/timetrack/companies)
-//   --domain <d>      root domain override (default: deploy-docs/config.json)
+//   --domain <d>      root domain override (default: /opt/timetrack/.env DOMAIN=)
 import { readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -55,7 +55,7 @@ const domain = resolveDomain({ flag: args.domain, env: process.env.DEPLOY_DOMAIN
 if (!domain) {
   console.error(
     "No root domain configured. Pass --domain <root-domain>, set DEPLOY_DOMAIN,\n" +
-      "or create deploy-docs/config.json with { \"domain\": \"example.com\" }."
+      "or add DOMAIN=<root-domain> to /opt/timetrack/.env."
   );
   process.exit(1);
 }

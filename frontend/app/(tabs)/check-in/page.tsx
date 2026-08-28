@@ -34,7 +34,6 @@ export default function CheckInPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [workSessions, setWorkSessions] = useState<WorkSession[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedReason, setSelectedReason] = useState('work');
     const [notes, setNotes] = useState('');
     const [isChecking, setIsChecking] = useState(false);
     const [workSessionReasons, setWorkSessionReasons] = useState<
@@ -244,7 +243,6 @@ export default function CheckInPage() {
         try {
             const request: WorkSessionRequest = {
                 type: activeSession ? CHECK_OUT : CHECK_IN,
-                reason: selectedReason,
                 notes: notes || undefined,
             };
 
@@ -337,14 +335,8 @@ export default function CheckInPage() {
                                 <button
                                     key={reason._id}
                                     type="button"
-                                    onClick={() =>
-                                        setSelectedReason(reason.reasonId)
-                                    }
-                                    className={`p-3 rounded-lg border text-sm text-center transition-colors ${
-                                        selectedReason === reason.reasonId
-                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
-                                            : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
-                                    }`}
+                                    onClick={() => setNotes(getReasonText(reason))}
+                                    className="p-3 rounded-lg border text-sm text-center transition-colors border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                                 >
                                     {getReasonText(reason)}
                                 </button>
@@ -430,12 +422,6 @@ export default function CheckInPage() {
                                     new Date(a.timestamp).getTime()
                             )
                             .map((session, index) => {
-                                const sessionReason = workSessionReasons.find(
-                                    (r) =>
-                                        r.type === session.type &&
-                                        r.reasonId === session.reason
-                                );
-
                                 return (
                                     <div
                                         key={session._id || index}
@@ -455,14 +441,6 @@ export default function CheckInPage() {
                                                         ? t('checkin.checkIn')
                                                         : t('checkin.checkOut')}
                                                 </div>
-                                                {session.reason &&
-                                                    sessionReason && (
-                                                        <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                                                            {getReasonText(
-                                                                sessionReason
-                                                            )}
-                                                        </div>
-                                                    )}
                                                 {session.notes && (
                                                     <div className="text-sm text-zinc-500 mt-1">
                                                         {session.notes}

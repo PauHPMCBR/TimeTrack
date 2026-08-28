@@ -102,7 +102,6 @@ describe('GET /api/admin/export/work-sessions', () => {
                 type: 'check_in',
                 timestamp: new Date('2024-01-15T08:00:00Z'),
                 source: 'user',
-                reason: 'Work, from home',
                 notes: 'note',
             },
             {
@@ -156,15 +155,15 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         const csv = res.send.mock.calls[0][0] as string;
         expect(csv).toContain(
-            'Name,DNI,Email,Timestamp,Type,Source,Reason,Notes'
+            'Name,DNI,Email,Timestamp,Type,Source,Notes'
         );
         expect(csv).toContain(
             'Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,admin,'
         );
         expect(csv).toContain(
-            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,user,"Work, from home",note'
+            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,user,note'
         );
-        expect(csv).toContain('"Work, from home"');
+        expect(csv).toContain('note');
         expect(csv.indexOf('2024-01-14')).toBeLessThan(
             csv.indexOf('2024-01-15')
         );

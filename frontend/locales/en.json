@@ -107,15 +107,6 @@
         "notIn": "Not checked in",
         "notesLabel": "Notes",
         "notesPlaceholder": "Add any additional notes...",
-        "reason": {
-            "break": "Break",
-            "errand": "Errand",
-            "lunch": "Lunch",
-            "meeting": "Meeting",
-            "other": "Other",
-            "personal": "Personal",
-            "work": "Work"
-        },
         "reasonLabel": "Reason",
         "sessions": "Sessions",
         "title": "Check-in",

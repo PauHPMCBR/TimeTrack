@@ -194,12 +194,11 @@ describe('Database Schemas', () => {
             expect(result.success).toBe(true);
         });
 
-        it('should accept optional reason and notes', () => {
+        it('should accept optional notes', () => {
             const result = WorkSessionSchema.safeParse({
                 userId: 'user123',
                 type: 'check_in',
                 timestamp: new Date(),
-                reason: 'Working remotely',
                 notes: 'Feeling productive',
             });
             expect(result.success).toBe(true);

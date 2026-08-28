@@ -42,7 +42,6 @@ vi.mock('@/models', () => ({
             userId: 'user-123',
             type: 'check_in',
             timestamp: new Date(),
-            reason: null,
             notes: null,
         });
     },
@@ -82,7 +81,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     it('should return 400 if type is invalid', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { type: 'invalid', reason: null, notes: null },
+            body: { type: 'invalid', notes: null },
         });
         const res = mockRes();
 
@@ -102,7 +101,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     it('should return 400 if already checked in', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { type: 'check_in', reason: null, notes: null },
+            body: { type: 'check_in', notes: null },
         });
         const res = mockRes();
 
@@ -132,7 +131,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     it('should return 400 if no entry today when checking out', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { type: 'check_out', reason: null, notes: null },
+            body: { type: 'check_out', notes: null },
         });
         const res = mockRes();
 
@@ -156,7 +155,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     it('should return 400 if already checked out', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { type: 'check_out', reason: null, notes: null },
+            body: { type: 'check_out', notes: null },
         });
         const res = mockRes();
 
@@ -186,7 +185,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     it('should return 201 with check_in message on successful check_in', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { type: 'check_in', reason: null, notes: null },
+            body: { type: 'check_in', notes: null },
         });
         const res = mockRes();
 
@@ -209,7 +208,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     it('should return 201 with check_out message and hoursWorked on successful check_out', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { type: 'check_out', reason: null, notes: null },
+            body: { type: 'check_out', notes: null },
         });
         const res = mockRes();
 
