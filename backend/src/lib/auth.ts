@@ -113,20 +113,32 @@ export const authenticateToken = (handler: Handler) => {
 
 export const requireRole = (roles: string[], handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
-        if (!req.user || !roles.includes(req.user.role)) {
-            return responseError(res, 403, 'InsufficientPermissions');
+        try {
+            // Reload the role from the DB: the JWT role can be stale (a demoted
+            // admin would otherwise keep admin rights until the token expires
+            // and gets re-issued with the same stale role). A missing user is
+            // denied outright.
+            await dbConnect();
+            const currentUser = req.user?.userId
+                ? await User.findById(req.user.userId)
+                : null;
+            if (!currentUser) {
+                return responseError(res, 403, 'InsufficientPermissions');
+            }
+            if (!roles.includes(currentUser.role)) {
+                return responseError(res, 403, 'InsufficientPermissions');
+            }
+            req.user!.role = currentUser.role;
+            return handler(req, res);
+        } catch {
+            return responseError(res, 500, 'PermissionVerificationError');
         }
-        return handler(req, res);
     });
 };
 
 export const requireSameGroupOrAdmin = (handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
         try {
-            if (req.user?.role === ADMIN_ROLE) {
-                return handler(req, res);
-            }
-
             const targetUserId = req.query.userId as string;
 
             // Fast path: users can always view their own data — no DB round-trips.
@@ -134,19 +146,25 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
                 return handler(req, res);
             }
 
-            if (!targetUserId) {
+            if (!targetUserId || !req.user?.userId) {
                 return responseError(res, 403, 'NoAccessToUser');
             }
 
             await dbConnect();
 
             const [currentUser, targetUser] = await Promise.all([
-                User.findById(req.user?.userId),
+                User.findById(req.user.userId),
                 User.findById(targetUserId),
             ]);
 
             if (!currentUser || !targetUser) {
                 return responseError(res, 404, 'UserNotFound');
+            }
+
+            // Admin check against the live role, not the possibly-stale JWT role.
+            if (currentUser.role === ADMIN_ROLE) {
+                req.user!.role = currentUser.role;
+                return handler(req, res);
             }
 
             const currentUserGroups = (currentUser.groups ?? []).map(
@@ -175,10 +193,6 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
 export const requireInGroupOrAdmin = (handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
         try {
-            if (req.user?.role === ADMIN_ROLE) {
-                return handler(req, res);
-            }
-
             const groupId = req.query.groupId as string;
 
             if (!req.user?.userId || !groupId) {
@@ -186,6 +200,16 @@ export const requireInGroupOrAdmin = (handler: Handler) => {
             }
 
             await dbConnect();
+
+            // Live admin check: a demoted admin must not keep group-wide access.
+            const currentUser = await User.findById(req.user.userId);
+            if (!currentUser) {
+                return responseError(res, 404, 'UserNotFound');
+            }
+            if (currentUser.role === ADMIN_ROLE) {
+                req.user!.role = currentUser.role;
+                return handler(req, res);
+            }
 
             const group = await Group.findById(groupId);
             if (!group) {

@@ -8,7 +8,6 @@ import LanguageSwitcher from '../../../components/LanguageSwitcher';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
-import { AUTH_TOKEN_KEY } from '@/lib/storage';
 
 export default function CompleteRegistrationPage() {
     const { t } = useI18n();
@@ -110,10 +109,10 @@ export default function CompleteRegistrationPage() {
             }
 
             if (res.data && res.data.token) {
-                localStorage.setItem(AUTH_TOKEN_KEY, res.data.token);
-                window.location.href = '/profile';
+                apiClient.setSession(res.data.token, true);
+                router.replace('/profile');
             } else {
-                router.push('/login');
+                router.push('/');
             }
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);

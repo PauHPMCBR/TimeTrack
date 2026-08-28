@@ -29,7 +29,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 .lean(),
 
             YearlyVacationDays.findOne({
-                userId: undefined,
+                userId: { $exists: false },
                 year: year,
             }).lean(),
         ])) as unknown as [ElectiveVacationRow[], YearlyVacationRow | null];

@@ -10,7 +10,10 @@ import {
     responseErrorValidation,
 } from '@/lib/response-error-generator';
 import { runValidation, validateRequestBody } from '@/lib/validation';
-import { YearlyVacationAdminRequestSchema } from 'shared/src/schemas/api';
+import {
+    toLocalMidnightDate,
+    YearlyVacationAdminRequestSchema,
+} from 'shared/src/schemas/api';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -38,17 +41,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const { year, obligatoryDays, electiveDaysTotalCount } = req.body;
 
-        // Validate that userId is not provided (this is for global template)
-        if (req.body.userId) {
-            return responseErrorIncorrectParameter(res, 'userId', [
-                'ShouldNotBeSet',
-            ]);
-        }
+        // Normalize defensively: the schema already converts to local-midnight
+        // Dates; this also covers mocked/raw string inputs.
+        const normalized = obligatoryDays.map((day: string | Date) =>
+            typeof day === 'string' ? toLocalMidnightDate(day) : new Date(day)
+        );
 
-        const invalidObligatoryDays = obligatoryDays.filter((date: string) => {
-            const dateObj = new Date(date);
-            return dateObj.getFullYear() !== year;
-        });
+        const invalidObligatoryDays = normalized.filter(
+            (date: Date) => date.getFullYear() !== year
+        );
 
         if (invalidObligatoryDays.length > 0) {
             return responseErrorIncorrectParameter(res, 'obligatoryDays', [
@@ -61,27 +62,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             userId: { $exists: false },
         });
 
-        if (existingVacation) {
-            existingVacation.obligatoryDays = obligatoryDays.map(
-                (date: string) => new Date(date)
-            );
-            existingVacation.electiveDaysTotalCount = electiveDaysTotalCount;
-            existingVacation.selectedElectiveDays = [];
-            existingVacation.updatedAt = new Date();
+        const update = {
+            obligatoryDays: normalized,
+            electiveDaysTotalCount,
+            selectedElectiveDays: [],
+            updatedAt: new Date(),
+        };
 
+        if (existingVacation) {
             await YearlyVacationDays.findByIdAndUpdate(
                 existingVacation._id,
-                existingVacation
+                update
             );
         } else {
-            await YearlyVacationDays.create({
-                year,
-                obligatoryDays: obligatoryDays.map(
-                    (date: string) => new Date(date)
-                ),
-                electiveDaysTotalCount,
-                selectedElectiveDays: [],
-            });
+            await YearlyVacationDays.create(update);
         }
 
         res.status(200).json({

@@ -28,6 +28,24 @@ db.createCollection('worksessionreasons');
 db.createCollection('appsettings');
 print('Collections created');
 
+// Mirror the indexes declared in backend/src/models/index.ts. They are created
+// here (not left to Mongoose autoIndex) because production runs with
+// autoIndex=false; the /api/admin/indexes/sync endpoint is the manual fallback.
+print('Creating indexes...');
+db.users.createIndex({ email: 1, registered: 1 });
+db.users.createIndex({ registrationToken: 1 });
+db.worksessions.createIndex({ userId: 1, timestamp: -1 });
+db.worksessions.createIndex({ timestamp: -1 });
+db.electivevacations.createIndex({ userId: 1, date: 1 });
+db.electivevacations.createIndex({ status: 1, date: 1 });
+db.electivevacations.createIndex({ date: 1 });
+db.groups.createIndex({ members: 1, name: 1 });
+// userId is absent on the global template rows; a missing field indexes as null,
+// so one global template per year and one per-user row per year are enforced.
+db.yearlyvacationdays.createIndex({ userId: 1, year: 1 }, { unique: true });
+db.yearlyvacationdays.createIndex({ year: 1 });
+print('Indexes created');
+
 db.createUser({
   user: APP_USER,
   pwd: APP_PASSWORD,

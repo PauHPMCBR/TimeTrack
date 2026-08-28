@@ -219,3 +219,154 @@ describe('PUT /api/profile/me (automatic timetable)', () => {
         });
     });
 });
+
+describe('PUT /api/profile/me (password change)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
+
+    function chain(updated: unknown) {
+        return {
+            select: vi.fn().mockReturnValue({
+                populate: vi.fn().mockReturnValue({
+                    lean: vi.fn().mockResolvedValue(updated),
+                }),
+            }),
+        } as any;
+    }
+
+    it('changes the password when current password matches', async () => {
+        const { User } = await import('@/models');
+        const userDoc: any = {
+            _id: 'user-123',
+            email: 'test@example.com',
+            name: 'Test User',
+            comparePassword: vi.fn().mockResolvedValue(true),
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(userDoc);
+        vi.mocked(User.findByIdAndUpdate).mockReturnValue(
+            chain({ _id: 'user-123' })
+        );
+
+        const req = mockReq({
+            method: 'PUT',
+            body: {
+                password: 'NewPassword123!',
+                currentPassword: 'OldPassword1!',
+            },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(userDoc.comparePassword).toHaveBeenCalledWith('OldPassword1!');
+        expect(userDoc.password).toBe('NewPassword123!');
+        expect(userDoc.save).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('rejects a password change without the current password', async () => {
+        const { User } = await import('@/models');
+        const userDoc: any = {
+            _id: 'user-123',
+            comparePassword: vi.fn(),
+            save: vi.fn(),
+        };
+        vi.mocked(User.findById).mockResolvedValue(userDoc);
+
+        const req = mockReq({
+            method: 'PUT',
+            body: { password: 'NewPassword123!' },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'password',
+                reasons: ['CurrentPasswordRequired'],
+            },
+        });
+        expect(userDoc.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects an incorrect current password', async () => {
+        const { User } = await import('@/models');
+        const userDoc: any = {
+            _id: 'user-123',
+            comparePassword: vi.fn().mockResolvedValue(false),
+            save: vi.fn(),
+        };
+        vi.mocked(User.findById).mockResolvedValue(userDoc);
+
+        const req = mockReq({
+            method: 'PUT',
+            body: {
+                password: 'NewPassword123!',
+                currentPassword: 'WrongPassword1!',
+            },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'currentPassword',
+                reasons: ['InvalidCurrentPassword'],
+            },
+        });
+        expect(userDoc.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects a new password that fails the policy', async () => {
+        const { User } = await import('@/models');
+        const userDoc: any = {
+            _id: 'user-123',
+            email: 'test@example.com',
+            name: 'Test User',
+            comparePassword: vi.fn().mockResolvedValue(true),
+            save: vi.fn(),
+        };
+        vi.mocked(User.findById).mockResolvedValue(userDoc);
+
+        const req = mockReq({
+            method: 'PUT',
+            body: {
+                password: 'short',
+                currentPassword: 'OldPassword1!',
+            },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'password',
+                reasons: [
+                    'TooShort',
+                    'MissingUppercase',
+                    'MissingNumber',
+                    'MissingSign',
+                ],
+            },
+        });
+        expect(userDoc.save).not.toHaveBeenCalled();
+    });
+});

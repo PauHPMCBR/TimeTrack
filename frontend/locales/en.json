@@ -294,9 +294,19 @@
             "mocha": "Mocha"
         },
         "thisWeek": "This week",
-        "timeFormat": "Time format",
         "title": "User profile",
-        "weeklyGoal": "Weekly goal"
+        "weeklyGoal": "Weekly goal",
+        "password": {
+            "title": "Change password",
+            "current": "Current password",
+            "new": "New password",
+            "confirm": "Repeat new password",
+            "submit": "Change password",
+            "changed": "Password changed successfully",
+            "CannotDemoteAdmin": "An admin cannot be demoted",
+            "CurrentPasswordRequired": "Current password is required",
+            "InvalidCurrentPassword": "Current password is incorrect"
+        }
     },
     "admin": {
         "btn": {
@@ -426,7 +436,9 @@
             "registrationLink": "Registration link (send this to the employee)",
             "saved": "User updated successfully",
             "subtitle": "Modify the employee's details.",
-            "title": "Edit user"
+            "title": "Edit user",
+            "passwordLabel": "New password (optional)",
+            "passwordPlaceholder": "Leave blank to keep current password"
         },
         "sessionEditor": {
             "addIn": "Add check-in",
@@ -551,19 +563,19 @@
     },
     "error": {
         "AccountBlocked": "Account blocked",
-        "AiError": "AI Error",
         "CheckInRegistered": "Check-in registered successfully",
         "CheckOutRegistered": "Check-out registered successfully",
         "DatesNotInYear": "Dates are not in the selected year",
         "DeleteError": "Deletion error",
         "EntryNotFound": "Record not found",
         "GetError": "Request error",
-        "GroqApiKeyMissing": "Groq API KEY missing",
         "GroupDeleted": "Group deleted successfully",
         "IllegalAction": {
             "AllVacationsUsed": "No more elective vacations available",
             "AlreadyObligatoryVacation": "This day is already a mandatory holiday",
-            "DuplicateVacationRequest": "Duplicate vacation request"
+            "DuplicateVacationRequest": "Duplicate vacation request",
+            "ModifyingFromAnotherUser": "You cannot modify another user's request",
+            "NoVacationConfig": "The vacation calendar has not been configured yet"
         },
         "IncorrectParameter": {
             "email": "email",
@@ -584,7 +596,16 @@
                 "NoEntryToday": "No entry today",
                 "NotInOrder": "Events must alternate check-in/check-out",
                 "OutOfDay": "Time must be on the same day",
-                "InvalidTimestamp": "Invalid date and time"
+                "InvalidTimestamp": "Invalid date and time",
+                "CannotDemoteAdmin": "An admin cannot be demoted",
+                "CurrentPasswordRequired": "Current password is required",
+                "InvalidCurrentPassword": "Current password is incorrect",
+                "TooLong": "Password is too long (max 72 characters)",
+                "ShouldNotBeSet": "This parameter should not be set",
+                "DatesNotInYear": "The dates are not in the selected year",
+                "SomeUsersNotFound": "Some users were not found",
+                "AvatarTooLarge": "The profile picture is too large",
+                "InvalidAvatarFormat": "The profile picture format is invalid"
             },
             "type": "type",
             "year": "year"
@@ -596,7 +617,6 @@
         "InvalidResetToken": "The reset link is invalid or has already been used.",
         "ResetTokenExpired": "The reset link has expired. Request a new one.",
         "InvalidToken": "Invalid or expired token",
-        "MessageMissing": "Message missing",
         "MethodNotAllowed": "Method not allowed",
         "MissingParameter": "Missing parameters",
         "ModifyingFromAnotherUser": "You cannot modify data from another user",
@@ -607,14 +627,15 @@
         "PutError": "Modification error",
         "RateLimited": "Too many attempts. Please try again later",
         "ShouldNotBeSet": "This parameter should not be set",
-        "Success": "Operation successful",
         "TokenRequired": "Access token required",
         "UnknownError": "Unknown error",
         "UserNotFound": "User not found",
         "ValidationError": "Validation error",
         "YearlyVacationSaved": "Yearly vacation settings saved",
         "partialVacation": "{created} days created, but {failed} failed.",
-        "vacationLimit": "Vacation limit exceeded or invalid"
+        "vacationLimit": "Vacation limit exceeded or invalid",
+        "GroupNotFound": "Group not found",
+        "NoAccessToGroup": "No access to this group"
     },
     "errorBoundary": {
         "message": "An unexpected error occurred.",

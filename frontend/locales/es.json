@@ -294,9 +294,19 @@
             "mocha": "Mocha"
         },
         "thisWeek": "Esta semana",
-        "timeFormat": "Formato horario",
         "title": "Perfil de usuario",
-        "weeklyGoal": "Objetivo semanal"
+        "weeklyGoal": "Objetivo semanal",
+        "password": {
+            "title": "Cambiar contraseña",
+            "current": "Contraseña actual",
+            "new": "Nueva contraseña",
+            "confirm": "Repite la contraseña nueva",
+            "submit": "Cambiar contraseña",
+            "changed": "Contraseña cambiada correctamente",
+            "CannotDemoteAdmin": "No se puede degradar a un administrador",
+            "CurrentPasswordRequired": "Se requiere la contraseña actual",
+            "InvalidCurrentPassword": "La contraseña actual no es correcta"
+        }
     },
     "admin": {
         "btn": {
@@ -426,7 +436,9 @@
             "registrationLink": "Enlace de registro (envíalo al empleado)",
             "saved": "Usuario actualizado correctamente",
             "subtitle": "Modifica los datos del empleado.",
-            "title": "Editar usuario"
+            "title": "Editar usuario",
+            "passwordLabel": "Nueva contraseña (opcional)",
+            "passwordPlaceholder": "Déjalo vacío para no cambiarla"
         },
         "sessionEditor": {
             "addIn": "Añadir entrada",
@@ -551,19 +563,19 @@
     },
     "error": {
         "AccountBlocked": "Cuenta bloqueada",
-        "AiError": "Error de la IA",
         "CheckInRegistered": "Entrada registrada correctamente",
         "CheckOutRegistered": "Salida registrada correctamente",
         "DatesNotInYear": "Las fechas no pertenecen al año seleccionado",
         "DeleteError": "Error al eliminar",
         "EntryNotFound": "Registro no encontrado",
         "GetError": "Error de petición",
-        "GroqApiKeyMissing": "Falta API KEY de Groq",
         "GroupDeleted": "Grupo eliminado correctamente",
         "IllegalAction": {
             "AllVacationsUsed": "No quedan más vacaciones de elección libres",
             "AlreadyObligatoryVacation": "Este día ya es festivo obligatorio",
-            "DuplicateVacationRequest": "Petición de vacaciones duplicada"
+            "DuplicateVacationRequest": "Petición de vacaciones duplicada",
+            "ModifyingFromAnotherUser": "No puedes modificar una solicitud de otro usuario",
+            "NoVacationConfig": "El calendario de vacaciones aún no se ha configurado"
         },
         "IncorrectParameter": {
             "email": "correo electrónico",
@@ -584,7 +596,16 @@
                 "NoEntryToday": "No hay entrada hoy",
                 "NotInOrder": "Los fichajes deben alternarse (entrada/salida)",
                 "OutOfDay": "La hora debe ser del mismo día",
-                "InvalidTimestamp": "Fecha y hora no válidas"
+                "InvalidTimestamp": "Fecha y hora no válidas",
+                "CannotDemoteAdmin": "No se puede degradar a un administrador",
+                "CurrentPasswordRequired": "Se requiere la contraseña actual",
+                "InvalidCurrentPassword": "La contraseña actual no es correcta",
+                "TooLong": "La contraseña es demasiado larga (máximo 72 caracteres)",
+                "ShouldNotBeSet": "Este parámetro no debe proporcionarse",
+                "DatesNotInYear": "Las fechas no pertenecen al año seleccionado",
+                "SomeUsersNotFound": "Algunos usuarios no se encontraron",
+                "AvatarTooLarge": "La imagen de perfil es demasiado grande",
+                "InvalidAvatarFormat": "El formato de la imagen de perfil no es válido"
             },
             "type": "tipo",
             "year": "año"
@@ -596,7 +617,6 @@
         "InvalidResetToken": "El enlace de restablecimiento no es válido o ya se ha usado.",
         "ResetTokenExpired": "El enlace de restablecimiento ha caducado. Solicita uno nuevo.",
         "InvalidToken": "Token inválido o expirado",
-        "MessageMissing": "Falta el mensaje",
         "MethodNotAllowed": "Método no permitido",
         "MissingParameter": "Faltan parámetros",
         "ModifyingFromAnotherUser": "No puedes modificar datos de otro usuario",
@@ -607,14 +627,15 @@
         "PutError": "Error al modificar",
         "RateLimited": "Se han hecho demasiados intentos. Vuelve a intentarlo más tarde",
         "ShouldNotBeSet": "Este parámetro no debería estar definido",
-        "Success": "Operación realizada con éxito",
         "TokenRequired": "Token de acceso requerido",
         "UnknownError": "Error desconocido",
         "UserNotFound": "Usuario no encontrado",
         "ValidationError": "Error en validación",
         "YearlyVacationSaved": "Configuración de vacaciones anuales guardada",
         "partialVacation": "Se han creado {created} días, pero {failed} han fallado.",
-        "vacationLimit": "Días de vacaciones excedidos o no válidos"
+        "vacationLimit": "Días de vacaciones excedidos o no válidos",
+        "GroupNotFound": "Grupo no encontrado",
+        "NoAccessToGroup": "Sin acceso a este grupo"
     },
     "errorBoundary": {
         "message": "Se ha producido un error inesperado.",

@@ -8,6 +8,7 @@ import { useDirty } from '@/lib/useDirty';
 import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
+import { parseDateKey } from '@/lib/datetime';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
 import {
@@ -98,7 +99,7 @@ export default function AdminObligatoryVacationsPage() {
     const handleAddDate = () => {
         if (!newDate) return;
 
-        const date = new Date(newDate);
+        const date = parseDateKey(newDate);
         if (isNaN(date.getTime())) {
             setError(t('admin.vacationsSetup.invalidDate') || 'Invalid date');
             return;

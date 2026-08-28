@@ -146,6 +146,45 @@ describe('API Schemas', () => {
             });
             expect(result.success).toBe(true);
         });
+
+        it('should reject an impossible calendar date', () => {
+            const result = ElectiveVacationRequestSchema.safeParse({
+                date: '2024-02-30',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject an unparseable date', () => {
+            const result = ElectiveVacationRequestSchema.safeParse({
+                date: 'garbage',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should parse a date key as local midnight', () => {
+            const result = ElectiveVacationRequestSchema.safeParse({
+                date: '2024-06-15',
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                const d = result.data.date;
+                expect(d.getFullYear()).toBe(2024);
+                expect(d.getMonth()).toBe(5);
+                expect(d.getDate()).toBe(15);
+                expect(d.getHours()).toBe(0);
+            }
+        });
+
+        it('should accept an ISO datetime and normalize to local midnight', () => {
+            const result = ElectiveVacationRequestSchema.safeParse({
+                date: '2024-06-15T10:30:00.000Z',
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.date.getHours()).toBe(0);
+                expect(result.data.date.getMinutes()).toBe(0);
+            }
+        });
     });
 
     describe('YearlyVacationAdminRequestSchema', () => {

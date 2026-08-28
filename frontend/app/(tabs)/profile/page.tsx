@@ -12,7 +12,7 @@ import {
     DEFAULT_THEME_FLAVOR,
     ThemeFlavor,
 } from '@/lib/theme';
-import { THEME_KEY, TIME_FORMAT_KEY } from '@/lib/storage';
+import { THEME_KEY } from '@/lib/storage';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
     AVATAR_MAX_BYTES,
@@ -34,7 +34,6 @@ const AVATAR_TYPES = [
     'image/avif',
     'image/tiff',
     'image/bmp',
-    'image/svg+xml',
 ];
 
 const FLAVORS = [
@@ -54,13 +53,19 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
 
     const [theme, setTheme] = useState<ThemeFlavor>(DEFAULT_THEME_FLAVOR);
-    const [timeFmt, setTimeFmt] = useState<'24' | '12'>('24');
     const [now, setNow] = useState(() => Date.now());
 
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [pwdCurrent, setPwdCurrent] = useState('');
+    const [pwdNew, setPwdNew] = useState('');
+    const [pwdConfirm, setPwdConfirm] = useState('');
+    const [pwdSaving, setPwdSaving] = useState(false);
+    const [pwdError, setPwdError] = useState<string | null>(null);
+    const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
 
     const readFileAsDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -180,10 +185,7 @@ export default function ProfilePage() {
         )
             ? (normalized as ThemeFlavor)
             : DARK_THEME_FLAVOR;
-        const savedFmt =
-            (localStorage.getItem(TIME_FORMAT_KEY) as '24' | '12') || '24';
         setTheme(savedTheme);
-        setTimeFmt(savedFmt);
         applyTheme(savedTheme);
     }, []);
 
@@ -193,9 +195,58 @@ export default function ProfilePage() {
         applyTheme(next);
     };
 
-    const changeTimeFmt = (fmt: '24' | '12') => {
-        setTimeFmt(fmt);
-        localStorage.setItem(TIME_FORMAT_KEY, fmt);
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPwdError(null);
+        setPwdSuccess(null);
+
+        if (pwdNew !== pwdConfirm) {
+            setPwdError(t('register.error.match'));
+            return;
+        }
+
+        setPwdSaving(true);
+        try {
+            const res = await apiClient.updateMyProfile({
+                currentPassword: pwdCurrent,
+                password: pwdNew,
+            });
+            if (res.error) {
+                if (res.error === 'IncorrectParameter') {
+                    const reasons = res.details?.reasons || [];
+                    const reasonMsgs = reasons
+                        .map((r) =>
+                            t(`error.IncorrectParameter.reason.${r}`) !==
+                            `error.IncorrectParameter.reason.${r}`
+                                ? t(`error.IncorrectParameter.reason.${r}`)
+                                : null
+                        )
+                        .filter(Boolean);
+                    setPwdError(
+                        reasonMsgs.length > 0
+                            ? reasonMsgs.join(', ')
+                            : t('error.IncorrectParameter.message')
+                    );
+                } else {
+                    setPwdError(
+                        t(`error.${res.error}`) ||
+                            res.error ||
+                            t('error.PutError')
+                    );
+                }
+            } else {
+                setPwdCurrent('');
+                setPwdNew('');
+                setPwdConfirm('');
+                setPwdSuccess(t('profile.password.changed'));
+                setTimeout(() => setPwdSuccess(null), 3000);
+            }
+        } catch (err) {
+            console.error(err);
+            setPwdError(t('error.PutError'));
+        } finally {
+            setPwdSaving(false);
+        }
     };
 
     const workedHoursToday = useMemo(() => {
@@ -389,26 +440,62 @@ export default function ProfilePage() {
                         ))}
                     </div>
                 </div>
+            </Card>
 
-                <div className="flex items-center justify-between">
-                    <div className="text-sm text-zinc-700 dark:text-zinc-300">
-                        {t('profile.timeFormat')}
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => changeTimeFmt('24')}
-                            className={`rounded-lg border px-3 py-1.5 text-sm ${timeFmt === '24' ? 'border-indigo-600 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-zinc-300 dark:border-zinc-700'}`}
-                        >
-                            24h
-                        </button>
-                        <button
-                            onClick={() => changeTimeFmt('12')}
-                            className={`rounded-lg border px-3 py-1.5 text-sm ${timeFmt === '12' ? 'border-indigo-600 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-zinc-300 dark:border-zinc-700'}`}
-                        >
-                            12h
-                        </button>
-                    </div>
+            <Card className="p-4">
+                <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
+                    {t('profile.password.title')}
                 </div>
+
+                <form onSubmit={handlePasswordChange} className="space-y-3">
+                    <input
+                        type="password"
+                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
+                        placeholder={t('profile.password.current')}
+                        value={pwdCurrent}
+                        onChange={(e) => setPwdCurrent(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="password"
+                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
+                        placeholder={t('profile.password.new')}
+                        value={pwdNew}
+                        onChange={(e) => setPwdNew(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="password"
+                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700"
+                        placeholder={t('profile.password.confirm')}
+                        value={pwdConfirm}
+                        onChange={(e) => setPwdConfirm(e.target.value)}
+                        required
+                    />
+
+                    {pwdError && (
+                        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                            {pwdError}
+                        </div>
+                    )}
+
+                    {pwdSuccess && (
+                        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                            {pwdSuccess}
+                        </div>
+                    )}
+
+                    <Button
+                        type="submit"
+                        variant="secondary"
+                        disabled={pwdSaving}
+                        className="w-full"
+                    >
+                        {pwdSaving
+                            ? t('common.saving')
+                            : t('profile.password.submit')}
+                    </Button>
+                </form>
             </Card>
 
             <Button

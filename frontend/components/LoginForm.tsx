@@ -8,7 +8,7 @@ import { APP_NAME, APP_ICON_URL } from '@/lib/brand';
 import { apiClient } from '@/lib/api';
 import { Alert } from './ui/Alert';
 import { LoginRequestSchema } from '@/schemas/api';
-import { AUTH_TOKEN_KEY, REMEMBERED_EMAIL_KEY } from '@/lib/storage';
+import { REMEMBERED_EMAIL_KEY } from '@/lib/storage';
 import { Clock } from 'lucide-react';
 import Button from './ui/Button';
 
@@ -35,12 +35,16 @@ export default function LoginForm() {
             if (res.error) throw new Error(res.error);
 
             if (res.data) {
+                // Keep the token in memory so the session works even when the
+                // "remember me" box is unchecked; only persist it otherwise.
+                apiClient.setSession(res.data.token, remember);
                 if (remember) {
-                    localStorage.setItem(AUTH_TOKEN_KEY, res.data.token);
                     localStorage.setItem(
                         REMEMBERED_EMAIL_KEY,
                         res.data.user.email
                     );
+                } else {
+                    localStorage.removeItem(REMEMBERED_EMAIL_KEY);
                 }
                 // Preserve the `next` return-to (set by RequireAuth) so a
                 // user who hit a protected page while logged out lands back

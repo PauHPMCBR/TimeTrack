@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { User, Group } from '@/types';
+import { Group, GroupMember } from '@/types';
 import { Users, ChevronLeft, Mail } from 'lucide-react';
 import Card from '@/components/ui/Card';
+
+type GroupDetail = Omit<Group, 'members'> & { members: GroupMember[] };
 
 export default function GroupDetailPage() {
     const { t } = useI18n();
@@ -16,8 +17,7 @@ export default function GroupDetailPage() {
     const router = useRouter();
     const groupId = params?.groupId as string;
 
-    const [group, setGroup] = useState<Group | null>(null);
-    const [memberDetails, setMemberDetails] = useState<User[]>([]);
+    const [group, setGroup] = useState<GroupDetail | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -26,6 +26,8 @@ export default function GroupDetailPage() {
         const fetchGroup = async () => {
             try {
                 setLoading(true);
+                // `members` comes back populated (name/email/role) by the API,
+                // so no per-member profile fetches are needed.
                 const res = await apiClient.getGroupInfo(groupId);
                 if (res.data) {
                     setGroup(res.data.group);
@@ -38,23 +40,6 @@ export default function GroupDetailPage() {
         };
         fetchGroup();
     }, [groupId]);
-
-    useEffect(() => {
-        if (!group) return;
-
-        const fetchMembers = async () => {
-            const results = await Promise.all(
-                group.members.map((memberId) =>
-                    apiClient
-                        .getProfile(memberId)
-                        .then((res) => res.data?.user ?? null)
-                )
-            );
-            setMemberDetails(results.filter((u): u is User => u !== null));
-        };
-
-        fetchMembers();
-    }, [group]);
 
     if (loading) {
         return (
@@ -71,6 +56,8 @@ export default function GroupDetailPage() {
             </div>
         );
     }
+
+    const members = group.members ?? [];
 
     return (
         <div className="space-y-6">
@@ -104,11 +91,11 @@ export default function GroupDetailPage() {
 
             <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-                    {t('groups.members')} ({memberDetails.length})
+                    {t('groups.members')} ({members.length})
                 </h2>
 
                 <div className="grid gap-3">
-                    {memberDetails.map((member) => (
+                    {members.map((member) => (
                         <Link
                             key={member._id}
                             href={`/profile/${member._id}`}
@@ -133,17 +120,10 @@ export default function GroupDetailPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                {member.role === ADMIN_ROLE && (
-                                    <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                                        {t('profile.role.admin')}
-                                    </span>
-                                )}
-                                <ChevronLeft
-                                    size={16}
-                                    className="rotate-180 text-zinc-300"
-                                />
-                            </div>
+                            <ChevronLeft
+                                size={16}
+                                className="rotate-180 text-zinc-300"
+                            />
                         </Link>
                     ))}
                 </div>

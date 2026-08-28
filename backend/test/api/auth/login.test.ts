@@ -74,7 +74,28 @@ describe('POST /api/auth/login', () => {
         });
     });
 
-    it('should return 500 if account is blocked', async () => {
+    it('queries with a lowercased email', async () => {
+        const { User } = await import('@/models');
+        vi.mocked(User.findOne).mockResolvedValue(null);
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                email: 'Test@Example.COM',
+                password: 'password123',
+            },
+        });
+        const res = mockRes();
+
+        await loginHandler(req, res);
+
+        expect(User.findOne).toHaveBeenCalledWith({
+            email: 'test@example.com',
+            registered: true,
+        });
+    });
+
+    it('should return 403 if account is blocked', async () => {
         const blockedUser = {
             _id: { toString: () => 'user-id-123' },
             email: 'test@example.com',
@@ -97,7 +118,7 @@ describe('POST /api/auth/login', () => {
 
         await loginHandler(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(403);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 error: 'AccountBlocked',
@@ -149,7 +170,10 @@ describe('POST /api/auth/login', () => {
 
         const { User } = await import('@/models');
         vi.mocked(User.findOne).mockResolvedValue(userWithAttempts);
-        vi.mocked(User.findByIdAndUpdate).mockResolvedValue({});
+        // $inc returns the new counter; then the blocking update runs.
+        vi.mocked(User.findByIdAndUpdate)
+            .mockResolvedValueOnce({ failedLoginAttempts: 5 } as any)
+            .mockResolvedValueOnce({} as any);
 
         const req = mockReq({
             method: 'POST',
@@ -160,12 +184,16 @@ describe('POST /api/auth/login', () => {
         await loginHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(401);
-        expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+        expect(User.findByIdAndUpdate).toHaveBeenNthCalledWith(
+            1,
             expect.anything(),
-            expect.objectContaining({
-                blocked: true,
-                failedLoginAttempts: 5,
-            })
+            { $inc: { failedLoginAttempts: 1 } },
+            { new: true }
+        );
+        expect(User.findByIdAndUpdate).toHaveBeenNthCalledWith(
+            2,
+            expect.anything(),
+            expect.objectContaining({ blocked: true })
         );
     });
 

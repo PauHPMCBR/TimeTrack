@@ -17,6 +17,7 @@ import {
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+import { parseDateKey } from '@/lib/datetime';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
@@ -137,7 +138,9 @@ export default function MyVacationsPage() {
         setWarningMsg(null);
 
         try {
-            const startDate = new Date(date);
+            // Parse the "YYYY-MM-DD" input as local midnight so the request
+            // always targets the wall-clock day the user selected.
+            const startDate = parseDateKey(date);
             const reasonToSend = reason.trim() || undefined;
 
             let createdCount = 0;

@@ -45,7 +45,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     .lean(),
                 YearlyVacationDays.findOne({
                     year: year,
-                    userId: undefined, // userId undefined means that it's the global template
+                    userId: { $exists: false }, // global template (no userId)
                 }).lean(),
                 YearlyVacationDays.findOne({
                     year: year,

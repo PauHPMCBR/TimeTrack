@@ -141,8 +141,9 @@ describe('POST /api/auth/reset-password', () => {
         await resetPasswordHandler(req, res);
 
         expect(user.password).toBe('StrongPass1!');
-        expect(user.resetPasswordToken).toBeUndefined();
-        expect(user.resetPasswordExpires).toBeUndefined();
+        expect(user.resetPasswordToken).toBeNull();
+        expect(user.resetPasswordExpires).toBeNull();
+        expect(user.blockedSince).toBeNull();
         expect(user.save).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
