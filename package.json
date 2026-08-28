@@ -1,25 +1,25 @@
 {
-  "name": "your-time-record-app",
-  "private": true,
-  "workspaces": [
-    "shared",
-    "frontend",
-    "backend"
-  ],
-  "scripts": {
-    "db:up": "docker compose -f database/docker-compose.yml up -d --wait",
-    "db:down": "docker compose -f database/docker-compose.yml down",
-    "dev": "npm run db:up && concurrently -n backend,frontend -c blue,green \"npm run dev -w @registre-jornada/backend\" \"npm run dev -w @registre-jornada/frontend\"",
-    "build": "npm run build --workspaces",
-    "lint": "npm run lint -w @registre-jornada/backend -w @registre-jornada/frontend",
-    "test": "npm run test --workspaces",
-    "test:run": "npm run test:run --workspaces",
-    "typecheck": "npm run typecheck --workspaces",
-    "build:company": "node scripts/build-company.js",
-    "deploy:all": "node scripts/deploy-all.js"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2"
-  },
-  "dependencies": {}
+    "name": "your-time-record-app",
+    "private": true,
+    "packageManager": "npm@11.6.2",
+    "workspaces": [
+        "shared",
+        "frontend",
+        "backend"
+    ],
+    "scripts": {
+        "db:up": "docker compose -f database/docker-compose.yml up -d --wait",
+        "db:down": "docker compose -f database/docker-compose.yml down",
+        "dev": "npm run db:up && turbo run dev",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "test": "turbo run test",
+        "test:run": "turbo run test:run",
+        "typecheck": "turbo run typecheck",
+        "build:company": "node scripts/build-company.js",
+        "deploy:all": "node scripts/deploy-all.js"
+    },
+    "devDependencies": {
+        "turbo": "^2.10.12"
+    }
 }

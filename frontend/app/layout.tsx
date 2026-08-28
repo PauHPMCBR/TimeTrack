@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Inter, Sora } from 'next/font/google';
 import './globals.css';
 import I18nProvider from './i18n';
@@ -55,7 +56,9 @@ export default function RootLayout({
                 <I18nProvider>
                     <NotificationProvider>
                         <ApiNotificationManager />
-                        <ErrorBoundary>{children}</ErrorBoundary>
+                        <ErrorBoundary>
+                            <Suspense fallback={null}>{children}</Suspense>
+                        </ErrorBoundary>
                     </NotificationProvider>
                 </I18nProvider>
             </body>

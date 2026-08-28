@@ -50,8 +50,10 @@ next-env.d.ts
 
 # Next.js build artifacts
 frontend/.next/
-frontend/.turbo/
 frontend/node_modules/
+
+# Turborepo cache and per-package task logs
+**/.turbo/
 
 # Per-company branding files (see branding/README.md)
 branding/icon.png
