@@ -23,11 +23,7 @@ export type ErrorCode =
     | 'NoAccessToUser'
     | 'NoAccessToGroup'
     | 'PermissionVerificationError'
-    | 'GroqApiKeyMissing'
-    | 'MessageMissing'
-    | 'AiError'
     | 'InternalError'
-    | 'Success'
     | 'GroupDeleted'
     | 'CheckInRegistered'
     | 'CheckOutRegistered'
@@ -50,10 +46,13 @@ export type IncorrectParameter =
     | 'fromYear'
     | 'toYear'
     | 'timestamp'
-    | 'date';
+    | 'date'
+    | 'role'
+    | 'currentPassword';
 
 export type PasswordIncorrectParameterReason =
     | 'TooShort'
+    | 'TooLong'
     | 'MissingLowercase'
     | 'MissingUppercase'
     | 'MissingNumber'
@@ -74,14 +73,17 @@ export type IncorrectParameterReason =
     | 'DatesNotInYear'
     | 'SomeUsersNotFound'
     | 'AvatarTooLarge'
-    | 'InvalidAvatarFormat' // TODO translation
+    | 'InvalidAvatarFormat'
     | 'NotInOrder'
     | 'OutOfDay'
-    | 'InvalidTimestamp';
+    | 'InvalidTimestamp'
+    | 'CannotDemoteAdmin'
+    | 'CurrentPasswordRequired'
+    | 'InvalidCurrentPassword';
 
 export type IllegalAction =
     | 'DuplicateVacationRequest'
     | 'AllVacationsUsed'
     | 'AlreadyObligatoryVacation'
     | 'ModifyingFromAnotherUser'
-    | 'NoVacationConfig'; // TODO translations
+    | 'NoVacationConfig';

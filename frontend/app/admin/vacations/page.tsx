@@ -159,15 +159,26 @@ export default function AdminVacationsPage() {
         setProcessingIds((prev) => [...prev, ...ids]);
 
         try {
-            setRequests((prev) =>
-                prev.map((req) =>
-                    ids.includes(req._id) ? { ...req, status: status } : req
-                )
-            );
-
-            await Promise.all(
+            const results = await Promise.all(
                 ids.map((id) => apiClient.resolveVacation(id, status))
             );
+
+            const failures = ids.filter(
+                (_, i) => results[i]?.error !== undefined
+            );
+
+            if (failures.length > 0) {
+                // Some requests were rejected by the backend; refetch so the UI
+                // reflects the real status and surface an error.
+                await fetchVacations();
+                setError(t('error.PostError') || 'Connection error');
+            } else {
+                setRequests((prev) =>
+                    prev.map((req) =>
+                        ids.includes(req._id) ? { ...req, status: status } : req
+                    )
+                );
+            }
         } catch (error) {
             console.error('Error resolving group:', error);
             await fetchVacations();

@@ -65,7 +65,7 @@ export function responseErrorAccountBlocked(
     blockedUntil: Date | null,
     retryAfterSeconds?: number
 ) {
-    return responseError(res, 500, 'AccountBlocked', {
+    return responseError(res, 403, 'AccountBlocked', {
         blockedUntil: blockedUntil?.toISOString() || null,
         retryAfterSeconds: retryAfterSeconds || null,
     });

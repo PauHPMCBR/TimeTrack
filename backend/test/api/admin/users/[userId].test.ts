@@ -164,17 +164,12 @@ describe('PUT /api/admin/users/[userId]', () => {
     });
 
     it('should update user and return sanitized user on success', async () => {
-        const existingUser = { _id: 'user-1', email: 'old@example.com' };
-        vi.mocked(User.findById)
-            .mockResolvedValueOnce(existingUser)
-            .mockResolvedValueOnce({
-                _id: 'user-1',
-                name: 'Updated Name',
-                email: 'new@example.com',
-                role: 'employee',
-                dni: '12345678A',
-                expectedWorkHours: 7.5,
-            });
+        const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
         vi.mocked(User.findOne).mockResolvedValue(null);
 
         const req = mockReq({
@@ -191,17 +186,12 @@ describe('PUT /api/admin/users/[userId]', () => {
 
         await updateUserHandler(req, res);
 
+        expect(existingUser.name).toBe('Updated Name');
+        expect(existingUser.email).toBe('new@example.com');
+        expect(existingUser.dni).toBe('12345678A');
+        expect(existingUser.expectedWorkHours).toBe(7.5);
+        expect(existingUser.save).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
-            'user-1',
-            expect.objectContaining({
-                name: 'Updated Name',
-                email: 'new@example.com',
-                dni: '12345678A',
-                expectedWorkHours: 7.5,
-            }),
-            { new: true }
-        );
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: true,
@@ -213,6 +203,98 @@ describe('PUT /api/admin/users/[userId]', () => {
                 }),
             })
         );
+    });
+
+    it('should set a new password and clear lockout when password is provided', async () => {
+        const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            name: 'Anna',
+            blocked: true,
+            failedLoginAttempts: 4,
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { password: 'NewPassword123!' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(existingUser.password).toBe('NewPassword123!');
+        expect(existingUser.blocked).toBe(false);
+        expect(existingUser.failedLoginAttempts).toBe(0);
+        expect(existingUser.blockedSince).toBeNull();
+        expect(existingUser.save).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should reject a weak password', async () => {
+        const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            name: 'Anna',
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { password: 'short' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'password',
+                reasons: [
+                    'TooShort',
+                    'MissingUppercase',
+                    'MissingNumber',
+                    'MissingSign',
+                ],
+            },
+        });
+        expect(existingUser.save).not.toHaveBeenCalled();
+    });
+
+    it('should reject demoting an admin', async () => {
+        const existingUser: any = {
+            _id: 'user-1',
+            role: 'admin',
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { role: 'employee' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'role',
+                reasons: ['CannotDemoteAdmin'],
+            },
+        });
+        expect(existingUser.save).not.toHaveBeenCalled();
     });
 
     it('should return 500 on database error', async () => {

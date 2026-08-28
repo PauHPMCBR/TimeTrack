@@ -21,6 +21,7 @@ import {
     UpdateUserRequestSchema,
     UserIdParamSchema,
 } from 'shared/src/schemas/api';
+import { validatePassword } from '@/lib/password';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
@@ -85,7 +86,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
         const userId = req.query.userId as string;
-        const { name, email, role, dni, expectedWorkHours, workDays } =
+        const { name, email, role, dni, expectedWorkHours, workDays, password } =
             req.body;
 
         const user = await User.findById(userId);
@@ -108,22 +109,41 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             }
         }
 
-        const update: Record<string, unknown> = { updatedAt: new Date() };
-        if (name !== undefined) update.name = name;
-        if (email !== undefined) update.email = email.toLowerCase();
-        if (role !== undefined) update.role = role;
-        if (dni !== undefined) update.dni = dni;
+        if (name !== undefined) user.name = name;
+        if (email !== undefined) user.email = email.toLowerCase();
+        if (role !== undefined) {
+            // Admins cannot be demoted (prevents lockouts and a stale-token
+            // admin gaining/losing privileges mid-session).
+            if (user.role === ADMIN_ROLE && role !== ADMIN_ROLE) {
+                return responseErrorIncorrectParameter(res, 'role', [
+                    'CannotDemoteAdmin',
+                ]);
+            }
+            user.role = role;
+        }
+        if (dni !== undefined) user.dni = dni;
         if (expectedWorkHours !== undefined)
-            update.expectedWorkHours = expectedWorkHours;
-        if (workDays !== undefined) update.workDays = workDays;
-
-        await User.findByIdAndUpdate(user._id, update, { new: true });
-        const updatedUser = await User.findById(user._id);
+            user.expectedWorkHours = expectedWorkHours;
+        if (workDays !== undefined) user.workDays = workDays;
+        if (password !== undefined) {
+            const errors = validatePassword(String(password), user.email, user.name);
+            if (errors.length > 0) {
+                return responseErrorIncorrectParameter(res, 'password', errors);
+            }
+            // Saved through the pre-save hook, which hashes it. Also clears any
+            // lockout state.
+            user.password = password;
+            user.failedLoginAttempts = 0;
+            user.blocked = false;
+            user.blockedSince = null;
+        }
+        user.updatedAt = new Date();
+        await user.save();
 
         res.status(200).json({
             success: true,
             data: {
-                user: toPublicUser(updatedUser),
+                user: toPublicUser(user),
             },
         });
     } catch (error) {

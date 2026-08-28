@@ -11,9 +11,14 @@ export function interpolate(
     template: string,
     vars: Record<string, string | number>
 ): string {
-    return template.replace(/\{(\w+)\}/g, (_, key) =>
-        vars[key] !== undefined ? String(vars[key]) : `{${key}}`
-    );
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+        const value = vars[key];
+        if (value === undefined) return `{${key}}`;
+        // Strip control characters (especially CR/LF) so user-supplied values
+        // can't inject extra headers when they land in an email subject.
+        // eslint-disable-next-line no-control-regex
+        return String(value).replace(/[\x00-\x1F\x7F]/g, '');
+    });
 }
 
 /** A body paragraph. Accepts already-escaped HTML. */

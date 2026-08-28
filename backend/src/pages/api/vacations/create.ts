@@ -29,31 +29,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
         const { date, reason } = req.body;
         const userId = req.user!.userId;
-
+        // `date` is already local midnight (see ElectiveVacationRequestSchema).
         const requestDate = new Date(date);
-        const startOfDay = new Date(
-            Date.UTC(
-                requestDate.getUTCFullYear(),
-                requestDate.getUTCMonth(),
-                requestDate.getUTCDate(),
-                0,
-                0,
-                0,
-                0
-            )
-        );
-
-        const endOfDay = new Date(
-            Date.UTC(
-                requestDate.getUTCFullYear(),
-                requestDate.getUTCMonth(),
-                requestDate.getUTCDate(),
-                23,
-                59,
-                59,
-                999
-            )
-        );
+        const startOfDay = new Date(requestDate);
+        const endOfDay = new Date(requestDate);
+        endOfDay.setDate(endOfDay.getDate() + 1);
 
         let yearlyVacationDays = await YearlyVacationDays.findOne({
             year: requestDate.getFullYear(),
@@ -63,7 +43,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         if (!yearlyVacationDays) {
             const globalConfig = await YearlyVacationDays.findOne({
                 year: requestDate.getFullYear(),
-                userId: undefined,
+                userId: { $exists: false },
             });
 
             if (!globalConfig) {
@@ -90,7 +70,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             userId: userId,
             date: {
                 $gte: startOfDay,
-                $lte: endOfDay,
+                $lt: endOfDay,
             },
             status: { $in: [VACATION_PENDING, VACATION_APPROVED] },
         });
@@ -102,7 +82,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const isObligatoryDay = yearlyVacationDays.obligatoryDays.some(
             (obligatoryDate: Date) => {
                 const obligatory = new Date(obligatoryDate);
-                return obligatory >= startOfDay && obligatory <= endOfDay;
+                return obligatory >= startOfDay && obligatory < endOfDay;
             }
         );
 

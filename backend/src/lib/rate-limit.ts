@@ -14,14 +14,20 @@ const MAX_ENTRIES = 10_000;
 const DEFAULT_RATE_LIMIT = 100;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 15 * MS_PER_MINUTE;
 
-// Keys on the client IP. Behind a reverse proxy every request shares the
-// proxy's socket address, so prefer the left-most (client) X-Forwarded-For
-// entry when present.
+// Keys on the client IP. When the backend sits behind a trusted reverse proxy
+// (TRUST_PROXY=true), the proxy's socket address is shared by every client, so
+// the real client IP is read from the *last* X-Forwarded-For entry (the one the
+// trusted proxy appends). Otherwise X-Forwarded-For is never honored: a client
+// could otherwise rotate the left-most value at will to reset its rate-limit
+// budget.
 function clientIp(req: NextApiRequest): string {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') {
-        const first = forwarded.split(',')[0].trim();
-        if (first) return first;
+    if (process.env.TRUST_PROXY === 'true') {
+        const forwarded = req.headers['x-forwarded-for'];
+        if (typeof forwarded === 'string') {
+            const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean);
+            const last = parts[parts.length - 1];
+            if (last) return last;
+        }
     }
     return req.socket?.remoteAddress || 'unknown';
 }
@@ -86,6 +92,7 @@ export const withRateLimit = (
         if (!rateLimit(req, res, limit, windowMs)) {
             res.setHeader('Retry-After', String(Math.ceil(windowMs / 1000)));
             return res.status(429).json({
+                success: false,
                 error: 'RateLimited',
                 details: { retryAfterSeconds: Math.ceil(windowMs / 1000) },
             });

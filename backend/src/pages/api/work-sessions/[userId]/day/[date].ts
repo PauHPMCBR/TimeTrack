@@ -8,6 +8,7 @@ import {
 } from '@/lib/response-error-generator';
 import { DateParamSchema } from 'shared/src/schemas/api';
 import { runValidation, validateQueryParams } from '@/lib/validation';
+import { dayRange } from '@/lib/date-range';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -20,32 +21,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
         const userId = req.query.userId as string;
-        // The query param is coerced to a Date (UTC instant). Re-derive the local
-        // calendar date so the day bucket is the same wall-clock day the client
-        // asked for, regardless of how the date was serialized.
-        const parsed = new Date(req.query.date as string);
-        const startOfDay = new Date(
-            parsed.getFullYear(),
-            parsed.getMonth(),
-            parsed.getDate(),
-            0,
-            0,
-            0,
-            0
-        );
-        const endOfDay = new Date(
-            parsed.getFullYear(),
-            parsed.getMonth(),
-            parsed.getDate(),
-            23,
-            59,
-            59,
-            999
-        );
+        // Build the day bucket from the raw "YYYY-MM-DD" string so it matches
+        // the local calendar day regardless of the server timezone (parsing
+        // with `new Date()` would resolve to UTC midnight and shift the day).
+        const { start, end } = dayRange(req.query.date as string);
 
         const sessions = await WorkSession.find({
             userId: userId,
-            timestamp: { $gte: startOfDay, $lte: endOfDay },
+            timestamp: { $gte: start, $lt: end },
         })
             .sort({ timestamp: 1 })
             .lean();

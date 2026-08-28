@@ -112,7 +112,7 @@ async function updateUserYearlyVacationDays(
 
     if (!userYearlyVacationDays) {
         const baseYearlyVacationDays = await YearlyVacationDays.findOne(
-            { year, userId: undefined },
+            { year, userId: { $exists: false } },
             null,
             session ? { session } : undefined
         );

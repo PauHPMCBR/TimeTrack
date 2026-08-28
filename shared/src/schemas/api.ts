@@ -59,9 +59,15 @@ export const UpdateUserRequestSchema = z
             .optional(),
         email: z.string().email('Invalid email format').optional(),
         role: UserRoleSchema.optional(),
-        dni: z.string().min(1, 'DNI is required').max(20),
+        dni: z.string().max(20).optional(),
         expectedWorkHours: z.number().positive().optional(),
         workDays: z.array(z.number().int().min(0).max(6)).optional(),
+        // Optional: when set, the admin resets the user's password. Full policy
+        // is enforced server-side via validatePassword.
+        password: z
+            .string()
+            .min(8, 'Password must be at least 8 characters')
+            .optional(),
     })
     .refine(
         (data) => Object.keys(data).length > 0,
@@ -126,6 +132,12 @@ export type ApplyAutoScheduleRequest = z.infer<
 
 export const UpdateProfileRequestSchema = z.object({
     autoTimetable: z.array(AutoScheduleEntrySchema).optional(),
+    // Self-service password change: both must be provided together.
+    currentPassword: z.string().optional(),
+    password: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .optional(),
 });
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequestSchema>;
 
@@ -133,23 +145,54 @@ export const AvatarUploadRequestSchema = z.object({
     dataUrl: z
         .string()
         .regex(
-            /^data:image\/(jpeg|png|webp|gif|avif|tiff|bmp|svg|svg\+xml);base64,/,
+            /^data:image\/(jpeg|png|webp|gif|avif|tiff|bmp);base64,/,
             'Invalid avatar data url'
         ),
 });
 export type AvatarUploadRequest = z.infer<typeof AvatarUploadRequestSchema>;
 
 export const ElectiveVacationRequestSchema = z.object({
-    date: z.string().transform((str) => new Date(str)),
+    date: z.string().refine(isValidDateString, 'Invalid date').transform(toLocalMidnightDate),
     reason: z.string().max(1000).optional(),
 });
 export type ElectiveVacationRequest = z.infer<
     typeof ElectiveVacationRequestSchema
 >;
 
+// True for a valid "YYYY-MM-DD" key or any other parseable date string.
+function isValidDateString(value: string): boolean {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (m) {
+        const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+        const date = new Date(y, mo - 1, d, 0, 0, 0, 0);
+        return (
+            date.getFullYear() === y &&
+            date.getMonth() === mo - 1 &&
+            date.getDate() === d
+        );
+    }
+    return !isNaN(new Date(value).getTime());
+}
+
+// Parses an incoming vacation date (date key "YYYY-MM-DD" or any ISO/parseable
+// date string) into local midnight of its local calendar day. The app stores
+// vacation dates at local midnight so day buckets and year lookups are
+// consistent regardless of the server timezone.
+export function toLocalMidnightDate(value: string): Date {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (m) {
+        return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
+    }
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+
 export const YearlyVacationAdminRequestSchema = z.object({
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
-    obligatoryDays: z.array(z.string().transform((str) => new Date(str))),
+    obligatoryDays: z.array(
+        z.string().refine(isValidDateString, 'Invalid date').transform(toLocalMidnightDate)
+    ),
     electiveDaysTotalCount: z.number().gte(0),
 });
 export type YearlyVacationAdminRequest = z.infer<
@@ -163,7 +206,7 @@ export type UserIdParam = z.infer<typeof UserIdParamSchema>;
 
 export const DateParamSchema = z.object({
     userId: z.string().min(1, 'User ID is required'),
-    date: z.coerce.date(),
+    date: z.string().regex(DATE_KEY_REGEX, 'date must be YYYY-MM-DD'),
 });
 export type DateParam = z.infer<typeof DateParamSchema>;
 

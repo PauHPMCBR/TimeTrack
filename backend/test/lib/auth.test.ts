@@ -20,6 +20,7 @@ vi.stubEnv('JWT_SECRET', 'test-secret-for-testing');
 import {
     requireInGroupOrAdmin,
     requireSameGroupOrAdmin,
+    requireRole,
     authenticateToken,
     signToken,
     REFRESH_TOKEN_HEADER,
@@ -39,7 +40,11 @@ describe('requireInGroupOrAdmin', () => {
 
     const handler = vi.fn().mockResolvedValue(undefined);
 
-    it('allows admins without membership check', async () => {
+    it('allows admins without membership check (role reloaded from DB)', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            role: 'admin',
+        } as any);
+
         const req: any = mockReq({
             headers: {
                 authorization: createAuthHeader({
@@ -55,12 +60,43 @@ describe('requireInGroupOrAdmin', () => {
         await requireInGroupOrAdmin(handler)(req, res);
 
         expect(handler).toHaveBeenCalled();
+        expect(User.findById).toHaveBeenCalledWith('admin-1');
         expect(Group.findById).not.toHaveBeenCalled();
+    });
+
+    it('does not allow a token whose DB role is no longer admin', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            role: 'employee',
+        } as any);
+        vi.mocked(Group.findById).mockResolvedValue({
+            _id: objectId('group-1'),
+            members: [objectId('other-user')],
+        } as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'demoted-1',
+                    role: 'admin', // stale JWT role
+                }),
+            },
+            query: { groupId: 'group-1' },
+        });
+        const res = mockRes();
+
+        await requireInGroupOrAdmin(handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: 'NoAccessToGroup' })
+        );
     });
 
     it('allows members whose ObjectId id matches the token userId string', async () => {
         vi.mocked(User.findById).mockResolvedValue({
             _id: objectId('user-1'),
+            role: 'employee',
         } as any);
         vi.mocked(Group.findById).mockResolvedValue({
             _id: objectId('group-1'),
@@ -86,6 +122,7 @@ describe('requireInGroupOrAdmin', () => {
     it('rejects non-members with 403 NoAccessToGroup', async () => {
         vi.mocked(User.findById).mockResolvedValue({
             _id: objectId('user-3'),
+            role: 'employee',
         } as any);
         vi.mocked(Group.findById).mockResolvedValue({
             _id: objectId('group-1'),
@@ -116,6 +153,7 @@ describe('requireInGroupOrAdmin', () => {
     it('returns 404 when the group does not exist', async () => {
         vi.mocked(User.findById).mockResolvedValue({
             _id: objectId('user-1'),
+            role: 'employee',
         } as any);
         vi.mocked(Group.findById).mockResolvedValue(null as any);
 
@@ -188,6 +226,81 @@ describe('requireSameGroupOrAdmin', () => {
         const res = mockRes();
 
         await requireSameGroupOrAdmin(handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+    });
+});
+
+describe('requireRole', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
+
+    const handler = vi.fn().mockResolvedValue(undefined);
+
+    it('grants access based on the live DB role, not the JWT role', async () => {
+        // Token says employee, DB says admin → allowed (fresh promotion).
+        vi.mocked(User.findById).mockResolvedValue({ role: 'admin' } as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'user-1',
+                    role: 'employee',
+                }),
+            },
+        });
+        const res = mockRes();
+
+        await requireRole(['admin'], handler)(req, res);
+
+        expect(handler).toHaveBeenCalled();
+    });
+
+    it('denies access when the DB role no longer matches the token', async () => {
+        // Token says admin, DB says employee → denied (demoted admin).
+        vi.mocked(User.findById).mockResolvedValue({
+            role: 'employee',
+        } as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'demoted-1',
+                    role: 'admin',
+                }),
+            },
+        });
+        const res = mockRes();
+
+        await requireRole(['admin'], handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: 'InsufficientPermissions' })
+        );
+    });
+
+    it('denies access when the user no longer exists', async () => {
+        vi.mocked(User.findById).mockResolvedValue(null as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'ghost-1',
+                    role: 'admin',
+                }),
+            },
+        });
+        const res = mockRes();
+
+        await requireRole(['admin'], handler)(req, res);
 
         expect(handler).not.toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(403);

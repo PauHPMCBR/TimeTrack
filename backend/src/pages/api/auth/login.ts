@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import { signToken } from '@/lib/auth';
 import { User } from '@/models';
@@ -13,6 +14,12 @@ import { LoginRequestSchema } from 'shared/src/schemas/api';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
+
+// Fixed bcrypt hash (cost 12) compared against when no account matches, so a
+// "user not found" response takes roughly as long as a real password check.
+// Prevents timing-based account enumeration.
+const DUMMY_PASSWORD_HASH =
+    '$2a$12$MSVNFA8MsRGEIFZIvoa/VeFiX/sTS8/cyZtuI229ws0E91dcnF3Ki';
 
 export default withRateLimit(
     async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -32,10 +39,19 @@ export default withRateLimit(
 
             await dbConnect();
             const { email, password } = req.body;
+            // Emails are stored lowercased; compare case-insensitively so users
+            // can log in with whatever casing they type.
+            const emailLower = String(email).toLowerCase();
 
-            const user = await User.findOne({ email, registered: true });
+            const user = await User.findOne({
+                email: emailLower,
+                registered: true,
+            });
 
             if (!user) {
+                // Spend the same time as a real bcrypt compare to avoid leaking
+                // whether the account exists.
+                await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
                 return responseErrorInvalidCredentials(res);
             }
 
@@ -77,22 +93,22 @@ export default withRateLimit(
                 const maxAttempts = parseInt(
                     process.env.MAX_FAILED_LOGIN_ATTEMPTS || '5'
                 );
-                const newFailedAttempts = (user.failedLoginAttempts || 0) + 1;
 
-                const updateData: {
-                    failedLoginAttempts: number;
-                    blocked?: boolean;
-                    blockedSince?: Date;
-                } = {
-                    failedLoginAttempts: newFailedAttempts,
-                };
+                // Atomic increment avoids the race where concurrent bad logins
+                // each read the same stale counter and undercount attempts.
+                const updated = await User.findByIdAndUpdate(
+                    user._id,
+                    { $inc: { failedLoginAttempts: 1 } },
+                    { new: true }
+                );
 
-                if (newFailedAttempts >= maxAttempts) {
-                    updateData.blocked = true;
-                    updateData.blockedSince = new Date();
+                if (updated && updated.failedLoginAttempts >= maxAttempts) {
+                    await User.findByIdAndUpdate(user._id, {
+                        blocked: true,
+                        blockedSince: new Date(),
+                    });
                 }
 
-                await User.findByIdAndUpdate(user._id, updateData);
                 return responseErrorInvalidCredentials(res);
             }
 

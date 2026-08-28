@@ -8,6 +8,7 @@ const PUBLIC_USER_FIELDS = [
     'registered',
     'dni',
     'expectedWorkHours',
+    'workDays',
     'avatar',
     'autoTimetable',
 ] as const;

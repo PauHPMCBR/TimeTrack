@@ -12,6 +12,14 @@ import type { AdminWorkSessionRow } from '@/schemas/api';
 
 export type User = z.infer<typeof UserSchema> & { _id: string };
 export type Group = z.infer<typeof GroupSchema> & { _id: string };
+// Group routes populate the `members` array with these user fields.
+export type GroupMember = {
+    _id: string;
+    name?: string;
+    email?: string;
+    role?: string;
+    registered?: boolean;
+};
 export type WorksessionReason = z.infer<typeof WorkSessionReasonSchema> & {
     _id: string;
 };

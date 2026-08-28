@@ -8,6 +8,16 @@ export function toLocalDateKey(date: Date | string): string {
     return `${y}-${m}-${day}`;
 }
 
+/**
+ * Parses a "YYYY-MM-DD" value (e.g. from `<input type="date">`) as local
+ * midnight. `new Date("2024-01-15")` would parse as UTC midnight and shift a
+ * day in negative-offset timezones.
+ */
+export function parseDateKey(dateKey: string): Date {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
 export function formatHM(ms: number, t?: (k: string) => string): string {
     const h = Math.floor(ms / MS_PER_HOUR);
     const m = Math.floor((ms % MS_PER_HOUR) / MS_PER_MINUTE);

@@ -21,7 +21,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const vacation = await ElectiveVacation.findById(vacationId);
 
-        if (vacation.userId != userId) {
+        if (!vacation) {
+            return responseErrorIllegalAction(res, 'ModifyingFromAnotherUser');
+        }
+
+        if (vacation.userId.toString() !== userId) {
             return responseErrorIllegalAction(res, 'ModifyingFromAnotherUser');
         }
 

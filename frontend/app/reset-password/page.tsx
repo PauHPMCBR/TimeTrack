@@ -1,18 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
-import { AUTH_TOKEN_KEY } from '@/lib/storage';
 
 export default function ResetPasswordPage() {
     const { t } = useI18n();
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     const token = searchParams.get('token') || '';
     const urlEmail = searchParams.get('email') || '';
@@ -83,8 +83,8 @@ export default function ResetPasswordPage() {
             }
 
             if (res.data && res.data.token) {
-                localStorage.setItem(AUTH_TOKEN_KEY, res.data.token);
-                window.location.href = '/profile';
+                apiClient.setSession(res.data.token, true);
+                router.replace('/profile');
             }
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);

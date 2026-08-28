@@ -294,9 +294,19 @@
             "mocha": "Mocha"
         },
         "thisWeek": "Aquesta setmana",
-        "timeFormat": "Format d'hora",
         "title": "Perfil d'usuari",
-        "weeklyGoal": "Objectiu setmanal"
+        "weeklyGoal": "Objectiu setmanal",
+        "password": {
+            "title": "Canvia la contrasenya",
+            "current": "Contrasenya actual",
+            "new": "Contrasenya nova",
+            "confirm": "Repeteix la contrasenya nova",
+            "submit": "Canvia la contrasenya",
+            "changed": "Contrasenya canviada correctament",
+            "CannotDemoteAdmin": "No es pot degradar un administrador",
+            "CurrentPasswordRequired": "Cal la contrasenya actual",
+            "InvalidCurrentPassword": "La contrasenya actual no és correcta"
+        }
     },
     "admin": {
         "btn": {
@@ -426,7 +436,9 @@
             "registrationLink": "Enllaç de registre (envia'l a l'empleat)",
             "saved": "Usuari actualitzat correctament",
             "subtitle": "Modifica les dades de l'empleat.",
-            "title": "Editar usuari"
+            "title": "Editar usuari",
+            "passwordLabel": "Contrasenya nova (opcional)",
+            "passwordPlaceholder": "Deixa-ho buit per no canviar-la"
         },
         "sessionEditor": {
             "addIn": "Afegir entrada",
@@ -551,19 +563,19 @@
     },
     "error": {
         "AccountBlocked": "Compte bloquejat",
-        "AiError": "Error de la IA",
         "CheckInRegistered": "Entrada registrada correctament",
         "CheckOutRegistered": "Sortida registrada correctament",
         "DatesNotInYear": "Les dates no pertanyen a l'any seleccionat",
         "DeleteError": "Erorr al el·liminar",
         "EntryNotFound": "Registre no trobat",
         "GetError": "Error de petició",
-        "GroqApiKeyMissing": "Falta API KEY de Groq",
         "GroupDeleted": "Grup eliminat correctament",
         "IllegalAction": {
             "AllVacationsUsed": "No queden més vacances d'elecció lliures",
             "AlreadyObligatoryVacation": "Aquest dia ja és festiu obligatori",
-            "DuplicateVacationRequest": "Petició de vacances duplicada"
+            "DuplicateVacationRequest": "Petició de vacances duplicada",
+            "ModifyingFromAnotherUser": "No pots modificar una petició d'un altre usuari",
+            "NoVacationConfig": "Encara no s'ha configurat el calendari de vacances"
         },
         "IncorrectParameter": {
             "email": "correu electrònic",
@@ -584,7 +596,16 @@
                 "NoEntryToday": "No hi ha cap entrada avui",
                 "NotInOrder": "Els fitxatges han de ser alternats (entrada/sortida)",
                 "OutOfDay": "L'hora ha de ser del mateix dia",
-                "InvalidTimestamp": "Data i hora no vàlides"
+                "InvalidTimestamp": "Data i hora no vàlides",
+                "CannotDemoteAdmin": "No es pot degradar un administrador",
+                "CurrentPasswordRequired": "Cal la contrasenya actual",
+                "InvalidCurrentPassword": "La contrasenya actual no és correcta",
+                "TooLong": "La contrasenya és massa llarga (màxim 72 caràcters)",
+                "ShouldNotBeSet": "Aquest paràmetre no s'ha de proporcionar",
+                "DatesNotInYear": "Les dates no pertanyen a l'any seleccionat",
+                "SomeUsersNotFound": "Alguns usuaris no s'han trobat",
+                "AvatarTooLarge": "La imatge de perfil és massa gran",
+                "InvalidAvatarFormat": "El format de la imatge de perfil no és vàlid"
             },
             "type": "tipus",
             "year": "any"
@@ -596,7 +617,6 @@
         "InvalidResetToken": "L'enllaç de restabliment no és vàlid o ja s'ha fet servir.",
         "ResetTokenExpired": "L'enllaç de restabliment ha caducat. Demana'n un de nou.",
         "InvalidToken": "Token invàlid o expirat",
-        "MessageMissing": "Falta el missatge",
         "MethodNotAllowed": "Mètode no permès",
         "MissingParameter": "Falten paràmetres",
         "ModifyingFromAnotherUser": "No pots modificar dades d'un altre usuari",
@@ -607,14 +627,15 @@
         "PutError": "Error al modificar",
         "RateLimited": "S'han fet massa intents. Torna-ho a provar més tard",
         "ShouldNotBeSet": "Aquest paràmetre no hauria d'estar definit",
-        "Success": "Operació realitzada amb èxit",
         "TokenRequired": "Token d'accés requerit",
         "UnknownError": "Error desconegut",
         "UserNotFound": "Usuari no trobat",
         "ValidationError": "Error en validació",
         "YearlyVacationSaved": "Configuració de vacances anuals desada",
         "partialVacation": "S'han creat {created} dies, però {failed} han fallat.",
-        "vacationLimit": "Dies de festa excedits o no vàlids"
+        "vacationLimit": "Dies de festa excedits o no vàlids",
+        "GroupNotFound": "Grup no trobat",
+        "NoAccessToGroup": "Sense accés a aquest grup"
     },
     "errorBoundary": {
         "message": "S'ha produït un error inesperat.",

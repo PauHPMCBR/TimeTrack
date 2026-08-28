@@ -15,6 +15,11 @@ export function validatePassword(
     if (pwd.length < 8) {
         errors.push('TooShort');
     }
+    // bcrypt only uses the first 72 bytes; reject longer passwords so the extra
+    // characters can't be silently ignored.
+    if (Buffer.byteLength(pwd, 'utf8') > 72) {
+        errors.push('TooLong');
+    }
     if (!/[a-z]/.test(pwd)) {
         errors.push('MissingLowercase');
     }

@@ -8,7 +8,7 @@ export default async function handler(
     if (req.method !== 'GET') {
         return res
             .status(405)
-            .json({ success: false, details: { error: 'MethodNotAllowed' } });
+            .json({ success: false, error: 'MethodNotAllowed', details: {} });
     }
 
     // readyState: 0 disconnected, 1 connected, 2 connecting, 3 disconnecting

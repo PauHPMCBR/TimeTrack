@@ -49,6 +49,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const [error, setError] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [success, setSuccess] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
     const [registrationLink, setRegistrationLink] = useState<string | null>(
         null
     );
@@ -81,6 +82,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setError(null);
         setValidationErrors([]);
         setSuccess(false);
+        setNewPassword('');
         setCopied(false);
         setRegistrationLink(null);
 
@@ -143,7 +145,13 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setValidationErrors([]);
         setSuccess(false);
 
-        const response = await apiClient.updateUser(user._id, formData);
+        const payload: UpdateUserRequest = { ...formData };
+        // Only send the password when the admin actually wants to reset it.
+        if (newPassword.trim()) {
+            payload.password = newPassword;
+        }
+
+        const response = await apiClient.updateUser(user._id, payload);
 
         if (response.error) {
             if (response.error === 'IncorrectParameter') {
@@ -159,6 +167,28 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                                 t('error.IncorrectParameter.message')
                         );
                     }
+                } else if (
+                    response.details?.reasons?.includes('CannotDemoteAdmin')
+                ) {
+                    setError(
+                        t('error.IncorrectParameter.reason.CannotDemoteAdmin')
+                    );
+                } else if (response.details?.incorrectParameter === 'password') {
+                    const reasons = response.details?.reasons || [];
+                    const reasonMsgs = reasons
+                        .map((reason) =>
+                            t(`error.IncorrectParameter.reason.${reason}`)
+                        )
+                        .filter(
+                            (msg, i) =>
+                                msg !==
+                                `error.IncorrectParameter.reason.${reasons[i]}`
+                        );
+                    setError(
+                        reasonMsgs.length > 0
+                            ? reasonMsgs.join(', ')
+                            : t('error.IncorrectParameter.message')
+                    );
                 } else {
                     setError(t('error.IncorrectParameter.message'));
                 }
@@ -292,6 +322,15 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                         required
                         value={formData.dni ?? ''}
                         onChange={(e) => update({ dni: e.target.value })}
+                    />
+
+                    <TextField
+                        label={t('admin.usersEdit.passwordLabel')}
+                        type="password"
+                        placeholder={t('admin.usersEdit.passwordPlaceholder')}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        autoComplete="new-password"
                     />
 
                     <div>

@@ -97,30 +97,14 @@ describe('GET /api/work-sessions/[userId]/day/[date]', () => {
 
         await workSessionDayHandler(req, res);
 
-        // Day bucket must be the local calendar day, independent of how the date
-        // query param was serialized (e.g. '2024-01-15' coerces to UTC midnight).
-        const parsed = new Date('2024-01-15');
-        const startOfDay = new Date(
-            parsed.getFullYear(),
-            parsed.getMonth(),
-            parsed.getDate(),
-            0,
-            0,
-            0,
-            0
-        );
-        const endOfDay = new Date(
-            parsed.getFullYear(),
-            parsed.getMonth(),
-            parsed.getDate(),
-            23,
-            59,
-            59,
-            999
-        );
+        // Day bucket must be the local calendar day, derived from the raw
+        // "YYYY-MM-DD" string (independent of the server timezone).
         expect(WorkSession.find).toHaveBeenCalledWith({
             userId: 'user-456',
-            timestamp: { $gte: startOfDay, $lte: endOfDay },
+            timestamp: {
+                $gte: new Date(2024, 0, 15, 0, 0, 0, 0),
+                $lt: new Date(2024, 0, 16, 0, 0, 0, 0),
+            },
         });
 
         expect(res.status).toHaveBeenCalledWith(200);

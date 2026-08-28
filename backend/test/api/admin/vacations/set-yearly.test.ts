@@ -69,27 +69,34 @@ describe('POST /api/admin/vacations/set-yearly', () => {
         });
     });
 
-    it('should return 400 if userId is provided', async () => {
+    it('should ignore an extra userId field (stripped by the schema in production)', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(null);
+        vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({});
+
         const req = mockReq({
             method: 'POST',
             body: {
                 year: 2024,
                 obligatoryDays: ['2024-01-01'],
                 electiveDaysTotalCount: 22,
-                userId: 'some-user-id', // Should not be set
+                userId: 'some-user-id',
             },
         });
         const res = mockRes();
 
         await setYearlyHandler(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(400);
+        // The global template must be looked up without a userId filter.
+        expect(YearlyVacationDays.findOne).toHaveBeenCalledWith({
+            year: 2024,
+            userId: { $exists: false },
+        });
+        expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            error: 'IncorrectParameter',
-            details: {
-                incorrectParameter: 'userId',
-                reasons: ['ShouldNotBeSet'],
+            success: true,
+            data: {
+                message: 'YearlyVacationSaved',
+                year: 2024,
             },
         });
     });

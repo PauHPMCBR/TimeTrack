@@ -18,7 +18,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const year = parseInt(req.query.year as string);
 
         const yearlyVacationDays = await YearlyVacationDays.findOne({
-            userId: undefined,
+            userId: { $exists: false },
             year,
         }).lean();
 

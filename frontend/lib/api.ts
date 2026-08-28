@@ -4,7 +4,6 @@ import type {
     AdminWorkSessionInput,
     AppSettingsRequest,
     ApplyAutoScheduleRequest,
-    CopyYearlyVacationRequest,
     CreateGroupRequest,
     CreateUserRequest,
     ElectiveVacationRequest,
@@ -27,6 +26,7 @@ import {
     AppSettings,
     ElectiveVacation,
     Group,
+    GroupMember,
     TeamVacation,
     User,
     WorkSession,
@@ -55,6 +55,12 @@ class ApiClient {
         ApiResponse<{ reasons: WorksessionReason[] }>
     > | null = null;
     private avatarCache = new Map<string, Promise<Blob | null>>();
+    // Session token kept in memory so a non-"remembered" login still works for
+    // the current tab; persisted to localStorage only when the user asks.
+    private token: string | null = null;
+    // Defaults to true: a session restored from localStorage is a remembered one,
+    // so refreshed tokens keep being persisted.
+    private persistToken = true;
 
     setErrorListener(
         listener: ((error: string, details?: unknown) => void) | null
@@ -62,11 +68,24 @@ class ApiClient {
         this.errorListener = listener;
     }
 
+    /** Registers a new session token. `persist` controls localStorage storage. */
+    setSession(token: string, persist: boolean) {
+        this.token = token;
+        this.persistToken = persist;
+        if (persist) {
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+        }
+    }
+
+    private getSessionToken(): string | null {
+        return this.token ?? localStorage.getItem(AUTH_TOKEN_KEY);
+    }
+
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
     ): Promise<ApiResponse<T>> {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const token = this.getSessionToken();
 
         const config: RequestInit = {
             ...options,
@@ -81,10 +100,14 @@ class ApiClient {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
             // Sliding session: the backend re-issues the JWT (96h) in this header
-            // when it's close to expiring. Store it for the next request.
+            // when it's close to expiring. Keep it in memory; persist only when
+            // the session was set up to be remembered.
             const refreshedToken = response.headers.get(REFRESH_TOKEN_HEADER);
             if (refreshedToken) {
-                localStorage.setItem(AUTH_TOKEN_KEY, refreshedToken);
+                this.token = refreshedToken;
+                if (this.persistToken) {
+                    localStorage.setItem(AUTH_TOKEN_KEY, refreshedToken);
+                }
             }
 
             let data: { error?: string; details?: unknown; data?: unknown };
@@ -144,6 +167,8 @@ class ApiClient {
     async logoff() {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+        this.token = null;
+        this.persistToken = false;
         this.currentUser = undefined;
         this.reasonsPromise = null;
         this.avatarCache.clear();
@@ -180,10 +205,15 @@ class ApiClient {
     async updateMyProfile(
         input: UpdateProfileRequest
     ): Promise<ApiResponse<{ user: User }>> {
-        return this.request(`/api/profile/me`, {
+        const res = await this.request<{ user: User }>(`/api/profile/me`, {
             method: 'PUT',
             body: JSON.stringify(input),
         });
+        if (!res.error) {
+            // The cached profile is stale after a profile update.
+            this.currentUser = undefined;
+        }
+        return res;
     }
 
     async applyAutoSchedule(
@@ -203,7 +233,7 @@ class ApiClient {
 
     async getGroupInfo(
         groupId: string
-    ): Promise<ApiResponse<{ group: Group }>> {
+    ): Promise<ApiResponse<{ group: Group & { members: GroupMember[] } }>> {
         return this.request(`/api/groups/${groupId}`);
     }
 
@@ -348,17 +378,6 @@ class ApiClient {
         });
     }
 
-    async copyYearlyVacations(
-        params: CopyYearlyVacationRequest
-    ): Promise<
-        ApiResponse<{ success: boolean; year: number; sourceYear: number }>
-    > {
-        return this.request(`/api/admin/vacations/copy`, {
-            method: 'POST',
-            body: JSON.stringify(params),
-        });
-    }
-
     async getAdminWorkSessions(
         params: AdminWorkSessionsQueryWithPagination
     ): Promise<ApiResponse<AdminWorkSessionsResponse>> {
@@ -395,18 +414,6 @@ class ApiClient {
         year: number
     ): Promise<ApiResponse<YearlyVacationResponse>> {
         return this.request(`/api/admin/vacations/${year}`);
-    }
-
-    async getAllPendingVacations(): Promise<
-        ApiResponse<{ vacations: ElectiveVacation[] }>
-    > {
-        return this.request(`/api/admin/vacations/pending-vacations`);
-    }
-
-    async getCurrentlyWorking(): Promise<
-        ApiResponse<{ count: number; users: User[] }>
-    > {
-        return this.request(`/api/admin/currently-working`);
     }
 
     async resolveVacation(

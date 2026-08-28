@@ -34,6 +34,8 @@ export default withRateLimit(
         try {
             await dbConnect();
             const { registrationToken, email, password } = req.body;
+            // Emails are stored lowercased; compare case-insensitively.
+            const emailLower = String(email).toLowerCase();
 
             const user = await User.findOne({
                 registrationToken,
@@ -44,7 +46,7 @@ export default withRateLimit(
                 return responseErrorInvalidRegisterToken(res);
             }
 
-            if (user.email !== email) {
+            if (user.email !== emailLower) {
                 return responseErrorIncorrectParameter(res, 'email');
             }
 
@@ -55,14 +57,14 @@ export default withRateLimit(
                 return responseErrorMissingParameter(res, 'password');
             }
 
-            const errors = validatePassword(String(password), email, name);
+            const errors = validatePassword(String(password), emailLower, name);
 
             if (errors.length > 0) {
                 return responseErrorIncorrectParameter(res, 'password', errors);
             }
 
             const existingUser = await User.findOne({
-                email: email.toLowerCase(),
+                email: emailLower,
                 registered: true,
                 _id: { $ne: user._id },
             });

@@ -353,22 +353,6 @@ describe('apiClient', () => {
         });
     });
 
-    describe('getCurrentlyWorking', () => {
-        it('should fetch currently working users', async () => {
-            const mockResponse = {
-                data: {
-                    count: 3,
-                    users: [{ id: '1' }, { id: '2' }, { id: '3' }],
-                },
-            };
-            mockFetchSuccess(mockResponse);
-
-            const result = await apiClient.getCurrentlyWorking();
-
-            expect(result.data).toEqual(mockResponse.data);
-        });
-    });
-
     describe('getAllGroups', () => {
         it('should fetch all groups', async () => {
             const mockResponse = {
@@ -421,19 +405,6 @@ describe('apiClient', () => {
             mockFetchSuccess(mockResponse);
 
             const result = await apiClient.getAllVacationsYearAdmin(2024);
-
-            expect(result.data).toEqual(mockResponse.data);
-        });
-    });
-
-    describe('getAllPendingVacations', () => {
-        it('should fetch all pending vacations', async () => {
-            const mockResponse = {
-                data: { vacations: [{ id: 'v1', status: 'pending' }] },
-            };
-            mockFetchSuccess(mockResponse);
-
-            const result = await apiClient.getAllPendingVacations();
 
             expect(result.data).toEqual(mockResponse.data);
         });
@@ -676,7 +647,9 @@ describe('apiClient', () => {
         });
 
         it('should persist the refreshed token from the X-Auth-Token header', async () => {
-            localStorage.setItem('auth_token', 'old-token');
+            // Set up a remembered session explicitly (a previous logoff test
+            // resets the persist flag on the singleton).
+            apiClient.setSession('old-token', true);
             global.fetch = vi.fn().mockResolvedValue({
                 ok: true,
                 headers: {
@@ -690,6 +663,47 @@ describe('apiClient', () => {
 
             expect(result.data).toEqual({ user: { id: '1' } });
             expect(localStorage.getItem('auth_token')).toBe('new-token');
+        });
+
+        it('should keep a non-remembered session in memory only', async () => {
+            localStorage.clear();
+            apiClient.setSession('mem-token', false);
+            expect(localStorage.getItem('auth_token')).toBeNull();
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                headers: { get: () => null },
+                json: () => Promise.resolve({ data: { user: { id: '1' } } }),
+            }) as any;
+
+            await apiClient.getProfile();
+
+            expect(global.fetch).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Authorization: 'Bearer mem-token',
+                    }),
+                })
+            );
+        });
+
+        it('should not persist a refreshed token for a non-remembered session', async () => {
+            localStorage.clear();
+            apiClient.setSession('mem-token', false);
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                headers: {
+                    get: (name: string) =>
+                        name === 'X-Auth-Token' ? 'refreshed-token' : null,
+                },
+                json: () => Promise.resolve({ data: { user: { id: '1' } } }),
+            }) as any;
+
+            await apiClient.getProfile();
+
+            expect(localStorage.getItem('auth_token')).toBeNull();
         });
     });
 });

@@ -65,11 +65,13 @@ export default withRateLimit(
             }
 
             user.password = password;
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpires = undefined;
+            // Null (not undefined): Mongoose drops `undefined` on save, which
+            // would leave the used token reusable.
+            user.resetPasswordToken = null;
+            user.resetPasswordExpires = null;
             user.failedLoginAttempts = 0;
             user.blocked = false;
-            user.blockedSince = undefined;
+            user.blockedSince = null;
             user.updatedAt = new Date();
             await user.save();
 

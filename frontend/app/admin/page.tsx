@@ -123,9 +123,15 @@ export default function AdminDashboard() {
     ];
 
     const sections = [
-        { title: t('admin.sections.users'), items: menuItems.slice(0, 3) },
-        { title: t('admin.sections.vacations'), items: menuItems.slice(3, 6) },
-        { title: t('admin.sections.settings'), items: menuItems.slice(6) },
+        { title: t('admin.menu.sections.users'), items: menuItems.slice(0, 3) },
+        {
+            title: t('admin.menu.sections.vacations'),
+            items: menuItems.slice(3, 6),
+        },
+        {
+            title: t('admin.menu.sections.settings'),
+            items: menuItems.slice(6),
+        },
     ];
 
     return (
