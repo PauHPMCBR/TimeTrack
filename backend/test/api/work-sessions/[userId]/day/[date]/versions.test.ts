@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockReq, mockRes } from '../../../utils/mocks';
+import { mockReq, mockRes } from '../../../../../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -41,9 +41,9 @@ vi.mock('@/models', () => ({
 }));
 
 import { WorkSession } from '@/models';
-import workSessionRangeHandler from '@/pages/api/work-sessions/[userId]/range';
+import dayVersionsHandler from '@/pages/api/work-sessions/[userId]/day/[date]/versions';
 
-describe('GET /api/work-sessions/[userId]/range', () => {
+describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -55,11 +55,11 @@ describe('GET /api/work-sessions/[userId]/range', () => {
     it('should return 405 if method is not GET', async () => {
         const req = mockReq({
             method: 'POST',
-            query: { userId: 'user-456', from: '2024-01-01', to: '2024-03-31' },
+            query: { userId: 'user-456', date: '2024-01-15' },
         });
         const res = mockRes();
 
-        await workSessionRangeHandler(req, res);
+        await dayVersionsHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(405);
         expect(res.json).toHaveBeenCalledWith({
@@ -69,66 +69,78 @@ describe('GET /api/work-sessions/[userId]/range', () => {
         });
     });
 
-    it('should return 200 with sessions within the range on successful GET', async () => {
-        const mockSessions = [
+    it('should return the full version history (active and replaced)', async () => {
+        const history = [
             {
-                _id: 'session-1',
+                _id: 's1',
                 type: 'check_in',
-                timestamp: new Date('2024-02-01T08:00:00'),
+                timestamp: new Date('2024-01-15T08:50:00'),
+                version: 1,
+                status: 'replaced',
+                replacedByVersion: 2,
+                replacedAt: new Date('2024-01-15T09:10:00'),
             },
             {
-                _id: 'session-2',
+                _id: 's2',
                 type: 'check_out',
-                timestamp: new Date('2024-02-01T17:00:00'),
+                timestamp: new Date('2024-01-15T17:00:00'),
+                version: 1,
+                status: 'replaced',
+                replacedByVersion: 2,
+                replacedAt: new Date('2024-01-15T09:10:00'),
+            },
+            {
+                _id: 's3',
+                type: 'check_in',
+                timestamp: new Date('2024-01-15T09:00:00'),
+                version: 2,
+                status: 'active',
+                source: 'admin',
+                notes: 'Admin day correction',
+            },
+            {
+                _id: 's4',
+                type: 'check_out',
+                timestamp: new Date('2024-01-15T17:30:00'),
+                version: 2,
+                status: 'active',
+                source: 'admin',
+                notes: 'Admin day correction',
             },
         ];
 
         vi.mocked(WorkSession.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(mockSessions),
+                lean: vi.fn().mockResolvedValue(history),
             }),
         } as any);
 
         const req = mockReq({
             method: 'GET',
-            query: { userId: 'user-456', from: '2024-01-01', to: '2024-03-31' },
+            query: { userId: 'user-456', date: '2024-01-15' },
         });
         const res = mockRes();
 
-        await workSessionRangeHandler(req, res);
+        await dayVersionsHandler(req, res);
 
+        // Unlike the regular day reader, the versions endpoint must NOT
+        // filter replaced documents: it returns every version, ordered by
+        // version then timestamp.
         expect(WorkSession.find).toHaveBeenCalledWith({
             userId: 'user-456',
             timestamp: {
-                $gte: new Date('2024-01-01T00:00:00'),
-                $lte: new Date('2024-03-31T23:59:59.999'),
+                $gte: new Date(2024, 0, 15, 0, 0, 0, 0),
+                $lt: new Date(2024, 0, 16, 0, 0, 0, 0),
             },
-            status: { $ne: 'replaced' },
         });
+        expect(vi.mocked(WorkSession.find).mock.results[0].value.sort).toHaveBeenCalledWith(
+            { version: 1, timestamp: 1 }
+        );
+
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: { workSessions: mockSessions },
-        });
-    });
-
-    it('should return 400 when to is not a valid date', async () => {
-        const req = mockReq({
-            method: 'GET',
-            query: { userId: 'user-456', from: '2024-01-01', to: 'nope' },
-        });
-        const res = mockRes();
-
-        await workSessionRangeHandler(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            error: 'IncorrectParameter',
-            details: {
-                incorrectParameter: 'date',
-                reasons: ['InvalidTimestamp'],
-            },
+            data: { workSessions: history },
         });
     });
 
@@ -141,11 +153,11 @@ describe('GET /api/work-sessions/[userId]/range', () => {
 
         const req = mockReq({
             method: 'GET',
-            query: { userId: 'user-456', from: '2024-01-01', to: '2024-03-31' },
+            query: { userId: 'user-456', date: '2024-01-15' },
         });
         const res = mockRes();
 
-        await workSessionRangeHandler(req, res);
+        await dayVersionsHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(500);
         expect(res.json).toHaveBeenCalledWith({

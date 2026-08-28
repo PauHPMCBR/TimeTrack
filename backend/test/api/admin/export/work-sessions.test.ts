@@ -142,6 +142,7 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         expect(WorkSession.find).toHaveBeenCalledWith({
             userId: { $in: ['user-1', 'user-2'] },
+            status: { $ne: 'replaced' },
         });
         expect(res.setHeader).toHaveBeenCalledWith(
             'Content-Type',
@@ -195,6 +196,7 @@ describe('GET /api/admin/export/work-sessions', () => {
                 $gte: new Date('2024-01-01T00:00:00'),
                 $lte: new Date('2024-01-31T23:59:59.999'),
             },
+            status: { $ne: 'replaced' },
         });
     });
 

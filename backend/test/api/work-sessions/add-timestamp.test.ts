@@ -32,11 +32,18 @@ vi.mock('@/lib/validation', () => ({
             next(),
 }));
 
-vi.mock('@/models', () => ({
-    WorkSession: class {
+const { constructed } = vi.hoisted(() => ({
+    constructed: [] as any[],
+}));
+
+vi.mock('@/models', () => {
+    class WorkSession {
         static find = vi.fn().mockReturnValue({
             sort: vi.fn().mockResolvedValue([]),
         });
+        constructor(doc: any) {
+            constructed.push(doc);
+        }
         save = vi.fn().mockResolvedValue({
             _id: 'session-123',
             userId: 'user-123',
@@ -44,8 +51,9 @@ vi.mock('@/models', () => ({
             timestamp: new Date(),
             notes: null,
         });
-    },
-}));
+    }
+    return { WorkSession };
+});
 
 import { WorkSession } from '@/models';
 import addTimestampHandler from '@/pages/api/work-sessions/add-timestamp';
@@ -55,6 +63,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        constructed.length = 0;
         mockStaticFind = vi.spyOn(WorkSession, 'find').mockReturnValue({
             sort: vi.fn().mockResolvedValue([]),
         } as any);
@@ -237,6 +246,40 @@ describe('POST /api/work-sessions/add-timestamp', () => {
                 }),
             })
         );
+    });
+
+    it('should join the day’s current version and record the actor', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: { type: 'check_out', notes: null },
+        });
+        const res = mockRes();
+
+        // The day was already superseded twice by admin corrections: its
+        // active documents are version 3, so a new punch joins version 3.
+        mockStaticFind.mockReturnValue({
+            sort: vi.fn().mockResolvedValue([
+                {
+                    _id: 'session-1',
+                    type: 'check_in',
+                    timestamp: new Date(),
+                    version: 3,
+                    status: 'active',
+                },
+            ]),
+        } as any);
+
+        await addTimestampHandler(req, res);
+
+        expect(constructed).toHaveLength(1);
+        expect(constructed[0]).toMatchObject({
+            userId: 'user-123',
+            type: 'check_out',
+            source: 'user',
+            version: 3,
+            status: 'active',
+        });
+        expect(res.status).toHaveBeenCalledWith(201);
     });
 
     it('should serialize concurrent requests for the same user', async () => {

@@ -4,6 +4,7 @@ import { AuthRequest, requireRole } from '@/lib/auth';
 import {
     ADMIN_ROLE,
     CHECK_IN,
+    SESSION_REPLACED,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
 import { User, Group, WorkSession, ElectiveVacation } from '@/models';
@@ -41,7 +42,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const [pendingVacations, latestSessions, settings] = await Promise.all([
             ElectiveVacation.countDocuments({ status: VACATION_PENDING }),
             WorkSession.aggregate([
-                { $match: { timestamp: { $gte: today } } },
+                {
+                    $match: {
+                        timestamp: { $gte: today },
+                        status: { $ne: SESSION_REPLACED },
+                    },
+                },
                 { $sort: { timestamp: -1 } },
                 { $group: { _id: '$userId', latest: { $first: '$$ROOT' } } },
             ]),
@@ -64,6 +70,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const weekSessions = (await WorkSession.find({
             timestamp: { $gte: monday, $lte: weekEnd },
+            status: { $ne: SESSION_REPLACED },
         })
             .sort({ timestamp: 1 })
             .lean()) as unknown as WorkSessionRow[];

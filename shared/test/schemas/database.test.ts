@@ -240,6 +240,59 @@ describe('Database Schemas', () => {
             });
             expect(result.success).toBe(false);
         });
+
+        it('should default version to 1 and status to active', () => {
+            const result = WorkSessionSchema.safeParse({
+                userId: 'user123',
+                type: 'check_in',
+                timestamp: new Date(),
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.version).toBe(1);
+                expect(result.data.status).toBe('active');
+                expect(result.data.replacedByVersion).toBeUndefined();
+                expect(result.data.replacedAt).toBeUndefined();
+            }
+        });
+
+        it('should accept a replaced document with audit fields', () => {
+            const result = WorkSessionSchema.safeParse({
+                userId: 'user123',
+                type: 'check_in',
+                timestamp: new Date(),
+                version: 3,
+                status: 'replaced',
+                replacedByVersion: 4,
+                replacedAt: new Date(),
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.version).toBe(3);
+                expect(result.data.status).toBe('replaced');
+                expect(result.data.replacedByVersion).toBe(4);
+            }
+        });
+
+        it('should reject an invalid status', () => {
+            const result = WorkSessionSchema.safeParse({
+                userId: 'user123',
+                type: 'check_in',
+                timestamp: new Date(),
+                status: 'deleted',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject a version below 1', () => {
+            const result = WorkSessionSchema.safeParse({
+                userId: 'user123',
+                type: 'check_in',
+                timestamp: new Date(),
+                version: 0,
+            });
+            expect(result.success).toBe(false);
+        });
     });
 
     describe('VacationStatusSchema', () => {

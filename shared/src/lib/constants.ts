@@ -2,6 +2,7 @@ import {
     UserRoleSchema,
     VacationStatusSchema,
     WorkSessionSourceSchema,
+    WorkSessionStatusSchema,
     WorkSessionTypeSchema,
 } from '../schemas/database';
 
@@ -11,6 +12,7 @@ import {
 export const USER_ROLES = UserRoleSchema.enum;
 export const WORK_SESSION_TYPES = WorkSessionTypeSchema.enum;
 export const WORK_SESSION_SOURCES = WorkSessionSourceSchema.enum;
+export const WORK_SESSION_STATUSES = WorkSessionStatusSchema.enum;
 export const VACATION_STATUSES = VacationStatusSchema.enum;
 
 export const EMPLOYEE_ROLE = USER_ROLES.employee;
@@ -23,10 +25,18 @@ export const SOURCE_USER = WORK_SESSION_SOURCES.user;
 export const SOURCE_ADMIN = WORK_SESSION_SOURCES.admin;
 export const SOURCE_AUTOMATIC = WORK_SESSION_SOURCES.automatic;
 
+export const SESSION_ACTIVE = WORK_SESSION_STATUSES.active;
+export const SESSION_REPLACED = WORK_SESSION_STATUSES.replaced;
+
 export const VACATION_PENDING = VACATION_STATUSES.pending;
 export const VACATION_APPROVED = VACATION_STATUSES.approved;
 export const VACATION_REJECTED = VACATION_STATUSES.rejected;
 export const VACATION_CANCELLED = VACATION_STATUSES.cancelled;
+
+// Audit "why" recorded in `notes` on documents created by the replacement
+// flows (kept as fixed, non-localized strings: they are part of the record).
+export const SESSION_REASON_ADMIN_CORRECTION = 'Admin day correction';
+export const SESSION_REASON_AUTO_TIMETABLE = 'Automatic timetable applied';
 
 // Admin report periods, shared by the query schemas and the admin UI.
 export const ADMIN_REPORT_PERIODS = ['day', 'week', 'month', 'year'] as const;

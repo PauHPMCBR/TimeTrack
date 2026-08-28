@@ -22,6 +22,9 @@ import {
     CHECK_IN,
     CHECK_OUT,
     SOURCE_AUTOMATIC,
+    SESSION_ACTIVE,
+    SESSION_REPLACED,
+    SESSION_REASON_AUTO_TIMETABLE,
 } from 'shared/src/lib/constants';
 
 interface AutoScheduleUser {
@@ -29,9 +32,10 @@ interface AutoScheduleUser {
 }
 
 // Fills a day's timestamps with the user's configured automatic timetable
-// (one check-in/check-out per interval), replacing any existing sessions for
-// that day. Sessions get source "automatic" so manual edits are never
-// overwritten by the reminder again.
+// (one check-in/check-out per interval), superseding any existing sessions for
+// that day (the previous set is flagged 'replaced', never deleted). Sessions
+// get source "automatic" so manual edits are never overwritten by the reminder
+// again.
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         return responseErrorMethodNotAllowed(res);
@@ -68,10 +72,30 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const { start, end } = dayRange(requestedDate);
 
         const result = await withUserLock(req.user!.userId, async () => {
-            await WorkSession.deleteMany({
+            // Versioning / audit trail: the day's current sessions are flagged
+            // 'replaced' (never deleted) and the timetable set is stored as
+            // the next version of that (user, day) sequence.
+            const active = (await WorkSession.find({
                 userId: req.user!.userId,
                 timestamp: { $gte: start, $lt: end },
-            });
+                status: { $ne: SESSION_REPLACED },
+            }).lean()) as unknown as { _id: unknown; version?: number }[];
+            const now = new Date();
+            const nextVersion =
+                active.reduce((max, s) => Math.max(max, s.version ?? 1), 0) + 1;
+            if (active.length > 0) {
+                await WorkSession.updateMany(
+                    { _id: { $in: active.map((s) => s._id) } },
+                    {
+                        $set: {
+                            status: SESSION_REPLACED,
+                            replacedByVersion: nextVersion,
+                            replacedAt: now,
+                            updatedAt: now,
+                        },
+                    }
+                );
+            }
 
             const sessions = timetable.flatMap((entry) => [
                 new WorkSession({
@@ -79,12 +103,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     type: CHECK_IN,
                     timestamp: dayTimestamp(requestedDate, entry.checkIn),
                     source: SOURCE_AUTOMATIC,
+                    version: nextVersion,
+                    status: SESSION_ACTIVE,
+                    notes: SESSION_REASON_AUTO_TIMETABLE,
+                    createdAt: now,
                 }),
                 new WorkSession({
                     userId: req.user!.userId,
                     type: CHECK_OUT,
                     timestamp: dayTimestamp(requestedDate, entry.checkOut),
                     source: SOURCE_AUTOMATIC,
+                    version: nextVersion,
+                    status: SESSION_ACTIVE,
+                    notes: SESSION_REASON_AUTO_TIMETABLE,
+                    createdAt: now,
                 }),
             ]);
 

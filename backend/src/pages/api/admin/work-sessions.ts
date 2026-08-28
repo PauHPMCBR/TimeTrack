@@ -4,6 +4,9 @@ import { requireRole, AuthRequest } from '@/lib/auth';
 import {
     ADMIN_ROLE,
     SOURCE_ADMIN,
+    SESSION_ACTIVE,
+    SESSION_REPLACED,
+    SESSION_REASON_ADMIN_CORRECTION,
     VACATION_APPROVED,
 } from 'shared/src/lib/constants';
 import { DEFAULT_EXPECTED_WORK_HOURS } from 'shared/src/lib/defaults';
@@ -47,6 +50,7 @@ import {
     WorkSessionRowStatus,
 } from 'shared/src/schemas/api';
 import { dateKey } from '@/lib/date-key';
+import { withUserLock } from '@/lib/user-lock';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'PUT') {
@@ -61,7 +65,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         try {
             await dbConnect();
-            const { userId, date, sessions } =
+            const { userId, date, sessions, reason } =
                 req.body as AdminReplaceDayWorkSessionsRequest;
 
             const user = await User.findById(userId);
@@ -115,21 +119,68 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 ]);
             }
 
-            const workSessions = await runInTransaction(async (session) => {
-                await WorkSession.deleteMany(
-                    { userId, timestamp: { $gte: dayStart, $lte: dayEnd } },
-                    session ? { session } : undefined
-                );
-                const docs = parsed.map((p) => ({
-                    userId,
-                    type: p.type,
-                    timestamp: p.timestamp,
-                    source: SOURCE_ADMIN,
-                }));
-                return session
-                    ? WorkSession.insertMany(docs, { session })
-                    : WorkSession.insertMany(docs);
-            });
+            // Versioning / audit trail: the day's current sessions are never
+            // deleted — they are flagged 'replaced' and the edited set is
+            // stored as the next version of that (user, day) sequence, so the
+            // record stays traceable and non-manipulable (CT 101/2019).
+            // Serialized per user (same lock as the user-facing flows) so two
+            // concurrent replacements can't compute the same next version.
+            const now = new Date();
+            const workSessions = await withUserLock(
+                userId,
+                () =>
+                    runInTransaction(async (session) => {
+                        const txOptions = session
+                            ? { session }
+                            : undefined;
+                        const active = (await WorkSession.find(
+                            {
+                                userId,
+                                timestamp: {
+                                    $gte: dayStart,
+                                    $lte: dayEnd,
+                                },
+                                status: { $ne: SESSION_REPLACED },
+                            },
+                            undefined,
+                            txOptions
+                        )) as unknown as (WorkSessionRow & {
+                            version?: number;
+                        })[];
+                        const nextVersion =
+                            active.reduce(
+                                (max, s) => Math.max(max, s.version ?? 1),
+                                0
+                            ) + 1;
+                        if (active.length > 0) {
+                            await WorkSession.updateMany(
+                                { _id: { $in: active.map((s) => s._id) } },
+                                {
+                                    $set: {
+                                        status: SESSION_REPLACED,
+                                        replacedByVersion: nextVersion,
+                                        replacedAt: now,
+                                        updatedAt: now,
+                                    },
+                                },
+                                txOptions
+                            );
+                        }
+                        const docs = parsed.map((p) => ({
+                            userId,
+                            type: p.type,
+                            timestamp: p.timestamp,
+                            source: SOURCE_ADMIN,
+                            version: nextVersion,
+                            status: SESSION_ACTIVE,
+                            notes: reason ?? SESSION_REASON_ADMIN_CORRECTION,
+                            createdAt: now,
+                        }));
+                        return session
+                            ? WorkSession.insertMany(docs, { session })
+                            : WorkSession.insertMany(docs);
+                    })
+            );
 
             res.status(200).json({
                 success: true,
@@ -214,6 +265,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     .lean(),
                 WorkSession.find({
                     timestamp: { $gte: periodStart, $lte: periodEnd },
+                    status: { $ne: SESSION_REPLACED },
                 })
                     .select('userId type timestamp source')
                     .sort({ timestamp: 1 })

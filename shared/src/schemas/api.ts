@@ -358,6 +358,8 @@ export const AdminReplaceDayWorkSessionsRequestSchema = z.object({
     userId: z.string().min(1, 'User ID is required'),
     date: z.string().min(1, 'Date is required'),
     sessions: z.array(AdminWorkSessionInputSchema),
+    // Audit note: why the day is being corrected. Stored on the new version.
+    reason: z.string().max(500).optional(),
 });
 export type AdminReplaceDayWorkSessionsRequest = z.infer<
     typeof AdminReplaceDayWorkSessionsRequestSchema

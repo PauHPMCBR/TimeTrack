@@ -98,13 +98,15 @@ describe('GET /api/work-sessions/[userId]/day/[date]', () => {
         await workSessionDayHandler(req, res);
 
         // Day bucket must be the local calendar day, derived from the raw
-        // "YYYY-MM-DD" string (independent of the server timezone).
+        // "YYYY-MM-DD" string (independent of the server timezone). Replaced
+        // versions are excluded.
         expect(WorkSession.find).toHaveBeenCalledWith({
             userId: 'user-456',
             timestamp: {
                 $gte: new Date(2024, 0, 15, 0, 0, 0, 0),
                 $lt: new Date(2024, 0, 16, 0, 0, 0, 0),
             },
+            status: { $ne: 'replaced' },
         });
 
         expect(res.status).toHaveBeenCalledWith(200);

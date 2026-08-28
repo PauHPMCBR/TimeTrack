@@ -2,6 +2,7 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireSameGroupOrAdmin, AuthRequest } from '@/lib/auth';
 import { WorkSession } from '@/models';
+import { SESSION_REPLACED } from 'shared/src/lib/constants';
 import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
@@ -29,6 +30,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const sessions = await WorkSession.find({
             userId: userId,
             timestamp: { $gte: start, $lt: end },
+            status: { $ne: SESSION_REPLACED },
         })
             .sort({ timestamp: 1 })
             .lean();
