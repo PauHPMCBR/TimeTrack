@@ -18,6 +18,7 @@ export type WorksessionReason = z.infer<typeof WorkSessionReasonSchema> & {
 export type WorkSession = z.infer<typeof WorkSessionSchema> & { _id: string };
 export type ElectiveVacation = z.infer<typeof ElectiveVacationSchema> & {
     _id: string;
+    approvedByName?: string;
 };
 export type YearlyVacationDays = z.infer<typeof YearlyVacationDaysSchema> & {
     _id: string;

@@ -11,7 +11,10 @@ import {
     MonthlyWorkRecordResponse,
     YearMonthParamSchema,
 } from 'shared/src/schemas/api';
-import { computeDayHours } from 'shared/src/lib/work-hours';
+import {
+    computeDayHours,
+    countCompletedSessions,
+} from 'shared/src/lib/work-hours';
 import { WorkSessionRow } from '@/lib/rows';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
@@ -63,7 +66,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             }));
 
         let totalHoursWorked = 0;
-        const totalSessions = sessions.length;
+        let totalSessions = 0;
         const daysWithSessionsSet = new Set<number>();
 
         sessions.forEach((session) => {
@@ -89,11 +92,16 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 round: false,
             }).totalHours;
 
+            // A "session" is a completed check-in/check-out pair; isolated
+            // check-ins/outs (forgot check-out/in) are anomalies, not sessions.
+            const completedSessions = countCompletedSessions(daySessions);
+
             dailyStats[day] = {
                 hoursWorked: Math.round(dayHours * 100) / 100,
-                sessions: daySessions.length,
+                sessions: completedSessions,
             };
 
+            totalSessions += completedSessions;
             totalHoursWorked += dayHours;
         }
 

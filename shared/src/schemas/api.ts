@@ -329,7 +329,13 @@ export type UserLoginResponse = z.infer<typeof UserLoginResponseSchema>;
 
 export const YearlyVacationsResponseSchema = z.object({
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
-    electives: z.array(ElectiveVacationSchema.extend({ _id: z.string() })),
+    electives: z.array(
+        ElectiveVacationSchema.extend({
+            _id: z.string(),
+            // Resolved server-side: display name of the admin who approved.
+            approvedByName: z.string().optional(),
+        })
+    ),
     yearlyVacationDays: YearlyVacationDaysSchema.extend({
         _id: z.string(),
     }).nullable(),

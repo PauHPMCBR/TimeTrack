@@ -98,10 +98,13 @@ if (process.env.SEED_DEMO === '1') {
   const [f0, f1, f2, f3, f4, f5] = futureWeekdayOffsets;
 
   // --- Groups -------------------------------------------------------------------
+  // `members`/`groups` are declared as string arrays in the shared Group/User
+  // schemas, so the seed stores ObjectIds as their string form to stay type-
+  // consistent (queries like `Group.find({ members: userId })` rely on it).
   db.groups.insertMany([
-    { _id: groups.dev, name: 'Development', description: 'Software development team', members: [ids.anna, ids.carles, ids.elena], createdAt: now, updatedAt: now },
-    { _id: groups.design, name: 'Design', description: 'UI/UX design team', members: [ids.berta, ids.marc], createdAt: now, updatedAt: now },
-    { _id: groups.marketing, name: 'Marketing', description: 'Marketing and communications', members: [ids.diana], createdAt: now, updatedAt: now }
+    { _id: groups.dev, name: 'Development', description: 'Software development team', members: [ids.anna, ids.carles, ids.elena].map(String), createdAt: now, updatedAt: now },
+    { _id: groups.design, name: 'Design', description: 'UI/UX design team', members: [ids.berta, ids.marc].map(String), createdAt: now, updatedAt: now },
+    { _id: groups.marketing, name: 'Marketing', description: 'Marketing and communications', members: [ids.diana].map(String), createdAt: now, updatedAt: now }
   ]);
   print('Demo groups created');
 
@@ -112,7 +115,7 @@ if (process.env.SEED_DEMO === '1') {
     registrationToken: null,
     registered: true,
     role: 'employee',
-    groups: groupIds,
+    groups: groupIds.map((g) => g.toString()),
     dni,
     expectedWorkHours,
     failedLoginAttempts: 0,
@@ -255,7 +258,9 @@ if (process.env.SEED_DEMO === '1') {
   print('Work session reasons created');
 
   // Create the initial admin as a registered user with the demo password.
+  // `_id` must match `ids.admin`: vacations reference it via `approvedBy`.
   db.users.insertOne({
+    _id: ids.admin,
     name: 'System Administrator',
     email: 'admin@company.com',
     password: DEMO_PASSWORD_HASH,

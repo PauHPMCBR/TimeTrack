@@ -209,7 +209,7 @@ export default function CalendarPage() {
                                 </strong>
                             </div>
                             <div>
-                                {t('calendar.totalSessions')}:{' '}
+                                {t('calendar.totalCompletedSessions')}:{' '}
                                 <strong>
                                     {workSessions.summary.totalSessions}
                                 </strong>

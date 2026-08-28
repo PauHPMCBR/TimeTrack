@@ -92,7 +92,8 @@ export function CalendarTooltip({
                                                     {event.elective.notes}
                                                 </div>
                                             )}
-                                            {event.elective.approvedBy && (
+                                            {event.elective.approvedByName ||
+                                                event.elective.approvedBy ? (
                                                 <div className="text-xs">
                                                     <span className="font-medium">
                                                         {t(
@@ -100,9 +101,10 @@ export function CalendarTooltip({
                                                         )}
                                                         :
                                                     </span>{' '}
-                                                    {event.elective.approvedBy}
+                                                    {event.elective.approvedByName ||
+                                                        event.elective.approvedBy}
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
                                     )}
                                 </div>
@@ -179,7 +181,8 @@ export function CalendarTooltip({
 
                 {/* No activities message */}
                 {vacationEvents.length === 0 &&
-                    (!workEvent || workEvent.sessions === 0) && (
+                    (!workEvent ||
+                        (workEvent.sessionsList ?? []).length === 0) && (
                         <div className="text-zinc-500 dark:text-zinc-400 text-sm italic">
                             {t('calendar.noActivities')}
                         </div>

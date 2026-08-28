@@ -12,7 +12,7 @@ export type VacationEvent = {
         | 'elective-rejected'
         | 'team';
     label: string;
-    elective?: ElectiveVacation;
+    elective?: ElectiveVacation | TeamVacation;
     userName?: string;
 };
 

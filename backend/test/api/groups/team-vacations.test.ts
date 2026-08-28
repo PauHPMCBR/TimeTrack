@@ -22,6 +22,7 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/models', () => ({
     User: {
         findById: vi.fn(),
+        find: vi.fn(),
     },
     Group: {
         find: vi.fn(),
@@ -99,13 +100,31 @@ describe('GET /api/groups/team-vacations', () => {
         const mockVacations = [
             {
                 _id: 'vacation-1',
-                userId: { name: 'User 1' },
+                userId: 'user-456',
+                approvedBy: 'admin-1',
                 date: new Date('2024-06-15'),
             },
         ];
         vi.mocked(ElectiveVacation.find).mockReturnValue({
-            populate: vi.fn().mockReturnValue({
+            sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(mockVacations),
+            }),
+        } as any);
+
+        vi.mocked(User.find).mockReturnValue({
+            select: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue([
+                    {
+                        _id: 'user-456',
+                        name: 'User 1',
+                        email: 'user1@example.com',
+                    },
+                    {
+                        _id: 'admin-1',
+                        name: 'System Administrator',
+                        email: 'admin@example.com',
+                    },
+                ]),
             }),
         } as any);
 
@@ -117,7 +136,19 @@ describe('GET /api/groups/team-vacations', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: { vacations: mockVacations },
+            data: {
+                vacations: [
+                    {
+                        ...mockVacations[0],
+                        userId: {
+                            _id: 'user-456',
+                            name: 'User 1',
+                            email: 'user1@example.com',
+                        },
+                        approvedByName: 'System Administrator',
+                    },
+                ],
+            },
         });
     });
 

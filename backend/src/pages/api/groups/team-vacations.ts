@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import { AuthRequest, authenticateToken } from '@/lib/auth';
 import { User, Group, ElectiveVacation } from '@/models';
 import { UserRow, GroupRow } from '@/lib/rows';
+import { resolveVacationNames } from '@/lib/vacation-names';
 import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
@@ -46,10 +47,16 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             date: { $gte: startDate, $lte: endDate },
             status: VACATION_APPROVED,
         })
-            .populate('userId', 'name email')
+            .sort({ date: 1 })
             .lean();
 
-        res.status(200).json({ success: true, data: { vacations } });
+        // Resolve the vacation owner (userId → { _id, name, email }) and the
+        // approving admin (approvedByName) so the calendar can display them.
+        const resolved = await resolveVacationNames(vacations, {
+            populateUserId: true,
+        });
+
+        res.status(200).json({ success: true, data: { vacations: resolved } });
     } catch (error) {
         console.error('Get team vacations error:', error);
         return responseErrorGet(res);
