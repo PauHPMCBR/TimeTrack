@@ -58,9 +58,12 @@ function CalendarDayComponent({
                     <div className="font-medium">
                         {workEvent.hoursWorked.toFixed(1)}h
                     </div>
-                    <div className="text-[10px]">
-                        {workEvent.sessions} {t('calendar.sessions')}
-                    </div>
+                    {workEvent.sessions > 0 && (
+                        <div className="text-[10px]">
+                            {workEvent.sessions}{' '}
+                            {t('calendar.completedSessions')}
+                        </div>
+                    )}
                 </div>
             )}
 

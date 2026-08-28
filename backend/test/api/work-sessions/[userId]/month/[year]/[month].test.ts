@@ -107,13 +107,62 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
                     month: 1,
                     sessionsByDay: expect.any(Array),
                     summary: expect.objectContaining({
-                        totalSessions: 2,
+                        totalSessions: 1,
                         totalHoursWorked: expect.any(Number),
                         daysWithSessions: expect.any(Number),
                     }),
                 }),
             })
         );
+    });
+
+    it('should count only completed sessions, not isolated check-ins/outs', async () => {
+        const mockSessions = [
+            {
+                _id: 'session-1',
+                type: 'check_in',
+                timestamp: new Date('2024-01-15T08:00:00'),
+            },
+            {
+                _id: 'session-2',
+                type: 'check_in',
+                timestamp: new Date('2024-01-16T09:00:00'),
+            },
+            {
+                _id: 'session-3',
+                type: 'check_out',
+                timestamp: new Date('2024-01-16T17:00:00'),
+            },
+            {
+                _id: 'session-4',
+                type: 'check_out',
+                timestamp: new Date('2024-01-17T17:00:00'),
+            },
+        ];
+
+        vi.mocked(WorkSession.find).mockReturnValue({
+            sort: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(mockSessions),
+            }),
+        } as any);
+
+        const req = mockReq({
+            method: 'GET',
+            query: { userId: 'user-456', year: '2024', month: '1' },
+        });
+        const res = mockRes();
+
+        await workSessionMonthHandler(req, res);
+
+        const data = res.json.mock.calls[0][0].data;
+        // Jan 15: isolated check-in (forgot check-out) -> 0 completed sessions.
+        // Jan 16: check-in + check-out -> 1 completed session.
+        // Jan 17: isolated check-out (forgot check-in) -> 0 completed sessions.
+        expect(data.summary.totalSessions).toBe(1);
+        expect(data.summary.dailyStats[15].sessions).toBe(0);
+        expect(data.summary.dailyStats[16].sessions).toBe(1);
+        expect(data.summary.dailyStats[17].sessions).toBe(0);
+        expect(data.summary.daysWithSessions).toBe(3);
     });
 
     it('should return 500 on database error', async () => {

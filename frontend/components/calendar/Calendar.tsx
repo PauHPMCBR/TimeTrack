@@ -173,6 +173,7 @@ export function Calendar({
                             label:
                                 vacUserName || t('calendar.electiveVacation'),
                             userName: vacUserName ?? undefined,
+                            elective: vac,
                         });
                     }
                 });
@@ -191,7 +192,7 @@ export function Calendar({
             const dailyStat = workSessions.summary?.dailyStats?.[day];
             const sessionsList = workSessions.sessionsByDay?.[day];
 
-            if (dailyStat && dailyStat.sessions > 0) {
+            if (dailyStat && sessionsList && sessionsList.length > 0) {
                 return {
                     hoursWorked: dailyStat.hoursWorked || 0,
                     sessions: dailyStat.sessions || 0,

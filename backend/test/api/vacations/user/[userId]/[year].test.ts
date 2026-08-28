@@ -43,9 +43,12 @@ vi.mock('@/models', () => ({
         create: vi.fn(),
         findByIdAndUpdate: vi.fn(),
     },
+    User: {
+        find: vi.fn(),
+    },
 }));
 
-import { ElectiveVacation, YearlyVacationDays } from '@/models';
+import { ElectiveVacation, YearlyVacationDays, User } from '@/models';
 import userVacationsHandler from '@/pages/api/vacations/user/[userId]/[year]';
 
 describe('GET /api/vacations/user/[userId]/[year]', () => {
@@ -127,6 +130,71 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
                 yearlyVacationDays: mockYearlyVacation,
             },
         });
+    });
+
+    it('should resolve the approver name for approved vacations', async () => {
+        const mockVacations = [
+            {
+                _id: 'vacation-1',
+                userId: 'user-456',
+                date: new Date('2024-06-15'),
+                status: 'approved',
+                approvedBy: 'admin-1',
+            },
+            {
+                _id: 'vacation-2',
+                userId: 'user-456',
+                date: new Date('2024-06-20'),
+                status: 'pending',
+            },
+        ];
+
+        vi.mocked(ElectiveVacation.find).mockReturnValue({
+            sort: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(mockVacations),
+            }),
+        } as any);
+
+        vi.mocked(YearlyVacationDays.findOne)
+            .mockReturnValueOnce({
+                lean: vi.fn().mockResolvedValueOnce({
+                    year: 2024,
+                    electiveDaysTotalCount: 22,
+                    obligatoryDays: [],
+                }),
+            } as any) // globalSettings
+            .mockReturnValueOnce({
+                lean: vi.fn().mockResolvedValueOnce({
+                    year: 2024,
+                    userId: 'user-456',
+                    obligatoryDays: [],
+                    electiveDaysTotalCount: 22,
+                    selectedElectiveDays: [],
+                }),
+            } as any); // user yearly
+
+        vi.mocked(User.find).mockReturnValue({
+            select: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue([
+                    { _id: 'admin-1', name: 'System Administrator' },
+                ]),
+            }),
+        } as any);
+
+        const req = mockReq({
+            method: 'GET',
+            query: { userId: 'user-456', year: '2024' },
+        });
+        const res = mockRes();
+
+        await userVacationsHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        const call = res.json.mock.calls[0][0];
+        expect(call.data.electives).toEqual([
+            { ...mockVacations[0], approvedByName: 'System Administrator' },
+            mockVacations[1],
+        ]);
     });
 
     it('should create new user yearly config from global settings if not exists', async () => {

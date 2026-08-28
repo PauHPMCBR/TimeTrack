@@ -8,6 +8,7 @@ import {
 } from '@/lib/response-error-generator';
 import { runValidation, validateQueryParams } from '@/lib/validation';
 import { ElectiveVacationRow, YearlyVacationRow } from '@/lib/rows';
+import { resolveVacationNames } from '@/lib/vacation-names';
 import {
     UserYearParamSchema,
     YearlyVacationResponse,
@@ -106,7 +107,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const response: YearlyVacationResponse = {
             year: year,
-            electives: vacations,
+            electives: (await resolveVacationNames(
+                vacations
+            )) as YearlyVacationResponse['electives'],
             yearlyVacationDays: yearlyVacationDays,
         };
 

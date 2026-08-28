@@ -178,7 +178,7 @@ export default function OtherUserProfilePage() {
                             </div>
                             <div>
                                 <div className="text-xs text-zinc-500">
-                                    {t('calendar.totalSessions')}
+                                    {t('calendar.totalCompletedSessions')}
                                 </div>
                                 <div className="text-lg font-semibold text-zinc-900 dark:text-white">
                                     {workSessions.summary.totalSessions}

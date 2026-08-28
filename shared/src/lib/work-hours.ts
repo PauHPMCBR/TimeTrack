@@ -67,6 +67,26 @@ export function computeDayHours(
     return { totalHours, anomalies };
 }
 
+/**
+ * Number of completed sessions for a day: a check-in paired with a following
+ * check-out. Unmatched check-ins/check-outs (forgotten check-in/out) do not
+ * count. Sessions must be sorted by timestamp before calling. Pairing follows
+ * the same rules as `computeDayHours`.
+ */
+export function countCompletedSessions(sessions: DaySessionLike[]): number {
+    let completed = 0;
+    let pendingCheckIn = false;
+    for (const session of sessions) {
+        if (session.type === CHECK_IN) {
+            pendingCheckIn = true;
+        } else if (session.type === CHECK_OUT && pendingCheckIn) {
+            completed++;
+            pendingCheckIn = false;
+        }
+    }
+    return completed;
+}
+
 /** Returns true when workedHours is within expectedHours ± benevolenceHours. */
 export function isWithinBenevolence(
     workedHours: number,

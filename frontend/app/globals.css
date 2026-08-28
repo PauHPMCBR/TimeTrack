@@ -440,8 +440,6 @@ html[data-theme="macchiato"] {
 
 /* —— Res: cap gradient aquí. El fons el posarem des del layout amb classes —— */
 
-@reference "tailwindcss";
-
 @layer base {
   html, body { height: 100%; width: 100%; }
 }
