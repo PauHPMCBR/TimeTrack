@@ -4,9 +4,10 @@
 //
 //   node scripts/deploy-all.js
 //
-// What it does, per company config found in deploy-docs/companies/*.json:
+// What it does, per company compose file under /opt/timetrack/companies/*/:
 //   1. builds the shared backend image once (tag registre-jornada-backend:latest),
-//   2. builds the company's frontend image (branding + baked backend URL),
+//   2. builds the company's frontend image (branding + baked backend URL) from
+//      the `x-company` block in the company's compose file,
 //   3. recreates the company's stack: docker compose up -d --force-recreate,
 //   4. polls GET /api/health and reports whether the company came up healthy.
 //
@@ -21,7 +22,7 @@ import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import {
-  readCompanyConfig,
+  readCompanyFromCompose,
   resolveDomain,
   buildFrontend,
   buildBackend,
@@ -29,7 +30,6 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
-const companiesConfigDir = join(repoRoot, "deploy-docs", "companies");
 const DEFAULT_COMPANIES_DIR = "/opt/timetrack/companies";
 
 function usage() {
@@ -65,16 +65,21 @@ if (args.pull) {
   execFileSync("git", ["pull"], { cwd: repoRoot, stdio: "inherit" });
 }
 
-const configFiles = readdirSync(companiesConfigDir).filter((f) => f.endsWith(".json")).sort();
-if (configFiles.length === 0) {
-  console.error(`No company configs found in ${companiesConfigDir}`);
+const composeFiles = readdirSync(args.companiesDir)
+  .map((name) => join(args.companiesDir, name, "compose.yml"))
+  .filter((p) => existsSync(p))
+  .sort();
+if (composeFiles.length === 0) {
+  console.error(
+    `No company compose files found under ${args.companiesDir} (expected <dir>/<company>/compose.yml)`
+  );
   process.exit(1);
 }
 
-const companies = configFiles.map((f) => {
-  const cfg = readCompanyConfig(join(companiesConfigDir, f));
+const companies = composeFiles.map((f) => {
+  const cfg = readCompanyFromCompose(f);
   if (!cfg.subdomain) {
-    console.error(`Invalid config ${f}: missing 'subdomain'.`);
+    console.error(`Invalid x-company block in ${f}: missing 'subdomain'.`);
     process.exit(1);
   }
   return cfg;
