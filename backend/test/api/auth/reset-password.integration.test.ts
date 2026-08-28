@@ -1,16 +1,34 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { User } from '@/models';
 
-const MONGODB_URI = process.env.TEST_MONGO_URI || '';
 const TEST_EMAIL = 'reset-int@example.com';
+const hasMongo = Boolean(process.env.TEST_MONGO_URI);
 
-const hasMongo = Boolean(MONGODB_URI);
+const mockReq = (body: Record<string, unknown>) => ({
+    method: 'POST',
+    headers: {},
+    query: {},
+    body,
+});
+const mockRes = () => {
+    const res: any = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockReturnThis(),
+        setHeader: vi.fn().mockReturnThis(),
+    };
+    return res;
+};
 
+// Runs against a real MongoDB only when TEST_MONGO_URI is provided (locally /
+// in a deploy check). Skipped in CI. The handler is imported dynamically after
+// the env vars are set because @/lib/mongodb reads MONGODB_URI at import time.
 describe.skipIf(!hasMongo)('reset-password integration', () => {
     beforeAll(async () => {
-        await mongoose.connect(MONGODB_URI);
+        process.env.MONGODB_URI = process.env.TEST_MONGO_URI;
+        process.env.JWT_SECRET = 'integration-test-jwt-secret';
+        await mongoose.connect(process.env.TEST_MONGO_URI!);
         await User.deleteMany({ email: TEST_EMAIL });
     });
 
@@ -19,8 +37,8 @@ describe.skipIf(!hasMongo)('reset-password integration', () => {
         await mongoose.disconnect();
     });
 
-    it('persists the password change and clears the token via null', async () => {
-        const u = new User({
+    it('resets the password end-to-end and clears the token', async () => {
+        await User.create({
             name: 'Reset Int',
             email: TEST_EMAIL,
             registrationToken: 'rt',
@@ -31,25 +49,49 @@ describe.skipIf(!hasMongo)('reset-password integration', () => {
             resetPasswordToken: 'reset-token-123',
             resetPasswordExpires: new Date(Date.now() + 3600_000),
         });
-        await u.save();
 
-        u.password = 'NewPass123!';
-        u.resetPasswordToken = null;
-        u.resetPasswordExpires = null;
-        u.failedLoginAttempts = 0;
-        u.blocked = false;
-        u.blockedSince = null;
-        u.updatedAt = new Date();
-        await u.save();
+        const { default: resetPasswordHandler } = await import(
+            '@/pages/api/auth/reset-password'
+        );
+        const res = mockRes();
+        await resetPasswordHandler(
+            mockReq({
+                token: 'reset-token-123',
+                email: TEST_EMAIL,
+                password: 'NewPass123!',
+            }) as any,
+            res as any
+        );
 
-        const reloaded: any = await User.findById(u._id).lean();
-        // Cleared fields are persisted as null (Mongoose stores null, drops
-        // undefined). The reset token must no longer match anything.
-        expect(reloaded?.resetPasswordToken).toBeNull();
-        expect(reloaded?.resetPasswordExpires).toBeNull();
-        expect(reloaded?.blockedSince).toBeNull();
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: true })
+        );
 
-        const matches = await bcrypt.compare('NewPass123!', reloaded?.password);
+        const reloaded: any = await User.findOne({ email: TEST_EMAIL }).lean();
+        expect(reloaded.resetPasswordToken).toBeUndefined();
+        expect(reloaded.resetPasswordExpires).toBeUndefined();
+        const matches = await bcrypt.compare('NewPass123!', reloaded.password);
         expect(matches).toBe(true);
+    });
+
+    it('does not let a reused token work after the reset', async () => {
+        const res = mockRes();
+        const { default: resetPasswordHandler } = await import(
+            '@/pages/api/auth/reset-password'
+        );
+        await resetPasswordHandler(
+            mockReq({
+                token: 'reset-token-123',
+                email: TEST_EMAIL,
+                password: 'AnotherPass123!',
+            }) as any,
+            res as any
+        );
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: 'InvalidResetToken' })
+        );
     });
 });

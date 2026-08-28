@@ -24,6 +24,7 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/models', () => ({
     User: {
         findOne: vi.fn(),
+        updateOne: vi.fn(),
     },
 }));
 
@@ -140,11 +141,23 @@ describe('POST /api/auth/reset-password', () => {
 
         await resetPasswordHandler(req, res);
 
-        expect(user.password).toBe('StrongPass1!');
-        expect(user.resetPasswordToken).toBeNull();
-        expect(user.resetPasswordExpires).toBeNull();
-        expect(user.blockedSince).toBeNull();
-        expect(user.save).toHaveBeenCalled();
+        expect(User.updateOne).toHaveBeenCalledWith(
+            { _id: user._id },
+            {
+                $set: {
+                    password: expect.stringMatching(/^\$2[aby]\$/),
+                    failedLoginAttempts: 0,
+                    blocked: false,
+                    updatedAt: expect.any(Date),
+                },
+                $unset: {
+                    resetPasswordToken: 1,
+                    resetPasswordExpires: 1,
+                    blockedSince: 1,
+                },
+            }
+        );
+        expect(user.save).not.toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({

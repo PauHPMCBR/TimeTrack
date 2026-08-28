@@ -21,6 +21,7 @@ vi.mock('@/lib/validation', () => ({
 vi.mock('@/models', () => ({
     User: {
         findOne: vi.fn(),
+        updateOne: vi.fn(),
     },
 }));
 
