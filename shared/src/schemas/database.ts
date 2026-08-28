@@ -1,6 +1,4 @@
 import { z } from 'zod';
-import { extendZod } from '@zodyac/zod-mongoose';
-import mongoose from 'mongoose';
 import {
     DEFAULT_BENEVOLENCE_HOURS,
     DEFAULT_CHECK_IN_TIME,
@@ -9,8 +7,6 @@ import {
     DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_NON_WORKING_DAYS,
 } from '../lib/defaults';
-
-extendZod(z);
 
 // Automatic timetable: a list of check-in/check-out intervals (clock times
 // "HH:MM"). A day can have more than one interval (e.g. split shifts). Every
@@ -59,7 +55,9 @@ export const UserSchema = z.object({
     // Automatic timetable: list of check-in/check-out intervals ("HH:MM").
     // Always present (default applied on user creation); used by the "set
     // automatic timetable" action and the end-of-day reminder email.
-    autoTimetable: z.array(AutoScheduleEntrySchema).default(DEFAULT_AUTO_TIMETABLE),
+    autoTimetable: z
+        .array(AutoScheduleEntrySchema)
+        .default(DEFAULT_AUTO_TIMETABLE),
     // Date key (YYYY-MM-DD, local) of the last inconsistency-reminder email.
     // Empty string = never reminded yet. Always present.
     lastInconsistencyReminder: z.string().default(''),
@@ -75,11 +73,7 @@ export const AppSettingsSchema = z.object({
         .default(DEFAULT_EXPECTED_WORK_HOURS),
     benevolenceHours: z.number().gte(0).default(DEFAULT_BENEVOLENCE_HOURS),
     toleranceHours: z.number().gte(0).optional(),
-    endOfDayHour: z
-        .number()
-        .min(0)
-        .max(24)
-        .default(DEFAULT_END_OF_DAY_HOUR),
+    endOfDayHour: z.number().min(0).max(24).default(DEFAULT_END_OF_DAY_HOUR),
     nonWorkingDays: z
         .array(z.number().int().min(0).max(6))
         .default(DEFAULT_NON_WORKING_DAYS),

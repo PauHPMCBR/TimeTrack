@@ -41,9 +41,7 @@ export default function CheckInPage() {
     // Automatic timetable config (list of check-in/check-out intervals).
     const [autoTimetable, setAutoTimetable] = useState<
         { checkIn: string; checkOut: string }[]
-    >([
-        { checkIn: DEFAULT_CHECK_IN_TIME, checkOut: DEFAULT_CHECK_OUT_TIME },
-    ]);
+    >([{ checkIn: DEFAULT_CHECK_IN_TIME, checkOut: DEFAULT_CHECK_OUT_TIME }]);
     const [autoSaving, setAutoSaving] = useState(false);
     const [autoApplying, setAutoApplying] = useState(false);
     const [autoMessage, setAutoMessage] = useState<string | null>(null);
@@ -191,9 +189,7 @@ export default function CheckInPage() {
         if (searchParams.get('applyAuto') === '1') {
             const d = searchParams.get('date');
             setApplyDate(
-                d && DATE_KEY_REGEX.test(d)
-                    ? d
-                    : toLocalDateKey(new Date())
+                d && DATE_KEY_REGEX.test(d) ? d : toLocalDateKey(new Date())
             );
             setShowAutoConfirm(true);
             // Drop the flag so a refresh doesn't re-open the dialog.
@@ -394,7 +390,9 @@ export default function CheckInPage() {
             </Card>
 
             <Card className="p-5">
-                <h2 className="text-lg font-semibold">{t('checkin.autoTitle')}</h2>
+                <h2 className="text-lg font-semibold">
+                    {t('checkin.autoTitle')}
+                </h2>
                 <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
                     {t('checkin.autoSubtitle')}
                 </p>

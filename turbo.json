@@ -1,0 +1,31 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "globalDependencies": ["shared/src/**", "shared/package.json"],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "inputs": ["$TURBO_DEFAULT$", "!**/.turbo/**"],
+            "outputs": [".next/**", "**/*.tsbuildinfo"]
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true
+        },
+        "test": {
+            "cache": false,
+            "persistent": true
+        },
+        "test:run": {
+            "inputs": ["$TURBO_DEFAULT$", "!**/.turbo/**"],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$", "!**/.turbo/**"],
+            "outputs": []
+        },
+        "typecheck": {
+            "inputs": ["$TURBO_DEFAULT$", "!**/.turbo/**"],
+            "outputs": []
+        }
+    }
+}

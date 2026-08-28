@@ -9,7 +9,10 @@ import {
     WorkSessionReasonSchema,
     AppSettingsSchema,
 } from 'shared/src/schemas/database';
-import { zodSchema } from '@zodyac/zod-mongoose';
+import { extendZod, zodSchema } from '@zodyac/zod-mongoose';
+import { z } from 'zod';
+
+extendZod(z);
 
 const zUserSchema = zodSchema(UserSchema);
 zUserSchema.index({ email: 1, registered: 1 });
