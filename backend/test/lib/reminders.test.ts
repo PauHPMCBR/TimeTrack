@@ -101,6 +101,7 @@ describe('runDailyInconsistencyReminder', () => {
                 to: 'u1@example.com',
                 date: DATE,
                 anomalies: ['forgot_check_out', 'hours_over'],
+                times: [{ time: '09:00', type: 'check_in' }],
                 autoTimetable: '09:00 – 17:00',
                 applyAutoUrl: `http://localhost:3000/check-in?applyAuto=1&date=${DATE}`,
             })
