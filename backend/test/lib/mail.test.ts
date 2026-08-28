@@ -123,6 +123,24 @@ describe('mail (email sending)', () => {
         });
     });
 
+    describe('footer logo', () => {
+        it('renders the company logo in the footer when EMAIL_LOGO_URL is set', () => {
+            vi.stubEnv('EMAIL_LOGO_URL', 'https://acme.example.com/brand/icon.png');
+            const message = buildMessage('registration', 'ca', REG_VARS);
+            expect(message.html).toContain(
+                'src="https://acme.example.com/brand/icon.png"'
+            );
+            expect(message.html).toContain('height="48"');
+            expect(message.html).toContain('style="height:48px;width:auto;');
+        });
+
+        it('omits the logo when EMAIL_LOGO_URL is unset', () => {
+            vi.stubEnv('EMAIL_LOGO_URL', '');
+            const message = buildMessage('registration', 'ca', REG_VARS);
+            expect(message.html).not.toContain('<img');
+        });
+    });
+
     describe('passwordReset', () => {
         it('builds a password reset message with the reset link', () => {
             const message = buildMessage('passwordReset', 'en', RESET_VARS);

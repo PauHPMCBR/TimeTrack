@@ -143,7 +143,8 @@ Per-company compose (companies/${cfg.subdomain}/compose.yml):
   SMTP_PORT: "587"
   SMTP_USER: <smtp-login>
   SMTP_PASS: <smtp-key>
-  EMAIL_FROM: no-reply@registrejornada.fyi`);
+  EMAIL_FROM: no-reply@registrejornada.fyi
+  EMAIL_LOGO_URL: ${cfg.iconFile ? `${frontendUrl}/brand/icon.png` : "<unset — set if you provide branding>"}`);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
