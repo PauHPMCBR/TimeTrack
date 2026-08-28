@@ -4,6 +4,7 @@ import { authenticateToken, AuthRequest } from '@/lib/auth';
 import { User, WorkSession } from '@/models';
 import {
     responseErrorEntryNotFound,
+    responseErrorIllegalAction,
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
@@ -51,6 +52,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             typeof req.body?.date === 'string'
                 ? req.body.date
                 : dateKey(new Date());
+
+        if (requestedDate > dateKey(new Date())) {
+            return responseErrorIllegalAction(res, 'FutureDate');
+        }
 
         const user = (await User.findById(
             req.user?.userId

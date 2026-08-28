@@ -127,9 +127,13 @@
         "autoApplyConfirmCancel": "Cancel·la",
         "autoApplyConfirmConfirm": "Sí, aplica-ho",
         "autoApplyConfirmTitle": "Aplicar l'horari automàtic?",
+        "autoApplyDate": "Data d'aplicació",
         "autoApplyFailed": "No s'ha pogut aplicar l'horari automàtic.",
         "autoApplied": "Horari automàtic aplicat.",
         "autoAddInterval": "Afegeix un interval",
+        "autoCancel": "Cancel·la",
+        "autoConfigure": "Configura",
+        "autoFutureDate": "No es pot aplicar l'horari a una data futura.",
         "autoRemoveInterval": "Elimina",
         "autoCheckIn": "Entrada",
         "autoCheckOut": "Sortida",
@@ -245,6 +249,7 @@
         "used": "Gastats"
     },
     "groups": {
+        "backToProfile": "Torna al perfil",
         "empty": "Encara no estàs assignat a cap grup.",
         "groupDescription": "Descripció del Grup",
         "members": "Membres de l'Equip",
@@ -267,6 +272,9 @@
             "uploadError": "No s'ha pogut pujar la foto. Torna-ho a provar.",
             "uploading": "Pujant...",
             "updated": "Foto actualitzada"
+        },
+        "autoTimetable": {
+            "edit": "Edita l'horari automàtic"
         },
         "change": "Canvia",
         "errorLoading": "Error carregant l'usuari",
@@ -291,10 +299,8 @@
         "subtitle": "Perfil i hores",
         "theme": {
             "label": "Tema",
-            "latte": "Latte",
-            "frappe": "Frappé",
-            "macchiato": "Macchiato",
-            "mocha": "Mocha"
+            "light": "Clar",
+            "dark": "Fosc"
         },
         "thisWeek": "Aquesta setmana",
         "title": "Perfil d'usuari",

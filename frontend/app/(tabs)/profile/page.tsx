@@ -8,11 +8,13 @@ import { WorkSession, User } from '@/types';
 import { formatHM, toLocalDateKey } from '@/lib/datetime';
 import {
     applyTheme,
-    DARK_THEME_FLAVOR,
     DEFAULT_THEME_FLAVOR,
     ThemeFlavor,
 } from '@/lib/theme';
 import { THEME_KEY } from '@/lib/storage';
+import { TimetableEntry } from '@/lib/timetable';
+import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
+import TimetableList from '@/components/autoTimetable/TimetableList';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
     AVATAR_MAX_BYTES,
@@ -38,10 +40,8 @@ const AVATAR_TYPES = [
 ];
 
 const FLAVORS = [
-    { id: 'latte', base: '#eff1f5' },
-    { id: 'frappe', base: '#303446' },
-    { id: 'macchiato', base: '#24273a' },
-    { id: 'mocha', base: '#1e1e2e' },
+    { id: 'latte', base: '#eff1f5', labelKey: 'profile.theme.light' },
+    { id: 'frappe', base: '#303446', labelKey: 'profile.theme.dark' },
 ] as const;
 
 export default function ProfilePage() {
@@ -67,6 +67,8 @@ export default function ProfilePage() {
     const [pwdSaving, setPwdSaving] = useState(false);
     const [pwdError, setPwdError] = useState<string | null>(null);
     const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
+
+    const [autoModalOpen, setAutoModalOpen] = useState(false);
 
     const readFileAsDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -175,17 +177,12 @@ export default function ProfilePage() {
 
     useEffect(() => {
         const saved = localStorage.getItem(THEME_KEY) || DEFAULT_THEME_FLAVOR;
-        const normalized =
-            saved === 'light'
+        // Only Latte (light) and Frappé (dark) are exposed now; map any legacy
+        // value (macchiato/mocha/"dark"/...) to the dark flavor.
+        const savedTheme: ThemeFlavor =
+            saved === DEFAULT_THEME_FLAVOR || saved === 'light'
                 ? DEFAULT_THEME_FLAVOR
-                : saved === 'dark'
-                  ? DARK_THEME_FLAVOR
-                  : saved;
-        const savedTheme: ThemeFlavor = FLAVORS.some(
-            (f) => f.id === normalized
-        )
-            ? (normalized as ThemeFlavor)
-            : DARK_THEME_FLAVOR;
+                : 'frappe';
         setTheme(savedTheme);
         applyTheme(savedTheme);
     }, []);
@@ -194,6 +191,17 @@ export default function ProfilePage() {
         setTheme(next);
         localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
+    };
+
+    const saveAutoSchedule = async (next: TimetableEntry[]) => {
+        const res = await apiClient.updateMyProfile({ autoTimetable: next });
+        if (res.data) {
+            setUser((prev) =>
+                prev ? { ...prev, autoTimetable: next } : prev
+            );
+            return true;
+        }
+        return false;
     };
 
     const handlePasswordChange = async (e: React.FormEvent) => {
@@ -408,16 +416,69 @@ export default function ProfilePage() {
                 <ChevronRight className="h-5 w-5 text-zinc-400" />
             </Link>
 
-            <Card className="p-4">
-                <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
-                    {t('profile.preferences')}
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <Card className="p-4">
+                    <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
+                        {t('profile.password.title')}
+                    </div>
 
-                <div className="mb-4">
-                    <div className="mb-2 text-sm text-zinc-700 dark:text-zinc-300">
+                    <form
+                        onSubmit={handlePasswordChange}
+                        className="space-y-3"
+                    >
+                        <PasswordField
+                            placeholder={t('profile.password.current')}
+                            autoComplete="current-password"
+                            value={pwdCurrent}
+                            onChange={(e) => setPwdCurrent(e.target.value)}
+                            required
+                        />
+                        <PasswordField
+                            placeholder={t('profile.password.new')}
+                            autoComplete="new-password"
+                            value={pwdNew}
+                            onChange={(e) => setPwdNew(e.target.value)}
+                            required
+                        />
+                        <PasswordField
+                            placeholder={t('profile.password.confirm')}
+                            autoComplete="new-password"
+                            value={pwdConfirm}
+                            onChange={(e) => setPwdConfirm(e.target.value)}
+                            required
+                        />
+
+                        {pwdError && (
+                            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                                {pwdError}
+                            </div>
+                        )}
+
+                        {pwdSuccess && (
+                            <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                                {pwdSuccess}
+                            </div>
+                        )}
+
+                        <Button
+                            type="submit"
+                            variant="secondary"
+                            disabled={pwdSaving}
+                            className="w-full"
+                        >
+                            {pwdSaving
+                                ? t('common.saving')
+                                : t('profile.password.submit')}
+                        </Button>
+                    </form>
+                </Card>
+
+                <Card className="p-4">
+                    <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
                         {t('profile.theme.label')}
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
+
+                    <div className="grid grid-cols-2 gap-2">
                         {FLAVORS.map((flavor) => (
                             <button
                                 key={flavor.id}
@@ -435,65 +496,30 @@ export default function ProfilePage() {
                                 <span
                                     className={`text-xs ${theme === flavor.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-600 dark:text-zinc-400'}`}
                                 >
-                                    {t(`profile.theme.${flavor.id}`)}
+                                    {t(flavor.labelKey)}
                                 </span>
                             </button>
                         ))}
                     </div>
-                </div>
-            </Card>
+                </Card>
+            </div>
 
             <Card className="p-4">
-                <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
-                    {t('profile.password.title')}
-                </div>
-
-                <form onSubmit={handlePasswordChange} className="space-y-3">
-                    <PasswordField
-                        placeholder={t('profile.password.current')}
-                        autoComplete="current-password"
-                        value={pwdCurrent}
-                        onChange={(e) => setPwdCurrent(e.target.value)}
-                        required
-                    />
-                    <PasswordField
-                        placeholder={t('profile.password.new')}
-                        autoComplete="new-password"
-                        value={pwdNew}
-                        onChange={(e) => setPwdNew(e.target.value)}
-                        required
-                    />
-                    <PasswordField
-                        placeholder={t('profile.password.confirm')}
-                        autoComplete="new-password"
-                        value={pwdConfirm}
-                        onChange={(e) => setPwdConfirm(e.target.value)}
-                        required
-                    />
-
-                    {pwdError && (
-                        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                            {pwdError}
+                <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="text-sm font-medium text-zinc-900 dark:text-white">
+                            {t('checkin.autoTitle')}
                         </div>
-                    )}
-
-                    {pwdSuccess && (
-                        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                            {pwdSuccess}
-                        </div>
-                    )}
-
+                        <TimetableList timetable={user.autoTimetable || []} />
+                    </div>
                     <Button
-                        type="submit"
                         variant="secondary"
-                        disabled={pwdSaving}
-                        className="w-full"
+                        size="sm"
+                        onClick={() => setAutoModalOpen(true)}
                     >
-                        {pwdSaving
-                            ? t('common.saving')
-                            : t('profile.password.submit')}
+                        {t('profile.autoTimetable.edit')}
                     </Button>
-                </form>
+                </div>
             </Card>
 
             <Button
@@ -507,6 +533,13 @@ export default function ProfilePage() {
                 <LogOut size={16} />
                 {t('profile.signOut')}
             </Button>
+
+            <AutoTimetableModal
+                open={autoModalOpen}
+                timetable={user.autoTimetable || []}
+                onClose={() => setAutoModalOpen(false)}
+                onSave={saveAutoSchedule}
+            />
         </section>
     );
 }

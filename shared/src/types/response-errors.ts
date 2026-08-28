@@ -86,4 +86,5 @@ export type IllegalAction =
     | 'AllVacationsUsed'
     | 'AlreadyObligatoryVacation'
     | 'ModifyingFromAnotherUser'
-    | 'NoVacationConfig';
+    | 'NoVacationConfig'
+    | 'FutureDate';
