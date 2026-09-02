@@ -48,7 +48,8 @@ export type IncorrectParameter =
     | 'timestamp'
     | 'date'
     | 'role'
-    | 'currentPassword';
+    | 'currentPassword'
+    | 'timezone';
 
 export type PasswordIncorrectParameterReason =
     | 'TooShort'
@@ -79,7 +80,8 @@ export type IncorrectParameterReason =
     | 'InvalidTimestamp'
     | 'CannotDemoteAdmin'
     | 'CurrentPasswordRequired'
-    | 'InvalidCurrentPassword';
+    | 'InvalidCurrentPassword'
+    | 'InvalidTimezone';
 
 export type IllegalAction =
     | 'DuplicateVacationRequest'

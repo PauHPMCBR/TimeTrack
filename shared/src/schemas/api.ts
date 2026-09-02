@@ -93,6 +93,7 @@ export const AppSettingsRequestSchema = z
         nonWorkingDays: z.array(z.number().int().min(0).max(6)).optional(),
         inconsistencyReminderEnabled: z.boolean().optional(),
         monthlyApprovalReminderDays: z.number().int().min(1).max(60).optional(),
+        timezone: z.string().min(1, 'Timezone is required').optional(),
     })
     .refine(
         (data) => Object.keys(data).length > 0,

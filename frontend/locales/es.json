@@ -468,7 +468,9 @@
             "subtitle": "Configura los valores generales de la empresa.",
             "title": "Configuración de la empresa",
             "approvalReminderDaysLabel": "Días antes del recordatorio de confirmación",
-            "approvalReminderDaysHelp": "Días de espera desde la solicitud de confirmación mensual antes de enviar un recordatorio a la persona trabajadora (recordatorio único)."
+            "approvalReminderDaysHelp": "Días de espera desde la solicitud de confirmación mensual antes de enviar un recordatorio a la persona trabajadora (recordatorio único).",
+            "timezoneLabel": "Zona horaria de la empresa",
+            "timezoneHelp": "Zona horaria (IANA) usada para agrupar los registros por día y mostrar las horas. Por defecto, Europa/Madrid."
         },
         "export": {
             "button": "Exportar CSV",

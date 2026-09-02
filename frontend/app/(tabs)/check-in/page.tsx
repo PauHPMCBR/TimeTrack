@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api';
 import { WorkSessionRequest } from '@/schemas/api';
 import { WorkSession, WorksessionReason, User } from '@/types';
 import { toLocalDateKey, formatHM } from '@/lib/datetime';
+import { configuredTimezone } from '@/lib/timezone';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
@@ -450,14 +451,12 @@ export default function CheckInPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="text-sm text-zinc-500">
-                                            {new Date(
-                                                session.timestamp
-                                            ).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </div>
+                                         <div className="text-sm text-zinc-500">
+                                             {new Intl.DateTimeFormat(
+                                                 lang,
+                                                 { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: configuredTimezone() }
+                                             ).format(new Date(session.timestamp))}
+                                         </div>
                                     </div>
                                 );
                             })}

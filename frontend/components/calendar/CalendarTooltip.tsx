@@ -1,5 +1,6 @@
 import { VacationEvent, WorkSessionEvent } from '@/types/calendar';
 import { CHECK_IN } from 'shared/src/lib/constants';
+import { configuredTimezone } from '@/lib/timezone';
 
 interface CalendarTooltipProps {
     date: Date;
@@ -11,12 +12,14 @@ interface CalendarTooltipProps {
     isModal?: boolean;
 }
 
-function formatTime(date: Date, locale: string): string {
+function formatTime(utcMs: number | Date, locale: string): string {
+    const tz = configuredTimezone();
     return new Intl.DateTimeFormat(locale, {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
-    }).format(date);
+        timeZone: tz,
+    }).format(new Date(utcMs));
 }
 
 export function getVacationClass(type: VacationEvent['type']): string {

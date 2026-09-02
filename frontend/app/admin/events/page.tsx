@@ -6,6 +6,7 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { AdminWorkSessionRow } from '@/types';
 import { formatHM, localeTag, toLocalDateKey } from '@/lib/datetime';
+import { configuredTimezone } from '@/lib/timezone';
 import Card from '@/components/ui/Card';
 import SessionEditorModal from '@/components/SessionEditorModal';
 import AdminBackButton from '../../../components/AdminBackButton';
@@ -155,10 +156,12 @@ function AdminEventsInner() {
     };
 
     const fmtTime = (ts: Date | string) =>
-        new Date(ts).toLocaleTimeString(locale, {
+        new Intl.DateTimeFormat(locale, {
             hour: '2-digit',
             minute: '2-digit',
-        });
+            hour12: false,
+            timeZone: configuredTimezone(),
+        }).format(new Date(ts));
 
     const rowClass = (row: AdminWorkSessionRow) => {
         if (row.status === 'vacation')

@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api';
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
 import { useDirty } from '@/lib/useDirty';
 import { localeTag } from '@/lib/datetime';
+import { initConfiguredTimezone } from '@/lib/timezone';
 import Button from '@/components/ui/Button';
 import HoursMinutesInput from '@/components/ui/HoursMinutesInput';
 import Label from '@/components/ui/Label';
@@ -28,7 +29,25 @@ type FormState = {
     nonWorkingDays: number[];
     inconsistencyReminderEnabled: boolean;
     monthlyApprovalReminderDays: number;
+    timezone: string;
 };
+
+const COMMON_TIMEZONES = [
+    'Europe/Madrid',
+    'Europe/Barcelona',
+    'Europe/Lisbon',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Rome',
+    'America/New_York',
+    'America/Chicago',
+    'America/Mexico_City',
+    'America/Sao_Paulo',
+    'Asia/Dubai',
+    'Asia/Kolkata',
+    'Asia/Shanghai',
+    'Asia/Tokyo',
+];
 
 export default function AdminSettingsPage() {
     const { t, lang } = useI18n();
@@ -40,6 +59,7 @@ export default function AdminSettingsPage() {
         nonWorkingDays: [...DEFAULT_NON_WORKING_DAYS],
         inconsistencyReminderEnabled: true,
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
+        timezone: 'Europe/Madrid',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -82,7 +102,11 @@ export default function AdminSettingsPage() {
                         monthlyApprovalReminderDays:
                             s.monthlyApprovalReminderDays ??
                             DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
+                        timezone: s.timezone || 'Europe/Madrid',
                     });
+                    initConfiguredTimezone(
+                        s.timezone || 'Europe/Madrid'
+                    );
                 }
             } catch (err) {
                 console.error('Error carregant configuració:', err);
@@ -120,6 +144,7 @@ export default function AdminSettingsPage() {
                     formData.inconsistencyReminderEnabled,
                 monthlyApprovalReminderDays:
                     formData.monthlyApprovalReminderDays,
+                timezone: formData.timezone,
             });
 
             if (response.error) {
@@ -145,6 +170,7 @@ export default function AdminSettingsPage() {
             }
 
             setSuccess(true);
+            initConfiguredTimezone(formData.timezone);
             resetDirty();
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
@@ -284,6 +310,31 @@ export default function AdminSettingsPage() {
                                     />
                                     <p className="mt-1.5 text-xs text-zinc-500">
                                         {t('admin.settings.approvalReminderDaysHelp')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <div className="flex-1">
+                                    <label htmlFor="timezone" className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t('admin.settings.timezoneLabel')}
+                                    </label>
+                                    <select
+                                        id="timezone"
+                                        value={formData.timezone}
+                                        onChange={(e) =>
+                                            updateForm({ timezone: e.target.value })
+                                        }
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                    >
+                                        {COMMON_TIMEZONES.map((z) => (
+                                            <option key={z} value={z}>
+                                                {z}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.timezoneHelp')}
                                     </p>
                                 </div>
                             </div>

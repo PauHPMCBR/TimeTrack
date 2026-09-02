@@ -91,6 +91,11 @@ export const AppSettingsSchema = z.object({
         .min(1)
         .max(60)
         .default(DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS),
+    // IANA time-zone name used for all date-bucketing, automatic-timetable
+    // construction and displayed times. Stored as UTC in MongoDB; the local
+    // calendar day is derived from this zone so records are correct regardless
+    // of the server's own timezone (e.g. a Spain company on a UTC server).
+    timezone: z.string().min(1, 'Timezone is required').default('Europe/Madrid'),
     // Month key (YYYY-MM) of the last end-of-month "review the month's times"
     // mail sent to admins. Empty string = never sent. `.optional()` because
     // zod-mongoose compiles `z.string().default('')` to a `required: true`
