@@ -13,6 +13,7 @@
     "migrate:work-session-source": "node scripts/migrate-work-session-source.cjs"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@registre-jornada/shared": "file:../shared",
     "@zodyac/zod-mongoose": "^4.2.0",
     "bcryptjs": "^2.4.3",

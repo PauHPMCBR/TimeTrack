@@ -6,6 +6,7 @@ import { AppSettings } from '@/models';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
 import {
     responseErrorGet,
+    responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
@@ -45,6 +46,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 nonWorkingDays,
                 inconsistencyReminderEnabled,
                 monthlyApprovalReminderDays,
+                timezone,
             } = req.body;
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
@@ -63,6 +65,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             if (monthlyApprovalReminderDays !== undefined)
                 update.monthlyApprovalReminderDays =
                     monthlyApprovalReminderDays;
+            if (timezone !== undefined) {
+                // Validate it is a known IANA time-zone before persisting.
+                try {
+                    Intl.DateTimeFormat(undefined, {
+                        timeZone: timezone as string,
+                    });
+                } catch {
+                    return responseErrorIncorrectParameter(res, 'timezone', [
+                        'InvalidTimezone',
+                    ]);
+                }
+                update.timezone = timezone;
+            }
 
             const existing = await AppSettings.findOne({});
             if (existing) {

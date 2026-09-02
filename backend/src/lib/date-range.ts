@@ -1,33 +1,28 @@
-// Local-time date helpers. The app buckets data by the server's local
-// timezone; these build day ranges and day timestamps from a "YYYY-MM-DD" key.
+// All date-bucketing uses the configured company time-zone (AppSettings.timezone,
+// default Europe/Madrid). Stored timestamps are UTC instants; this module converts
+// them to the local calendar day so records are correct regardless of the server TZ.
+
+import { getConfiguredTimezone } from './settings';
+import * as tz from './timezone';
+
+const configured = () => getConfiguredTimezone();
 
 /** Inclusive start / exclusive end for a whole local day ("YYYY-MM-DD"). */
 export function dayRange(dateKeyStr: string): { start: Date; end: Date } {
-    const [y, m, d] = dateKeyStr.split('-').map(Number);
-    return {
-        start: new Date(y, m - 1, d, 0, 0, 0, 0),
-        end: new Date(y, m - 1, d + 1, 0, 0, 0, 0),
-    };
+    return tz.dayRange(dateKeyStr, configured());
 }
 
 /** A Date at the given clock time ("HH:MM") within a local day ("YYYY-MM-DD"). */
 export function dayTimestamp(dateKeyStr: string, hhmm: string): Date {
-    const [h, min] = hhmm.split(':').map(Number);
-    const [y, m, d] = dateKeyStr.split('-').map(Number);
-    return new Date(y, m - 1, d, h, min, 0, 0);
+    return tz.dayTimestamp(dateKeyStr, hhmm, configured());
 }
 
-/** A new Date at 00:00:00 of the same local day. */
-export function startOfDay(d: Date): Date {
-    const copy = new Date(d);
-    copy.setHours(0, 0, 0, 0);
-    return copy;
+/** A new Date at 00:00:00 of the same local day as a stored UTC instant. */
+export function startOfDay(d: number | Date): Date {
+    return tz.startOfDay(d, configured());
 }
 
-/** Inclusive start / exclusive end of the current local day. */
+/** Inclusive start / exclusive end of the current local day (configured zone). */
 export function todayRange(): { start: Date; end: Date } {
-    const start = startOfDay(new Date());
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return { start, end };
+    return tz.todayRange(configured());
 }

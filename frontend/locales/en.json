@@ -468,7 +468,9 @@
             "subtitle": "Configure the company-wide values.",
             "title": "Company settings",
             "approvalReminderDaysLabel": "Days before confirmation reminder",
-            "approvalReminderDaysHelp": "Days to wait after a monthly confirmation request before sending a reminder to the worker (single reminder)."
+            "approvalReminderDaysHelp": "Days to wait after a monthly confirmation request before sending a reminder to the worker (single reminder).",
+            "timezoneLabel": "Company time zone",
+            "timezoneHelp": "IANA time-zone used to bucket records by day and display times. Defaults to Europe/Madrid."
         },
         "export": {
             "button": "Export CSV",

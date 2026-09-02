@@ -5,6 +5,8 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/settings', () => ({
+    DEFAULT_TIMEZONE: 'Europe/Madrid',
+    getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
     getAppSettings: vi.fn().mockResolvedValue({
         defaultExpectedHours: 8,
         benevolenceHours: 1,

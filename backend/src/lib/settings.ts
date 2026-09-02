@@ -8,6 +8,8 @@ import {
     DEFAULT_NON_WORKING_DAYS,
 } from 'shared/src/lib/defaults';
 
+export const DEFAULT_TIMEZONE = 'Europe/Madrid';
+
 export interface AppSettingsValues {
     defaultExpectedHours: number;
     benevolenceHours: number;
@@ -16,6 +18,7 @@ export interface AppSettingsValues {
     nonWorkingDays: number[];
     inconsistencyReminderEnabled: boolean;
     monthlyApprovalReminderDays: number;
+    timezone?: string;
 }
 
 const DEFAULTS: AppSettingsValues = {
@@ -26,6 +29,7 @@ const DEFAULTS: AppSettingsValues = {
     nonWorkingDays: DEFAULT_NON_WORKING_DAYS,
     inconsistencyReminderEnabled: true,
     monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
+    timezone: DEFAULT_TIMEZONE,
 };
 
 const CACHE_TTL_MS = 60 * 1000;
@@ -71,6 +75,7 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
         monthlyApprovalReminderDays:
             settings.monthlyApprovalReminderDays ??
             DEFAULTS.monthlyApprovalReminderDays,
+        timezone: settings.timezone ?? DEFAULTS.timezone,
     };
     cachedAt = Date.now();
 
@@ -80,4 +85,14 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
 export function invalidateAppSettingsCache(): void {
     cachedSettings = null;
     cachedAt = 0;
+}
+
+/**
+ * Synchronous accessor for the configured company time-zone (used by the
+ * date-bucketing helpers). Returns the cached value when available, otherwise
+ * the default 'Europe/Madrid'. This avoids making the synchronous date-range
+ * helpers async while keeping every bucket consistent with AppSettings.
+ */
+export function getConfiguredTimezone(): string {
+    return cachedSettings?.timezone ?? DEFAULT_TIMEZONE;
 }

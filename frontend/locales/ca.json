@@ -468,7 +468,9 @@
             "subtitle": "Configura els valors generals de l'empresa.",
             "title": "Configuració de l'empresa",
             "approvalReminderDaysLabel": "Dies abans del recordatori de confirmació",
-            "approvalReminderDaysHelp": "Dies d'espera des de la sol·licitud de confirmació mensual abans d'enviar un recordatori a la persona treballadora (recordatori únic)."
+            "approvalReminderDaysHelp": "Dies d'espera des de la sol·licitud de confirmació mensual abans d'enviar un recordatori a la persona treballadora (recordatori únic).",
+            "timezoneLabel": "Zona horària de l'empresa",
+            "timezoneHelp": "Zona horària (IANA) usada per agrupar els registres per dia i per mostrar les hores. Per defecte, Europa/Madrid."
         },
         "export": {
             "button": "Exporta CSV",
