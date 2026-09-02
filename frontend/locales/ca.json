@@ -431,6 +431,8 @@
             "noName": "Sense nom",
             "notFound": "No s'han trobat usuaris.",
             "pendingActivation": "Activació pendent",
+            "blocked": "Compte bloquejat",
+            "unblockHint": "Per desbloquejar, edita l'usuari i restableix-ne la contrasenya.",
             "workingNow": "Treballant ara",
             "customNonWorkDays": "Dies no laborables personalitzats",
             "registered": "Registrat"

@@ -42,7 +42,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             .map((s) => s._id);
 
         const activeUsers = await User.find(
-            { _id: { $in: activeUserIds } },
+            { _id: { $in: activeUserIds }, blocked: { $ne: true }, registered: true },
             'name email'
         ).lean();
 

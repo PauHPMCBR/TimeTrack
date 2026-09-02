@@ -28,10 +28,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const users = (await User.find(
             { role: { $ne: ADMIN_ROLE } },
-            'name email dni role registered groups expectedWorkHours workDays avatar'
+            'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince'
         )
             .sort({ name: 1 })
             .lean()) as unknown as UserRow[];
+
+        // Active employees = registered and not blocked. These are the ones
+        // used for operational counts (anomalies / currently working); the
+        // full list (incl. blocked/unregistered) is still returned so the
+        // admin users panel can see and manage every account.
+        const activeUsers = users.filter(
+            (u) => u.registered && !u.blocked
+        );
 
         const groups = (await Group.find({})
             .sort({ name: 1 })
@@ -83,7 +91,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         }
 
         let anomalyCount = 0;
-        for (const user of users) {
+        for (const user of activeUsers) {
             const nonWorkingDays =
                 Array.isArray(user.workDays) && user.workDays.length > 0
                     ? user.workDays
@@ -123,6 +131,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     dni: u.dni,
                     role: u.role,
                     registered: u.registered,
+                    blocked: u.blocked,
+                    blockedSince: u.blockedSince,
                     groups: u.groups,
                     expectedWorkHours: u.expectedWorkHours,
                     workDays: u.workDays,
@@ -138,7 +148,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 usersCount: users.length,
                 groupsCount: groups.length,
                 pendingVacations,
-                currentlyWorking: workingUserIds.size,
+                currentlyWorking: activeUsers.filter((u) =>
+                    workingUserIds.has(u._id.toString())
+                ).length,
                 anomalyCount,
             },
         });

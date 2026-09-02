@@ -272,7 +272,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const [users, sessions, approvedVacations, yearlyTemplates, settings] =
             (await Promise.all([
                 User.find(
-                    { role: { $ne: ADMIN_ROLE } },
+                    {
+                        role: { $ne: ADMIN_ROLE },
+                        blocked: { $ne: true },
+                        registered: true,
+                    },
                     'name email dni expectedWorkHours workDays'
                 )
                     .sort({ name: 1 })

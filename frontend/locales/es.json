@@ -431,6 +431,8 @@
             "noName": "Sin nombre",
             "notFound": "No se han encontrado usuarios.",
             "pendingActivation": "Activación pendiente",
+            "blocked": "Cuenta bloqueada",
+            "unblockHint": "Para desbloquear, edita el usuario y restablece su contraseña.",
             "workingNow": "Trabajando ahora",
             "customNonWorkDays": "Días no laborables personalizados",
             "registered": "Registrado"
