@@ -26,8 +26,8 @@ export default function HeaderBar() {
         apiClient.getCurrentUser().then((u) => setUser(u || null));
     }, []);
 
-    const handleLogout = () => {
-        apiClient.logoff();
+    const handleLogout = async () => {
+        await apiClient.logoff();
         setOpen(false);
         router.push('/');
     };

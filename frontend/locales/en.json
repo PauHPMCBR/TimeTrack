@@ -470,7 +470,11 @@
             "approvalReminderDaysLabel": "Days before confirmation reminder",
             "approvalReminderDaysHelp": "Days to wait after a monthly confirmation request before sending a reminder to the worker (single reminder).",
             "timezoneLabel": "Company time zone",
-            "timezoneHelp": "IANA time-zone used to bucket records by day and display times. Defaults to Europe/Madrid."
+            "timezoneHelp": "IANA time-zone used to bucket records by day and display times. Defaults to Europe/Madrid.",
+            "privacyNoticeLabel": "Privacy notice",
+            "privacyNoticeHelp": "Text of the privacy notice shown to workers (GDPR information obligation). Empty if not configured yet.",
+            "consultationLabel": "Prior consultation of workers' representatives",
+            "consultationHelp": "Confirm that workers' representatives were consulted before establishing the time-registration system (art. 34.9 of the Workers' Statute)."
         },
         "export": {
             "button": "Export CSV",
@@ -519,6 +523,7 @@
             "approved": "Approved",
             "cancelled": "Cancelled",
             "empty": "No pending requests.",
+            "exportCsv": "Export CSV",
             "history": "History",
             "pending": "Pending",
             "reject": "Reject",

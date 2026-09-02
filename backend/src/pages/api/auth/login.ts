@@ -14,6 +14,7 @@ import { LoginRequestSchema } from 'shared/src/schemas/api';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
+import { setAuthCookie, isHttpsRequest } from '@/lib/auth';
 
 // Fixed bcrypt hash (cost 12) compared against when no account matches, so a
 // "user not found" response takes roughly as long as a real password check.
@@ -38,7 +39,7 @@ export default withRateLimit(
                 return;
 
             await dbConnect();
-            const { email, password } = req.body;
+            const { email, password, remember } = req.body;
             // Emails are stored lowercased; compare case-insensitively so users
             // can log in with whatever casing they type.
             const emailLower = String(email).toLowerCase();
@@ -122,6 +123,12 @@ export default withRateLimit(
                 userId: updatedUser!._id.toString(),
                 email: updatedUser!.email,
                 role: updatedUser!.role,
+            });
+
+            // Set the JWT as an httpOnly cookie. `remember` controls whether it
+            // survives a browser restart (persistent 30d) or is session-only.
+            setAuthCookie(res, token, remember === true, {
+                secure: isHttpsRequest(req),
             });
 
             res.status(200).json({

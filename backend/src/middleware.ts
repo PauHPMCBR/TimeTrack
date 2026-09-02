@@ -13,17 +13,19 @@ const allowedOrigins = [
 ].filter(Boolean) as string[];
 
 function applyCorsHeaders(response: NextResponse | Response, origin: string) {
-    // Auth uses a JWT in localStorage, never cookies, so no
-    // Access-Control-Allow-Credentials is needed.
+    // Auth uses an httpOnly cookie, so cross-origin requests need credentials
+    // to be sent. The origin is always explicitly allow-listed above.
     response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set(
         'Access-Control-Allow-Methods',
         'GET, POST, PUT, DELETE, OPTIONS'
     );
     response.headers.set(
         'Access-Control-Allow-Headers',
-        'Content-Type, Authorization'
+        'Content-Type, Authorization, X-Auth-Token'
     );
+    response.headers.set('Access-Control-Expose-Headers', 'X-Auth-Token');
 }
 
 export function middleware(request: NextRequest) {

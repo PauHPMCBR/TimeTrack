@@ -102,6 +102,12 @@ export const AppSettingsSchema = z.object({
     // String path whose required validator rejects empty strings (same
     // workaround as lastInconsistencyReminder).
     lastMonthlyReviewReminder: z.string().default('').optional(),
+    // Privacy notice shown to workers (GDPR/art. 34.9). Empty string = not
+    // configured yet.
+    privacyNoticeText: z.string().max(5000).default(''),
+    // Acknowledgment that the company consulted worker representation before
+    // establishing the time-registration system (art. 34.9 LT obligation).
+    workerConsultationAcknowledged: z.boolean().default(false),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

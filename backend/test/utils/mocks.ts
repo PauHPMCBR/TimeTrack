@@ -18,6 +18,7 @@ export const mockRes = (): any => {
         status: vi.fn().mockReturnThis(),
         json: vi.fn().mockReturnThis(),
         setHeader: vi.fn().mockReturnThis(),
+        getHeader: vi.fn().mockReturnValue(undefined),
     };
     return res;
 };

@@ -74,10 +74,8 @@ describe('GET /api/profile/me', () => {
 
         const { User } = await import('@/models');
         vi.mocked(User.findById).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                populate: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(mockUser),
-                }),
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(mockUser),
             }),
         } as any);
 
@@ -89,17 +87,23 @@ describe('GET /api/profile/me', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: { user: mockUser },
+            data: {
+                user: {
+                    _id: 'user-123',
+                    name: 'Test User',
+                    email: 'test@example.com',
+                    role: 'employee',
+                    groups: [],
+                },
+            },
         });
     });
 
     it('should return 404 if user not found', async () => {
         const { User } = await import('@/models');
         vi.mocked(User.findById).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                populate: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(null),
-                }),
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(null),
             }),
         } as any);
 
@@ -119,10 +123,8 @@ describe('GET /api/profile/me', () => {
     it('should return 500 on database error', async () => {
         const { User } = await import('@/models');
         vi.mocked(User.findById).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                populate: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockRejectedValue(new Error('DB Error')),
-                }),
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockRejectedValue(new Error('DB Error')),
             }),
         } as any);
 
@@ -162,10 +164,8 @@ describe('PUT /api/profile/me (automatic timetable)', () => {
             ],
         };
         vi.mocked(User.findByIdAndUpdate).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                populate: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(updated),
-                }),
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(updated),
             }),
         } as any);
 
@@ -196,10 +196,8 @@ describe('PUT /api/profile/me (automatic timetable)', () => {
     it('returns 404 when the user does not exist', async () => {
         const { User } = await import('@/models');
         vi.mocked(User.findByIdAndUpdate).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                populate: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(null),
-                }),
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(null),
             }),
         } as any);
 
@@ -231,10 +229,8 @@ describe('PUT /api/profile/me (password change)', () => {
 
     function chain(updated: unknown) {
         return {
-            select: vi.fn().mockReturnValue({
-                populate: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(updated),
-                }),
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(updated),
             }),
         } as any;
     }

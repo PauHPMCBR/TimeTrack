@@ -9,6 +9,7 @@ import {
 } from '@/lib/response-error-generator';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
 import { runValidation, validateQueryParams } from '@/lib/validation';
+import { toPublicUser } from '@/lib/sanitize';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -23,16 +24,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
         const userId = req.query.userId as string;
-        const user = await User.findById(userId)
-            .select('-password -registrationToken')
+        const userDoc = await User.findById(userId)
             .populate('groups', 'name description')
             .lean();
 
-        if (!user) {
+        if (!userDoc) {
             return responseErrorEntryNotFound(res, 'User');
         }
 
-        res.status(200).json({ success: true, data: { user: user } });
+        res.status(200).json({
+            success: true,
+            data: {
+                user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+            },
+        });
     } catch (error) {
         console.error('Get user profile error:', error);
         return responseErrorGet(res);

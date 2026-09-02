@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
             }
 
             if (res.data && res.data.token) {
-                apiClient.setSession(res.data.token, true);
+                // The JWT is set as an httpOnly cookie by the backend.
                 router.replace('/profile');
             }
         } catch (err) {

@@ -13,6 +13,92 @@ import type { UserRole } from 'shared/src/schemas/database';
 
 export { REFRESH_TOKEN_HEADER };
 
+// The JWT is stored in an httpOnly cookie (not localStorage) so it is not
+// readable from XSS-injected script. The cookie is SameSite=Lax because
+// frontend (:3000) and backend (:3001) are same-site (same host, different
+// port), which keeps it working over plain http in dev while staying protected
+// against CSRF on cross-site requests.
+export const AUTH_COOKIE_NAME = 'auth_token';
+
+export const AUTH_COOKIE_MAX_AGE_MS = 30 * MS_PER_DAY;
+
+// Set the JWT as an httpOnly cookie. `persist` controls whether it is a
+// session cookie (cleared when the browser closes) or a persistent one (30d).
+export function setAuthCookie(
+    res: NextApiResponse,
+    token: string,
+    persist: boolean,
+    options: { secure?: boolean } = {}
+): void {
+    const secure = options.secure ?? process.env.NODE_ENV === 'production';
+    const parts = [
+        `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}`,
+        'HttpOnly',
+        'SameSite=Lax',
+        'Path=/',
+    ];
+    if (persist) {
+        parts.push(`Max-Age=${Math.floor(AUTH_COOKIE_MAX_AGE_MS / 1000)}`);
+    }
+    if (secure) {
+        parts.push('Secure');
+    }
+    // Append so auth flows can also set other headers on the same response.
+    const existing = res.getHeader('Set-Cookie');
+    const setCookies = existing
+        ? Array.isArray(existing)
+            ? existing
+            : [String(existing)]
+        : [];
+    res.setHeader('Set-Cookie', [...setCookies, parts.join('; ')]);
+}
+
+export function clearAuthCookie(res: NextApiResponse): void {
+    const existing = res.getHeader('Set-Cookie');
+    const setCookies = existing
+        ? Array.isArray(existing)
+            ? existing
+            : [String(existing)]
+        : [];
+    res.setHeader('Set-Cookie', [
+        ...setCookies,
+        `${AUTH_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`,
+    ]);
+}
+
+// Read the JWT from the Authorization header (legacy) or the httpOnly cookie.
+export function extractToken(
+    req: NextApiRequest
+): { token: string; persist: boolean } | null {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return { token: authHeader.split(' ')[1], persist: false };
+    }
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader) {
+        for (const part of cookieHeader.split(';')) {
+            const [name, ...rest] = part.trim().split('=');
+            if (name === AUTH_COOKIE_NAME && rest.length > 0) {
+                const value = rest.join('=');
+                try {
+                    return { token: decodeURIComponent(value), persist: true };
+                } catch {
+                    return { token: value, persist: true };
+                }
+            }
+        }
+    }
+    return null;
+}
+
+// Whether the request was made over TLS (drives the Secure cookie attribute).
+export function isHttpsRequest(req: NextApiRequest): boolean {
+    const proto = req.headers['x-forwarded-proto'];
+    if (Array.isArray(proto)) return proto[0] === 'https';
+    if (typeof proto === 'string') return proto === 'https';
+    return process.env.NODE_ENV === 'production';
+}
+
 export interface AuthRequest extends NextApiRequest {
     user?: {
         userId: string;
@@ -60,8 +146,9 @@ export const signToken = (
 
 export const authenticateToken = (handler: Handler) => {
     return async (req: AuthRequest, res: NextApiResponse) => {
-        const authHeader = req.headers.authorization;
-        const token = authHeader && authHeader.split(' ')[1];
+        const extracted = extractToken(req);
+        const token = extracted?.token ?? null;
+        const persist = extracted?.persist ?? false;
 
         if (!token) {
             return responseError(res, 401, 'TokenRequired');
@@ -98,10 +185,13 @@ export const authenticateToken = (handler: Handler) => {
                 user.exp &&
                 user.exp * 1000 - Date.now() < REFRESH_AFTER_MS
             ) {
-                res.setHeader(
-                    REFRESH_TOKEN_HEADER,
-                    signToken(user, { sessionStart })
-                );
+                const refreshed = signToken(user, { sessionStart });
+                res.setHeader(REFRESH_TOKEN_HEADER, refreshed);
+                if (persist) {
+                    setAuthCookie(res, refreshed, true, {
+                        secure: isHttpsRequest(req),
+                    });
+                }
             }
 
             return handler(req, res);

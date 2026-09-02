@@ -20,6 +20,9 @@ import {
 export const LoginRequestSchema = z.object({
     email: z.string().email('Invalid email format'),
     password: z.string().min(1, 'Password is required'),
+    // When true the session cookie persists (30d); otherwise it is a session
+    // cookie cleared when the browser closes.
+    remember: z.boolean().optional(),
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
@@ -94,6 +97,8 @@ export const AppSettingsRequestSchema = z
         inconsistencyReminderEnabled: z.boolean().optional(),
         monthlyApprovalReminderDays: z.number().int().min(1).max(60).optional(),
         timezone: z.string().min(1, 'Timezone is required').optional(),
+        privacyNoticeText: z.string().max(5000).optional(),
+        workerConsultationAcknowledged: z.boolean().optional(),
     })
     .refine(
         (data) => Object.keys(data).length > 0,
@@ -260,6 +265,14 @@ export const AdminExportWorkSessionsQuerySchema = z.object({
 });
 export type AdminExportWorkSessionsQuery = z.infer<
     typeof AdminExportWorkSessionsQuerySchema
+>;
+
+export const AdminExportVacationsQuerySchema = z.object({
+    year: z.string().regex(/^\d{4}$/, 'year must be YYYY'),
+    userIds: z.string().optional(),
+});
+export type AdminExportVacationsQuery = z.infer<
+    typeof AdminExportVacationsQuerySchema
 >;
 
 export const WorkSessionAnomalySchema = z.enum([

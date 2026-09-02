@@ -338,9 +338,6 @@ export default function ProfilePage() {
                         {displayName}
                     </div>
                     <div className="text-sm text-zinc-500">{user.email}</div>
-                    <div className="text-sm text-zinc-500">
-                        {t('profile.dni')}: {user.dni}
-                    </div>
                     <div className="mt-1 inline-block rounded-md border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
                         {user.role || 'Employee'}
                     </div>
@@ -525,8 +522,8 @@ export default function ProfilePage() {
             <Button
                 variant="danger"
                 className="w-full"
-                onClick={() => {
-                    apiClient.logoff();
+                onClick={async () => {
+                    await apiClient.logoff();
                     router.push('/');
                 }}
             >
