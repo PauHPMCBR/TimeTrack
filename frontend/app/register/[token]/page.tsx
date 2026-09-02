@@ -110,7 +110,8 @@ export default function CompleteRegistrationPage() {
             }
 
             if (res.data && res.data.token) {
-                apiClient.setSession(res.data.token, true);
+                // The JWT is set as an httpOnly cookie by the backend; the
+                // returned token is just present for response-shape parity.
                 router.replace('/profile');
             } else {
                 router.push('/');

@@ -40,11 +40,10 @@ import {
 import { ApiResponse, ErrorDetails } from '@/types/apiErrors';
 import type { ErrorCode } from 'shared/src/types/response-errors';
 import {
-    REFRESH_TOKEN_HEADER,
     VACATION_APPROVED,
     VACATION_REJECTED,
 } from 'shared/src/lib/constants';
-import { AUTH_TOKEN_KEY, REMEMBERED_EMAIL_KEY } from './storage';
+import { REMEMBERED_EMAIL_KEY } from './storage';
 import { triggerDownload } from './csv';
 import { toLocalDateKey } from './datetime';
 
@@ -59,12 +58,6 @@ class ApiClient {
         ApiResponse<{ reasons: WorksessionReason[] }>
     > | null = null;
     private avatarCache = new Map<string, Promise<Blob | null>>();
-    // Session token kept in memory so a non-"remembered" login still works for
-    // the current tab; persisted to localStorage only when the user asks.
-    private token: string | null = null;
-    // Defaults to true: a session restored from localStorage is a remembered one,
-    // so refreshed tokens keep being persisted.
-    private persistToken = true;
 
     setErrorListener(
         listener: ((error: string, details?: unknown) => void) | null
@@ -72,47 +65,30 @@ class ApiClient {
         this.errorListener = listener;
     }
 
-    /** Registers a new session token. `persist` controls localStorage storage. */
-    setSession(token: string, persist: boolean) {
-        this.token = token;
-        this.persistToken = persist;
-        if (persist) {
-            localStorage.setItem(AUTH_TOKEN_KEY, token);
-        }
-    }
-
-    private getSessionToken(): string | null {
-        return this.token ?? localStorage.getItem(AUTH_TOKEN_KEY);
+    /** Registers a returned session token in memory (auth flows also set the
+     *  httpOnly cookie server-side; this is only kept for ApiResponse shape). */
+    setSession(_token: string, _persist: boolean) {
+        // The JWT now lives in an httpOnly cookie set by the backend; it is not
+        // stored in JS-accessible storage. Kept as a no-op for API stability.
     }
 
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
     ): Promise<ApiResponse<T>> {
-        const token = this.getSessionToken();
-
+        // Auth is via the httpOnly cookie: send it across origins and skip the
+        // Authorization header (the JWT is no longer stored in localStorage).
         const config: RequestInit = {
             ...options,
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                ...(token && { Authorization: `Bearer ${token}` }),
                 ...options.headers,
             },
         };
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
-            // Sliding session: the backend re-issues the JWT (96h) in this header
-            // when it's close to expiring. Keep it in memory; persist only when
-            // the session was set up to be remembered.
-            const refreshedToken = response.headers.get(REFRESH_TOKEN_HEADER);
-            if (refreshedToken) {
-                this.token = refreshedToken;
-                if (this.persistToken) {
-                    localStorage.setItem(AUTH_TOKEN_KEY, refreshedToken);
-                }
-            }
 
             let data: { error?: string; details?: unknown; data?: unknown };
             try {
@@ -169,10 +145,16 @@ class ApiClient {
     }
 
     async logoff() {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
+        // Clear the httpOnly cookie server-side, then reset the in-memory state.
+        try {
+            await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+        } catch {
+            // The cookie may already be gone; local state is cleared regardless.
+        }
         localStorage.removeItem(REMEMBERED_EMAIL_KEY);
-        this.token = null;
-        this.persistToken = false;
         this.currentUser = undefined;
         this.reasonsPromise = null;
         this.avatarCache.clear();
@@ -309,25 +291,21 @@ class ApiClient {
         userId: string,
         version?: string | null
     ): Promise<Blob | null> {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const endpoint = `/api/profile/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
         const key = `${userId}:${version ?? ''}`;
 
         let cached = this.avatarCache.get(key);
         if (!cached) {
-            cached = this.fetchAvatarBlob(endpoint, token);
+            cached = this.fetchAvatarBlob(endpoint);
             this.avatarCache.set(key, cached);
         }
         return cached;
     }
 
-    private async fetchAvatarBlob(
-        endpoint: string,
-        token: string | null
-    ): Promise<Blob | null> {
+    private async fetchAvatarBlob(endpoint: string): Promise<Blob | null> {
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                credentials: 'include',
             });
             if (!response.ok) return null;
             return await response.blob();
@@ -581,7 +559,6 @@ class ApiClient {
         userIds: string[],
         options?: { from?: string; to?: string }
     ): Promise<ApiResponse<null>> {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const params = new URLSearchParams();
         params.set('userIds', userIds.join(','));
         if (options?.from) params.set('from', options.from);
@@ -590,7 +567,7 @@ class ApiClient {
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                credentials: 'include',
             });
 
             if (!response.ok) {
@@ -623,6 +600,60 @@ class ApiClient {
             );
             return { data: null };
         } catch (error) {
+            const result: ApiResponse<null> = { error: 'NetworkError' };
+            if (this.errorListener && result.error) {
+                this.errorListener(result.error);
+            }
+            return result;
+        }
+    }
+
+    async exportVacations(
+        year: number,
+        options?: { userIds?: string[] }
+    ): Promise<ApiResponse<null>> {
+        const params = new URLSearchParams();
+        params.set('year', String(year));
+        if (options?.userIds?.length) {
+            params.set('userIds', options.userIds.join(','));
+        }
+        const endpoint = `/api/admin/export/vacations?${params.toString()}`;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                let data: { error?: string; details?: unknown } = {};
+                try {
+                    data = await response.json();
+                } catch {
+                    data = {};
+                }
+                const error = (data.error ||
+                    response.statusText ||
+                    'Request failed') as ErrorCode;
+                const result: ApiResponse<null> = {
+                    error,
+                    details: (data.details ?? {}) as ErrorDetails,
+                };
+                if (this.errorListener) {
+                    this.errorListener(
+                        result.error ?? 'Request failed',
+                        result.details
+                    );
+                }
+                return result;
+            }
+
+            const blob = await response.blob();
+            triggerDownload(
+                blob,
+                `vacations_${year}_${new Date().toISOString().slice(0, 10)}.csv`
+            );
+            return { data: null };
+        } catch {
             const result: ApiResponse<null> = { error: 'NetworkError' };
             if (this.errorListener && result.error) {
                 this.errorListener(result.error);

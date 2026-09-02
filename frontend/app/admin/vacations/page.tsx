@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { ElectiveVacation, User } from '@/types';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import AdminBackButton from '../../../components/AdminBackButton';
-import { ChevronRight, ChevronLeft, Check, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, X, Download } from 'lucide-react';
 import {
     VACATION_APPROVED,
     VACATION_CANCELLED,
@@ -45,6 +45,12 @@ export default function AdminVacationsPage() {
         });
         return map;
     }, [users]);
+
+    const handleExportVacations = useCallback(async () => {
+        const selectedUserIds =
+            filterUserId === 'all' ? undefined : [filterUserId];
+        await apiClient.exportVacations(year, { userIds: selectedUserIds });
+    }, [year, filterUserId]);
 
     const getUserInfo = (userId: string): User | null => {
         return usersMap[userId] || null;
@@ -297,6 +303,15 @@ export default function AdminVacationsPage() {
                                 disabled={loading}
                             >
                                 <ChevronRight className="h-4 w-4" />
+                            </button>
+
+                            <button
+                                onClick={handleExportVacations}
+                                className="flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                                disabled={loading}
+                                title={t('admin.vacations.exportCsv')}
+                            >
+                                <Download className="h-4 w-4" />
                             </button>
                         </div>
                     </div>

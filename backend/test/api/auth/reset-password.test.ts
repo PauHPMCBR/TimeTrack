@@ -19,6 +19,8 @@ vi.mock('@/lib/validation', () => ({
 
 vi.mock('@/lib/auth', () => ({
     signToken: vi.fn().mockReturnValue('jwt-token'),
+    setAuthCookie: vi.fn(),
+    isHttpsRequest: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock('@/models', () => ({

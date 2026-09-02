@@ -470,7 +470,11 @@
             "approvalReminderDaysLabel": "Dies abans del recordatori de confirmació",
             "approvalReminderDaysHelp": "Dies d'espera des de la sol·licitud de confirmació mensual abans d'enviar un recordatori a la persona treballadora (recordatori únic).",
             "timezoneLabel": "Zona horària de l'empresa",
-            "timezoneHelp": "Zona horària (IANA) usada per agrupar els registres per dia i per mostrar les hores. Per defecte, Europa/Madrid."
+            "timezoneHelp": "Zona horària (IANA) usada per agrupar els registres per dia i per mostrar les hores. Per defecte, Europa/Madrid.",
+            "privacyNoticeLabel": "Avís de privadesa",
+            "privacyNoticeHelp": "Text de l'avís de privadesa que es mostra a les persones treballadores (obligació informativa RGPD). Buit si encara no s'ha configurat.",
+            "consultationLabel": "Consulta prèvia a la representació dels treballadors",
+            "consultationHelp": "Confirma que s'ha consultat la representació de les persones treballadores abans d'implantar el sistema de registre de jornada (art. 34.9 de l'Estatut dels Treballadors)."
         },
         "export": {
             "button": "Exporta CSV",
@@ -519,6 +523,7 @@
             "approved": "Aprovades",
             "cancelled": "Cancel·lades",
             "empty": "No hi ha sol·licituds pendents.",
+            "exportCsv": "Exportar CSV",
             "history": "Historial",
             "pending": "Pendents",
             "reject": "Rebutjar",

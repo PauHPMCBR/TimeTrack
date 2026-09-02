@@ -202,9 +202,8 @@ describe('apiClient', () => {
     });
 
     describe('getAvatarBlob', () => {
-        it('should fetch the avatar with the auth token and return a blob', async () => {
+        it('should fetch the avatar with credentials and return a blob', async () => {
             const blob = new Blob(['image'], { type: 'image/jpeg' });
-            localStorage.setItem('auth_token', 'token123');
             global.fetch = vi.fn().mockResolvedValue({
                 ok: true,
                 blob: () => Promise.resolve(blob),
@@ -218,11 +217,7 @@ describe('apiClient', () => {
             expect(result).toBe(blob);
             expect(fetch).toHaveBeenCalledWith(
                 expect.stringContaining('/api/profile/user-1/avatar'),
-                expect.objectContaining({
-                    headers: expect.objectContaining({
-                        Authorization: 'Bearer token123',
-                    }),
-                })
+                expect.objectContaining({ credentials: 'include' })
             );
         });
 
@@ -280,14 +275,25 @@ describe('apiClient', () => {
     });
 
     describe('logoff', () => {
-        it('should clear localStorage and reset currentUser', async () => {
-            localStorage.setItem('auth_token', 'token');
+        it('should clear remembered email and reset currentUser', async () => {
             localStorage.setItem('remembered_email', 'test@example.com');
+            apiClient['currentUser'] = { _id: 'u1' } as any;
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ success: true }),
+            }) as any;
 
             await apiClient.logoff();
 
-            expect(localStorage.getItem('auth_token')).toBeNull();
             expect(localStorage.getItem('remembered_email')).toBeNull();
+            expect(apiClient['currentUser']).toBeUndefined();
+            expect(global.fetch).toHaveBeenCalledWith(
+                expect.stringContaining('/api/auth/logout'),
+                expect.objectContaining({
+                    method: 'POST',
+                    credentials: 'include',
+                })
+            );
         });
     });
 
@@ -628,82 +634,31 @@ describe('apiClient', () => {
         });
     });
 
-    describe('authorization header', () => {
-        it('should include authorization token in request', async () => {
+    describe('credentials / cookie auth', () => {
+        it('should send credentials: include so the httpOnly cookie is attached', async () => {
+            const mockResponse = { data: { user: { id: '1' } } };
+            mockFetchSuccess(mockResponse);
+
+            await apiClient.getProfile();
+
+            expect(fetch).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ credentials: 'include' })
+            );
+            // No JWT is put in an Authorization header (it lives in the cookie).
+            const [, init] = (fetch as any).mock.calls[0];
+            expect(init.headers.Authorization).toBeUndefined();
+        });
+
+        it('should not read the token from localStorage for requests', async () => {
             const mockResponse = { data: { user: { id: '1' } } };
             mockFetchSuccess(mockResponse);
             localStorage.setItem('auth_token', 'token123');
 
             await apiClient.getProfile();
 
-            expect(fetch).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({
-                    headers: expect.objectContaining({
-                        Authorization: 'Bearer token123',
-                    }),
-                })
-            );
-        });
-
-        it('should persist the refreshed token from the X-Auth-Token header', async () => {
-            // Set up a remembered session explicitly (a previous logoff test
-            // resets the persist flag on the singleton).
-            apiClient.setSession('old-token', true);
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                headers: {
-                    get: (name: string) =>
-                        name === 'X-Auth-Token' ? 'new-token' : null,
-                },
-                json: () => Promise.resolve({ data: { user: { id: '1' } } }),
-            }) as any;
-
-            const result = await apiClient.getProfile();
-
-            expect(result.data).toEqual({ user: { id: '1' } });
-            expect(localStorage.getItem('auth_token')).toBe('new-token');
-        });
-
-        it('should keep a non-remembered session in memory only', async () => {
-            localStorage.clear();
-            apiClient.setSession('mem-token', false);
-            expect(localStorage.getItem('auth_token')).toBeNull();
-
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                headers: { get: () => null },
-                json: () => Promise.resolve({ data: { user: { id: '1' } } }),
-            }) as any;
-
-            await apiClient.getProfile();
-
-            expect(global.fetch).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({
-                    headers: expect.objectContaining({
-                        Authorization: 'Bearer mem-token',
-                    }),
-                })
-            );
-        });
-
-        it('should not persist a refreshed token for a non-remembered session', async () => {
-            localStorage.clear();
-            apiClient.setSession('mem-token', false);
-
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                headers: {
-                    get: (name: string) =>
-                        name === 'X-Auth-Token' ? 'refreshed-token' : null,
-                },
-                json: () => Promise.resolve({ data: { user: { id: '1' } } }),
-            }) as any;
-
-            await apiClient.getProfile();
-
-            expect(localStorage.getItem('auth_token')).toBeNull();
+            const [, init] = (fetch as any).mock.calls[0];
+            expect(init.headers.Authorization).toBeUndefined();
         });
     });
 });

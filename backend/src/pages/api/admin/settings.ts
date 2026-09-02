@@ -47,6 +47,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 inconsistencyReminderEnabled,
                 monthlyApprovalReminderDays,
                 timezone,
+                privacyNoticeText,
+                workerConsultationAcknowledged,
             } = req.body;
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
@@ -78,6 +80,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 }
                 update.timezone = timezone;
             }
+            if (privacyNoticeText !== undefined)
+                update.privacyNoticeText = privacyNoticeText;
+            if (workerConsultationAcknowledged !== undefined)
+                update.workerConsultationAcknowledged =
+                    workerConsultationAcknowledged;
 
             const existing = await AppSettings.findOne({});
             if (existing) {

@@ -470,7 +470,11 @@
             "approvalReminderDaysLabel": "Días antes del recordatorio de confirmación",
             "approvalReminderDaysHelp": "Días de espera desde la solicitud de confirmación mensual antes de enviar un recordatorio a la persona trabajadora (recordatorio único).",
             "timezoneLabel": "Zona horaria de la empresa",
-            "timezoneHelp": "Zona horaria (IANA) usada para agrupar los registros por día y mostrar las horas. Por defecto, Europa/Madrid."
+            "timezoneHelp": "Zona horaria (IANA) usada para agrupar los registros por día y mostrar las horas. Por defecto, Europa/Madrid.",
+            "privacyNoticeLabel": "Aviso de privacidad",
+            "privacyNoticeHelp": "Texto del aviso de privacidad que se muestra a los trabajadores (obligación informativa RGPD). Vacío si aún no se ha configurado.",
+            "consultationLabel": "Consulta previa a la representación de los trabajadores",
+            "consultationHelp": "Confirma que se ha consultado a la representación de los trabajadores antes de implantar el sistema de registro de jornada (art. 34.9 del Estatuto de los Trabajadores)."
         },
         "export": {
             "button": "Exportar CSV",
@@ -519,6 +523,7 @@
             "approved": "Aprobadas",
             "cancelled": "Canceladas",
             "empty": "No hay solicitudes pendientes.",
+            "exportCsv": "Exportar CSV",
             "history": "Historial",
             "pending": "Pendientes",
             "reject": "Rechazar",

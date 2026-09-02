@@ -30,6 +30,8 @@ type FormState = {
     inconsistencyReminderEnabled: boolean;
     monthlyApprovalReminderDays: number;
     timezone: string;
+    privacyNoticeText: string;
+    workerConsultationAcknowledged: boolean;
 };
 
 const COMMON_TIMEZONES = [
@@ -60,6 +62,8 @@ export default function AdminSettingsPage() {
         inconsistencyReminderEnabled: true,
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
         timezone: 'Europe/Madrid',
+        privacyNoticeText: '',
+        workerConsultationAcknowledged: false,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -103,6 +107,9 @@ export default function AdminSettingsPage() {
                             s.monthlyApprovalReminderDays ??
                             DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
                         timezone: s.timezone || 'Europe/Madrid',
+                        privacyNoticeText: s.privacyNoticeText ?? '',
+                        workerConsultationAcknowledged:
+                            s.workerConsultationAcknowledged ?? false,
                     });
                     initConfiguredTimezone(
                         s.timezone || 'Europe/Madrid'
@@ -145,6 +152,9 @@ export default function AdminSettingsPage() {
                 monthlyApprovalReminderDays:
                     formData.monthlyApprovalReminderDays,
                 timezone: formData.timezone,
+                privacyNoticeText: formData.privacyNoticeText,
+                workerConsultationAcknowledged:
+                    formData.workerConsultationAcknowledged,
             });
 
             if (response.error) {
@@ -361,6 +371,55 @@ export default function AdminSettingsPage() {
                                     </label>
                                     <p className="mt-1 text-xs text-zinc-500">
                                         {t('admin.settings.reminderHelp')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <label
+                                    htmlFor="privacy-notice"
+                                    className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                >
+                                    {t('admin.settings.privacyNoticeLabel')}
+                                </label>
+                                <textarea
+                                    id="privacy-notice"
+                                    value={formData.privacyNoticeText}
+                                    onChange={(e) =>
+                                        updateForm({
+                                            privacyNoticeText: e.target.value,
+                                        })
+                                    }
+                                    rows={4}
+                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                />
+                                <p className="mt-1.5 text-xs text-zinc-500">
+                                    {t('admin.settings.privacyNoticeHelp')}
+                                </p>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <input
+                                    id="worker-consultation"
+                                    type="checkbox"
+                                    className="mt-0.5 h-4 w-4 accent-indigo-600"
+                                    checked={formData.workerConsultationAcknowledged}
+                                    onChange={(e) =>
+                                        updateForm({
+                                            workerConsultationAcknowledged:
+                                                e.target.checked,
+                                        })
+                                    }
+                                />
+                                <div>
+                                    <label
+                                        htmlFor="worker-consultation"
+                                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    >
+                                        {t('admin.settings.consultationLabel')}
+                                    </label>
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                        {t('admin.settings.consultationHelp')}
                                     </p>
                                 </div>
                             </div>

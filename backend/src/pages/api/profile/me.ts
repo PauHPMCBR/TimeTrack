@@ -2,6 +2,7 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { authenticateToken, AuthRequest } from '@/lib/auth';
 import { User } from '@/models';
+import { toPublicUser } from '@/lib/sanitize';
 import {
     responseErrorEntryNotFound,
     responseErrorGet,
@@ -68,20 +69,24 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             const update: Record<string, unknown> = { updatedAt: new Date() };
             if (autoTimetable !== undefined) update.autoTimetable = autoTimetable;
 
-            const user = await User.findByIdAndUpdate(
+            const userDoc = await User.findByIdAndUpdate(
                 req.user?.userId,
                 update,
                 { new: true }
             )
-                .select('-password -registrationToken -resetPasswordToken -resetPasswordExpires')
                 .populate('groups', 'name description')
                 .lean();
 
-            if (!user) {
+            if (!userDoc) {
                 return responseErrorEntryNotFound(res, 'User');
             }
 
-            res.status(200).json({ success: true, data: { user } });
+            res.status(200).json({
+                success: true,
+                data: {
+                    user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+                },
+            });
         } catch (error) {
             console.error('Update profile error:', error);
             return responseErrorPut(res);
@@ -95,16 +100,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
     try {
         await dbConnect();
-        const user = await User.findById(req.user?.userId)
-            .select('-password -registrationToken -resetPasswordToken -resetPasswordExpires')
+        const userDoc = await User.findById(req.user?.userId)
             .populate('groups', 'name description')
             .lean();
 
-        if (!user) {
+        if (!userDoc) {
             return responseErrorEntryNotFound(res, 'User');
         }
 
-        res.status(200).json({ success: true, data: { user: user } });
+        res.status(200).json({
+            success: true,
+            data: {
+                user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+            },
+        });
     } catch (error) {
         console.error('Get profile error:', error);
         return responseErrorGet(res);

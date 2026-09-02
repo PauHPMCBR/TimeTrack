@@ -16,6 +16,7 @@ import { MS_PER_HOUR } from 'shared/src/lib/constants';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
 import { validatePassword } from '@/lib/password';
+import { setAuthCookie, isHttpsRequest } from '@/lib/auth';
 
 export default withRateLimit(
     async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -102,6 +103,10 @@ export default withRateLimit(
                 userId: user._id.toString(),
                 email: user.email,
                 role: user.role,
+            });
+
+            setAuthCookie(res, token, true, {
+                secure: isHttpsRequest(req),
             });
 
             res.status(200).json({

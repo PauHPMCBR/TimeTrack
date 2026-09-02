@@ -31,13 +31,14 @@ export default function LoginForm() {
         try {
             LoginRequestSchema.parse({ email, password });
 
-            const res = await apiClient.login({ email, password });
+            const res = await apiClient.login({ email, password, remember });
             if (res.error) throw new Error(res.error);
 
             if (res.data) {
-                // Keep the token in memory so the session works even when the
-                // "remember me" box is unchecked; only persist it otherwise.
-                apiClient.setSession(res.data.token, remember);
+                // The JWT is stored in an httpOnly cookie set by the backend;
+                // `remember` controls whether that cookie is persistent (30d)
+                // or a session cookie. Nothing is stored in JS-accessible
+                // storage here. Keep the remembered email for convenience.
                 if (remember) {
                     localStorage.setItem(
                         REMEMBERED_EMAIL_KEY,
