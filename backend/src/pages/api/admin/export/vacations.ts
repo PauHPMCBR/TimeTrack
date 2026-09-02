@@ -50,14 +50,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             filter.userId = { $in: userIds };
         }
 
-        const [vacations, users] = (await Promise.all([
+        const [vacations, users, allActiveUsers] = (await Promise.all([
             ElectiveVacation.find(filter).sort({ date: 1 }).lean(),
             userIdsParam
                 ? User.find(
                       { _id: { $in: userIdsParam.split(',').filter(Boolean) } },
                       'name email dni'
                   ).lean()
-                : User.find({}, 'name email dni').lean(),
+                : [],
+            User.find(
+                { blocked: { $ne: true }, registered: true },
+                'name email dni'
+            ).lean(),
         ])) as unknown as [
             Array<{
                 userId: string;
@@ -67,12 +71,29 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 notes?: string;
             }>,
             Array<{ _id: { toString(): string }; name: string; email: string; dni: string }>,
+            Array<{ _id: { toString(): string }; name: string; email: string; dni: string }>,
         ];
 
-        const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+        // When exporting every employee (no explicit selection) only include
+        // active (registered, non-blocked) users' vacations.
+        const activeUserIds = new Set(
+            allActiveUsers.map((u) => u._id.toString())
+        );
+        const visibleVacations = vacations.filter(
+            (v) =>
+                userIdsParam ||
+                activeUserIds.has(v.userId?.toString() ?? '')
+        );
+
+        const userMap = new Map(
+            (userIdsParam ? users : allActiveUsers).map((u) => [
+                u._id.toString(),
+                u,
+            ])
+        );
 
         const headers = ['Name', 'DNI', 'Email', 'Date', 'Status', 'Reason', 'Notes'];
-        const rows = vacations.map((v) => [
+        const rows = visibleVacations.map((v) => [
             userMap.get(v.userId)?.name ?? '',
             userMap.get(v.userId)?.dni ?? '',
             userMap.get(v.userId)?.email ?? '',

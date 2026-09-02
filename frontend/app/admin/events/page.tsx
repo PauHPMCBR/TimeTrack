@@ -165,11 +165,12 @@ function AdminEventsInner() {
 
     const rowClass = (row: AdminWorkSessionRow) => {
         if (row.status === 'vacation')
-            return 'bg-blue-50/70 dark:bg-blue-950/30';
-        if (row.status === 'ok') return 'bg-green-50/70 dark:bg-green-950/30';
+            return 'border-l-4 border-l-blue-500 bg-blue-100/90 dark:bg-blue-900/40';
+        if (row.status === 'ok')
+            return 'border-l-4 border-l-green-500 bg-green-100/90 dark:bg-green-900/40';
         if (row.status === 'nonWorkingDay')
-            return 'bg-zinc-50/70 dark:bg-zinc-800/40';
-        return 'bg-red-50/70 dark:bg-red-950/30';
+            return 'border-l-4 border-l-zinc-300 bg-zinc-100/80 dark:bg-zinc-800/60 dark:border-l-zinc-600';
+        return 'border-l-4 border-l-red-500 bg-red-100/90 dark:bg-red-900/40';
     };
 
     return (

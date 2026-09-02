@@ -431,6 +431,8 @@
             "noName": "No name",
             "notFound": "No users found.",
             "pendingActivation": "Pending activation",
+            "blocked": "Account blocked",
+            "unblockHint": "To unblock, edit the user and reset their password.",
             "workingNow": "Working now",
             "customNonWorkDays": "Custom non-work days",
             "registered": "Registered"

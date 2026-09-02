@@ -226,7 +226,15 @@ export default function UsersListPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    {user.workingNow ? (
+                                    {user.blocked ? (
+                                        <div
+                                            title={t('admin.users.unblockHint')}
+                                            className="flex items-center gap-2 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20"
+                                        >
+                                            <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                            {t('admin.users.blocked')}
+                                        </div>
+                                    ) : user.workingNow ? (
                                         <div className="flex items-center gap-2 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-500/10 dark:text-green-400 dark:ring-green-500/20">
                                             <span className="relative flex h-1.5 w-1.5">
                                                 <span className="absolute inline-flex h-1.5 w-1.5 animate-ping rounded-full bg-green-500 opacity-75"></span>

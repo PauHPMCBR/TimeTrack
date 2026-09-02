@@ -17,7 +17,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
 
-        const users = await User.find({}).lean();
+        const users = await User.find({
+            blocked: { $ne: true },
+            registered: true,
+        }).lean();
         // toPublicUser strips the password hash, registration tokens and lockout
         // state (failedLoginAttempts/blocked/blockedSince) before sending.
         res.status(200).json({
