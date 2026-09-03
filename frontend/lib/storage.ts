@@ -18,3 +18,6 @@ export const ADMIN_APPROVALS_USER = 'admin_approvals_user';
 export const ADMIN_APPROVALS_STATUS = 'admin_approvals_status';
 export const ADMIN_YEARLY_VACATIONS_YEAR = 'admin_yearly_vacations_year';
 export const CALENDAR_MONTH = 'calendar_month';
+export const HISTORY_PERIOD = 'history_period';
+export const HISTORY_CURSOR = 'history_cursor';
+export const HISTORY_ANOMALY_ONLY = 'history_anomaly_only';

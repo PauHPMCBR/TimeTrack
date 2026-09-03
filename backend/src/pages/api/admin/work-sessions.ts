@@ -8,13 +8,14 @@ import {
     SESSION_REPLACED,
     SESSION_REASON_ADMIN_CORRECTION,
     VACATION_APPROVED,
+    APPROVAL_APPROVED,
 } from 'shared/src/lib/constants';
-import { DEFAULT_EXPECTED_WORK_HOURS } from 'shared/src/lib/defaults';
 import {
     User,
     WorkSession,
     ElectiveVacation,
     YearlyVacationDays,
+    MonthlyApproval,
 } from '@/models';
 import { getAppSettings } from '@/lib/settings';
 import { runInTransaction } from '@/lib/transaction';
@@ -24,11 +25,7 @@ import {
     ElectiveVacationRow,
     YearlyVacationRow,
 } from '@/lib/rows';
-import {
-    computeDayHours,
-    isWithinBenevolence,
-    isCoherentSequence,
-} from 'shared/src/lib/work-hours';
+import { isCoherentSequence } from 'shared/src/lib/work-hours';
 import {
     responseErrorEntryNotFound,
     responseErrorGet,
@@ -48,11 +45,13 @@ import {
     AdminWorkSessionRow,
     AdminReplaceDayWorkSessionsRequest,
     AdminReplaceDayWorkSessionsRequestSchema,
-    WorkSessionRowStatus,
 } from 'shared/src/schemas/api';
-import { dateKey } from '@/lib/date-key';
 import { withUserLock } from '@/lib/user-lock';
 import { isMonthApproved } from '@/lib/monthly-approvals';
+import {
+    buildWorkSessionRows,
+    computeDaysForPeriod,
+} from '@/lib/work-session-rows';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'PUT') {
@@ -230,36 +229,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const offset =
             req.query.offset !== undefined ? Number(req.query.offset) : 0;
 
-        const days: Date[] = [];
-        if (period === 'day') {
-            const d = new Date(query.date as string);
-            d.setHours(0, 0, 0, 0);
-            days.push(d);
-        } else if (period === 'week') {
-            const d = new Date(query.date as string);
-            d.setHours(0, 0, 0, 0);
-            const diffToMonday = (d.getDay() + 6) % 7;
-            d.setDate(d.getDate() - diffToMonday);
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(d);
-                day.setDate(d.getDate() + i);
-                days.push(day);
-            }
-        } else if (period === 'month') {
-            const y = query.year as number;
-            const m = (query.month as number) - 1;
-            const daysInMonth = new Date(y, m + 1, 0).getDate();
-            for (let i = 1; i <= daysInMonth; i++) {
-                days.push(new Date(y, m, i));
-            }
-        } else {
-            const y = query.year as number;
-            const daysInYear =
-                (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
-            for (let i = 1; i <= daysInYear; i++) {
-                days.push(new Date(y, 0, i));
-            }
-        }
+        const days: Date[] = computeDaysForPeriod(
+            period,
+            query.date as string | undefined,
+            query.year as number | undefined,
+            query.month as number | undefined
+        );
 
         const periodStart = new Date(days[0]);
         periodStart.setHours(0, 0, 0, 0);
@@ -307,100 +282,49 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 Awaited<ReturnType<typeof getAppSettings>>,
             ];
 
-        const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
-        for (const session of sessions) {
-            const key = `${session.userId}:${dateKey(new Date(session.timestamp))}`;
-            const list = sessionsByUserDay.get(key) ?? [];
-            list.push(session);
-            sessionsByUserDay.set(key, list);
-        }
-
-        const vacationByUserDay = new Set<string>();
-        for (const v of approvedVacations) {
-            vacationByUserDay.add(`${v.userId}:${dateKey(new Date(v.date))}`);
-        }
-
-        const obligatoryDaySet = new Set<string>();
-        for (const template of yearlyTemplates) {
-            for (const day of template.obligatoryDays ?? []) {
-                obligatoryDaySet.add(dateKey(new Date(day)));
-            }
-        }
-
-        const rows: AdminWorkSessionRow[] = [];
-
-        for (const day of days) {
-            const key = dateKey(day);
-            const dow = day.getDay();
-
-            for (const user of users) {
-                const userSessions =
-                    sessionsByUserDay.get(`${user._id}:${key}`) ?? [];
-                const onVacation =
-                    vacationByUserDay.has(`${user._id}:${key}`) ||
-                    obligatoryDaySet.has(key);
-
-                // A user's non-working week days: their own override, else company-wide.
-                const nonWorkingDays =
-                    Array.isArray(user.workDays) && user.workDays.length > 0
-                        ? user.workDays
-                        : settings.nonWorkingDays;
-                const isNonWorkingDay = nonWorkingDays.includes(dow);
-
-                const expectedHours = user.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS;
-                const { totalHours, anomalies } = computeDayHours(userSessions);
-                const anomalySet = new Set(anomalies);
-
-                let status: WorkSessionRowStatus = 'anomaly';
-                if (onVacation) {
-                    status = 'vacation';
-                    anomalySet.clear();
-                } else if (isNonWorkingDay) {
-                    status = 'nonWorkingDay';
-                    anomalySet.clear();
-                } else if (anomalySet.size > 0) {
-                    status = 'anomaly';
-                } else if (totalHours === 0) {
-                    anomalySet.add('hours_short');
-                    status = 'anomaly';
-                } else if (
-                    isWithinBenevolence(
-                        totalHours,
-                        expectedHours,
-                        settings.toleranceHours
-                    )
-                ) {
-                    status = 'ok';
-                } else {
-                    anomalySet.add(
-                        totalHours < expectedHours
-                            ? 'hours_short'
-                            : 'hours_over'
-                    );
-                    status = 'anomaly';
-                }
-
-                rows.push({
-                    userId: user._id.toString(),
-                    userName: user.name,
-                    date: key,
-                    totalHours,
-                    expectedHours,
-                    sessions: userSessions.map((s) => ({
-                        ...s,
-                        _id: s._id.toString(),
-                    })),
-                    status,
-                    anomalies: Array.from(anomalySet),
-                });
-            }
-        }
+        const rows: AdminWorkSessionRow[] = buildWorkSessionRows({
+            days,
+            users,
+            sessions,
+            approvedVacations,
+            yearlyTemplates,
+            defaultNonWorkingDays: settings.nonWorkingDays,
+            toleranceHours: settings.toleranceHours,
+        });
 
         rows.sort(
             (a, b) =>
                 a.date.localeCompare(b.date) ||
                 a.userName.localeCompare(b.userName)
         );
+
+        // Determine which months in the requested period are already approved by
+        // their workers — those days are locked and not editable.
+        const periodMonthKeys = new Set(
+            days.map((d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+        );
+        const yearsInPeriod = Array.from(
+            new Set(days.map((d) => d.getFullYear()))
+        );
+
+        let approvedDocs: { _id: string; userId: string; year: number; month: number }[];
+        if (yearsInPeriod.length > 0 && periodMonthKeys.size > 0) {
+            approvedDocs = await MonthlyApproval.find({
+                status: APPROVAL_APPROVED,
+                year: { $in: yearsInPeriod },
+            }).lean() as unknown as typeof approvedDocs;
+        } else {
+            approvedDocs = [];
+        }
+
+        const approvedMonths = new Set<string>();
+        for (const doc of approvedDocs) {
+            const key = `${doc.year}-${String(doc.month).padStart(2, '0')}`;
+            if (periodMonthKeys.has(key)) {
+                // Include userId to ensure the lock only applies to the user whose month is actually approved
+                approvedMonths.add(`${doc.userId}:${key}`);
+            }
+        }
 
         // Server-side pagination bounds the response (critical for year views,
         // where rows = users × days). When no limit is given, behave as before.
@@ -412,8 +336,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data:
                 limit !== undefined
-                    ? { rows: pageRows, total, limit, offset }
-                    : { rows: pageRows },
+                    ? { rows: pageRows, total, limit, offset, approvedMonths: Array.from(approvedMonths) }
+                    : { rows: pageRows, approvedMonths: Array.from(approvedMonths) },
         });
     } catch (error) {
         console.error('Admin work sessions error:', error);

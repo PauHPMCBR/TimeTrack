@@ -57,4 +57,5 @@ export type AdminWorkSessionsResponse = {
     total?: number;
     limit?: number;
     offset?: number;
+    approvedMonths?: string[];
 };

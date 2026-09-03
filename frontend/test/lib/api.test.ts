@@ -531,6 +531,32 @@ describe('apiClient', () => {
         });
     });
 
+    describe('getMyWorkSessions', () => {
+        it('should fetch personal work sessions with the me/history endpoint', async () => {
+            const mockResponse = {
+                data: { rows: [{ date: '2024-06-15', totalHours: 8 }] },
+            };
+            mockFetchSuccess(mockResponse);
+
+            const result = await apiClient.getMyWorkSessions({
+                period: 'week',
+                date: '2024-06-15',
+                limit: 200,
+                offset: 0,
+            });
+
+            expect(result.data).toEqual(mockResponse.data);
+            expect(fetch).toHaveBeenCalledWith(
+                expect.stringContaining('/api/me/history'),
+                expect.any(Object)
+            );
+            expect(fetch).toHaveBeenCalledWith(
+                expect.stringContaining('period=week'),
+                expect.any(Object)
+            );
+        });
+    });
+
     describe('exportWorkSessions', () => {
         it('should download CSV for selected users', async () => {
             global.fetch = vi.fn().mockResolvedValue({

@@ -500,3 +500,17 @@ export const MonthlyApprovalOpenResultSchema = z.object({
 export type MonthlyApprovalOpenResult = z.infer<
     typeof MonthlyApprovalOpenResultSchema
 >;
+
+// GET /api/admin/work-sessions and GET /api/me/history response envelope.
+export const WorkSessionsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        rows: z.array(AdminWorkSessionRowSchema),
+        total: z.number().int().optional(),
+        limit: z.number().int().optional(),
+        offset: z.number().int().optional(),
+        approvedMonths: z.array(z.string()).optional(),
+    }),
+});
+
+export type WorkSessionsResponse = z.infer<typeof WorkSessionsResponseSchema>;

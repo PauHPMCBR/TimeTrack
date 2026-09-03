@@ -42,9 +42,12 @@ vi.mock('@/models', () => ({
     WorkSession: {
         find: vi.fn(),
     },
+    MonthlyApproval: {
+        find: vi.fn(),
+    },
 }));
 
-import { User, WorkSession } from '@/models';
+import { User, WorkSession, MonthlyApproval } from '@/models';
 import exportHandler from '@/pages/api/admin/export/work-sessions';
 
 const mockExportRes = () => {
@@ -112,6 +115,13 @@ describe('GET /api/admin/export/work-sessions', () => {
                 source: 'admin',
             },
         ];
+        const mockApprovals = [
+            {
+                userId: 'user-1',
+                year: 2024,
+                month: 1,
+            },
+        ];
 
         vi.mocked(User.find).mockReturnValue({
             lean: vi.fn().mockResolvedValue(mockUsers),
@@ -129,6 +139,11 @@ describe('GET /api/admin/export/work-sessions', () => {
                             )
                         ),
                 }),
+            }),
+        } as any);
+        vi.mocked(MonthlyApproval.find).mockReturnValue({
+            select: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(mockApprovals),
             }),
         } as any);
 
@@ -156,13 +171,13 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         const csv = res.send.mock.calls[0][0] as string;
         expect(csv).toContain(
-            'Name,DNI,Email,Timestamp,Type,Source,Notes'
+            'Name,DNI,Email,Timestamp,Type,Source,Notes,Confirmed'
         );
         expect(csv).toContain(
-            'Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,admin,'
+            'Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,admin,,Yes'
         );
         expect(csv).toContain(
-            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,user,note'
+            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,user,note,No'
         );
         expect(csv).toContain('note');
         expect(csv.indexOf('2024-01-14')).toBeLessThan(
@@ -179,6 +194,11 @@ describe('GET /api/admin/export/work-sessions', () => {
                 sort: vi.fn().mockReturnValue({
                     lean: vi.fn().mockResolvedValue([]),
                 }),
+            }),
+        } as any);
+        vi.mocked(MonthlyApproval.find).mockReturnValue({
+            select: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue([]),
             }),
         } as any);
 

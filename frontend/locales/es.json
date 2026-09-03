@@ -9,12 +9,14 @@
         "loading": "Cargando...",
         "more": "más",
         "next": "Sig",
+        "no": "No",
         "noName": "Sin nombre",
         "optional": "(opcional)",
         "prev": "Ant",
         "save": "Guardar",
         "saving": "Guardando...",
         "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Salir sin guardar?",
+        "yes": "Sí",
         "password": {
             "show": "Mostrar contraseña",
             "hide": "Ocultar contraseña"
@@ -140,42 +142,13 @@
         "notePlaceholder": "Escribe la nota aquí…"
     },
     "history": {
-        "avgPerDay": "Media/día (semana)",
-        "chart": {
-            "title": "Horas por semana (últimas 6)"
-        },
-        "date": "Fecha",
-        "daysAbbr": "días",
-        "daysWithCheckins": "Días con fichaje (últimos)",
         "export": {
             "date": "Fecha",
             "formatted": "Horas (formateado)",
             "hours": "Horas (número)",
-            "label": "Exportar"
-        },
-        "hours": "Horas",
-        "monthly": {
-            "chartTitle": "Progreso por semanas",
-            "daysWorked": "Días trabajados (Mes)",
-            "title": "Resumen Mensual",
-            "totalTime": "Total Tiempo (Mes)"
-        },
-        "noRecords": "No hay registros",
-        "noRecordsMonth": "No hay datos este mes.",
-        "recent": {
-            "title": "Historial reciente (por día)"
-        },
-        "today": {
-            "title": "Historial de hoy"
-        },
-        "week": "Semana",
-        "weekAbbr": "Sem",
-        "weekHours": "Horas semanales",
-        "weekly": {
-            "chartTitle": "Horas por día (lu-do)",
-            "daysWorked": "Días trabajados (Semana)",
-            "title": "Resumen Semanal",
-            "totalTime": "Total Tiempo (Semana)"
+            "label": "Exportar",
+            "status": "Estado",
+            "confirmed": "Confirmado"
         }
     },
     "calendar": {
@@ -406,9 +379,11 @@
             },
             "events": {
                 "desc": "Fichajes de entrada y salida con detección de anomalías.",
-                "title": "Fichajes",
+                "title": "Eventos",
                 "anomalies": "anomalías",
-                "noAnomalies": "sin anomalías"
+                "noAnomalies": "sin anomalías",
+                "status": {
+                }
             },
             "monthlyApprovals": {
                 "title": "Confirmación mensual",
@@ -497,8 +472,9 @@
             "noData": "No hay registros para este período.",
             "anomalyOnly": "Solo anomalías",
             "noAnomalies": "No hay anomalías en este período.",
+            "monthConfirmed": "Mes confirmado. No se puede editar sin revocar la confirmación.",
             "pagination": {
-                "next": "Página siguiente",
+                "next": "Siguiente página",
                 "previous": "Página anterior"
             },
             "period": {
@@ -509,9 +485,10 @@
             },
             "status": {
                 "anomaly": "Anomalía",
-                "ok": "Cumplido",
+                "ok": "Completo",
                 "vacation": "Vacaciones",
-                "nonWorkingDay": "Día no laborable"
+                "nonWorkingDay": "Día no laborable",
+                "confirmed": "Confirmado"
             },
             "subtitle": "Fichajes de todos los empleados con detección de anomalías.",
             "table": {

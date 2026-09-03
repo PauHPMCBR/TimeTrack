@@ -1,8 +1,8 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE, SOURCE_USER, SESSION_REPLACED } from 'shared/src/lib/constants';
-import { WorkSession, User } from '@/models';
+import { ADMIN_ROLE, SOURCE_USER, SESSION_REPLACED, APPROVAL_APPROVED } from 'shared/src/lib/constants';
+import { WorkSession, User, MonthlyApproval } from '@/models';
 import {
     responseErrorGet,
     responseErrorIncorrectParameter,
@@ -73,14 +73,27 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                       status: { $ne: SESSION_REPLACED },
                   };
 
-        const [users, sessions] = (await Promise.all([
+        const [users, sessions, approvalDocs] = (await Promise.all([
             User.find({ _id: { $in: userIds } }, 'name email dni').lean(),
             WorkSession.find(filter)
                 .select('userId timestamp type source notes')
                 .sort({ timestamp: 1 })
                 .lean(),
-        ])) as unknown as [UserRow[], WorkSessionRow[]];
+            MonthlyApproval.find({
+                userId: { $in: userIds },
+                status: APPROVAL_APPROVED,
+            })
+                .select('userId year month')
+                .lean(),
+        ])) as unknown as [UserRow[], WorkSessionRow[], { userId: string; year: number; month: number }[]];
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+
+        // Build approvedMonths set: userId:YYYY-MM format
+        const approvedMonths = new Set<string>();
+        for (const doc of approvalDocs) {
+            const key = `${doc.userId}:${doc.year}-${String(doc.month).padStart(2, '0')}`;
+            approvedMonths.add(key);
+        }
 
         const headers = [
             'Name',
@@ -90,16 +103,23 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             'Type',
             'Source',
             'Notes',
+            'Confirmed',
         ];
-        const rows = sessions.map((s) => [
-            userMap.get(s.userId.toString())?.name ?? '',
-            userMap.get(s.userId.toString())?.dni ?? '',
-            userMap.get(s.userId.toString())?.email ?? '',
-            new Date(s.timestamp).toISOString(),
-            s.type,
-            s.source ?? SOURCE_USER,
-            s.notes ?? '',
-        ]);
+        const rows = sessions.map((s) => {
+            const monthKey = new Date(s.timestamp).toISOString().slice(0, 7);
+            const userMonthKey = `${s.userId.toString()}:${monthKey}`;
+            const isConfirmed = approvedMonths.has(userMonthKey) ? 'Yes' : 'No';
+            return [
+                userMap.get(s.userId.toString())?.name ?? '',
+                userMap.get(s.userId.toString())?.dni ?? '',
+                userMap.get(s.userId.toString())?.email ?? '',
+                new Date(s.timestamp).toISOString(),
+                s.type,
+                s.source ?? SOURCE_USER,
+                s.notes ?? '',
+                isConfirmed,
+            ];
+        });
 
         const csv = [headers, ...rows]
             .map((line) => line.map(escapeCsvField).join(','))

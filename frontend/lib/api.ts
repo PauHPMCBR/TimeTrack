@@ -376,6 +376,22 @@ class ApiClient {
         return this.request(`/api/admin/work-sessions?${search.toString()}`);
     }
 
+    async getMyWorkSessions(
+        params: AdminWorkSessionsQueryWithPagination
+    ): Promise<ApiResponse<AdminWorkSessionsResponse>> {
+        const search = new URLSearchParams();
+        search.set('period', params.period);
+        if (params.date) search.set('date', params.date);
+        if (params.year !== undefined) search.set('year', String(params.year));
+        if (params.month !== undefined)
+            search.set('month', String(params.month));
+        if (params.limit !== undefined)
+            search.set('limit', String(params.limit));
+        if (params.offset !== undefined)
+            search.set('offset', String(params.offset));
+        return this.request(`/api/me/history?${search.toString()}`);
+    }
+
     async replaceDayWorkSessions(
         userId: string,
         date: string,
