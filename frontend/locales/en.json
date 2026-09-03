@@ -9,12 +9,14 @@
         "loading": "Loading...",
         "more": "more",
         "next": "Next",
+        "no": "No",
         "noName": "No name",
         "optional": "(optional)",
         "prev": "Prev",
         "save": "Save",
         "saving": "Saving...",
         "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?",
+        "yes": "Yes",
         "password": {
             "show": "Show password",
             "hide": "Hide password"
@@ -140,42 +142,13 @@
         "notePlaceholder": "Write the note here…"
     },
     "history": {
-        "avgPerDay": "Avg/day (week)",
-        "chart": {
-            "title": "Hours per week (last 6)"
-        },
-        "date": "Date",
-        "daysAbbr": "days",
-        "daysWithCheckins": "Days with check-in (recent)",
         "export": {
             "date": "Date",
             "formatted": "Hours (formatted)",
             "hours": "Hours (number)",
-            "label": "Export"
-        },
-        "hours": "Hours",
-        "monthly": {
-            "chartTitle": "Progress by week",
-            "daysWorked": "Days worked (Month)",
-            "title": "Monthly Summary",
-            "totalTime": "Total Time (Month)"
-        },
-        "noRecords": "No recent records",
-        "noRecordsMonth": "No data this month.",
-        "recent": {
-            "title": "Recent history (per day)"
-        },
-        "today": {
-            "title": "Today's history"
-        },
-        "week": "Week",
-        "weekAbbr": "Wk",
-        "weekHours": "Weekly hours",
-        "weekly": {
-            "chartTitle": "Hours per day (Mon-Sun)",
-            "daysWorked": "Days worked (Week)",
-            "title": "Weekly Summary",
-            "totalTime": "Total Time (Week)"
+            "label": "Export",
+            "status": "Status",
+            "confirmed": "Confirmed"
         }
     },
     "calendar": {
@@ -406,9 +379,11 @@
             },
             "events": {
                 "desc": "Employee check-in/out with anomaly detection.",
-                "title": "Fitxatges",
+                "title": "Events",
                 "anomalies": "anomalies",
-                "noAnomalies": "no anomalies"
+                "noAnomalies": "no anomalies",
+                "status": {
+                }
             },
             "monthlyApprovals": {
                 "title": "Monthly confirmation",
@@ -497,6 +472,7 @@
             "noData": "No records for this period.",
             "anomalyOnly": "Anomalies only",
             "noAnomalies": "No anomalies in this period.",
+            "monthConfirmed": "Month confirmed. Cannot edit without revoking confirmation.",
             "pagination": {
                 "next": "Next page",
                 "previous": "Previous page"
@@ -509,9 +485,10 @@
             },
             "status": {
                 "anomaly": "Anomaly",
-                "ok": "Completed",
+                "ok": "Complete",
                 "vacation": "Vacation",
-                "nonWorkingDay": "Non-working day"
+                "nonWorkingDay": "Non-working day",
+                "confirmed": "Confirmed"
             },
             "subtitle": "Check-in/out of all employees with anomaly detection.",
             "table": {

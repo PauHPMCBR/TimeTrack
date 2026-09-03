@@ -65,7 +65,10 @@ vi.mock('@/models', () => ({
     WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
-    MonthlyApproval: { findOne: vi.fn().mockResolvedValue(null) },
+    MonthlyApproval: {
+        findOne: vi.fn().mockResolvedValue(null),
+        find: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
+    },
 }));
 
 import {
@@ -73,6 +76,7 @@ import {
     WorkSession,
     ElectiveVacation,
     YearlyVacationDays,
+    MonthlyApproval,
 } from '@/models';
 import adminWorkSessionsHandler from '@/pages/api/admin/work-sessions';
 
@@ -185,6 +189,62 @@ describe('GET /api/admin/work-sessions', () => {
             'user',
         ]);
         expect(rows[1].sessions[0].source).toBe('admin');
+        expect(payload.data.approvedMonths).toBeDefined();
+        expect(MonthlyApproval.find).toHaveBeenCalledWith({
+            status: 'approved',
+            year: { $in: [2025] },
+        });
+    });
+
+    it('should return approved months when monthly approvals exist', async () => {
+        vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
+        vi.mocked(WorkSession.find).mockReturnValue(
+            queryChain([
+                {
+                    _id: 's1',
+                    userId: 'u1',
+                    type: 'check_in',
+                    timestamp: at(9),
+                    source: 'user',
+                },
+                {
+                    _id: 's2',
+                    userId: 'u1',
+                    type: 'check_out',
+                    timestamp: at(17),
+                    source: 'user',
+                },
+            ]) as any
+        );
+        vi.mocked(ElectiveVacation.find).mockReturnValue(
+            simpleChain([]) as any
+        );
+        vi.mocked(YearlyVacationDays.find).mockReturnValue(
+            simpleChain([]) as any
+        );
+        vi.mocked(MonthlyApproval.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue([
+                {
+                    _id: 'ma1',
+                    userId: 'u1',
+                    year: 2025,
+                    month: 6,
+                    status: 'approved',
+                },
+            ]),
+        } as any);
+
+        const req = mockReq({
+            method: 'GET',
+            query: { period: 'month', year: 2025, month: 6 },
+        });
+        const res = mockRes();
+
+        await adminWorkSessionsHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        const payload = res.json.mock.calls[0][0];
+        expect(payload.data.approvedMonths).toEqual(['u1:2025-06']);
     });
 
     it('should flag hours_over when worked more than expected + benevolence', async () => {

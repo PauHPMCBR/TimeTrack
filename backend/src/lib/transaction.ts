@@ -28,9 +28,22 @@ export async function runInTransaction<T>(
 
     try {
         let result: T;
-        await session.withTransaction(async () => {
-            result = await fn(session);
-        });
+        try {
+            await session.withTransaction(async () => {
+                result = await fn(session);
+            });
+        } catch (err: unknown) {
+            // Standalone MongoDB instances (e.g., dev environments) do not support
+            // transactions. If we get an "IllegalOperation" error (transaction numbers
+            // only on replica sets), fall back to running without a session.
+            const mongoErr = err as any;
+            if (mongoErr?.codeName === 'IllegalOperation' || 
+                mongoErr?.code === 20) {
+                result = await fn(null);
+            } else {
+                throw err;
+            }
+        }
         return result!;
     } finally {
         await session.endSession();

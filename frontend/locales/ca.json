@@ -9,12 +9,14 @@
         "loading": "Carregant...",
         "more": "més",
         "next": "Seg",
+        "no": "No",
         "noName": "Sense nom",
         "optional": "(opcional)",
         "prev": "Ant",
         "save": "Desar",
         "saving": "Guardant...",
         "unsavedChangesConfirm": "Tens canvis sense desar. Vols sortir sense desar?",
+        "yes": "Sí",
         "password": {
             "show": "Mostra la contrasenya",
             "hide": "Amaga la contrasenya"
@@ -140,42 +142,13 @@
         "notePlaceholder": "Escriu la nota aquí…"
     },
     "history": {
-        "avgPerDay": "Mitjana/dia (setmana)",
-        "chart": {
-            "title": "Hores per setmana (últimes 6)"
-        },
-        "date": "Data",
-        "daysAbbr": "dies",
-        "daysWithCheckins": "Dies amb fitxatge (últims)",
         "export": {
             "date": "Data",
             "formatted": "Hores (formatat)",
             "hours": "Hores (número)",
-            "label": "Exportar"
-        },
-        "hours": "Hores",
-        "monthly": {
-            "chartTitle": "Progrés per setmanes",
-            "daysWorked": "Dies treballats (Mes)",
-            "title": "Resum Mensual",
-            "totalTime": "Total Temps (Mes)"
-        },
-        "noRecords": "No hi ha registres",
-        "noRecordsMonth": "No hi ha dades aquest mes.",
-        "recent": {
-            "title": "Historial recent (per dia)"
-        },
-        "today": {
-            "title": "Historial d'avui"
-        },
-        "week": "Setmana",
-        "weekAbbr": "Set",
-        "weekHours": "Hores setmanals",
-        "weekly": {
-            "chartTitle": "Hores per dia (dl-dg)",
-            "daysWorked": "Dies treballats (Setmana)",
-            "title": "Resum Setmanal",
-            "totalTime": "Total Temps (Setmana)"
+            "label": "Exportar",
+            "status": "Estat",
+            "confirmed": "Confirmat"
         }
     },
     "calendar": {
@@ -408,7 +381,9 @@
                 "desc": "Fitxatges d'entrada i sortida amb detecció d'anomalies.",
                 "title": "Fitxatges",
                 "anomalies": "anomalies",
-                "noAnomalies": "sense anomalies"
+                "noAnomalies": "sense anomalies",
+                "status": {
+                }
             },
             "monthlyApprovals": {
                 "title": "Confirmació mensual",
@@ -497,6 +472,7 @@
             "noData": "No hi ha registres per a aquest període.",
             "anomalyOnly": "Només anomalies",
             "noAnomalies": "No hi ha anomalies en aquest període.",
+            "monthConfirmed": "Mes confirmat. No es pot editar sense revocar la confirmació.",
             "pagination": {
                 "next": "Pàgina següent",
                 "previous": "Pàgina anterior"
@@ -511,7 +487,8 @@
                 "anomaly": "Anomalia",
                 "ok": "Complert",
                 "vacation": "Vacances",
-                "nonWorkingDay": "Dia no laborable"
+                "nonWorkingDay": "Dia no laborable",
+                "confirmed": "Confirmat"
             },
             "subtitle": "Fitxatges de tots els empleats amb detecció d'anomalies.",
             "table": {
