@@ -116,6 +116,19 @@ export default function GroupModal({ open, group, onClose, onSaved }: Props) {
                     : t('admin.groups.createTitle')
             }
             onClose={requestClose}
+            footer={
+                !loading && (
+                    <Button
+                        type="submit"
+                        form="group-form"
+                        disabled={saving}
+                        variant="primary"
+                        className="w-full"
+                    >
+                        {saving ? t('common.saving') : t('common.save')}
+                    </Button>
+                )
+            }
         >
             {error && (
                 <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
@@ -128,7 +141,7 @@ export default function GroupModal({ open, group, onClose, onSaved }: Props) {
                     {t('common.loading')}
                 </div>
             ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form id="group-form" onSubmit={handleSubmit} className="space-y-4">
                     <TextField
                         label={t('admin.groups.name')}
                         type="text"
@@ -212,15 +225,6 @@ export default function GroupModal({ open, group, onClose, onSaved }: Props) {
                             </div>
                         )}
                     </div>
-
-                    <Button
-                        type="submit"
-                        disabled={saving}
-                        variant="primary"
-                        className="w-full"
-                    >
-                        {saving ? t('common.saving') : t('common.save')}
-                    </Button>
                 </form>
             )}
         </Modal>

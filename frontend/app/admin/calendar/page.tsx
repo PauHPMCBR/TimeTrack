@@ -9,6 +9,8 @@ import { localeTag, toLocalDateKey } from '@/lib/datetime';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { Calendar } from '@/components/calendar/Calendar';
 import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
+import { usePersistedState } from '@/lib/usePersistedState';
+import { CALENDAR_MONTH } from '@/lib/storage';
 
 export default function AdminCalendarPage() {
     const { t, lang } = useI18n();
@@ -16,8 +18,16 @@ export default function AdminCalendarPage() {
     const router = useRouter();
 
     const today = new Date();
-    const [cursor, setCursor] = useState(
-        new Date(today.getFullYear(), today.getMonth(), 1)
+    const [cursor, setCursor] = usePersistedState<Date>(
+        CALENDAR_MONTH,
+        () => new Date(today.getFullYear(), today.getMonth(), 1),
+        {
+            serialize: (d) => d.toISOString(),
+            deserialize: (s) => {
+                const d = new Date(s);
+                return new Date(d.getFullYear(), d.getMonth(), 1);
+            },
+        }
     );
     const [vacations, setVacations] = useState<YearlyVacationResponse | null>(
         null

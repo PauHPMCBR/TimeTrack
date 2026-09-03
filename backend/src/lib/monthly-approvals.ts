@@ -86,13 +86,19 @@ export async function computeMonthAnomalies(
 ): Promise<WorkSessionAnomaly[]> {
     await dbConnect();
     const [user, settings] = (await Promise.all([
-        User.findById(userId, 'expectedWorkHours workDays').lean(),
+        User.findById(userId, 'expectedWorkHours workDays trackingStartDate checkInRequired').lean(),
         getAppSettings(),
     ])) as unknown as [
-        { expectedWorkHours?: number; workDays?: number[] } | null,
+        {
+            expectedWorkHours?: number;
+            workDays?: number[];
+            trackingStartDate?: Date | null;
+            checkInRequired?: boolean;
+        } | null,
         Awaited<ReturnType<typeof getAppSettings>>,
     ];
     if (!user) return [];
+    if (user.checkInRequired === false) return [];
 
     const expectedHours =
         user.expectedWorkHours ?? settings.defaultExpectedHours;
@@ -105,6 +111,11 @@ export async function computeMonthAnomalies(
     const end =
         month === 12 ? new Date(year + 1, 0, 1) : new Date(year, month, 1);
     const daysInMonth = new Date(year, month, 0).getDate();
+
+    // Only evaluate days from the user's tracking start onward (if known).
+    const trackingStart = user.trackingStartDate
+        ? new Date(user.trackingStartDate)
+        : null;
 
     const [sessions, approvedVacations, yearlyTemplates] = (await Promise.all([
         WorkSession.find({
@@ -141,6 +152,7 @@ export async function computeMonthAnomalies(
     for (let day = 1; day <= daysInMonth; day++) {
         const dayDate = new Date(year, month - 1, day);
         const key = dateKey(dayDate);
+        if (trackingStart && dayDate < trackingStart) continue;
         if (nonWorkingDays.includes(dayDate.getDay())) continue;
         if (vacationSet.has(key) || obligatorySet.has(key)) continue;
 

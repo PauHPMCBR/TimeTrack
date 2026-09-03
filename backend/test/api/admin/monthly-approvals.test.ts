@@ -58,7 +58,9 @@ vi.mock('@/lib/monthly-approvals', async (importOriginal) => {
 
 vi.mock('@/models', () => ({
     MonthlyApproval: {
-        find: vi.fn(),
+        find: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue([]),
+        }),
         deleteOne: vi.fn(),
         findOne: vi.fn().mockResolvedValue(null),
     },
@@ -148,10 +150,14 @@ describe('POST /api/admin/monthly-approvals/open', () => {
                 anomalies: ['hours_short'],
             },
         ]);
-        // Every employee is targeted (no userIds in the request).
+        // Every registered, non-blocking, checkInRequired user is targeted (no userIds in the request).
         expect(User.find).toHaveBeenCalledWith(
-            expect.objectContaining({ role: { $ne: 'admin' } }),
-            'name'
+            {
+                registered: true,
+                blocked: { $ne: true },
+                checkInRequired: { $ne: false },
+            },
+            'name trackingStartDate'
         );
         expect(openMonthForUser).toHaveBeenCalledTimes(1);
     });
@@ -178,8 +184,8 @@ describe('POST /api/admin/monthly-approvals/open', () => {
         await openMonthlyApprovalsHandler(req, res);
 
         expect(User.find).toHaveBeenCalledWith(
-            { _id: { $in: ['u1'] } },
-            'name'
+            { _id: { $in: ['u1'] }, blocked: { $ne: true } },
+            'name trackingStartDate checkInRequired'
         );
         expect(res.json.mock.calls[0][0].data.blocked).toEqual([]);
     });

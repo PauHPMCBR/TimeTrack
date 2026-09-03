@@ -10,7 +10,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit",
-    "migrate:work-session-source": "node scripts/migrate-work-session-source.cjs"
+    "migrate:work-session-source": "node scripts/migrate-work-session-source.cjs",
+    "migrate:tracking-start": "node scripts/migrate-tracking-start.cjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

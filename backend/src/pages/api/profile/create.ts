@@ -52,6 +52,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             registrationToken,
             registered: false,
             role: role || EMPLOYEE_ROLE,
+            checkInRequired: (role || EMPLOYEE_ROLE) !== ADMIN_ROLE,
             groups: [],
             dni,
             expectedWorkHours: settings.defaultExpectedHours,

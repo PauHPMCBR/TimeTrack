@@ -66,12 +66,23 @@ export const UpdateUserRequestSchema = z
         dni: z.string().max(20).optional(),
         expectedWorkHours: z.number().positive().optional(),
         workDays: z.array(z.number().int().min(0).max(6)).optional(),
+        // The day the user started time tracking (local "YYYY-MM-DD").
+        trackingStartDate: z
+            .string()
+            .regex(DATE_KEY_REGEX, 'trackingStartDate must be YYYY-MM-DD')
+            .optional(),
         // Optional: when set, the admin resets the user's password. Full policy
         // is enforced server-side via validatePassword.
         password: z
             .string()
             .min(8, 'Password must be at least 8 characters')
             .optional(),
+        // Optional: when true, the admin invalidates the user's current
+        // password, forcing them to use the forgot-password flow to recover.
+        invalidatePassword: z.boolean().optional(),
+        // When true the user must check in/out daily; when false the system
+        // does not flag missing sessions as anomalies.
+        checkInRequired: z.boolean().optional(),
     })
     .refine(
         (data) => Object.keys(data).length > 0,
@@ -437,6 +448,8 @@ export const MonthlyApprovalOpenRequestSchema = z.object({
     month: z.number().int().gte(1).lte(12),
     // Users to open the month for. Omitted = all registered employees.
     userIds: z.array(z.string()).optional(),
+    // Force opening even for users whose month still has pending anomalies.
+    force: z.boolean().optional().default(false),
 });
 export type MonthlyApprovalOpenRequest = z.infer<
     typeof MonthlyApprovalOpenRequestSchema
@@ -466,6 +479,21 @@ export const MonthlyApprovalOpenResultSchema = z.object({
             userId: z.string(),
             userName: z.string().optional(),
             anomalies: z.array(WorkSessionAnomalySchema),
+        })
+    ),
+    // Users already asked (an existing pending request) that were skipped to
+    // avoid re-notifying them.
+    skipped: z.array(
+        z.object({
+            userId: z.string(),
+            userName: z.string().optional(),
+        })
+    ),
+    // Users excluded because their tracking had not started by the month.
+    notTracking: z.array(
+        z.object({
+            userId: z.string(),
+            userName: z.string().optional(),
         })
     ),
 });

@@ -29,7 +29,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const groupId = req.query.groupId as string;
 
         const group = await Group.findById(groupId)
-            .populate('members', 'name email role registered')
+            .populate({
+                path: 'members',
+                select: 'name email role registered',
+                match: { blocked: { $ne: true } },
+            })
             .lean();
 
         if (!group) {

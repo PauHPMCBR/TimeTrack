@@ -111,22 +111,31 @@ describe('GET /api/groups/team-vacations', () => {
             }),
         } as any);
 
-        vi.mocked(User.find).mockReturnValue({
-            select: vi.fn().mockReturnValue({
+        vi.mocked(User.find)
+            // Active members filter (called with second arg '_id', no .select()).
+            .mockReturnValueOnce({
                 lean: vi.fn().mockResolvedValue([
-                    {
-                        _id: 'user-456',
-                        name: 'User 1',
-                        email: 'user1@example.com',
-                    },
-                    {
-                        _id: 'admin-1',
-                        name: 'System Administrator',
-                        email: 'admin@example.com',
-                    },
+                    { _id: 'user-456' },
+                    { _id: 'user-789' },
                 ]),
-            }),
-        } as any);
+            } as any)
+            // resolveVacationNames calls User.find().select('name email').lean().
+            .mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    lean: vi.fn().mockResolvedValue([
+                        {
+                            _id: 'user-456',
+                            name: 'User 1',
+                            email: 'user1@example.com',
+                        },
+                        {
+                            _id: 'admin-1',
+                            name: 'System Administrator',
+                            email: 'admin@example.com',
+                        },
+                    ]),
+                }),
+            } as any);
 
         const req = mockReq({ method: 'GET', query: { year: '2024' } });
         const res = mockRes();

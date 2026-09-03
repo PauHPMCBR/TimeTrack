@@ -28,13 +28,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const userIds = Array.from(new Set(approvals.map((a) => a.userId)));
         const users = userIds.length
             ? ((await User.find(
-                  { _id: { $in: userIds } },
+                  {
+                      _id: { $in: userIds },
+                      blocked: { $ne: true },
+                      registered: true,
+                  },
                   'name'
               ).lean()) as unknown as { _id: string; name: string }[])
             : [];
         const nameById = new Map(users.map((u) => [u._id.toString(), u.name]));
 
         const rows: MonthlyApprovalRow[] = approvals
+            .filter((a) => nameById.has(a.userId.toString()))
             .map((a) => ({
                 ...a,
                 _id: a._id.toString(),

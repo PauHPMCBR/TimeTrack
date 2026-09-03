@@ -41,6 +41,7 @@ vi.mock('@/models', () => {
         static find = vi.fn().mockReturnValue({
             sort: vi.fn().mockResolvedValue([]),
         });
+        static countDocuments = vi.fn().mockResolvedValue(0);
         constructor(doc: any) {
             constructed.push(doc);
         }
@@ -52,7 +53,10 @@ vi.mock('@/models', () => {
             notes: null,
         });
     }
-    return { WorkSession };
+    class User {
+        static updateOne = vi.fn().mockResolvedValue({});
+    }
+    return { WorkSession, User };
 });
 
 import { WorkSession } from '@/models';
