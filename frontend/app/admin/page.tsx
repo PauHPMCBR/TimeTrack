@@ -51,6 +51,7 @@ export default function AdminDashboard() {
 
     const pendingVacations = data?.pendingVacations ?? 0;
     const anomalyCount = data?.anomalyCount ?? 0;
+    const pendingApprovals = data?.pendingApprovals ?? 0;
 
     const menuItems: MenuItem[] = [
         {
@@ -116,10 +117,15 @@ export default function AdminDashboard() {
         {
             title: t('admin.menu.monthlyApprovals.title'),
             desc: t('admin.menu.monthlyApprovals.desc'),
+            meta:
+                pendingApprovals > 0
+                    ? `${pendingApprovals} ${t('admin.menu.monthlyApprovals.pending')}`
+                    : t('admin.menu.monthlyApprovals.none'),
             href: '/admin/monthly-approvals',
             iconColor: 'text-teal-600 dark:text-teal-400',
             bgColor: 'bg-teal-50 dark:bg-teal-900/20',
             icon: <ShieldCheck size={24} />,
+            alert: pendingApprovals > 0,
         },
         {
             title: t('admin.menu.settings.title'),

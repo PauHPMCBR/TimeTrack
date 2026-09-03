@@ -26,6 +26,7 @@ interface ReminderUser {
     expectedWorkHours?: number;
     autoTimetable?: AutoScheduleEntry[];
     lastInconsistencyReminder?: string;
+    checkInRequired?: boolean;
 }
 
 /** "09:00 – 13:00, 15:00 – 19:00" — human-readable timetable for the email. */
@@ -74,10 +75,15 @@ export async function runDailyInconsistencyReminder(
 
     const { start, end } = dayRange(dateKeyStr);
 
-    const users = (await User.find({ registered: true }).lean()) as unknown as ReminderUser[];
+    const users = (await User.find(
+        { registered: true },
+        'name email expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired'
+    ).lean()) as unknown as ReminderUser[];
     const sentTo: string[] = [];
 
     for (const user of users) {
+        if (user.checkInRequired === false) continue;
+
         const sessions = (await WorkSession.find({
             userId: user._id.toString(),
             timestamp: { $gte: start, $lt: end },

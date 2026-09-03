@@ -269,13 +269,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const yearSet = new Set<number>();
         days.forEach((d) => yearSet.add(d.getFullYear()));
 
-        const [users, sessions, approvedVacations, yearlyTemplates, settings] =
+            const [users, sessions, approvedVacations, yearlyTemplates, settings] =
             (await Promise.all([
                 User.find(
                     {
-                        role: { $ne: ADMIN_ROLE },
                         blocked: { $ne: true },
                         registered: true,
+                        // Users who don't need to check in are excluded entirely from
+                        // the events report (they never show as non-working rows).
+                        checkInRequired: { $ne: false },
                     },
                     'name email dni expectedWorkHours workDays'
                 )

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, Fragment, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
@@ -10,6 +10,7 @@ import { configuredTimezone } from '@/lib/timezone';
 import Card from '@/components/ui/Card';
 import SessionEditorModal from '@/components/SessionEditorModal';
 import AdminBackButton from '../../../components/AdminBackButton';
+import { usePersistedState } from '@/lib/usePersistedState';
 import {
     ADMIN_REPORT_PERIODS,
     AdminReportPeriod,
@@ -20,11 +21,20 @@ import {
     SOURCE_USER,
 } from 'shared/src/lib/constants';
 import {
+    ADMIN_EVENTS_PERIOD,
+    ADMIN_EVENTS_CURSOR,
+    ADMIN_EVENTS_ANOMALY_ONLY,
+} from '@/lib/storage';
+import {
     ChevronRight,
     ChevronLeft,
     ShieldCheck,
     User,
     Zap,
+    CheckCircle2,
+    AlertTriangle,
+    Palmtree,
+    Ban,
 } from 'lucide-react';
 
 type Period = AdminReportPeriod;
@@ -43,25 +53,25 @@ function AdminEventsInner() {
     const { t, lang } = useI18n();
     const searchParams = useSearchParams();
 
-    const [period, setPeriod] = useState<Period>(() => {
-        const p = searchParams.get('period');
-        return (ADMIN_REPORT_PERIODS as readonly string[]).includes(p ?? '')
-            ? (p as Period)
-            : 'week';
-    });
-    const [cursor, setCursor] = useState(() => {
-        const d = searchParams.get('date');
-        if (d) {
-            const parsed = new Date(`${d}T00:00:00`);
-            if (!isNaN(parsed.getTime())) {
-                parsed.setHours(0, 0, 0, 0);
-                return parsed;
-            }
+    const urlParamConsumed = useRef(false);
+
+    const [period, setPeriod] = usePersistedState<Period>(ADMIN_EVENTS_PERIOD, 'week');
+    const [cursor, setCursor] = usePersistedState<Date>(
+        ADMIN_EVENTS_CURSOR,
+        () => {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            return now;
+        },
+        {
+            serialize: (d) => d.toISOString(),
+            deserialize: (s) => {
+                const d = new Date(s);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            },
         }
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        return now;
-    });
+    );
     const [rows, setRows] = useState<AdminWorkSessionRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -71,6 +81,28 @@ function AdminEventsInner() {
     const PAGE_SIZE = 200;
     const [offset, setOffset] = useState(0);
     const [total, setTotal] = useState(0);
+    const [anomalyOnly, setAnomalyOnly] = usePersistedState<boolean>(
+        ADMIN_EVENTS_ANOMALY_ONLY,
+        false
+    );
+
+    // Override persisted state from URL params on deep-link (one-time).
+    useEffect(() => {
+        if (urlParamConsumed.current) return;
+        urlParamConsumed.current = true;
+        const p = searchParams.get('period');
+        if ((ADMIN_REPORT_PERIODS as readonly string[]).includes(p ?? '')) {
+            setPeriod(p as Period);
+        }
+        const d = searchParams.get('date');
+        if (d) {
+            const parsed = new Date(`${d}T00:00:00`);
+            if (!isNaN(parsed.getTime())) {
+                parsed.setHours(0, 0, 0, 0);
+                setCursor(parsed);
+            }
+        }
+    }, [searchParams, setPeriod, setCursor]);
 
     const locale = localeTag(lang);
 
@@ -173,6 +205,20 @@ function AdminEventsInner() {
         return 'border-l-4 border-l-red-500 bg-red-100/90 dark:bg-red-900/40';
     };
 
+    const statusIcon = (status: AdminWorkSessionRow['status']) => {
+        if (status === 'ok')
+            return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
+        if (status === 'anomaly')
+            return <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />;
+        if (status === 'vacation')
+            return <Palmtree className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+        return <Ban className="h-4 w-4 text-zinc-400" />;
+    };
+
+    const filteredRows = anomalyOnly
+        ? rows.filter((r) => r.status === 'anomaly')
+        : rows;
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
             <div className="mx-auto max-w-6xl px-4 py-6">
@@ -249,52 +295,72 @@ function AdminEventsInner() {
                 )}
 
                 {/* Legend */}
-                <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-zinc-600 dark:text-zinc-300">
-                    <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>
-                        {t('admin.events.status.ok')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>
-                        {t('admin.events.status.anomaly')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                        {t('admin.events.status.vacation')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-zinc-400"></span>
-                        {t('admin.events.status.nonWorkingDay')}
-                    </span>
-                    <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
-                    <span className="flex items-center gap-1.5">
-                        <User size={12} />
-                        {t('admin.events.source.user')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <ShieldCheck size={12} />
-                        {t('admin.events.source.admin')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Zap size={12} />
-                        {t('admin.events.source.automatic')}
-                    </span>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-600 dark:text-zinc-300">
+                        <span className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>
+                            {t('admin.events.status.ok')}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                            {t('admin.events.status.anomaly')}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                            {t('admin.events.status.vacation')}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-zinc-400"></span>
+                            {t('admin.events.status.nonWorkingDay')}
+                        </span>
+                        <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
+                        <span className="flex items-center gap-1.5">
+                            <User size={12} />
+                            {t('admin.events.source.user')}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <ShieldCheck size={12} />
+                            {t('admin.events.source.admin')}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <Zap size={12} />
+                            {t('admin.events.source.automatic')}
+                        </span>
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                        <input
+                            type="checkbox"
+                            checked={anomalyOnly}
+                            onChange={(e) => setAnomalyOnly(e.target.checked)}
+                            className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        {t('admin.events.anomalyOnly')}
+                    </label>
                 </div>
+
+                {/* Loading / empty states showing only filtered count */}
+                {!loading && anomalyOnly && filteredRows.length === 0 && (
+                    <Card className="p-10 text-center text-sm text-zinc-500">
+                        {t('admin.events.noAnomalies')}
+                    </Card>
+                )}
 
                 {loading ? (
                     <div className="p-10 text-center animate-pulse text-zinc-500">
                         {t('common.loading')}
                     </div>
-                ) : rows.length === 0 ? (
+                ) : filteredRows.length === 0 && !anomalyOnly ? (
                     <Card className="p-10 text-center text-sm text-zinc-500">
                         {t('admin.events.noData')}
                     </Card>
-                ) : (
+                ) : filteredRows.length === 0 ? null : (
                     <Card className="overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="w-full table-fixed text-left text-sm">
+                            <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
                                 <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
                                     <tr className="text-xs uppercase tracking-wider text-zinc-500">
+                                        <th className="w-[36px] px-3 py-3">
+                                        </th>
                                         <th className="w-[110px] whitespace-nowrap px-3 py-3 font-semibold">
                                             {t('admin.events.table.date')}
                                         </th>
@@ -312,8 +378,8 @@ function AdminEventsInner() {
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                    {rows.map((row) => {
+                                <tbody>
+                                    {filteredRows.map((row, i) => {
                                         const dateLabel = new Date(
                                             `${row.date}T00:00:00`
                                         ).toLocaleDateString(locale, {
@@ -321,14 +387,36 @@ function AdminEventsInner() {
                                             day: 'numeric',
                                             month: 'short',
                                         });
+                                        const newDay =
+                                            i > 0 &&
+                                            filteredRows[i - 1].date !==
+                                                row.date;
                                         return (
-                                            <tr
+                                            <Fragment
                                                 key={`${row.date}:${row.userId}`}
-                                                className={`${rowClass(row)} cursor-pointer transition-colors hover:brightness-[0.97] dark:hover:brightness-[1.2]`}
-                                                onClick={() =>
-                                                    setEditingRow(row)
-                                                }
                                             >
+                                                {newDay && (
+                                                    <tr aria-hidden="true">
+                                                        <td
+                                                            colSpan={6}
+                                                            className="border-y-2 border-zinc-300 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 py-0.5"
+                                                        ></td>
+                                                    </tr>
+                                                )}
+                                                <tr
+                                                    className={`${rowClass(row)} cursor-pointer border-b border-zinc-100 transition-colors last:border-b-0 hover:brightness-[0.97] dark:border-zinc-800 dark:hover:brightness-[1.2]`}
+                                                    onClick={() =>
+                                                        setEditingRow(row)
+                                                    }
+                                                >
+                                                <td
+                                                    className="whitespace-nowrap px-3 py-3"
+                                                    title={t(
+                                                        `admin.events.status.${row.status}`
+                                                    )}
+                                                >
+                                                    {statusIcon(row.status)}
+                                                </td>
                                                 <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-zinc-900 dark:text-white">
                                                     {dateLabel}
                                                 </td>
@@ -409,7 +497,8 @@ function AdminEventsInner() {
                                                     {row.expectedHours}{' '}
                                                     {t('time.h')}
                                                 </td>
-                                            </tr>
+                                                </tr>
+                                            </Fragment>
                                         );
                                     })}
                                 </tbody>
@@ -418,7 +507,7 @@ function AdminEventsInner() {
                     </Card>
                 )}
 
-                {total > PAGE_SIZE && (
+                {!anomalyOnly && total > PAGE_SIZE && (
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-sm text-zinc-500 dark:text-zinc-400">
                             {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} /{' '}

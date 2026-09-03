@@ -332,6 +332,9 @@
             "email": "Correu electrònic",
             "expectedHours": "Hores setmanals esperades",
             "customNonWorkDays": "Dies no laborables personalitzats",
+            "trackingStartDate": "Inici de registre de jornada",
+            "checkInRequired": "Requerir fitxatge diari",
+            "checkInRequiredHelp": "Quan està desactivat, el sistema no marcarà com a anomalia els dies sense fitxatge.",
             "name": "Nom complet",
             "role": {
                 "label": "Rol",
@@ -409,7 +412,9 @@
             },
             "monthlyApprovals": {
                 "title": "Confirmació mensual",
-                "desc": "Registre de confirmacions mensuals del registre de jornada."
+                "desc": "Registre de confirmacions mensuals del registre de jornada.",
+                "pending": "pendents",
+                "none": "cap de pendent"
             }
         },
         "stats": {
@@ -443,8 +448,10 @@
             "saved": "Usuari actualitzat correctament",
             "subtitle": "Modifica les dades de l'empleat.",
             "title": "Editar usuari",
-            "passwordLabel": "Contrasenya nova (opcional)",
-            "passwordPlaceholder": "Deixa-ho buit per no canviar-la"
+            "passwordLabel": "Contrasenya",
+            "invalidatePassword": "Invalidar contrasenya",
+            "invalidatePasswordOn": "S'invalidarà la contrasenya",
+            "invalidatePasswordDesc": "L'empleat haurà de recuperar la contrasenya amb el procediment de contrasenya oblidada."
         },
         "sessionEditor": {
             "addIn": "Afegir entrada",
@@ -488,6 +495,8 @@
         },
         "events": {
             "noData": "No hi ha registres per a aquest període.",
+            "anomalyOnly": "Només anomalies",
+            "noAnomalies": "No hi ha anomalies en aquest període.",
             "pagination": {
                 "next": "Pàgina següent",
                 "previous": "Pàgina anterior"
@@ -672,6 +681,10 @@
         "openAction": "Obrir per a confirmació",
         "openedCount": "{count} persona(es) notificades correctament.",
         "blockedTitle": "No s'han pogut obrir (anomalies pendents):",
+        "forceAction": "Forçar obertura",
+        "forceConfirm": "Força l'obertura del mes per a totes les persones treballadores, fins i tot les que tenen anomalies pendents. Vols continuar?",
+        "skippedTitle": "Ja notificades anteriorment (no s'ha reenviat):",
+        "notTrackingTitle": "Sense registre en aquest mes (excloses):",
         "registryTitle": "Registre de confirmacions",
         "empty": "Encara no hi ha cap confirmació mensual.",
         "requestedAt": "Sol·licitat",
@@ -680,6 +693,11 @@
         "statusPending": "Pendent",
         "revoke": "Revocar",
         "confirmRevoke": "Segur que vols revocar la confirmació de",
+        "filterState": "Estat",
+        "filterAllStates": "Tots els estats",
+        "filterAllEmployees": "Totes les persones",
+        "filterEmployees": "Persona",
+        "filterNoMatch": "No hi ha resultats per als filtres seleccionats.",
         "anomaly": {
             "forgot_check_out": "entrada sense sortida",
             "forgot_check_in": "sortida sense entrada",

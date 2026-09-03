@@ -12,6 +12,8 @@ import {
 import { Calendar } from '@/components/calendar/Calendar';
 import { ChevronLeft, Mail, CalendarDays } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import { usePersistedState } from '@/lib/usePersistedState';
+import { CALENDAR_MONTH } from '@/lib/storage';
 
 function toLocale(lang: 'ca' | 'es' | 'en'): string {
     return lang === 'ca' ? 'ca-ES' : lang === 'es' ? 'es-ES' : 'en-US';
@@ -28,8 +30,16 @@ export default function OtherUserProfilePage() {
     const [loading, setLoading] = useState(true);
 
     const today = new Date();
-    const [cursor, setCursor] = useState(
-        new Date(today.getFullYear(), today.getMonth(), 1)
+    const [cursor, setCursor] = usePersistedState<Date>(
+        CALENDAR_MONTH,
+        () => new Date(today.getFullYear(), today.getMonth(), 1),
+        {
+            serialize: (d) => d.toISOString(),
+            deserialize: (s) => {
+                const d = new Date(s);
+                return new Date(d.getFullYear(), d.getMonth(), 1);
+            },
+        }
     );
     const [vacations, setVacations] = useState<YearlyVacationResponse | null>(
         null

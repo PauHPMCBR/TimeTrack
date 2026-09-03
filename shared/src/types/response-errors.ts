@@ -49,7 +49,8 @@ export type IncorrectParameter =
     | 'date'
     | 'role'
     | 'currentPassword'
-    | 'timezone';
+    | 'timezone'
+    | 'trackingStartDate';
 
 export type PasswordIncorrectParameterReason =
     | 'TooShort'

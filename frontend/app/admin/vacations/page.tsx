@@ -7,6 +7,8 @@ import { ElectiveVacation, User } from '@/types';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import AdminBackButton from '../../../components/AdminBackButton';
+import { usePersistedState } from '@/lib/usePersistedState';
+import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
 import { ChevronRight, ChevronLeft, Check, X, Download } from 'lucide-react';
 import {
     VACATION_APPROVED,
@@ -32,9 +34,9 @@ export default function AdminVacationsPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [year, setYear] = useState<number>(new Date().getFullYear());
+    const [year, setYear] = usePersistedState<number>(ADMIN_VACATIONS_YEAR, new Date().getFullYear());
     const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
-    const [filterUserId, setFilterUserId] = useState<string>('all');
+    const [filterUserId, setFilterUserId] = usePersistedState<string>(ADMIN_VACATIONS_USER, 'all');
     const [processingIds, setProcessingIds] = useState<string[]>([]);
     const fetchSeq = useRef(0);
 
