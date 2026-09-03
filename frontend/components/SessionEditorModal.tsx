@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
@@ -13,8 +12,9 @@ import {
     DEFAULT_CHECK_OUT_HOUR,
 } from 'shared/src/lib/defaults';
 import type { WorkSessionType } from 'shared/src/schemas/database';
+import Modal from '@/components/Modal';
 import Button from '@/components/ui/Button';
-import { LogIn, LogOut, Plus, Trash2, X, Loader2 } from 'lucide-react';
+import { LogIn, LogOut, Plus, Trash2, Loader2 } from 'lucide-react';
 
 type Props = {
     row: AdminWorkSessionRow;
@@ -201,143 +201,119 @@ export default function SessionEditorModal({ row, onClose, onSaved }: Props) {
     );
 
     return (
-        typeof document !== 'undefined' &&
-        createPortal(
-            <div
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-                onClick={requestClose}
-            >
-                <div
-                    className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="mb-4 flex items-start justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
-                                {t('admin.sessionEditor.title')}
-                            </h3>
-                            <p className="mt-0.5 text-sm text-zinc-500">
-                                {row.userName} · {dateLabel}
-                            </p>
-                        </div>
-                        <button
-                            onClick={requestClose}
-                            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                            aria-label={t('common.close')}
-                        >
-                            <X size={18} />
-                        </button>
-                    </div>
-
-                    {error && (
-                        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="space-y-2">
-                        {sessions.length === 0 && (
-                            <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
-                                {t('admin.sessionEditor.noSessions')}
-                            </div>
-                        )}
-
-                        {sessions.map((session, idx) => {
-                            const removable = isCoherent(
-                                sessions.filter((_, i) => i !== idx)
-                            );
-                            return (
-                                <div
-                                    key={session._id}
-                                    className="flex items-center gap-2 rounded-xl border border-zinc-200 p-2 dark:border-zinc-800"
-                                >
-                                    <span
-                                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white ${
-                                            session.type === CHECK_IN
-                                                ? 'bg-green-500'
-                                                : 'bg-red-500'
-                                        }`}
-                                    >
-                                        {session.type === CHECK_IN ? (
-                                            <LogIn size={14} />
-                                        ) : (
-                                            <LogOut size={14} />
-                                        )}
-                                    </span>
-                                    <input
-                                        type="time"
-                                        value={
-                                            session.timestamp.split('T')[1] ??
-                                            ''
-                                        }
-                                        disabled={saving}
-                                        onChange={(e) =>
-                                            handleChangeTime(
-                                                session,
-                                                `${row.date}T${e.target.value}`
-                                            )
-                                        }
-                                        className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
-                                    />
-                                    <button
-                                        onClick={() => handleDelete(session)}
-                                        disabled={!removable || saving}
-                                        className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-red-900/20"
-                                        title={
-                                            removable
-                                                ? t(
-                                                      'admin.sessionEditor.remove'
-                                                  )
-                                                : t(
-                                                      'admin.sessionEditor.removeLocked'
-                                                  )
-                                        }
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-
+        <Modal
+            open={typeof document !== 'undefined'}
+            title={t('admin.sessionEditor.title')}
+            subtitle={`${row.userName} · ${dateLabel}`}
+            onClose={requestClose}
+            footer={
+                <div className="flex justify-end gap-2">
                     <Button
-                        onClick={handleAdd}
+                        onClick={requestClose}
                         disabled={saving}
-                        variant="soft"
-                        className="mt-4 w-full"
+                        variant="secondary"
                     >
-                        <Plus size={16} />
-                        {expected === CHECK_IN
-                            ? t('admin.sessionEditor.addIn')
-                            : t('admin.sessionEditor.addOut')}
+                        {t('common.cancel')}
                     </Button>
-
-                    <p className="mt-3 text-xs text-zinc-400">
-                        {t('admin.sessionEditor.hint')}
-                    </p>
-
-                    <div className="mt-4 flex justify-end gap-2">
-                        <Button
-                            onClick={requestClose}
-                            disabled={saving}
-                            variant="secondary"
-                        >
-                            {t('common.cancel')}
-                        </Button>
-                        <Button
-                            onClick={handleSave}
-                            disabled={saving}
-                            variant="primary"
-                        >
-                            {saving ? (
-                                <Loader2 size={16} className="animate-spin" />
-                            ) : null}
-                            {t('common.save')}
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        variant="primary"
+                    >
+                        {saving ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : null}
+                        {t('common.save')}
+                    </Button>
                 </div>
-            </div>,
-            document.body
-        )
+            }
+        >
+            {error && (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {error}
+                </div>
+            )}
+
+            <div className="space-y-2">
+                {sessions.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
+                        {t('admin.sessionEditor.noSessions')}
+                    </div>
+                )}
+
+                {sessions.map((session, idx) => {
+                    const removable = isCoherent(
+                        sessions.filter((_, i) => i !== idx)
+                    );
+                    return (
+                        <div
+                            key={session._id}
+                            className="flex items-center gap-2 rounded-xl border border-zinc-200 p-2 dark:border-zinc-800"
+                        >
+                            <span
+                                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white ${
+                                    session.type === CHECK_IN
+                                        ? 'bg-green-500'
+                                        : 'bg-red-500'
+                                }`}
+                            >
+                                {session.type === CHECK_IN ? (
+                                    <LogIn size={14} />
+                                ) : (
+                                    <LogOut size={14} />
+                                )}
+                            </span>
+                            <input
+                                type="time"
+                                value={
+                                    session.timestamp.split('T')[1] ??
+                                    ''
+                                }
+                                disabled={saving}
+                                onChange={(e) =>
+                                    handleChangeTime(
+                                        session,
+                                        `${row.date}T${e.target.value}`
+                                    )
+                                }
+                                className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
+                            />
+                            <button
+                                onClick={() => handleDelete(session)}
+                                disabled={!removable || saving}
+                                className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-red-900/20"
+                                title={
+                                    removable
+                                        ? t(
+                                              'admin.sessionEditor.remove'
+                                          )
+                                        : t(
+                                              'admin.sessionEditor.removeLocked'
+                                          )
+                                }
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <Button
+                onClick={handleAdd}
+                disabled={saving}
+                variant="soft"
+                className="mt-4 w-full"
+            >
+                <Plus size={16} />
+                {expected === CHECK_IN
+                    ? t('admin.sessionEditor.addIn')
+                    : t('admin.sessionEditor.addOut')}
+            </Button>
+
+            <p className="mt-3 text-xs text-zinc-400">
+                {t('admin.sessionEditor.hint')}
+            </p>
+        </Modal>
     );
 }

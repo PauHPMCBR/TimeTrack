@@ -5,6 +5,8 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
 import { useDirty } from '@/lib/useDirty';
+import { usePersistedState } from '@/lib/usePersistedState';
+import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
 import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
@@ -22,7 +24,7 @@ import {
 export default function AdminObligatoryVacationsPage() {
     const { t } = useI18n();
 
-    const [year, setYear] = useState<number>(new Date().getFullYear());
+    const [year, setYear] = usePersistedState<number>(ADMIN_YEARLY_VACATIONS_YEAR, new Date().getFullYear());
     const [vacationDays, setVacationDays] =
         useState<YearlyVacationAdminRequest | null>(null);
     const [loading, setLoading] = useState(true);

@@ -205,8 +205,88 @@ describe('PUT /api/admin/users/[userId]', () => {
         );
     });
 
-    it('should set a new password and clear lockout when password is provided', async () => {
+    it('should update trackingStartDate when provided', async () => {
         const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { trackingStartDate: '2024-01-15' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        const expected = new Date('2024-01-15T00:00:00');
+        expect(existingUser.trackingStartDate.getTime()).toBe(
+            expected.getTime()
+        );
+        expect(existingUser.save).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should reject an invalid trackingStartDate', async () => {
+        const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { trackingStartDate: 'not-a-date' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: expect.objectContaining({
+                incorrectParameter: 'trackingStartDate',
+            }),
+        });
+        expect(existingUser.save).not.toHaveBeenCalled();
+    });
+
+    it('should invalidate the password with an unknown hash when requested', async () => {
+        const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            name: 'Anna',
+            resetPasswordToken: 'stale-token',
+            resetPasswordExpires: new Date(),
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { invalidatePassword: true },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        // A random, unknowable hash is set and any stale reset token cleared.
+        expect(existingUser.password).toBeDefined();
+        expect(existingUser.resetPasswordToken).toBeUndefined();
+        expect(existingUser.resetPasswordExpires).toBeUndefined();
+        expect(existingUser.save).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should set a new password and clear lockout when password is provided', async () => {        const existingUser: any = {
             _id: 'user-1',
             email: 'old@example.com',
             name: 'Anna',

@@ -475,6 +475,25 @@ export default function CheckInPage() {
                 open={autoApplyOpen}
                 title={t('checkin.autoApplyConfirmTitle')}
                 onClose={() => setAutoApplyOpen(false)}
+                footer={
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setAutoApplyOpen(false)}
+                        >
+                            {t('checkin.autoApplyConfirmCancel')}
+                        </Button>
+                        <Button
+                            variant="primary"
+                            disabled={autoApplying}
+                            onClick={applyAutoSchedule}
+                        >
+                            {autoApplying
+                                ? t('common.saving')
+                                : t('checkin.autoApplyConfirmConfirm')}
+                        </Button>
+                    </div>
+                }
             >
                 <div className="space-y-4">
                     <label className="block text-sm text-zinc-700 dark:text-zinc-300">
@@ -499,24 +518,6 @@ export default function CheckInPage() {
                             {autoError}
                         </div>
                     )}
-
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setAutoApplyOpen(false)}
-                        >
-                            {t('checkin.autoApplyConfirmCancel')}
-                        </Button>
-                        <Button
-                            variant="primary"
-                            disabled={autoApplying}
-                            onClick={applyAutoSchedule}
-                        >
-                            {autoApplying
-                                ? t('common.saving')
-                                : t('checkin.autoApplyConfirmConfirm')}
-                        </Button>
-                    </div>
                 </div>
             </Modal>
         </section>

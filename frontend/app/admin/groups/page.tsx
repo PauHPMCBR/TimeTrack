@@ -36,15 +36,15 @@ export default function GroupsListPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [groupsRes, dashRes] = await Promise.all([
+            const [groupsRes, usersRes] = await Promise.all([
                 apiClient.getAllGroups(),
-                apiClient.getAdminDashboard(),
+                apiClient.getCompanyUsers(),
             ]);
             if (groupsRes.data?.groups) {
                 setGroups(groupsRes.data.groups);
             }
-            if (dashRes.data?.users) {
-                setUsers(dashRes.data.users);
+            if (usersRes.data?.users) {
+                setUsers(usersRes.data.users);
             }
         } catch (error) {
             console.error('Error carregant grups:', error);

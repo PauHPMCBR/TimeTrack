@@ -14,6 +14,8 @@ import { localeTag } from '@/lib/datetime';
 import { Calendar } from '@/components/calendar/Calendar';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
+import { usePersistedState } from '@/lib/usePersistedState';
+import { CALENDAR_MONTH } from '@/lib/storage';
 
 export default function CalendarPage() {
     const router = useRouter();
@@ -21,8 +23,16 @@ export default function CalendarPage() {
     const locale = localeTag(lang);
 
     const today = new Date();
-    const [cursor, setCursor] = useState(
-        new Date(today.getFullYear(), today.getMonth(), 1)
+    const [cursor, setCursor] = usePersistedState<Date>(
+        CALENDAR_MONTH,
+        () => new Date(today.getFullYear(), today.getMonth(), 1),
+        {
+            serialize: (d) => d.toISOString(),
+            deserialize: (s) => {
+                const d = new Date(s);
+                return new Date(d.getFullYear(), d.getMonth(), 1);
+            },
+        }
     );
     const [vacations, setVacations] = useState<YearlyVacationResponse | null>(
         null

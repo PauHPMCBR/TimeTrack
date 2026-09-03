@@ -332,6 +332,9 @@
             "email": "Correo electrónico",
             "expectedHours": "Horas semanales esperadas",
             "customNonWorkDays": "Días no laborables personalizados",
+            "trackingStartDate": "Inicio del registro de jornada",
+            "checkInRequired": "Requerir fichaje diario",
+            "checkInRequiredHelp": "Cuando está desactivado, los días sin fichaje no se marcarán como anomalías.",
             "name": "Nombre completo",
             "role": {
                 "label": "Rol",
@@ -409,7 +412,9 @@
             },
             "monthlyApprovals": {
                 "title": "Confirmación mensual",
-                "desc": "Registro de confirmaciones mensuales del registro de jornada."
+                "desc": "Registro de confirmaciones mensuales del registro de jornada.",
+                "pending": "pendientes",
+                "none": "ninguna pendiente"
             }
         },
         "stats": {
@@ -443,8 +448,10 @@
             "saved": "Usuario actualizado correctamente",
             "subtitle": "Modifica los datos del empleado.",
             "title": "Editar usuario",
-            "passwordLabel": "Nueva contraseña (opcional)",
-            "passwordPlaceholder": "Déjalo vacío para no cambiarla"
+            "passwordLabel": "Contraseña",
+            "invalidatePassword": "Invalidar contraseña",
+            "invalidatePasswordOn": "Se invalidará la contraseña",
+            "invalidatePasswordDesc": "El empleado deberá recuperar la contraseña con el procedimiento de contraseña olvidada."
         },
         "sessionEditor": {
             "addIn": "Añadir entrada",
@@ -488,6 +495,8 @@
         },
         "events": {
             "noData": "No hay registros para este período.",
+            "anomalyOnly": "Solo anomalías",
+            "noAnomalies": "No hay anomalías en este período.",
             "pagination": {
                 "next": "Página siguiente",
                 "previous": "Página anterior"
@@ -672,6 +681,10 @@
         "openAction": "Abrir para confirmación",
         "openedCount": "{count} persona(s) notificadas correctamente.",
         "blockedTitle": "No se han podido abrir (anomalías pendientes):",
+        "forceAction": "Forzar apertura",
+        "forceConfirm": "Forzar la apertura del mes para todas las personas trabajadoras, incluso las que tienen anomalías pendientes. ¿Continuar?",
+        "skippedTitle": "Ya notificadas anteriormente (no se ha reenviado):",
+        "notTrackingTitle": "Sin registro este mes (excluidas):",
         "registryTitle": "Registro de confirmaciones",
         "empty": "Todavía no hay ninguna confirmación mensual.",
         "requestedAt": "Solicitado",
@@ -680,6 +693,11 @@
         "statusPending": "Pendiente",
         "revoke": "Revocar",
         "confirmRevoke": "¿Seguro que quieres revocar la confirmación de",
+        "filterState": "Estado",
+        "filterAllStates": "Todos los estados",
+        "filterAllEmployees": "Todas las personas",
+        "filterEmployees": "Persona",
+        "filterNoMatch": "No hay resultados para los filtros seleccionados.",
         "anomaly": {
             "forgot_check_out": "entrada sin salida",
             "forgot_check_in": "salida sin entrada",

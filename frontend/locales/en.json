@@ -327,11 +327,14 @@
             "title": "Team"
         },
         "form": {
-            "dni": "ID number",
-            "dniPlaceholder": "Ex: 12345678A",
+            "dni": "DNI",
+            "dniPlaceholder": "e.g. 12345678A",
             "email": "Email address",
-            "expectedHours": "Expected work hours",
+            "expectedHours": "Expected weekly hours",
             "customNonWorkDays": "Custom non-work days",
+            "trackingStartDate": "Time-tracking start date",
+            "checkInRequired": "Require daily check-in",
+            "checkInRequiredHelp": "When off, missing check-in/out days won't be flagged as anomalies.",
             "name": "Full name",
             "role": {
                 "label": "Role",
@@ -409,7 +412,9 @@
             },
             "monthlyApprovals": {
                 "title": "Monthly confirmation",
-                "desc": "Registry of monthly time record confirmations."
+                "desc": "Registry of monthly time record confirmations.",
+                "pending": "pending",
+                "none": "none pending"
             }
         },
         "stats": {
@@ -443,8 +448,10 @@
             "saved": "User updated successfully",
             "subtitle": "Modify the employee's details.",
             "title": "Edit user",
-            "passwordLabel": "New password (optional)",
-            "passwordPlaceholder": "Leave blank to keep current password"
+            "passwordLabel": "Password",
+            "invalidatePassword": "Invalidate password",
+            "invalidatePasswordOn": "Password will be invalidated",
+            "invalidatePasswordDesc": "The employee will have to recover their password using the forgot-password procedure."
         },
         "sessionEditor": {
             "addIn": "Add check-in",
@@ -488,6 +495,8 @@
         },
         "events": {
             "noData": "No records for this period.",
+            "anomalyOnly": "Anomalies only",
+            "noAnomalies": "No anomalies in this period.",
             "pagination": {
                 "next": "Next page",
                 "previous": "Previous page"
@@ -672,6 +681,10 @@
         "openAction": "Open for confirmation",
         "openedCount": "{count} worker(s) notified successfully.",
         "blockedTitle": "Could not be opened (pending anomalies):",
+        "forceAction": "Force open",
+        "forceConfirm": "Force opening the month for all workers, even those with pending anomalies. Continue?",
+        "skippedTitle": "Already notified before (not re-sent):",
+        "notTrackingTitle": "No tracking this month (excluded):",
         "registryTitle": "Confirmation registry",
         "empty": "No monthly confirmations yet.",
         "requestedAt": "Requested",
@@ -680,6 +693,11 @@
         "statusPending": "Pending",
         "revoke": "Revoke",
         "confirmRevoke": "Revoke the confirmation of",
+        "filterState": "State",
+        "filterAllStates": "All states",
+        "filterAllEmployees": "All employees",
+        "filterEmployees": "Employee",
+        "filterNoMatch": "No results match the selected filters.",
         "anomaly": {
             "forgot_check_out": "check-in without check-out",
             "forgot_check_in": "check-out without check-in",

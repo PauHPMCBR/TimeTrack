@@ -35,7 +35,11 @@ export const UserSchema = z.object({
         .string()
         .min(6, 'Password must be at least 6 characters')
         .optional(),
-    registrationToken: z.string(),
+    // `.optional()` because zod-mongoose compiles `z.string().default('')` to a
+    // `required: true` String path, and Mongoose's required validator rejects
+    // empty strings — which would make every `User.save()` fail. The default is
+    // still applied on creation.
+    registrationToken: z.string().default('').optional(),
     registered: z.boolean().default(false),
     role: UserRoleSchema.default('employee'),
     groups: z.array(z.string()).default([]),
@@ -65,6 +69,15 @@ export const UserSchema = z.object({
     // Mongoose's required validator rejects empty strings — which would make
     // every `User.save()` fail. The default is still applied on creation.
     lastInconsistencyReminder: z.string().default('').optional(),
+    // When the user started time tracking (local date key "YYYY-MM-DD"). Used
+    // to only evaluate a user's months from their tracking start onward.
+    // Non-nullable: new users get it as a Date on creation, it is pinned to the
+    // activation date in register.ts, and existing users are backfilled to
+    // their first ever check-in by migration.
+    // When true the user must check in/out daily; when false (typical for
+    // admins) the system does not flag missing sessions as anomalies.
+    checkInRequired: z.boolean().default(true),
+    trackingStartDate: z.date().default(() => new Date()),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

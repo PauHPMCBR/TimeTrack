@@ -6,13 +6,12 @@ import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
 import { User } from '@/types';
 import type { UpdateUserRequest } from '@/schemas/api';
-import { localeTag } from '@/lib/datetime';
+import { localeTag, toLocalDateKey } from '@/lib/datetime';
 import Modal from '@/components/Modal';
 import Button from '@/components/ui/Button';
 import HoursMinutesInput from '@/components/ui/HoursMinutesInput';
 import Label from '@/components/ui/Label';
 import TextField from '@/components/ui/TextField';
-import PasswordField from '@/components/ui/PasswordField';
 import RoleSelector from '@/components/ui/RoleSelector';
 import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
 import { EMPLOYEE_ROLE } from 'shared/src/lib/constants';
@@ -45,18 +44,20 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         dni: '',
         expectedWorkHours: DEFAULT_EXPECTED_WORK_HOURS,
         workDays: undefined,
+        checkInRequired: true,
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [success, setSuccess] = useState(false);
-    const [newPassword, setNewPassword] = useState('');
+    const [invalidatePassword, setInvalidatePassword] = useState(false);
     const [registrationLink, setRegistrationLink] = useState<string | null>(
         null
     );
     const [copied, setCopied] = useState(false);
     const [customNonWorkDays, setCustomNonWorkDays] = useState(false);
     const [nonWorkDays, setNonWorkDays] = useState<number[]>([]);
+    const [startDate, setStartDate] = useState('');
     const { dirty, markDirty, resetDirty } = useDirty();
 
     const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -71,6 +72,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
             expectedWorkHours:
                 user.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS,
             workDays: user.workDays,
+            checkInRequired: user.checkInRequired !== false,
         });
         const hasCustom = !!user.workDays && user.workDays.length > 0;
         setCustomNonWorkDays(hasCustom);
@@ -79,11 +81,16 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                 ? ALL_DAYS.filter((d) => !user.workDays!.includes(d))
                 : [...DEFAULT_NON_WORKING_DAYS]
         );
+        setStartDate(
+            user.trackingStartDate
+                ? toLocalDateKey(user.trackingStartDate)
+                : ''
+        );
         resetDirty();
         setError(null);
         setValidationErrors([]);
         setSuccess(false);
-        setNewPassword('');
+        setInvalidatePassword(false);
         setCopied(false);
         setRegistrationLink(null);
 
@@ -147,9 +154,14 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setSuccess(false);
 
         const payload: UpdateUserRequest = { ...formData };
-        // Only send the password when the admin actually wants to reset it.
-        if (newPassword.trim()) {
-            payload.password = newPassword;
+        // The tracking start date is non-nullable; always send the chosen day.
+        if (startDate) {
+            payload.trackingStartDate = startDate;
+        }
+        // When the admin invalidates the password, force a forgot-password
+        // recovery (never let the admin set a known password).
+        if (invalidatePassword) {
+            payload.invalidatePassword = true;
         }
 
         const response = await apiClient.updateUser(user._id, payload);
@@ -233,13 +245,26 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
             open={open}
             title={t('admin.usersEdit.title')}
             onClose={requestClose}
+            footer={
+                user && (
+                    <Button
+                        type="submit"
+                        form="user-edit-form"
+                        disabled={saving}
+                        variant="primary"
+                        className="w-full"
+                    >
+                        {saving ? t('common.saving') : t('common.save')}
+                    </Button>
+                )
+            }
         >
             {!user ? (
                 <div className="py-8 text-center text-sm text-zinc-500">
                     {t('profile.notFound')}
                 </div>
             ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form id="user-edit-form" onSubmit={handleSubmit} className="space-y-4">
                     {error && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                             {error}
@@ -325,13 +350,22 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                         onChange={(e) => update({ dni: e.target.value })}
                     />
 
-                    <PasswordField
-                        label={t('admin.usersEdit.passwordLabel')}
-                        placeholder={t('admin.usersEdit.passwordPlaceholder')}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        autoComplete="new-password"
-                    />
+                    <div>
+                        <Label>{t('admin.usersEdit.passwordLabel')}</Label>
+                        <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+                            {t('admin.usersEdit.invalidatePasswordDesc')}
+                        </p>
+                        <Button
+                            type="button"
+                            variant={invalidatePassword ? 'primary' : 'soft'}
+                            onClick={() => setInvalidatePassword((v) => !v)}
+                            className="w-full"
+                        >
+                            {invalidatePassword
+                                ? t('admin.usersEdit.invalidatePasswordOn')
+                                : t('admin.usersEdit.invalidatePassword')}
+                        </Button>
+                    </div>
 
                     <div>
                         <Label>{t('admin.form.expectedHours')}</Label>
@@ -368,6 +402,38 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                     </div>
 
                     <div>
+                        <label className="mb-1.5 flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            <input
+                                type="checkbox"
+                                checked={formData.checkInRequired !== false}
+                                onChange={(e) =>
+                                    update({ checkInRequired: e.target.checked })
+                                }
+                                className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            {t('admin.form.checkInRequired')}
+                        </label>
+                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            {t('admin.form.checkInRequiredHelp')}
+                        </p>
+                    </div>
+
+                    <div>
+                        <Label>{t('admin.form.trackingStartDate')}</Label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            max={toLocalDateKey(new Date())}
+                            required
+                            onChange={(e) => {
+                                setStartDate(e.target.value);
+                                markDirty();
+                            }}
+                            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        />
+                    </div>
+
+                    <div>
                         <Label className="mb-2">
                             {t('admin.form.role.label')}
                         </Label>
@@ -376,15 +442,6 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                             onChange={(role) => update({ role })}
                         />
                     </div>
-
-                    <Button
-                        type="submit"
-                        disabled={saving}
-                        variant="primary"
-                        className="w-full"
-                    >
-                        {saving ? t('common.saving') : t('common.save')}
-                    </Button>
                 </form>
             )}
         </Modal>
