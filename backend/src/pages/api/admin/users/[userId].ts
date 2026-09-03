@@ -22,6 +22,7 @@ import {
     UserIdParamSchema,
 } from 'shared/src/schemas/api';
 import { validatePassword } from '@/lib/password';
+import crypto from 'crypto';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
@@ -125,6 +126,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         if (expectedWorkHours !== undefined)
             user.expectedWorkHours = expectedWorkHours;
         if (workDays !== undefined) user.workDays = workDays;
+        if ('checkInRequired' in req.body && req.body.checkInRequired !== undefined)
+            user.checkInRequired = req.body.checkInRequired;
+        // trackingStartDate accepts "YYYY-MM-DD" (local day, stored as local
+        // midnight). The field is non-nullable, so only a valid date is allowed.
+        if ('trackingStartDate' in req.body && req.body.trackingStartDate !== undefined) {
+            const d = new Date(`${req.body.trackingStartDate}T00:00:00`);
+            if (isNaN(d.getTime())) {
+                return responseErrorIncorrectParameter(res, 'trackingStartDate', [
+                    'InvalidTimestamp',
+                ]);
+            }
+            user.trackingStartDate = d;
+        }
         if (password !== undefined) {
             const errors = validatePassword(String(password), user.email, user.name);
             if (errors.length > 0) {
@@ -136,6 +150,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             user.failedLoginAttempts = 0;
             user.blocked = false;
             user.blockedSince = null;
+        } else if (req.body.invalidatePassword) {
+            // Overwrite the password with a random hash that nobody knows,
+            // forcing the employee to use the forgot-password flow.
+            const randomPw = '!' + crypto.randomBytes(32).toString('hex') + 'A1';
+            user.password = randomPw;
+            // Clear any existing reset tokens so a stale link can't be reused.
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
         }
         user.updatedAt = new Date();
         await user.save();

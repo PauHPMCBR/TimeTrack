@@ -70,7 +70,25 @@ export default function AutoTimetableModal({
     };
 
     return (
-        <Modal open={open} title={t('checkin.autoTitle')} onClose={requestClose}>
+        <Modal
+            open={open}
+            title={t('checkin.autoTitle')}
+            onClose={requestClose}
+            footer={
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={onClose}>
+                        {t('checkin.autoCancel')}
+                    </Button>
+                    <Button
+                        variant="primary"
+                        disabled={saving}
+                        onClick={handleSave}
+                    >
+                        {saving ? t('common.saving') : t('checkin.autoSave')}
+                    </Button>
+                </div>
+            }
+        >
             <div className="space-y-4">
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
                     {t('checkin.autoSubtitle')}
@@ -90,19 +108,6 @@ export default function AutoTimetableModal({
                         {error}
                     </div>
                 )}
-
-                <div className="flex justify-end gap-2">
-                    <Button variant="ghost" onClick={onClose}>
-                        {t('checkin.autoCancel')}
-                    </Button>
-                    <Button
-                        variant="primary"
-                        disabled={saving}
-                        onClick={handleSave}
-                    >
-                        {saving ? t('common.saving') : t('checkin.autoSave')}
-                    </Button>
-                </div>
             </div>
         </Modal>
     );

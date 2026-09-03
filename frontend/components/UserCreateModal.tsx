@@ -157,11 +157,38 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
         }
     };
 
+    const footerContent = inviteLink ? (
+        <button
+            onClick={onClose}
+            className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+            {t('common.close')}
+        </button>
+    ) : (
+        <Button
+            type="submit"
+            form="user-create-form"
+            disabled={loading}
+            variant="primary"
+            className="w-full"
+        >
+            {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    {t('common.loading')}
+                </span>
+            ) : (
+                t('admin.btn.create')
+            )}
+        </Button>
+    );
+
     return (
         <Modal
             open={open}
             title={t('admin.create.title')}
             onClose={requestClose}
+            footer={footerContent}
         >
             {inviteLink ? (
                 <div className="rounded-2xl border border-green-200 bg-green-50 p-6 text-center dark:border-green-900/30 dark:bg-green-900/10">
@@ -172,11 +199,11 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
                     <h3 className="text-lg font-medium text-green-900 dark:text-green-300">
                         {t('admin.success.title')}
                     </h3>
-                    <p className="mb-6 mt-1 text-sm text-green-800/80 dark:text-green-200/70">
+                    <p className="mt-1 text-sm text-green-800/80 dark:text-green-200/70">
                         {t('admin.success.desc')}
                     </p>
 
-                    <div className="mb-4">
+                    <div className="mt-4">
                         <input
                             readOnly
                             value={inviteLink}
@@ -186,21 +213,14 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
 
                     <button
                         onClick={copyToClipboard}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700"
+                        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700"
                     >
                         {copied ? <Check size={16} /> : <Copy size={16} />}
                         {copied ? t('admin.copied') : t('admin.copy')}
                     </button>
-
-                    <button
-                        onClick={onClose}
-                        className="mt-3 w-full rounded-lg border border-green-300 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/30"
-                    >
-                        {t('common.close')}
-                    </button>
                 </div>
             ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form id="user-create-form" onSubmit={handleSubmit} className="space-y-4">
                     {error && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                             {error}
@@ -253,22 +273,6 @@ export default function UserCreateModal({ open, onClose, onCreated }: Props) {
                             onChange={(role) => update({ role })}
                         />
                     </div>
-
-                    <Button
-                        type="submit"
-                        disabled={loading}
-                        variant="primary"
-                        className="w-full"
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <Loader2 size={16} className="animate-spin" />
-                                {t('common.loading')}
-                            </span>
-                        ) : (
-                            t('admin.btn.create')
-                        )}
-                    </Button>
                 </form>
             )}
         </Modal>

@@ -90,6 +90,9 @@ export default withRateLimit(
                         registered: true,
                         failedLoginAttempts: 0,
                         blocked: false,
+                        // Pin the tracking start to the activation moment so
+                        // monthly confirmations only evaluate from here on.
+                        trackingStartDate: new Date(),
                         updatedAt: new Date(),
                     },
                     $unset: { blockedSince: 1 },

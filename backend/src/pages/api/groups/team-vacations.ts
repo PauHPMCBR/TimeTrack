@@ -42,8 +42,21 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
+        // Only include non-blocked, registered members.
+        const activeMembers = memberIds.size
+            ? ((await User.find(
+                  {
+                      _id: { $in: Array.from(memberIds) },
+                      blocked: { $ne: true },
+                      registered: true,
+                  },
+                  '_id'
+              ).lean()) as unknown as { _id: string }[])
+            : [];
+        const activeMemberIds = activeMembers.map((m) => m._id.toString());
+
         const vacations = await ElectiveVacation.find({
-            userId: { $in: Array.from(memberIds) },
+            userId: { $in: activeMemberIds },
             date: { $gte: startDate, $lte: endDate },
             status: VACATION_APPROVED,
         })

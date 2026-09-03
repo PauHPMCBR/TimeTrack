@@ -130,7 +130,7 @@ if (process.env.SEED_DEMO === '1') {
   const employee = (id, name, email, dni, expectedWorkHours, groupIds) => ({
     _id: id, name, email,
     password: DEMO_PASSWORD_HASH,
-    registrationToken: null,
+    registrationToken: '',
     registered: true,
     role: 'employee',
     groups: groupIds.map((g) => g.toString()),
@@ -282,7 +282,7 @@ if (process.env.SEED_DEMO === '1') {
     name: 'System Administrator',
     email: 'admin@company.com',
     password: DEMO_PASSWORD_HASH,
-    registrationToken: null,
+    registrationToken: '',
     registered: true,
     role: 'admin',
     groups: [],

@@ -3,11 +3,12 @@ import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
 import {
     ADMIN_ROLE,
+    APPROVAL_PENDING,
     CHECK_IN,
     SESSION_REPLACED,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
-import { User, Group, WorkSession, ElectiveVacation } from '@/models';
+import { User, Group, WorkSession, ElectiveVacation, MonthlyApproval } from '@/models';
 import { getAppSettings } from '@/lib/settings';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { dateKey } from '@/lib/date-key';
@@ -27,18 +28,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
 
         const users = (await User.find(
-            { role: { $ne: ADMIN_ROLE } },
-            'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince'
+            {},
+            'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
         )
             .sort({ name: 1 })
             .lean()) as unknown as UserRow[];
 
-        // Active employees = registered and not blocked. These are the ones
-        // used for operational counts (anomalies / currently working); the
-        // full list (incl. blocked/unregistered) is still returned so the
-        // admin users panel can see and manage every account.
+        // Active employees = registered, not blocked, and required to check in.
+        // These are the ones used for operational counts (anomalies / currently
+        // working); the full list (incl. blocked/unregistered/admins) is still
+        // returned so the admin users panel can see and manage every account.
         const activeUsers = users.filter(
-            (u) => u.registered && !u.blocked
+            (u) => u.registered && !u.blocked && u.checkInRequired !== false
         );
 
         const groups = (await Group.find({})
@@ -47,20 +48,22 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const today = startOfDay(new Date());
 
-        const [pendingVacations, latestSessions, settings] = await Promise.all([
-            ElectiveVacation.countDocuments({ status: VACATION_PENDING }),
-            WorkSession.aggregate([
-                {
-                    $match: {
-                        timestamp: { $gte: today },
-                        status: { $ne: SESSION_REPLACED },
+        const [pendingVacations, latestSessions, settings, pendingApprovals] =
+            await Promise.all([
+                ElectiveVacation.countDocuments({ status: VACATION_PENDING }),
+                WorkSession.aggregate([
+                    {
+                        $match: {
+                            timestamp: { $gte: today },
+                            status: { $ne: SESSION_REPLACED },
+                        },
                     },
-                },
-                { $sort: { timestamp: -1 } },
-                { $group: { _id: '$userId', latest: { $first: '$$ROOT' } } },
-            ]),
-            getAppSettings(),
-        ]);
+                    { $sort: { timestamp: -1 } },
+                    { $group: { _id: '$userId', latest: { $first: '$$ROOT' } } },
+                ]),
+                getAppSettings(),
+                MonthlyApproval.countDocuments({ status: APPROVAL_PENDING }),
+            ]);
 
         const workingUserIds = new Set(
             latestSessions
@@ -137,6 +140,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     expectedWorkHours: u.expectedWorkHours,
                     workDays: u.workDays,
                     avatar: u.avatar,
+                    trackingStartDate: u.trackingStartDate,
+                    checkInRequired: u.checkInRequired,
                     workingNow: workingUserIds.has(u._id.toString()),
                 })),
                 groups: groups.map((g) => ({
@@ -148,6 +153,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 usersCount: users.length,
                 groupsCount: groups.length,
                 pendingVacations,
+                pendingApprovals,
                 currentlyWorking: activeUsers.filter((u) =>
                     workingUserIds.has(u._id.toString())
                 ).length,

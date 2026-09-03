@@ -47,6 +47,7 @@ export type AdminDashboardResponse = {
     usersCount: number;
     groupsCount: number;
     pendingVacations: number;
+    pendingApprovals: number;
     currentlyWorking: number;
     anomalyCount: number;
 };
