@@ -438,6 +438,7 @@
             "title": "Editar fichajes"
         },
         "settings": {
+            "userDefaults": "Configuración por defecto para nuevos usuarios",
             "toleranceHelp": "Margen de tolerancia respecto a las horas esperadas antes de marcar una anomalía.",
             "toleranceLabel": "Tolerancia (horas)",
             "defaultHoursHelp": "Horas de trabajo esperadas por día por defecto para los nuevos empleados.",
@@ -454,7 +455,7 @@
             "approvalReminderDaysLabel": "Días antes del recordatorio de confirmación",
             "approvalReminderDaysHelp": "Días de espera desde la solicitud de confirmación mensual antes de enviar un recordatorio a la persona trabajadora (recordatorio único).",
             "timezoneLabel": "Zona horaria de la empresa",
-            "timezoneHelp": "Zona horaria (IANA) usada para agrupar los registros por día y mostrar las horas. Por defecto, Europa/Madrid.",
+            "timezoneHelp": "Zona horaria (IANA) usada para agrupar los registros por día y mostrar las horas.",
             "privacyNoticeLabel": "Aviso de privacidad",
             "privacyNoticeHelp": "Texto del aviso de privacidad que se muestra a los trabajadores (obligación informativa RGPD). Vacío si aún no se ha configurado.",
             "consultationLabel": "Consulta previa a la representación de los trabajadores",

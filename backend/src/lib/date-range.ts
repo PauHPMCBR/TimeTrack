@@ -1,5 +1,5 @@
 // All date-bucketing uses the configured company time-zone (AppSettings.timezone,
-// default Europe/Madrid). Stored timestamps are UTC instants; this module converts
+// default Europe/Barcelona). Stored timestamps are UTC instants; this module converts
 // them to the local calendar day so records are correct regardless of the server TZ.
 
 import { getConfiguredTimezone } from './settings';

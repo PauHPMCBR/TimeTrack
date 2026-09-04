@@ -8,7 +8,7 @@ import {
     DEFAULT_NON_WORKING_DAYS,
 } from 'shared/src/lib/defaults';
 
-export const DEFAULT_TIMEZONE = 'Europe/Madrid';
+export const DEFAULT_TIMEZONE = 'Europe/Barcelona';
 
 export interface AppSettingsValues {
     defaultExpectedHours: number;
@@ -90,7 +90,7 @@ export function invalidateAppSettingsCache(): void {
 /**
  * Synchronous accessor for the configured company time-zone (used by the
  * date-bucketing helpers). Returns the cached value when available, otherwise
- * the default 'Europe/Madrid'. This avoids making the synchronous date-range
+ * the default This avoids making the synchronous date-range
  * helpers async while keeping every bucket consistent with AppSettings.
  */
 export function getConfiguredTimezone(): string {

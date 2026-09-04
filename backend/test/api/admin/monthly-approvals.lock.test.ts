@@ -49,8 +49,8 @@ vi.mock('@/lib/user-lock', () => ({
 }));
 
 vi.mock('@/lib/settings', () => ({
-    DEFAULT_TIMEZONE: 'Europe/Madrid',
-    getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
+    DEFAULT_TIMEZONE: 'Europe/Barcelona',
+    getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Barcelona'),
     getAppSettings: vi.fn().mockResolvedValue({
         defaultExpectedHours: 8,
         benevolenceHours: 1,

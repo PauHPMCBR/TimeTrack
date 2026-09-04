@@ -1,9 +1,9 @@
 // Configured company time-zone used for displaying stored UTC instants as local
-// clock times. Defaults to Europe/Madrid; set via initConfiguredTimezone() when
+// clock times. set via initConfiguredTimezone() when
 // AppSettings are loaded (e.g. on the admin settings page). Display uses native
 // Intl.DateTimeFormat with timeZone so it respects DST automatically.
 
-const DEFAULT_TIMEZONE = 'Europe/Madrid';
+const DEFAULT_TIMEZONE = 'Europe/Barcelona';
 
 let configured: string = DEFAULT_TIMEZONE;
 
