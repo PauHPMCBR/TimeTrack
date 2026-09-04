@@ -8,7 +8,7 @@ import {
     DEFAULT_NON_WORKING_DAYS,
 } from 'shared/src/lib/defaults';
 
-export const DEFAULT_TIMEZONE = 'Europe/Barcelona';
+export const DEFAULT_TIMEZONE = 'Europe/Madrid';
 
 export interface AppSettingsValues {
     defaultExpectedHours: number;
