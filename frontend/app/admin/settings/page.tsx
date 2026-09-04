@@ -36,7 +36,6 @@ type FormState = {
 
 const COMMON_TIMEZONES = [
     'Europe/Madrid',
-    'Europe/Barcelona',
     'Europe/Lisbon',
     'Europe/Paris',
     'Europe/Berlin',
@@ -61,7 +60,7 @@ export default function AdminSettingsPage() {
         nonWorkingDays: [...DEFAULT_NON_WORKING_DAYS],
         inconsistencyReminderEnabled: true,
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-        timezone: 'Europe/Barcelona',
+        timezone: 'Europe/Madrid',
         privacyNoticeText: '',
         workerConsultationAcknowledged: false,
     });
@@ -106,13 +105,13 @@ export default function AdminSettingsPage() {
                         monthlyApprovalReminderDays:
                             s.monthlyApprovalReminderDays ??
                             DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-                        timezone: s.timezone || 'Europe/Barcelona',
+                        timezone: s.timezone || 'Europe/Madrid',
                         privacyNoticeText: s.privacyNoticeText ?? '',
                         workerConsultationAcknowledged:
                             s.workerConsultationAcknowledged ?? false,
                     });
                     initConfiguredTimezone(
-                        s.timezone || 'Europe/Barcelona'
+                        s.timezone || 'Europe/Madrid'
                     );
                 }
             } catch (err) {
