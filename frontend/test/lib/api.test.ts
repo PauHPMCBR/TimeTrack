@@ -687,4 +687,20 @@ describe('apiClient', () => {
             expect(init.headers.Authorization).toBeUndefined();
         });
     });
+
+    describe('timeout', () => {
+        it('should return NetworkTimeout when the request is aborted', async () => {
+            const abortError = new Error('The operation was aborted.');
+            (abortError as any).name = 'AbortError';
+
+            global.fetch = vi.fn().mockRejectedValue(abortError) as any;
+
+            const result = await apiClient.login({
+                email: 'test@example.com',
+                password: 'password123',
+            });
+
+            expect(result.error).toBe('NetworkTimeout');
+        });
+    });
 });
