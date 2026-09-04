@@ -438,6 +438,7 @@
             "title": "Edit events"
         },
         "settings": {
+            "userDefaults": "Default settins for new users",
             "toleranceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
             "toleranceLabel": "Tolerance (hours)",
             "defaultHoursHelp": "Expected work hours per day by default for new employees.",
@@ -454,7 +455,7 @@
             "approvalReminderDaysLabel": "Days before confirmation reminder",
             "approvalReminderDaysHelp": "Days to wait after a monthly confirmation request before sending a reminder to the worker (single reminder).",
             "timezoneLabel": "Company time zone",
-            "timezoneHelp": "IANA time-zone used to bucket records by day and display times. Defaults to Europe/Madrid.",
+            "timezoneHelp": "IANA time-zone used to bucket records by day and display times.",
             "privacyNoticeLabel": "Privacy notice",
             "privacyNoticeHelp": "Text of the privacy notice shown to workers (GDPR information obligation). Empty if not configured yet.",
             "consultationLabel": "Prior consultation of workers' representatives",

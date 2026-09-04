@@ -61,7 +61,7 @@ export default function AdminSettingsPage() {
         nonWorkingDays: [...DEFAULT_NON_WORKING_DAYS],
         inconsistencyReminderEnabled: true,
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-        timezone: 'Europe/Madrid',
+        timezone: 'Europe/Barcelona',
         privacyNoticeText: '',
         workerConsultationAcknowledged: false,
     });
@@ -106,13 +106,13 @@ export default function AdminSettingsPage() {
                         monthlyApprovalReminderDays:
                             s.monthlyApprovalReminderDays ??
                             DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-                        timezone: s.timezone || 'Europe/Madrid',
+                        timezone: s.timezone || 'Europe/Barcelona',
                         privacyNoticeText: s.privacyNoticeText ?? '',
                         workerConsultationAcknowledged:
                             s.workerConsultationAcknowledged ?? false,
                     });
                     initConfiguredTimezone(
-                        s.timezone || 'Europe/Madrid'
+                        s.timezone || 'Europe/Barcelona'
                     );
                 }
             } catch (err) {
@@ -234,73 +234,83 @@ export default function AdminSettingsPage() {
                             </div>
                         )}
 
+                        
                         <div className="space-y-6">
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {t('admin.settings.defaultHoursLabel')}
+                            <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <label className="mb-1.5 block text-l font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t('admin.settings.userDefaults')}
                                 </label>
-                                <HoursMinutesInput
-                                    value={formData.defaultExpectedHours}
-                                    minHours={0.5}
-                                    onChange={(v) =>
-                                        updateForm({ defaultExpectedHours: v })
-                                    }
-                                />
-                                <p className="mt-1.5 text-xs text-zinc-500">
-                                    {t('admin.settings.defaultHoursHelp')}
-                                </p>
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t('admin.settings.defaultHoursLabel')}
+                                    </label>
+                                    <HoursMinutesInput
+                                        value={formData.defaultExpectedHours}
+                                        minHours={0.5}
+                                        onChange={(v) =>
+                                            updateForm({ defaultExpectedHours: v })
+                                        }
+                                    />
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.defaultHoursHelp')}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <Label className="mb-2">
+                                        {t('admin.settings.nonWorkingDaysLabel')}
+                                    </Label>
+                                    <WeekDaysSelector
+                                        selected={formData.nonWorkingDays}
+                                        onToggle={toggleDay}
+                                        locale={localeTag(lang)}
+                                    />
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.nonWorkingDaysHelp')}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {t('admin.settings.toleranceLabel')}
-                                </label>
-                                <HoursMinutesInput
-                                    value={formData.toleranceHours}
-                                    minHours={0}
-                                    onChange={(v) =>
-                                        updateForm({ toleranceHours: v })
-                                    }
-                                />
-                                <p className="mt-1.5 text-xs text-zinc-500">
-                                    {t('admin.settings.toleranceHelp')}
-                                </p>
+                            <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t('admin.settings.toleranceLabel')}
+                                    </label>
+                                    <HoursMinutesInput
+                                        value={formData.toleranceHours}
+                                        minHours={0}
+                                        onChange={(v) =>
+                                            updateForm({ toleranceHours: v })
+                                        }
+                                    />
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.toleranceHelp')}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                    {t('admin.settings.endOfDayLabel')}
-                                </label>
-                                <HoursMinutesInput
-                                    value={formData.endOfDayHour}
-                                    minHours={0}
-                                    onChange={(v) =>
-                                        updateForm({
-                                            endOfDayHour: Math.min(24, v),
-                                        })
-                                    }
-                                />
-                                <p className="mt-1.5 text-xs text-zinc-500">
-                                    {t('admin.settings.endOfDayHelp')}
-                                </p>
-                            </div>
-
-                            <div>
-                                <Label className="mb-2">
-                                    {t('admin.settings.nonWorkingDaysLabel')}
-                                </Label>
-                                <WeekDaysSelector
-                                    selected={formData.nonWorkingDays}
-                                    onToggle={toggleDay}
-                                    locale={localeTag(lang)}
-                                />
-                                <p className="mt-1.5 text-xs text-zinc-500">
-                                    {t('admin.settings.nonWorkingDaysHelp')}
-                                </p>
+                            <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t('admin.settings.endOfDayLabel')}
+                                    </label>
+                                    <HoursMinutesInput
+                                        value={formData.endOfDayHour}
+                                        minHours={0}
+                                        onChange={(v) =>
+                                            updateForm({
+                                                endOfDayHour: Math.min(24, v),
+                                            })
+                                        }
+                                    />
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.endOfDayHelp')}
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <div className="flex-1">
+                                <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                         {t('admin.settings.approvalReminderDaysLabel')}
                                     </label>
