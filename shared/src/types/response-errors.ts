@@ -15,6 +15,7 @@ export type ErrorCode =
     | 'IllegalAction'
     | 'ValidationError'
     | 'NetworkError' // when frontend fails to get a proper backend response
+    | 'NetworkTimeout' // when the request takes longer than expected
     | 'TokenRequired'
     | 'InvalidToken'
     | 'InsufficientPermissions'

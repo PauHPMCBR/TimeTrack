@@ -50,6 +50,11 @@ import { toLocalDateKey } from './datetime';
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
+/** Default timeout for API requests (ms). If a request is still pending after
+ *  this time we treat it as a network failure so the UI never freezes in a
+ *  perpetual "Loading..." state. */
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+
 class ApiClient {
     private currentUser: User | undefined = undefined;
     private errorListener: ((error: string, details?: unknown) => void) | null =
@@ -87,8 +92,20 @@ class ApiClient {
             },
         };
 
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+            timeoutId = setTimeout(
+                () => controller.abort(),
+                DEFAULT_REQUEST_TIMEOUT_MS
+            );
+
+            const response = await fetch(
+                `${API_BASE_URL}${endpoint}`,
+                { ...config, signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
 
             let data: { error?: string; details?: unknown; data?: unknown };
             try {
@@ -119,11 +136,23 @@ class ApiClient {
 
             return { data: data as unknown as T };
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                const result: ApiResponse<T> = { error: 'NetworkTimeout' };
+                if (this.errorListener && result.error) {
+                    this.errorListener(result.error);
+                }
+                return result;
+            }
+
             const result: ApiResponse<T> = { error: 'NetworkError' };
             if (this.errorListener && result.error) {
                 this.errorListener(result.error);
             }
             return result;
+        } finally {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 
@@ -303,14 +332,28 @@ class ApiClient {
     }
 
     private async fetchAvatarBlob(endpoint: string): Promise<Blob | null> {
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
         try {
+            timeoutId = setTimeout(
+                () => controller.abort(),
+                DEFAULT_REQUEST_TIMEOUT_MS
+            );
+
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 credentials: 'include',
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
             if (!response.ok) return null;
             return await response.blob();
         } catch {
             return null;
+        } finally {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 
@@ -581,10 +624,20 @@ class ApiClient {
         if (options?.to) params.set('to', options.to);
         const endpoint = `/api/admin/export/work-sessions?${params.toString()}`;
 
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
         try {
+            timeoutId = setTimeout(
+                () => controller.abort(),
+                DEFAULT_REQUEST_TIMEOUT_MS
+            );
+
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 credentials: 'include',
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
 
             if (!response.ok) {
                 let data: { error?: string; details?: unknown } = {};
@@ -616,11 +669,23 @@ class ApiClient {
             );
             return { data: null };
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                const result: ApiResponse<null> = { error: 'NetworkTimeout' };
+                if (this.errorListener && result.error) {
+                    this.errorListener(result.error);
+                }
+                return result;
+            }
+
             const result: ApiResponse<null> = { error: 'NetworkError' };
             if (this.errorListener && result.error) {
                 this.errorListener(result.error);
             }
             return result;
+        } finally {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 
@@ -635,10 +700,20 @@ class ApiClient {
         }
         const endpoint = `/api/admin/export/vacations?${params.toString()}`;
 
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
         try {
+            timeoutId = setTimeout(
+                () => controller.abort(),
+                DEFAULT_REQUEST_TIMEOUT_MS
+            );
+
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 credentials: 'include',
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
 
             if (!response.ok) {
                 let data: { error?: string; details?: unknown } = {};
@@ -669,12 +744,24 @@ class ApiClient {
                 `vacations_${year}_${new Date().toISOString().slice(0, 10)}.csv`
             );
             return { data: null };
-        } catch {
+        } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                const result: ApiResponse<null> = { error: 'NetworkTimeout' };
+                if (this.errorListener && result.error) {
+                    this.errorListener(result.error);
+                }
+                return result;
+            }
+
             const result: ApiResponse<null> = { error: 'NetworkError' };
             if (this.errorListener && result.error) {
                 this.errorListener(result.error);
             }
             return result;
+        } finally {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 }
