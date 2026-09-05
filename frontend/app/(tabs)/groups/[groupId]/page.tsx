@@ -58,7 +58,9 @@ export default function GroupDetailPage() {
         );
     }
 
-    const members = group.members ?? [];
+    const members = (group.members ?? []).filter(
+        (m): m is GroupMember => !!m
+    );
 
     return (
         <div className="space-y-6">

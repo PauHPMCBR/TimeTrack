@@ -317,6 +317,41 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
     });
 };
 
+// Access to a user's private data: only the user themself or an admin.
+export const requireSelfOrAdmin = (handler: Handler) => {
+    return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
+        try {
+            const targetUserId = req.query.userId as string;
+
+            if (!targetUserId || !req.user?.userId) {
+                return responseError(res, 403, 'NoAccessToUser');
+            }
+
+            // Fast path: users can always view their own data — no DB round-trips.
+            if (targetUserId === req.user.userId) {
+                return handler(req, res);
+            }
+
+            await dbConnect();
+
+            const currentUser = await getLiveUser(req);
+            if (!currentUser || currentUser.deleted) {
+                return responseError(res, 404, 'UserNotFound');
+            }
+
+            // Admin check against the live role, not the possibly-stale JWT role.
+            if (currentUser.role === ADMIN_ROLE) {
+                req.user!.role = currentUser.role;
+                return handler(req, res);
+            }
+
+            return responseError(res, 403, 'NoAccessToUser');
+        } catch {
+            return responseError(res, 500, 'PermissionVerificationError');
+        }
+    });
+};
+
 export const requireInGroupOrAdmin = (handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
         try {
