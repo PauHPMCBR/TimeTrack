@@ -660,6 +660,7 @@
         "bannerTitle": "Confirmació del registre mensual",
         "bannerDesc": "L'administració ha revisat el teu registre de jornada dels següents mesos i espera que el confirmis:",
         "approve": "Confirmar",
+        "review": "Revisar",
         "confirmApprove": "Confirmes que el registre de jornada de",
         "bannerNote": "En confirmar, declares que els registres del mes són correctes. El mes queda bloquejat; per qualsevol correcció, contacta amb l'administració.",
         "adminTitle": "Confirmació mensual del registre",
