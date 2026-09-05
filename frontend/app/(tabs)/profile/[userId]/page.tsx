@@ -10,6 +10,7 @@ import {
     MonthlyWorkRecordResponse,
 } from '@/schemas/api';
 import { Calendar } from '@/components/calendar/Calendar';
+import Avatar from '@/components/Avatar';
 import { ChevronLeft, Mail, CalendarDays } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import { usePersistedState } from '@/lib/usePersistedState';
@@ -134,9 +135,14 @@ export default function OtherUserProfilePage() {
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="grid h-16 w-16 place-items-center rounded-full bg-indigo-600 text-white shadow-lg">
-                    <span className="text-2xl font-bold">{initials}</span>
-                </div>
+                <Avatar
+                    userId={user._id}
+                    version={user.avatar ?? null}
+                    alt={displayName}
+                    fallback={initials}
+                    className="h-16 w-16 rounded-full object-cover shadow-lg"
+                    fallbackClassName="h-16 w-16 rounded-full bg-indigo-600 text-white text-2xl shadow-lg"
+                />
                 <div>
                     <div className="text-lg font-semibold text-zinc-900 dark:text-white">
                         {displayName}

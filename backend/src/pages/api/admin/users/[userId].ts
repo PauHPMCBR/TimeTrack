@@ -21,7 +21,6 @@ import {
     UpdateUserRequestSchema,
     UserIdParamSchema,
 } from 'shared/src/schemas/api';
-import { validatePassword } from '@/lib/password';
 import crypto from 'crypto';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
@@ -87,7 +86,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
         const userId = req.query.userId as string;
-        const { name, email, role, dni, expectedWorkHours, workDays, password } =
+        const { name, email, role, dni, expectedWorkHours, workDays } =
             req.body;
 
         const user = await User.findById(userId);
@@ -139,20 +138,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             }
             user.trackingStartDate = d;
         }
-        if (password !== undefined) {
-            const errors = validatePassword(String(password), user.email, user.name);
-            if (errors.length > 0) {
-                return responseErrorIncorrectParameter(res, 'password', errors);
-            }
-            // Saved through the pre-save hook, which hashes it. Also clears any
-            // lockout state.
-            user.password = password;
-            user.failedLoginAttempts = 0;
-            user.blocked = false;
-            user.blockedSince = null;
-        } else if (req.body.invalidatePassword) {
+        if (req.body.invalidatePassword) {
             // Overwrite the password with a random hash that nobody knows,
-            // forcing the employee to use the forgot-password flow.
+            // forcing the employee to use the forgot-password flow. Admins
+            // can never set a known password for another user.
             const randomPw = '!' + crypto.randomBytes(32).toString('hex') + 'A1';
             user.password = randomPw;
             // Clear any existing reset tokens so a stale link can't be reused.

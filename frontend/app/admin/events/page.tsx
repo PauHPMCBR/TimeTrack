@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
-import { AdminWorkSessionRow } from '@/types';
+import { AdminWorkSessionRow, User } from '@/types';
 import { localeTag, toLocalDateKey } from '@/lib/datetime';
+import { Download } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import SessionEditorModal from '@/components/SessionEditorModal';
 import AdminBackButton from '../../../components/AdminBackButton';
 import FitxatgesTable from '@/components/FitxatgesTable';
@@ -70,6 +72,8 @@ function AdminEventsInner() {
         ADMIN_EVENTS_ANOMALY_ONLY,
         false
     );
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
 
     // Override persisted state from URL params on deep-link (one-time).
     useEffect(() => {
@@ -180,6 +184,40 @@ function AdminEventsInner() {
         setPeriod(p);
     };
 
+    const exportRange = (): { from: string; to: string } => {
+        const start = new Date(cursor);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(cursor);
+        end.setHours(0, 0, 0, 0);
+        if (period === 'week') {
+            end.setDate(end.getDate() + 6);
+        } else if (period === 'month') {
+            end.setMonth(end.getMonth() + 1, 0);
+        } else if (period === 'year') {
+            start.setMonth(0, 1);
+            end.setMonth(11, 31);
+        }
+        return { from: toLocalDateKey(start), to: toLocalDateKey(end) };
+    };
+
+    const handleExport = async () => {
+        setExporting(true);
+        setExportError(null);
+        const res = await apiClient.getCompanyUsers();
+        if (res.error || !res.data?.users) {
+            setExporting(false);
+            setExportError(res.error ?? 'GetError');
+            return;
+        }
+        const userIds = res.data.users.map((u: User) => u._id);
+        const exportRes = await apiClient.exportWorkSessions(
+            userIds,
+            exportRange()
+        );
+        setExporting(false);
+        if (exportRes.error) setExportError(exportRes.error);
+    };
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
             <div className="mx-auto max-w-6xl px-4 py-6">
@@ -193,11 +231,27 @@ function AdminEventsInner() {
                             {t('admin.events.subtitle')}
                         </p>
                     </div>
+                    <Button
+                        onClick={handleExport}
+                        disabled={exporting}
+                        variant="soft"
+                    >
+                        <Download size={16} />
+                        {exporting
+                            ? t('common.loading')
+                            : t('admin.export.button')}
+                    </Button>
                 </div>
 
                 {error && (
                     <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                         {error}
+                    </div>
+                )}
+
+                {exportError && (
+                    <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                        {t('admin.export.error')} ({exportError})
                     </div>
                 )}
 

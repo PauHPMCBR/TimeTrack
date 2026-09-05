@@ -16,6 +16,7 @@ import {
     TriangleAlert,
 } from 'lucide-react';
 import AdminBackButton from '../../../components/AdminBackButton';
+import Avatar from '@/components/Avatar';
 import UserEditModal from '../../../components/UserEditModal';
 import UserCreateModal from '../../../components/UserCreateModal';
 
@@ -131,7 +132,8 @@ export default function UsersListPage() {
                             count: selected.size,
                         })}
                     </span>
-                    <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+                    <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
+                    <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-300">
                         {t('admin.export.from')}
                         <input
                             type="date"
@@ -141,7 +143,7 @@ export default function UsersListPage() {
                             className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                         />
                     </label>
-                    <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+                    <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-300">
                         {t('admin.export.to')}
                         <input
                             type="date"
@@ -194,11 +196,23 @@ export default function UsersListPage() {
                                         onChange={() => toggleUser(user._id)}
                                         className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
                                     />
-                                    <div className="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                        {user.name
-                                            ? user.name.charAt(0).toUpperCase()
-                                            : '?'}
-                                    </div>
+                                    <Avatar
+                                        userId={user._id}
+                                        version={user.avatar ?? null}
+                                        alt={
+                                            user.name ||
+                                            t('admin.users.noName')
+                                        }
+                                        fallback={
+                                            user.name
+                                                ? user.name
+                                                      .charAt(0)
+                                                      .toUpperCase()
+                                                : '?'
+                                        }
+                                        className="h-10 w-10 rounded-full object-cover"
+                                        fallbackClassName="h-10 w-10 rounded-full bg-indigo-100 text-sm text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                                    />
                                     <div>
                                         <div className="font-medium text-zinc-900 dark:text-white">
                                             {user.name ||

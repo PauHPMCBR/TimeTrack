@@ -146,7 +146,7 @@
             "date": "Fecha",
             "formatted": "Horas (formateado)",
             "hours": "Horas (número)",
-            "label": "Exportar",
+            "label": "Exportar fichajes CSV",
             "status": "Estado",
             "confirmed": "Confirmado"
         },
@@ -473,7 +473,7 @@
             "consultationHelp": "Confirma que se ha consultado a la representación de los trabajadores antes de implantar el sistema de registro de jornada (art. 34.9 del Estatuto de los Trabajadores)."
         },
         "export": {
-            "button": "Exportar CSV",
+            "button": "Exportar fichajes CSV",
             "error": "Ha fallado la exportación.",
             "from": "Desde",
             "selectAll": "Seleccionar todo",
@@ -523,7 +523,7 @@
             "approved": "Aprobadas",
             "cancelled": "Canceladas",
             "empty": "No hay solicitudes pendientes.",
-            "exportCsv": "Exportar CSV",
+            "exportCsv": "Exportar vacaciones CSV",
             "history": "Historial",
             "pending": "Pendientes",
             "reject": "Rechazar",
