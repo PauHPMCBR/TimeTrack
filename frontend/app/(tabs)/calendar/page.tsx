@@ -9,13 +9,14 @@ import {
 } from '@/schemas/api';
 import { TeamVacation } from '@/types';
 import { useRouter } from 'next/navigation';
+import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
 import { localeTag } from '@/lib/datetime';
 import { Calendar } from '@/components/calendar/Calendar';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import { usePersistedState } from '@/lib/usePersistedState';
-import { CALENDAR_MONTH } from '@/lib/storage';
+import { CALENDAR_ALL_USERS, CALENDAR_MONTH } from '@/lib/storage';
 
 export default function CalendarPage() {
     const router = useRouter();
@@ -37,12 +38,20 @@ export default function CalendarPage() {
     const [vacations, setVacations] = useState<YearlyVacationResponse | null>(
         null
     );
+    const [allVacations, setAllVacations] =
+        useState<YearlyVacationResponse | null>(null);
+    const [usersMap, setUsersMap] = useState<Record<string, string>>({});
     const [workSessions, setWorkSessions] =
         useState<MonthlyWorkRecordResponse | null>(null);
     const [teamVacations, setTeamVacations] = useState<TeamVacation[]>([]);
     const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(defaultNonWorkingDays());
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [allUsers, setAllUsers] = usePersistedState<boolean>(
+        CALENDAR_ALL_USERS,
+        () => false
+    );
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const handleMonthChange = (newCursor: Date) => {
         setCursor(newCursor);
@@ -55,7 +64,7 @@ export default function CalendarPage() {
             setErrorMsg(null);
             try {
                 // getCurrentUser is cached in ApiClient, so this resolves instantly on
-                // subsequent month changes; the three data calls then run in parallel.
+                // subsequent month changes; the data calls then run in parallel.
                 const user = await apiClient.getCurrentUser();
                 if (cancelled) return;
                 if (!user) {
@@ -63,35 +72,52 @@ export default function CalendarPage() {
                     return;
                 }
 
+                const isAdmin = user.role === ADMIN_ROLE;
+                const globalMode = isAdmin && allUsers;
                 const year = cursor.getFullYear();
                 const month = cursor.getMonth() + 1;
+                setIsAdmin(isAdmin);
 
                 const [
                     vacationsResponse,
                     workSessionsResponse,
                     teamVacationsRes,
                     settingsRes,
+                    allVacationsRes,
+                    companyUsersRes,
                 ] = await Promise.all([
-                    apiClient.getUserVacations(user._id, year),
-                    apiClient.getMonthlyRecords(user._id, month, year),
-                    apiClient.getTeamVacations(year),
+                    globalMode
+                        ? Promise.resolve(null)
+                        : apiClient.getUserVacations(user._id, year),
+                    globalMode
+                        ? Promise.resolve(null)
+                        : apiClient.getMonthlyRecords(user._id, month, year),
+                    globalMode
+                        ? Promise.resolve(null)
+                        : apiClient.getTeamVacations(year),
                     apiClient.getPublicSettings(),
+                    globalMode
+                        ? apiClient.getAllVacationsYearAdmin(year)
+                        : Promise.resolve(null),
+                    globalMode
+                        ? apiClient.getCompanyUsers()
+                        : Promise.resolve(null),
                 ]);
                 if (cancelled) return;
 
-                if (vacationsResponse.error) {
+                if (vacationsResponse?.error) {
                     setErrorMsg(t(`error.${vacationsResponse.error}`));
-                } else {
+                } else if (vacationsResponse) {
                     setVacations(vacationsResponse.data!);
                 }
 
-                if (workSessionsResponse.error) {
+                if (workSessionsResponse?.error) {
                     setErrorMsg(t(`error.${workSessionsResponse.error}`));
-                } else {
+                } else if (workSessionsResponse) {
                     setWorkSessions(workSessionsResponse.data!);
                 }
 
-                if (teamVacationsRes.data && teamVacationsRes.data.vacations) {
+                if (teamVacationsRes?.data && teamVacationsRes.data.vacations) {
                     // Filter out self to not duplicate
                     const others = teamVacationsRes.data.vacations.filter(
                         (v) => {
@@ -103,6 +129,20 @@ export default function CalendarPage() {
                         }
                     );
                     setTeamVacations(others);
+                }
+
+                if (allVacationsRes?.error) {
+                    setErrorMsg(t(`error.${allVacationsRes.error}`));
+                } else if (allVacationsRes?.data) {
+                    setAllVacations(allVacationsRes.data);
+                }
+
+                if (companyUsersRes?.data?.users) {
+                    const map: Record<string, string> = {};
+                    companyUsersRes.data.users.forEach((u) => {
+                        map[u._id] = u.name;
+                    });
+                    setUsersMap(map);
                 }
 
                 // Non-working days: prefer the user's own override, else the company default.
@@ -128,7 +168,9 @@ export default function CalendarPage() {
         return () => {
             cancelled = true;
         };
-    }, [cursor, t, router]);
+    }, [cursor, allUsers, t, router]);
+
+    const globalMode = isAdmin && allUsers;
 
     return (
         <div className="space-y-4">
@@ -137,18 +179,32 @@ export default function CalendarPage() {
                     {errorMsg}
                 </Alert>
             )}
-            {vacations && !vacations.yearlyVacationDays && (
+            {isAdmin && (
+                <div className="flex justify-end">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                        <input
+                            type="checkbox"
+                            checked={allUsers}
+                            onChange={(e) => setAllUsers(e.target.checked)}
+                            className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        {t('calendar.allUsersVacations')}
+                    </label>
+                </div>
+            )}
+            {!globalMode && vacations && !vacations.yearlyVacationDays && (
                 <Alert variant="warning">{t('calendar.notConfigured')}</Alert>
             )}
             <Calendar
                 cursor={cursor}
                 onMonthChange={handleMonthChange}
-                vacations={vacations}
-                workSessions={workSessions}
-                teamVacations={teamVacations}
+                vacations={globalMode ? allVacations : vacations}
+                workSessions={globalMode ? null : workSessions}
+                teamVacations={globalMode ? [] : teamVacations}
+                usersMap={globalMode ? usersMap : undefined}
                 nonWorkingDays={nonWorkingDays}
                 loading={loading}
-                showWorkSessions={true}
+                showWorkSessions={!globalMode}
                 showVacations={true}
                 locale={locale}
                 t={t}
@@ -203,7 +259,7 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Work sessions summary */}
-                {workSessions && (
+                {!globalMode && workSessions && (
                     <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700">
                         <div className="font-medium mb-1">
                             {t('calendar.workSummary')}

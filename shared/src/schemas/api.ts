@@ -475,7 +475,17 @@ export type MonthlyApprovalRow = z.infer<typeof MonthlyApprovalRowSchema>;
 
 // POST /api/admin/monthly-approvals/open — per-user outcome.
 export const MonthlyApprovalOpenResultSchema = z.object({
-    opened: z.array(MonthlyApprovalRowSchema),
+    // Users whose request email was sent successfully just now.
+    notified: z.array(MonthlyApprovalRowSchema),
+    // Users opened but whose request email could not be sent (mail failure or
+    // the user has no email address). Their doc is pending; revoke + re-open
+    // to try notifying them again.
+    emailFailed: z.array(
+        z.object({
+            userId: z.string(),
+            userName: z.string().optional(),
+        })
+    ),
     // Users that could not be opened: their month still has anomalies.
     blocked: z.array(
         z.object({

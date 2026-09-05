@@ -119,12 +119,15 @@ describe('POST /api/admin/monthly-approvals/open', () => {
                 userId === 'u2' ? ['hours_short'] : []
         );
         openMonthForUser.mockImplementation(async (userId: string) => ({
-            _id: `ma-${userId}`,
-            userId,
-            year: 2025,
-            month: 7,
-            status: 'pending',
-            requestedAt: new Date(),
+            doc: {
+                _id: `ma-${userId}`,
+                userId,
+                year: 2025,
+                month: 7,
+                status: 'pending',
+                requestedAt: new Date(),
+            },
+            emailSent: true,
         }));
 
         const req = mockReq({
@@ -137,12 +140,13 @@ describe('POST /api/admin/monthly-approvals/open', () => {
 
         expect(res.status).toHaveBeenCalledWith(200);
         const payload = res.json.mock.calls[0][0];
-        expect(payload.data.opened).toHaveLength(1);
-        expect(payload.data.opened[0]).toMatchObject({
+        expect(payload.data.notified).toHaveLength(1);
+        expect(payload.data.notified[0]).toMatchObject({
             userId: 'u1',
             userName: 'Anna',
             status: 'pending',
         });
+        expect(payload.data.emailFailed).toEqual([]);
         expect(payload.data.blocked).toEqual([
             {
                 userId: 'u2',
@@ -169,11 +173,14 @@ describe('POST /api/admin/monthly-approvals/open', () => {
         } as any);
         computeMonthAnomalies.mockResolvedValue([]);
         openMonthForUser.mockResolvedValue({
-            _id: 'ma-u1',
-            userId: 'u1',
-            year: 2025,
-            month: 7,
-            status: 'pending',
+            doc: {
+                _id: 'ma-u1',
+                userId: 'u1',
+                year: 2025,
+                month: 7,
+                status: 'pending',
+            },
+            emailSent: true,
         });
 
         const req = mockReq({
@@ -193,6 +200,85 @@ describe('POST /api/admin/monthly-approvals/open', () => {
             'name trackingStartDate checkInRequired'
         );
         expect(res.json.mock.calls[0][0].data.blocked).toEqual([]);
+    });
+
+    it('should report users whose request email could not be sent', async () => {
+        vi.mocked(User.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue(employees),
+        } as any);
+        computeMonthAnomalies.mockResolvedValue([]);
+        openMonthForUser.mockImplementation(async (userId: string) => ({
+            doc: {
+                _id: `ma-${userId}`,
+                userId,
+                year: 2025,
+                month: 7,
+                status: 'pending',
+            },
+            emailSent: userId !== 'u2',
+        }));
+
+        const req = mockReq({
+            method: 'POST',
+            body: { year: 2025, month: 7 },
+        });
+        const res = mockRes();
+
+        await openMonthlyApprovalsHandler(req, res);
+
+        const payload = res.json.mock.calls[0][0];
+        expect(payload.data.notified).toEqual([
+            expect.objectContaining({ userId: 'u1', userName: 'Anna' }),
+        ]);
+        expect(payload.data.emailFailed).toEqual([
+            { userId: 'u2', userName: 'Berta' },
+        ]);
+    });
+
+    it('should skip users with an existing pending request without re-emailing them', async () => {
+        vi.mocked(User.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue(employees),
+        } as any);
+        computeMonthAnomalies.mockResolvedValue([]);
+        vi.mocked(MonthlyApproval.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue([
+                { userId: 'u1', year: 2025, month: 7, status: 'pending' },
+            ]),
+        } as any);
+        openMonthForUser.mockResolvedValue({
+            doc: {
+                _id: 'ma-u2',
+                userId: 'u2',
+                year: 2025,
+                month: 7,
+                status: 'pending',
+            },
+            emailSent: true,
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: { year: 2025, month: 7 },
+        });
+        const res = mockRes();
+
+        await openMonthlyApprovalsHandler(req, res);
+
+        const payload = res.json.mock.calls[0][0];
+        // Only the user without a pending doc is notified; the pending one is
+        // skipped (e.g. a revoked + re-opened user must not hit this bucket).
+        expect(payload.data.notified).toEqual([
+            expect.objectContaining({ userId: 'u2', userName: 'Berta' }),
+        ]);
+        expect(payload.data.skipped).toEqual([
+            { userId: 'u1', userName: 'Anna' },
+        ]);
+        expect(openMonthForUser).toHaveBeenCalledTimes(1);
+        expect(openMonthForUser).toHaveBeenCalledWith(
+            'u2',
+            { year: 2025, month: 7 },
+            expect.any(Date)
+        );
     });
 });
 
