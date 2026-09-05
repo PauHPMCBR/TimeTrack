@@ -7,7 +7,7 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
 import { useDirty } from '@/lib/useDirty';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
-import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
+import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
 import { parseDateKey } from '@/lib/datetime';
@@ -37,7 +37,7 @@ export default function AdminObligatoryVacationsPage() {
         useState<number>(0);
     const [newDate, setNewDate] = useState<string>('');
     const [copying, setCopying] = useState(false);
-    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([...DEFAULT_NON_WORKING_DAYS]);
+    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(defaultNonWorkingDays());
     const { dirty, markDirty, resetDirty } = useDirty();
 
     useUnsavedChanges(dirty);
@@ -88,7 +88,7 @@ export default function AdminObligatoryVacationsPage() {
     useEffect(() => {
         apiClient.getSettings().then((res) => {
             if (!res.error && res.data?.settings) {
-                setNonWorkingDays(res.data.settings.nonWorkingDays ?? [...DEFAULT_NON_WORKING_DAYS]);
+                setNonWorkingDays(res.data.settings.nonWorkingDays ?? defaultNonWorkingDays());
             }
         });
     }, []);

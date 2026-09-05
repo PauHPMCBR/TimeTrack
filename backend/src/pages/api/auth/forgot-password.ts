@@ -14,10 +14,8 @@ import {
     MS_PER_HOUR,
     TOKEN_BYTE_LENGTH,
 } from 'shared/src/lib/constants';
-import {
-    DEFAULT_FRONTEND_URL,
-    RESET_TOKEN_TTL_HOURS,
-} from 'shared/src/lib/defaults';
+import { RESET_TOKEN_TTL_HOURS } from 'shared/src/lib/defaults';
+import { getFrontendUrl } from '@/lib/frontend-url';
 
 export default withRateLimit(
     async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -62,8 +60,7 @@ export default withRateLimit(
                     }
                 );
 
-                const frontendUrl =
-                    process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+                const frontendUrl = getFrontendUrl();
                 const resetParams = new URLSearchParams({
                     token: resetPasswordToken,
                     email: user.email,

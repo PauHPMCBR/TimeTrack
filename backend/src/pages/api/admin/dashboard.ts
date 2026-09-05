@@ -13,6 +13,10 @@ import { getAppSettings } from '@/lib/settings';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { dateKey } from '@/lib/date-key';
 import { startOfDay } from '@/lib/date-range';
+import {
+    resolveExpectedWorkHours,
+    resolveWorkDays,
+} from '@/lib/user-overrides';
 import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
 import {
     responseErrorGet,
@@ -95,18 +99,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         let anomalyCount = 0;
         for (const user of activeUsers) {
-            const nonWorkingDays =
-                Array.isArray(user.workDays) && user.workDays.length > 0
-                    ? user.workDays
-                    : settings.nonWorkingDays;
+            const nonWorkingDays = resolveWorkDays(
+                user,
+                settings.nonWorkingDays
+            );
             for (let i = 0; i < 7; i++) {
                 const day = new Date(monday);
                 day.setDate(monday.getDate() + i);
                 if (nonWorkingDays.includes(day.getDay())) continue;
                 const userSessions =
                     sessionsByUserDay.get(`${user._id}:${dateKey(day)}`) ?? [];
-                const expectedHours =
-                    user.expectedWorkHours ?? settings.defaultExpectedHours;
+                const expectedHours = resolveExpectedWorkHours(
+                    user,
+                    settings.defaultExpectedHours
+                );
                 const { totalHours, anomalies } = computeDayHours(userSessions);
                 const anomalySet = new Set(anomalies);
                 if (totalHours === 0) anomalySet.add('hours_short');

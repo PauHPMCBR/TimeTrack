@@ -6,9 +6,10 @@ import {
     DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     DEFAULT_NON_WORKING_DAYS,
+    DEFAULT_TIMEZONE,
 } from 'shared/src/lib/defaults';
 
-export const DEFAULT_TIMEZONE = 'Europe/Madrid';
+export { DEFAULT_TIMEZONE };
 
 export interface AppSettingsValues {
     defaultExpectedHours: number;

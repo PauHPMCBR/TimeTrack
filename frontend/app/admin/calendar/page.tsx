@@ -8,7 +8,7 @@ import { YearlyVacationResponse } from '@/schemas/api';
 import { localeTag, toLocalDateKey } from '@/lib/datetime';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { Calendar } from '@/components/calendar/Calendar';
-import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
+import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { CALENDAR_MONTH } from '@/lib/storage';
 
@@ -33,7 +33,7 @@ export default function AdminCalendarPage() {
         null
     );
     const [usersMap, setUsersMap] = useState<Record<string, string>>({});
-    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([...DEFAULT_NON_WORKING_DAYS]);
+    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(defaultNonWorkingDays());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +69,7 @@ export default function AdminCalendarPage() {
 
                 if (!settingsRes.error && settingsRes.data?.settings) {
                     setNonWorkingDays(
-                        settingsRes.data.settings.nonWorkingDays ?? [...DEFAULT_NON_WORKING_DAYS]
+                        settingsRes.data.settings.nonWorkingDays ?? defaultNonWorkingDays()
                     );
                 }
             } catch (err) {

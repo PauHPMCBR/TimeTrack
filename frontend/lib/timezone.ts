@@ -3,7 +3,7 @@
 // AppSettings are loaded (e.g. on the admin settings page). Display uses native
 // Intl.DateTimeFormat with timeZone so it respects DST automatically.
 
-const DEFAULT_TIMEZONE = 'Europe/Madrid';
+import { DEFAULT_TIMEZONE } from 'shared/src/lib/defaults';
 
 let configured: string = DEFAULT_TIMEZONE;
 

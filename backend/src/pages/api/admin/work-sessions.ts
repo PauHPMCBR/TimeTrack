@@ -290,6 +290,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             approvedVacations,
             yearlyTemplates,
             defaultNonWorkingDays: settings.nonWorkingDays,
+            defaultExpectedHours: settings.defaultExpectedHours,
             toleranceHours: settings.toleranceHours,
         });
 
