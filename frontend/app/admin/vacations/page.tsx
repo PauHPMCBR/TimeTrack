@@ -7,6 +7,7 @@ import { ElectiveVacation, User } from '@/types';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import AdminBackButton from '../../../components/AdminBackButton';
+import Avatar from '@/components/Avatar';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
 import { ChevronRight, ChevronLeft, Check, X, Download } from 'lucide-react';
@@ -418,9 +419,21 @@ export default function AdminVacationsPage() {
                                             >
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">
-                                                            {userInitial}
-                                                        </div>
+                                                        <Avatar
+                                                            userId={
+                                                                group.userId
+                                                            }
+                                                            version={
+                                                                user?.avatar ??
+                                                                null
+                                                            }
+                                                            alt={userName}
+                                                            fallback={
+                                                                userInitial
+                                                            }
+                                                            className="h-8 w-8 rounded-full object-cover"
+                                                            fallbackClassName="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                                                        />
                                                         <div>
                                                             <div className="font-semibold text-zinc-900 dark:text-white">
                                                                 {userName}

@@ -286,12 +286,12 @@ describe('PUT /api/admin/users/[userId]', () => {
         expect(res.status).toHaveBeenCalledWith(200);
     });
 
-    it('should set a new password and clear lockout when password is provided', async () => {        const existingUser: any = {
+    it('should ignore an explicit password (admins cannot set a known password)', async () => {
+        const existingUser: any = {
             _id: 'user-1',
             email: 'old@example.com',
             name: 'Anna',
-            blocked: true,
-            failedLoginAttempts: 4,
+            password: 'old-hash',
             save: vi.fn().mockResolvedValue(true),
         };
         vi.mocked(User.findById).mockResolvedValue(existingUser);
@@ -305,47 +305,9 @@ describe('PUT /api/admin/users/[userId]', () => {
 
         await updateUserHandler(req, res);
 
-        expect(existingUser.password).toBe('NewPassword123!');
-        expect(existingUser.blocked).toBe(false);
-        expect(existingUser.failedLoginAttempts).toBe(0);
-        expect(existingUser.blockedSince).toBeNull();
+        expect(existingUser.password).toBe('old-hash');
         expect(existingUser.save).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should reject a weak password', async () => {
-        const existingUser: any = {
-            _id: 'user-1',
-            email: 'old@example.com',
-            name: 'Anna',
-            save: vi.fn().mockResolvedValue(true),
-        };
-        vi.mocked(User.findById).mockResolvedValue(existingUser);
-
-        const req = mockReq({
-            method: 'PUT',
-            query: { userId: 'user-1' },
-            body: { password: 'short' },
-        });
-        const res = mockRes();
-
-        await updateUserHandler(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            error: 'IncorrectParameter',
-            details: {
-                incorrectParameter: 'password',
-                reasons: [
-                    'TooShort',
-                    'MissingUppercase',
-                    'MissingNumber',
-                    'MissingSign',
-                ],
-            },
-        });
-        expect(existingUser.save).not.toHaveBeenCalled();
     });
 
     it('should reject demoting an admin', async () => {

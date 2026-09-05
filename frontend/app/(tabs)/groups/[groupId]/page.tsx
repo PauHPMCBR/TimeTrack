@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api';
 import { Group, GroupMember } from '@/types';
 import { Users, ChevronLeft, Mail } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import Avatar from '@/components/Avatar';
 
 type GroupDetail = Omit<Group, 'members'> & { members: GroupMember[] };
 
@@ -102,13 +103,20 @@ export default function GroupDetailPage() {
                             className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:border-indigo-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-700 dark:hover:bg-zinc-800/50"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="grid h-10 w-10 place-items-center rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                                    <span className="text-sm font-bold">
-                                        {(member.name ||
-                                            member.email ||
-                                            'U')[0].toUpperCase()}
-                                    </span>
-                                </div>
+                                <Avatar
+                                    userId={member._id}
+                                    version={member.avatar ?? null}
+                                    alt={
+                                        member.name || t('common.noName')
+                                    }
+                                    fallback={(
+                                        member.name ||
+                                        member.email ||
+                                        'U'
+                                    )[0].toUpperCase()}
+                                    className="h-10 w-10 rounded-full object-cover"
+                                    fallbackClassName="h-10 w-10 rounded-full bg-zinc-100 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                                />
                                 <div>
                                     <div className="font-medium text-zinc-900 dark:text-white">
                                         {member.name || t('common.noName')}

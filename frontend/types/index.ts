@@ -19,6 +19,7 @@ export type GroupMember = {
     email?: string;
     role?: string;
     registered?: boolean;
+    avatar?: string;
 };
 export type WorksessionReason = z.infer<typeof WorkSessionReasonSchema> & {
     _id: string;

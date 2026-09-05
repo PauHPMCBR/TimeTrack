@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
 import { User, Group } from '@/types';
 import Modal from '@/components/Modal';
+import Avatar from '@/components/Avatar';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
 import TextAreaField from '@/components/ui/TextAreaField';
@@ -196,11 +197,20 @@ export default function GroupModal({ open, group, onClose, onSaved }: Props) {
                                             }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div
-                                                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${isSelected ? 'bg-indigo-600 text-white' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300'}`}
-                                                >
-                                                    {initial}
-                                                </div>
+                                                <Avatar
+                                                    userId={user._id}
+                                                    version={
+                                                        user.avatar ?? null
+                                                    }
+                                                    alt={displayName}
+                                                    fallback={initial}
+                                                    className="h-8 w-8 rounded-full object-cover"
+                                                    fallbackClassName={`h-8 w-8 shrink-0 rounded-full text-xs ${
+                                                        isSelected
+                                                            ? 'bg-indigo-600 text-white'
+                                                            : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                />
                                                 <div>
                                                     <p
                                                         className={`text-sm font-medium ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-700 dark:text-zinc-300'}`}

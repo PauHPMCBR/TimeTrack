@@ -146,7 +146,7 @@
             "date": "Data",
             "formatted": "Hores (formatat)",
             "hours": "Hores (número)",
-            "label": "Exportar",
+            "label": "Exporta fitxatges CSV",
             "status": "Estat",
             "confirmed": "Confirmat"
         },
@@ -473,7 +473,7 @@
             "consultationHelp": "Confirma que s'ha consultat la representació de les persones treballadores abans d'implantar el sistema de registre de jornada (art. 34.9 de l'Estatut dels Treballadors)."
         },
         "export": {
-            "button": "Exporta CSV",
+            "button": "Exporta fitxatges CSV",
             "error": "Ha fallat l'exportació.",
             "from": "Des de",
             "selectAll": "Selecciona-ho tot",
@@ -523,7 +523,7 @@
             "approved": "Aprovades",
             "cancelled": "Cancel·lades",
             "empty": "No hi ha sol·licituds pendents.",
-            "exportCsv": "Exportar CSV",
+            "exportCsv": "Exporta vacances CSV",
             "history": "Historial",
             "pending": "Pendents",
             "reject": "Rebutjar",
