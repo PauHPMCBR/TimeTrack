@@ -14,10 +14,9 @@ import {
 } from '@/lib/auto-schedule';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { MS_PER_MINUTE, SESSION_REPLACED } from 'shared/src/lib/constants';
-import {
-    DEFAULT_BENEVOLENCE_HOURS,
-    DEFAULT_FRONTEND_URL,
-} from 'shared/src/lib/defaults';
+import { DEFAULT_BENEVOLENCE_HOURS } from 'shared/src/lib/defaults';
+import { getFrontendUrl } from '@/lib/frontend-url';
+import { resolveExpectedWorkHours } from '@/lib/user-overrides';
 
 interface ReminderUser {
     _id: string;
@@ -99,8 +98,10 @@ export async function runDailyInconsistencyReminder(
         });
         const anomalies = [...result.anomalies];
 
-        const expected =
-            user.expectedWorkHours ?? settings.defaultExpectedHours;
+        const expected = resolveExpectedWorkHours(
+            user,
+            settings.defaultExpectedHours
+        );
         const benevolence = settings.benevolenceHours ?? DEFAULT_BENEVOLENCE_HOURS;
         if (result.totalHours < expected - benevolence) {
             anomalies.push('hours_short');
@@ -117,7 +118,7 @@ export async function runDailyInconsistencyReminder(
             time: formatClockTime(new Date(s.timestamp)),
             type: s.type,
         }));
-        const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+        const frontendUrl = getFrontendUrl();
         const applyAutoUrl = `${frontendUrl}/check-in?applyAuto=1&date=${dateKeyStr}`;
 
         await sendInconsistencyReminder({

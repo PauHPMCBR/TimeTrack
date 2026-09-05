@@ -2,8 +2,8 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 import { User, Group } from '@/models';
+import { getFrontendUrl } from '@/lib/frontend-url';
 import { toPublicUser } from '@/lib/sanitize';
 import {
     responseErrorEntryNotFound,
@@ -46,8 +46,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
             let registrationLink: string | null = null;
             if (!user.registered && user.registrationToken) {
-                const frontendUrl =
-                    process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+                const frontendUrl = getFrontendUrl();
                 const inviteParams = new URLSearchParams({
                     name: user.name,
                     email: user.email,

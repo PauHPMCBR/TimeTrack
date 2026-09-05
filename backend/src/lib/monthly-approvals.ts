@@ -15,7 +15,6 @@ import {
     SESSION_REPLACED,
     VACATION_APPROVED,
 } from 'shared/src/lib/constants';
-import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
 import {
     computeDayHours,
@@ -28,6 +27,8 @@ import {
     sendMonthlyApprovalReminder,
     sendMonthlyApprovalRequest,
 } from '@/lib/mail';
+import { getFrontendUrl } from '@/lib/frontend-url';
+import { resolveExpectedWorkHours, resolveWorkDays } from '@/lib/user-overrides';
 
 export interface MonthPeriod {
     year: number;
@@ -100,12 +101,11 @@ export async function computeMonthAnomalies(
     if (!user) return [];
     if (user.checkInRequired === false) return [];
 
-    const expectedHours =
-        user.expectedWorkHours ?? settings.defaultExpectedHours;
-    const nonWorkingDays =
-        Array.isArray(user.workDays) && user.workDays.length > 0
-            ? user.workDays
-            : settings.nonWorkingDays;
+    const expectedHours = resolveExpectedWorkHours(
+        user,
+        settings.defaultExpectedHours
+    );
+    const nonWorkingDays = resolveWorkDays(user, settings.nonWorkingDays);
 
     const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
     const end =
@@ -196,7 +196,7 @@ export async function runMonthlyAdminReview(now: Date = new Date()): Promise<num
     }
 
     const period = previousMonthOf(now);
-    const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+    const frontendUrl = getFrontendUrl();
     const reviewUrl = `${frontendUrl}/admin/monthly-approvals?year=${period.year}&month=${period.month}`;
 
     const admins = (await User.find(
@@ -249,7 +249,7 @@ export async function runMonthlyApprovalReminders(
     }[];
 
     let sent = 0;
-    const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+    const frontendUrl = getFrontendUrl();
     for (const doc of pending) {
         const user = (await User.findById(
             doc.userId,
@@ -302,7 +302,7 @@ export async function openMonthForUser(
         'name email'
     )) as unknown as { name: string; email: string } | null;
     if (user?.email) {
-        const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+        const frontendUrl = getFrontendUrl();
         await sendMonthlyApprovalRequest({
             to: user.email,
             name: user.name,

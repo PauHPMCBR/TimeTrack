@@ -9,7 +9,7 @@ import {
 } from '@/schemas/api';
 import { TeamVacation } from '@/types';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
+import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
 import { localeTag } from '@/lib/datetime';
 import { Calendar } from '@/components/calendar/Calendar';
 import { Alert } from '@/components/ui/Alert';
@@ -40,7 +40,7 @@ export default function CalendarPage() {
     const [workSessions, setWorkSessions] =
         useState<MonthlyWorkRecordResponse | null>(null);
     const [teamVacations, setTeamVacations] = useState<TeamVacation[]>([]);
-    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([...DEFAULT_NON_WORKING_DAYS]);
+    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(defaultNonWorkingDays());
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -113,7 +113,7 @@ export default function CalendarPage() {
                     );
                 } else if (!settingsRes.error && settingsRes.data?.settings) {
                     setNonWorkingDays(
-                        settingsRes.data.settings.nonWorkingDays ?? [...DEFAULT_NON_WORKING_DAYS]
+                        settingsRes.data.settings.nonWorkingDays ?? defaultNonWorkingDays()
                     );
                 }
             } catch (error) {

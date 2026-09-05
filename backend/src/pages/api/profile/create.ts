@@ -1,10 +1,10 @@
 import type { NextApiResponse } from 'next';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { ADMIN_ROLE, EMPLOYEE_ROLE, TOKEN_BYTE_LENGTH } from 'shared/src/lib/constants';
-import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 import { User } from '@/models';
 import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
+import { getFrontendUrl } from '@/lib/frontend-url';
 import {
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
@@ -60,7 +60,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             expectedWorkHours: settings.defaultExpectedHours,
         });
 
-        const frontendUrl = process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL;
+        const frontendUrl = getFrontendUrl();
         const inviteParams = new URLSearchParams({ name, email });
         const registrationLink = `${frontendUrl}/register/${registrationToken}?${inviteParams.toString()}`;
 

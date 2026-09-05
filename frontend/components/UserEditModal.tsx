@@ -17,7 +17,7 @@ import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
 import { ADMIN_ROLE, EMPLOYEE_ROLE } from 'shared/src/lib/constants';
 import {
     DEFAULT_EXPECTED_WORK_HOURS,
-    DEFAULT_NON_WORKING_DAYS,
+    defaultNonWorkingDays,
 } from 'shared/src/lib/defaults';
 import { COPIED_LINK_FEEDBACK_MS } from '@/lib/constants';
 import {
@@ -90,7 +90,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setNonWorkDays(
             hasCustom
                 ? ALL_DAYS.filter((d) => !user.workDays!.includes(d))
-                : [...DEFAULT_NON_WORKING_DAYS]
+                : defaultNonWorkingDays()
         );
         setStartDate(
             user.trackingStartDate
@@ -146,7 +146,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
             const start =
                 nonWorkDays.length > 0
                     ? nonWorkDays
-                    : [...DEFAULT_NON_WORKING_DAYS];
+                    : defaultNonWorkingDays();
             setNonWorkDays(start);
             setFormData((prev) => ({
                 ...prev,

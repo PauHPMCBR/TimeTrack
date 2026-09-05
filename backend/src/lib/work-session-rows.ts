@@ -2,11 +2,14 @@ import {
     AdminWorkSessionRow,
     WorkSessionRowStatus,
 } from 'shared/src/schemas/api';
-import { DEFAULT_EXPECTED_WORK_HOURS } from 'shared/src/lib/defaults';
 import {
     computeDayHours,
     isWithinBenevolence,
 } from 'shared/src/lib/work-hours';
+import {
+    resolveExpectedWorkHours,
+    resolveWorkDays,
+} from '@/lib/user-overrides';
 import {
     UserRow,
     WorkSessionRow,
@@ -72,6 +75,8 @@ export interface WorkSessionRowsContext {
     yearlyTemplates: YearlyVacationRow[];
     /** Company-wide default non-working week days (overridden per-user by workDays). */
     defaultNonWorkingDays: number[];
+    /** Company-wide default expected work hours (overridden per-user). */
+    defaultExpectedHours: number;
     /** Tolerance (hours) for the benevolence/ok check. */
     toleranceHours: number;
 }
@@ -92,6 +97,7 @@ export function buildWorkSessionRows(
         approvedVacations,
         yearlyTemplates,
         defaultNonWorkingDays,
+        defaultExpectedHours,
         toleranceHours,
     } = ctx;
 
@@ -129,14 +135,13 @@ export function buildWorkSessionRows(
                 obligatoryDaySet.has(key);
 
             // A user's non-working week days: their own override, else company-wide.
-            const nonWorkingDays =
-                Array.isArray(user.workDays) && user.workDays.length > 0
-                    ? user.workDays
-                    : defaultNonWorkingDays;
+            const nonWorkingDays = resolveWorkDays(user, defaultNonWorkingDays);
             const isNonWorkingDay = nonWorkingDays.includes(dow);
 
-            const expectedHours =
-                user.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS;
+            const expectedHours = resolveExpectedWorkHours(
+                user,
+                defaultExpectedHours
+            );
             const { totalHours, anomalies } = computeDayHours(userSessions);
             const anomalySet = new Set(anomalies);
 

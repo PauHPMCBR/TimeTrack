@@ -7,6 +7,7 @@ import {
     DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     DEFAULT_NON_WORKING_DAYS,
+    DEFAULT_TIMEZONE,
 } from '../lib/defaults';
 
 // Automatic timetable: a list of check-in/check-out intervals (clock times
@@ -111,7 +112,10 @@ export const AppSettingsSchema = z.object({
     // construction and displayed times. Stored as UTC in MongoDB; the local
     // calendar day is derived from this zone so records are correct regardless
     // of the server's own timezone (e.g. a Spain company on a UTC server).
-    timezone: z.string().min(1, 'Timezone is required').default('Europe/Madrid'),
+    timezone: z
+        .string()
+        .min(1, 'Timezone is required')
+        .default(DEFAULT_TIMEZONE),
     // Month key (YYYY-MM) of the last end-of-month "review the month's times"
     // mail sent to admins. Empty string = never sent. `.optional()` because
     // zod-mongoose compiles `z.string().default('')` to a `required: true`

@@ -18,7 +18,8 @@ import {
     DEFAULT_END_OF_DAY_HOUR,
     DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-    DEFAULT_NON_WORKING_DAYS,
+    defaultNonWorkingDays,
+    DEFAULT_TIMEZONE,
 } from 'shared/src/lib/defaults';
 import { Check } from 'lucide-react';
 
@@ -35,7 +36,7 @@ type FormState = {
 };
 
 const COMMON_TIMEZONES = [
-    'Europe/Madrid',
+    DEFAULT_TIMEZONE,
     'Europe/Lisbon',
     'Europe/Paris',
     'Europe/Berlin',
@@ -57,10 +58,10 @@ export default function AdminSettingsPage() {
         defaultExpectedHours: DEFAULT_EXPECTED_WORK_HOURS,
         toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
         endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
-        nonWorkingDays: [...DEFAULT_NON_WORKING_DAYS],
+        nonWorkingDays: defaultNonWorkingDays(),
         inconsistencyReminderEnabled: true,
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-        timezone: 'Europe/Madrid',
+        timezone: DEFAULT_TIMEZONE,
         privacyNoticeText: '',
         workerConsultationAcknowledged: false,
     });
@@ -99,20 +100,18 @@ export default function AdminSettingsPage() {
                             DEFAULT_BENEVOLENCE_HOURS,
                         endOfDayHour: s.endOfDayHour,
                         nonWorkingDays:
-                            s.nonWorkingDays ?? [...DEFAULT_NON_WORKING_DAYS],
+                            s.nonWorkingDays ?? defaultNonWorkingDays(),
                         inconsistencyReminderEnabled:
                             s.inconsistencyReminderEnabled ?? true,
                         monthlyApprovalReminderDays:
                             s.monthlyApprovalReminderDays ??
                             DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-                        timezone: s.timezone || 'Europe/Madrid',
+                        timezone: s.timezone || DEFAULT_TIMEZONE,
                         privacyNoticeText: s.privacyNoticeText ?? '',
                         workerConsultationAcknowledged:
                             s.workerConsultationAcknowledged ?? false,
                     });
-                    initConfiguredTimezone(
-                        s.timezone || 'Europe/Madrid'
-                    );
+                    initConfiguredTimezone(s.timezone || DEFAULT_TIMEZONE);
                 }
             } catch (err) {
                 console.error('Error carregant configuració:', err);
