@@ -25,7 +25,7 @@ export default function Modal({
     // the modal cover only the content area, not the top toolbar).
     return createPortal(
         <div
-            className="absolute inset-x-0 top-12 bottom-16 z-[100] flex justify-center overflow-y-auto"
+            className="fixed inset-x-0 top-12 bottom-16 z-[100] flex justify-center overflow-y-auto"
             aria-modal="true"
             role="dialog"
         >
