@@ -77,6 +77,19 @@ export default function AdminDashboard() {
             alert: anomalyCount > 0,
         },
         {
+            title: t('admin.menu.monthlyApprovals.title'),
+            desc: t('admin.menu.monthlyApprovals.desc'),
+            meta:
+                pendingApprovals > 0
+                    ? `${pendingApprovals} ${t('admin.menu.monthlyApprovals.pending')}`
+                    : t('admin.menu.monthlyApprovals.none'),
+            href: '/admin/monthly-approvals',
+            iconColor: 'text-teal-600 dark:text-teal-400',
+            bgColor: 'bg-teal-50 dark:bg-teal-900/20',
+            icon: <ShieldCheck size={24} />,
+            alert: pendingApprovals > 0,
+        },
+        {
             title: t('admin.menu.groups.title'),
             desc: t('admin.menu.groups.desc'),
             meta: `${data?.groupsCount ?? '-'} ${t('admin.menu.groups.count')}`,
@@ -105,27 +118,6 @@ export default function AdminDashboard() {
             iconColor: 'text-pink-600 dark:text-pink-400',
             bgColor: 'bg-pink-50 dark:bg-pink-900/20',
             icon: <Calendar size={24} />,
-        },
-        {
-            title: t('admin.menu.calendar.title'),
-            desc: t('admin.menu.calendar.desc'),
-            href: '/admin/calendar',
-            iconColor: 'text-cyan-600 dark:text-cyan-400',
-            bgColor: 'bg-cyan-50 dark:bg-cyan-900/20',
-            icon: <Calendar size={24} />,
-        },
-        {
-            title: t('admin.menu.monthlyApprovals.title'),
-            desc: t('admin.menu.monthlyApprovals.desc'),
-            meta:
-                pendingApprovals > 0
-                    ? `${pendingApprovals} ${t('admin.menu.monthlyApprovals.pending')}`
-                    : t('admin.menu.monthlyApprovals.none'),
-            href: '/admin/monthly-approvals',
-            iconColor: 'text-teal-600 dark:text-teal-400',
-            bgColor: 'bg-teal-50 dark:bg-teal-900/20',
-            icon: <ShieldCheck size={24} />,
-            alert: pendingApprovals > 0,
         },
         {
             title: t('admin.menu.settings.title'),

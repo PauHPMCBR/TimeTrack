@@ -185,6 +185,7 @@
         "rejectedVacation": "Vacaciones rechazadas",
         "teamVacation": "Vacaciones del Equipo",
         "teamPendingVacation": "Vacaciones pendientes del equipo",
+        "allUsersVacations": "ADMIN: Muestra vacaciones de toda la empresa",
         "totalHours": "Horas totales",
         "totalCompletedSessions": "Sesiones completadas",
         "vacations": "Vacaciones",
@@ -359,12 +360,8 @@
         "menu": {
             "sections": {
                 "users": "Usuarios y fichajes",
-                "vacations": "Vacaciones",
+                "vacations": "Grupos y vacaciones",
                 "settings": "Configuración global"
-            },
-            "calendar": {
-                "desc": "Visión mensual de las ausencias.",
-                "title": "Calendario Global"
             },
             "groups": {
                 "desc": "Organiza los empleados por equipos u oficinas.",
@@ -690,7 +687,10 @@
         "month": "Mes",
         "year": "Año",
         "openAction": "Abrir para confirmación",
-        "openedCount": "{count} persona(s) notificadas correctamente.",
+        "notifiedTitle": "Solicitud enviada a {count} persona(s):",
+        "notifiedNoneTitle": "Nadie a quien notificar para este mes.",
+        "emailFailedTitle": "No se ha podido enviar el correo a {count} persona(s):",
+        "emailFailedNote": "Su solicitud queda pendiente. Revócala y vuelve a abrir el mes para reintentar el envío.",
         "blockedTitle": "No se han podido abrir (anomalías pendientes):",
         "forceAction": "Forzar apertura",
         "forceConfirm": "Forzar la apertura del mes para todas las personas trabajadoras, incluso las que tienen anomalías pendientes. ¿Continuar?",

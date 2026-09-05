@@ -38,6 +38,9 @@ interface SkippedEntry {
 // opened anyway. Users whose tracking had not started by that month are
 // excluded ("notTracking"). Users who already have a pending request for the
 // month are not re-emailed ("skipped") to avoid duplicate notifications.
+// The result distinguishes users actually notified (request email sent just
+// now) from those opened but whose email could not be sent ("emailFailed" —
+// revoke + re-open to retry notifying them).
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         return responseErrorMethodNotAllowed(res);
@@ -86,7 +89,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         }[];
 
         const now = new Date();
-        const opened: MonthlyApprovalRow[] = [];
+        const notified: MonthlyApprovalRow[] = [];
+        const emailFailed: SkippedEntry[] = [];
         const blocked: BlockedEntry[] = [];
         const skipped: SkippedEntry[] = [];
 
@@ -139,21 +143,26 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 continue;
             }
 
-            const doc = (await openMonthForUser(
+            const { doc, emailSent } = (await openMonthForUser(
                 id,
                 { year, month },
                 now
-            )) as MonthlyApprovalRow;
-            opened.push({
+            )) as { doc: MonthlyApprovalRow; emailSent: boolean };
+            const row = {
                 ...doc,
                 _id: doc._id.toString(),
                 userName: user.name,
-            });
+            };
+            if (emailSent) {
+                notified.push(row);
+            } else {
+                emailFailed.push({ userId: id, userName: user.name });
+            }
         }
 
         res.status(200).json({
             success: true,
-            data: { opened, blocked, skipped, notTracking },
+            data: { notified, emailFailed, blocked, skipped, notTracking },
         });
     } catch (error) {
         console.error('Open monthly approvals error:', error);

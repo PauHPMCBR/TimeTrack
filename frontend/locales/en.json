@@ -185,6 +185,7 @@
         "rejectedVacation": "Rejected vacations",
         "teamVacation": "Team Vacation",
         "teamPendingVacation": "Team pending vacations",
+        "allUsersVacations": "ADMIN: Show vacations for the whole company",
         "totalHours": "Total hours",
         "totalCompletedSessions": "Completed sessions",
         "vacations": "Vacations",
@@ -359,12 +360,8 @@
         "menu": {
             "sections": {
                 "users": "Users & fitxatges",
-                "vacations": "Vacations",
+                "vacations": "Groups and vacations",
                 "settings": "Global settings"
-            },
-            "calendar": {
-                "desc": "Monthly view of absences.",
-                "title": "Global Calendar"
             },
             "groups": {
                 "desc": "Organize employees by teams or offices.",
@@ -690,7 +687,10 @@
         "month": "Month",
         "year": "Year",
         "openAction": "Open for confirmation",
-        "openedCount": "{count} worker(s) notified successfully.",
+        "notifiedTitle": "Request sent to {count} worker(s):",
+        "notifiedNoneTitle": "No one to notify for this month.",
+        "emailFailedTitle": "Could not send the email to {count} worker(s):",
+        "emailFailedNote": "Their request stays pending. Revoke it and open the month again to retry the notification.",
         "blockedTitle": "Could not be opened (pending anomalies):",
         "forceAction": "Force open",
         "forceConfirm": "Force opening the month for all workers, even those with pending anomalies. Continue?",

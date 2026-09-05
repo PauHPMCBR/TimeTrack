@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
-import { MonthlyApprovalRow, WorkSessionAnomaly } from '@/schemas/api';
+import {
+    MonthlyApprovalOpenResult,
+    MonthlyApprovalRow,
+    WorkSessionAnomaly,
+} from '@/schemas/api';
 import { User } from '@/types';
 import { localeTag } from '@/lib/datetime';
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
@@ -18,6 +22,7 @@ import {
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Label from '@/components/ui/Label';
+import { Alert } from '@/components/ui/Alert';
 import AdminBackButton from '@/components/AdminBackButton';
 import {
     MIN_VALID_YEAR,
@@ -27,12 +32,10 @@ import {
 } from 'shared/src/lib/constants';
 import { CheckCircle2, XCircle, Undo2 } from 'lucide-react';
 
-type OpenResult = {
-    opened: MonthlyApprovalRow[];
-    blocked: { userId: string; userName?: string; anomalies: WorkSessionAnomaly[] }[];
-    skipped: { userId: string; userName?: string }[];
-    notTracking: { userId: string; userName?: string }[];
-};
+type NotifiedEntry = { userId: string; userName?: string };
+
+const namesOf = (entries: NotifiedEntry[]) =>
+    entries.map((e) => e.userName ?? e.userId).join(', ');
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -50,7 +53,9 @@ export default function AdminMonthlyApprovalsPage() {
     const [opening, setOpening] = useState(false);
     const [revokingId, setRevokingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [openResult, setOpenResult] = useState<OpenResult | null>(null);
+    const [openResult, setOpenResult] = useState<MonthlyApprovalOpenResult | null>(
+        null
+    );
     const [filterUserId, setFilterUserId] = usePersistedState<string>(
         ADMIN_APPROVALS_USER,
         'all'
@@ -216,11 +221,7 @@ export default function AdminMonthlyApprovalsPage() {
                 </p>
             </div>
 
-            {error && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                    {error}
-                </div>
-            )}
+            {error && <Alert variant="destructive">{error}</Alert>}
 
             <Card className="p-6">
                 <h2 className="mb-3 text-lg font-semibold">
@@ -290,55 +291,74 @@ export default function AdminMonthlyApprovalsPage() {
                 </div>
 
                 {openResult && (
-                    <div className="mt-4 space-y-2 text-sm">
-                        <p className="font-medium text-green-600 dark:text-green-400">
-                            {t('monthlyApprovals.openedCount').replace(
-                                '{count}',
-                                String(openResult.opened.length)
+                    <div className="mt-4 space-y-3">
+                        {openResult.notified.length === 0 &&
+                            openResult.emailFailed.length === 0 &&
+                            openResult.blocked.length === 0 &&
+                            openResult.skipped.length === 0 &&
+                            openResult.notTracking.length === 0 && (
+                                <Alert
+                                    variant="warning"
+                                    title={t(
+                                        'monthlyApprovals.notifiedNoneTitle'
+                                    )}
+                                />
                             )}
-                        </p>
+                        {openResult.notified.length > 0 && (
+                            <Alert variant="success">
+                                <span className="font-semibold">
+                                    {t('monthlyApprovals.notifiedTitle').replace(
+                                        '{count}',
+                                        String(openResult.notified.length)
+                                    )}{' '}
+                                </span>
+                                {namesOf(openResult.notified)}
+                            </Alert>
+                        )}
+                        {openResult.emailFailed.length > 0 && (
+                            <Alert variant="destructive">
+                                <span className="font-semibold">
+                                    {t('monthlyApprovals.emailFailedTitle').replace(
+                                        '{count}',
+                                        String(openResult.emailFailed.length)
+                                    )}{' '}
+                                </span>
+                                {namesOf(openResult.emailFailed)}
+                                <span className="mt-1 block text-xs">
+                                    {t('monthlyApprovals.emailFailedNote')}
+                                </span>
+                            </Alert>
+                        )}
                         {openResult.blocked.length > 0 && (
-                            <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
-                                <p className="mb-1 font-medium text-amber-700 dark:text-amber-300">
-                                    {t('monthlyApprovals.blockedTitle')}
-                                </p>
-                                <ul className="list-disc pl-4 space-y-1 text-zinc-600 dark:text-zinc-300">
-                                    {openResult.blocked.map((b) => (
-                                        <li key={b.userId}>
-                                            {b.userName ?? b.userId}:{' '}
-                                            {b.anomalies.map(anomalyLabel).join(', ')}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Alert variant="warning">
+                                <span className="font-semibold">
+                                    {t('monthlyApprovals.blockedTitle')}{' '}
+                                </span>
+                                {openResult.blocked
+                                    .map(
+                                        (b) =>
+                                            `${b.userName ?? b.userId} (${b.anomalies
+                                                .map(anomalyLabel)
+                                                .join(', ')})`
+                                    )
+                                    .join(', ')}
+                            </Alert>
                         )}
                         {openResult.skipped.length > 0 && (
-                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                <p className="mb-1 font-medium text-zinc-600 dark:text-zinc-300">
-                                    {t('monthlyApprovals.skippedTitle')}
-                                </p>
-                                <ul className="list-disc pl-4 space-y-1 text-zinc-600 dark:text-zinc-300">
-                                    {openResult.skipped.map((s) => (
-                                        <li key={s.userId}>
-                                            {s.userName ?? s.userId}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Alert variant="default">
+                                <span className="font-semibold">
+                                    {t('monthlyApprovals.skippedTitle')}{' '}
+                                </span>
+                                {namesOf(openResult.skipped)}
+                            </Alert>
                         )}
                         {openResult.notTracking.length > 0 && (
-                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                <p className="mb-1 font-medium text-zinc-600 dark:text-zinc-300">
-                                    {t('monthlyApprovals.notTrackingTitle')}
-                                </p>
-                                <ul className="list-disc pl-4 space-y-1 text-zinc-600 dark:text-zinc-300">
-                                    {openResult.notTracking.map((n) => (
-                                        <li key={n.userId}>
-                                            {n.userName ?? n.userId}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Alert variant="default">
+                                <span className="font-semibold">
+                                    {t('monthlyApprovals.notTrackingTitle')}{' '}
+                                </span>
+                                {namesOf(openResult.notTracking)}
+                            </Alert>
                         )}
                     </div>
                 )}

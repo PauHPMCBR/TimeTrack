@@ -291,13 +291,15 @@ export async function runMonthlyApprovalReminders(
 /**
  * Opens a month for a worker's approval (admin action): creates/resets the
  * approval document and mails the worker. Assumes the caller has already
- * checked the anomalies gate.
+ * checked the anomalies gate. A failed email does not throw: the doc must
+ * exist so the worker can confirm; the caller reports `emailSent` so the
+ * admin knows the worker was not actually notified.
  */
 export async function openMonthForUser(
     userId: string,
     period: MonthPeriod,
     now: Date = new Date()
-): Promise<unknown> {
+): Promise<{ doc: unknown; emailSent: boolean }> {
     await dbConnect();
     const doc = await MonthlyApproval.findOneAndUpdate(
         { userId, year: period.year, month: period.month },
@@ -315,12 +317,20 @@ export async function openMonthForUser(
     )) as unknown as { name: string; email: string } | null;
     if (user?.email) {
         const frontendUrl = getFrontendUrl();
-        await sendMonthlyApprovalRequest({
-            to: user.email,
-            name: user.name,
-            period,
-            approveUrl: `${frontendUrl}/check-in`,
-        });
+        try {
+            await sendMonthlyApprovalRequest({
+                to: user.email,
+                name: user.name,
+                period,
+                approveUrl: `${frontendUrl}/check-in`,
+            });
+        } catch (error) {
+            console.error(
+                `Failed to send monthly approval request to user ${userId}:`,
+                error
+            );
+            return { doc, emailSent: false };
+        }
     }
-    return doc;
+    return { doc, emailSent: !!user?.email };
 }

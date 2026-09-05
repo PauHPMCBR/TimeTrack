@@ -185,6 +185,7 @@
         "rejectedVacation": "Vacances rebutjades",
         "teamVacation": "Vacances de l'Equip",
         "teamPendingVacation": "Vacances pendents de l'equip",
+        "allUsersVacations": "ADMIN: Mostra vacances de tota l'empresa",
         "totalHours": "Hores totals",
         "totalCompletedSessions": "Sessions completes",
         "vacations": "Vacances",
@@ -359,12 +360,8 @@
         "menu": {
             "sections": {
                 "users": "Usuaris i fitxatges",
-                "vacations": "Vacances",
+                "vacations": "Grups i vacances",
                 "settings": "Configuració global"
-            },
-            "calendar": {
-                "desc": "Visió mensual de les absències.",
-                "title": "Calendari Global"
             },
             "groups": {
                 "desc": "Organitza els empleats per equips o oficines.",
@@ -690,7 +687,10 @@
         "month": "Mes",
         "year": "Any",
         "openAction": "Obrir per a confirmació",
-        "openedCount": "{count} persona(es) notificades correctament.",
+        "notifiedTitle": "Sol·licitud enviada a {count} persona(es):",
+        "notifiedNoneTitle": "Ningú a qui notificar per a aquest mes.",
+        "emailFailedTitle": "No s'ha pogut enviar el correu a {count} persona(es):",
+        "emailFailedNote": "La seva sol·licitud queda pendent. Revoca-la i torna a obrir el mes per reintentar l'enviament.",
         "blockedTitle": "No s'han pogut obrir (anomalies pendents):",
         "forceAction": "Forçar obertura",
         "forceConfirm": "Força l'obertura del mes per a totes les persones treballadores, fins i tot les que tenen anomalies pendents. Vols continuar?",
