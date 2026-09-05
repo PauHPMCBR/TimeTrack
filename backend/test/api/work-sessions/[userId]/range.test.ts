@@ -6,7 +6,7 @@ vi.mock('@/lib/mongodb', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-    requireSameGroupOrAdmin: (
+    requireSelfOrAdmin: (
         handler: (req: unknown, res: unknown) => unknown
     ) => {
         return async (req: any, res: any) => {

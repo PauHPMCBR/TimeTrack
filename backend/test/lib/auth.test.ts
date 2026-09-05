@@ -20,6 +20,7 @@ vi.stubEnv('JWT_SECRET', 'test-secret-for-testing');
 import {
     requireInGroupOrAdmin,
     requireSameGroupOrAdmin,
+    requireSelfOrAdmin,
     requireRole,
     authenticateToken,
     signToken,
@@ -233,6 +234,109 @@ describe('requireSameGroupOrAdmin', () => {
         const res = mockRes();
 
         await requireSameGroupOrAdmin(handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+    });
+});
+
+describe('requireSelfOrAdmin', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
+
+    const handler = vi.fn().mockResolvedValue(undefined);
+
+    it('allows users to access their own data without a DB lookup', async () => {
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'user-1',
+                    role: 'employee',
+                }),
+            },
+            query: { userId: 'user-1' },
+        });
+        const res = mockRes();
+
+        await requireSelfOrAdmin(handler)(req, res);
+
+        expect(handler).toHaveBeenCalled();
+        // One lookup from authenticateToken only — the guard adds none.
+        expect(User.findById).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows admins to access another user’s data', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            role: 'admin',
+        } as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'admin-1',
+                    role: 'admin',
+                }),
+            },
+            query: { userId: 'user-2' },
+        });
+        const res = mockRes();
+
+        await requireSelfOrAdmin(handler)(req, res);
+
+        expect(handler).toHaveBeenCalled();
+        expect(User.findById).toHaveBeenCalledWith('admin-1');
+    });
+
+    it('rejects same-group employees with 403 NoAccessToUser', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            deleted: false,
+            role: 'employee',
+            groups: [objectId('g1')],
+        } as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'user-1',
+                    role: 'employee',
+                }),
+            },
+            query: { userId: 'user-2' },
+        });
+        const res = mockRes();
+
+        await requireSelfOrAdmin(handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: 'NoAccessToUser' })
+        );
+    });
+
+    it('rejects a demoted admin whose live DB role is employee', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            deleted: false,
+            role: 'employee',
+        } as any);
+
+        const req: any = mockReq({
+            headers: {
+                authorization: createAuthHeader({
+                    userId: 'demoted-1',
+                    role: 'admin', // stale JWT role
+                }),
+            },
+            query: { userId: 'user-2' },
+        });
+        const res = mockRes();
+
+        await requireSelfOrAdmin(handler)(req, res);
 
         expect(handler).not.toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(403);

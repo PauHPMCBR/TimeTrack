@@ -1,6 +1,6 @@
 import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
-import { requireSameGroupOrAdmin, AuthRequest } from '@/lib/auth';
+import { requireSelfOrAdmin, AuthRequest } from '@/lib/auth';
 import { WorkSession } from '@/models';
 import { SESSION_REPLACED } from 'shared/src/lib/constants';
 import {
@@ -130,4 +130,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireSameGroupOrAdmin(handler);
+export default requireSelfOrAdmin(handler);

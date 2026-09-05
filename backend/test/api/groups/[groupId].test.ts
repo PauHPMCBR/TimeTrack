@@ -38,10 +38,20 @@ vi.mock('@/models', () => ({
     Group: {
         findById: vi.fn(),
     },
+    User: {
+        find: vi.fn(),
+    },
 }));
 
-import { Group } from '@/models';
+import { Group, User } from '@/models';
 import groupHandler from '@/pages/api/groups/[groupId]';
+
+const memberQuery = (docs: unknown[]) =>
+    ({
+        select: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue(docs),
+        }),
+    }) as any;
 
 describe('GET /api/groups/[groupId]', () => {
     beforeEach(() => {
@@ -71,16 +81,18 @@ describe('GET /api/groups/[groupId]', () => {
             _id: 'group-123',
             name: 'Test Group',
             description: 'Test Description',
-            members: [{ name: 'User 1', email: 'user1@example.com' }],
+            members: ['user-1'],
+        };
+        const mockMember = {
+            _id: 'user-1',
+            name: 'User 1',
+            email: 'user1@example.com',
         };
 
-        const mockQuery = {
-            populate: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(mockGroup),
-            }),
-        };
-
-        vi.mocked(Group.findById).mockReturnValue(mockQuery as any);
+        vi.mocked(Group.findById).mockReturnValue({
+            lean: vi.fn().mockResolvedValue(mockGroup),
+        } as any);
+        vi.mocked(User.find).mockReturnValue(memberQuery([mockMember]) as any);
 
         const req = mockReq({ method: 'GET', query: { groupId: 'group-123' } });
         const res = mockRes();
@@ -90,15 +102,53 @@ describe('GET /api/groups/[groupId]', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: { group: mockGroup },
+            data: {
+                group: { ...mockGroup, members: [mockMember] },
+            },
+        });
+    });
+
+    it('should preserve stored member order and exclude blocked/deleted users', async () => {
+        const mockGroup = {
+            _id: 'group-123',
+            name: 'Test Group',
+            members: ['user-2', 'user-1', 'user-3'],
+        };
+
+        vi.mocked(Group.findById).mockReturnValue({
+            lean: vi.fn().mockResolvedValue(mockGroup),
+        } as any);
+        // The DB returns users in its own order; user-3 was filtered out
+        // (blocked/deleted) so only user-2 and user-1 come back.
+        vi.mocked(User.find).mockReturnValue(
+            memberQuery([
+                { _id: 'user-1', name: 'User 1' },
+                { _id: 'user-2', name: 'User 2' },
+            ]) as any
+        );
+
+        const req = mockReq({ method: 'GET', query: { groupId: 'group-123' } });
+        const res = mockRes();
+
+        await groupHandler(req, res);
+
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: {
+                group: {
+                    ...mockGroup,
+                    members: [
+                        { _id: 'user-2', name: 'User 2' },
+                        { _id: 'user-1', name: 'User 1' },
+                    ],
+                },
+            },
         });
     });
 
     it('should return 404 if group not found', async () => {
         vi.mocked(Group.findById).mockReturnValue({
-            populate: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(null),
-            }),
+            lean: vi.fn().mockResolvedValue(null),
         } as any);
 
         const req = mockReq({
