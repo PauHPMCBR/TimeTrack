@@ -29,10 +29,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             return responseErrorIllegalAction(res, 'ModifyingFromAnotherUser');
         }
 
-        await ElectiveVacation.updateMany(
-            { _id: vacationId },
-            { status: VACATION_CANCELLED }
-        );
+        await ElectiveVacation.findByIdAndUpdate(vacationId, {
+            status: VACATION_CANCELLED,
+            updatedAt: new Date(),
+        });
 
         res.status(201).json({ success: true });
     } catch (error) {

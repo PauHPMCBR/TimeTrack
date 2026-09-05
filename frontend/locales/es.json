@@ -172,7 +172,6 @@
         "legend": {
             "holidays": "Festivos: borde/anillo y etiqueta de color",
             "title": "Leyenda",
-            "today": "Hoy",
             "weekends": "Fines de semana: fondo ligero"
         },
         "nextMonth": "Mes siguiente",
@@ -185,6 +184,7 @@
         "reason": "Motivo",
         "rejectedVacation": "Vacaciones rechazadas",
         "teamVacation": "Vacaciones del Equipo",
+        "teamPendingVacation": "Vacaciones pendientes del equipo",
         "totalHours": "Horas totales",
         "totalCompletedSessions": "Sesiones completadas",
         "vacations": "Vacaciones",
@@ -201,15 +201,18 @@
             "confirm": "Eliminar",
             "title": "¿Eliminar solicitud?"
         },
-        "consecutiveDays": "Días consecutivos",
         "date": "Fecha",
-        "day": "día",
+        "endDate": "Fecha de fin",
         "days": "días",
         "empty": "No tienes ninguna solicitud registrada.",
         "history": "Historial de Solicitudes",
         "manageDesc": "Pedir días libres y ver el historial.",
+        "previewCost": "Este periodo cuesta {count} días de vacaciones de libre elección",
         "reason": "Motivo (opcional)",
         "reasonPlaceholder": "Ej: Asuntos personales...",
+        "obligatoryTitle": "Festivos de la empresa",
+        "obligatoryDesc": "Festivos fijados por la empresa; no se descuentan de tu saldo.",
+        "obligatoryEmpty": "No hay festivos fijados este año.",
         "request": "Pedir Vacaciones",
         "status": {
             "approved": "Aprobada",
@@ -221,7 +224,9 @@
         "success": "¡Solicitud enviada correctamente!",
         "title": "Mis Vacaciones",
         "total": "Total anual",
-        "used": "Gastados"
+        "used": "Gastados",
+        "unconfirmed": "{count} sin confirmar",
+        "yearLabel": "Año"
     },
     "groups": {
         "backToProfile": "Volver al perfil",
@@ -393,8 +398,7 @@
                 "title": "Eventos",
                 "anomalies": "anomalías",
                 "noAnomalies": "sin anomalías",
-                "status": {
-                }
+                "status": {}
             },
             "monthlyApprovals": {
                 "title": "Confirmación mensual",
@@ -530,6 +534,8 @@
             "approved": "Aprobadas",
             "cancelled": "Canceladas",
             "empty": "No hay solicitudes pendientes.",
+            "electiveDay": "día de libre elección",
+            "electiveDays": "días de libre elección",
             "exportCsv": "Exportar vacaciones CSV",
             "history": "Historial",
             "pending": "Pendientes",
@@ -659,6 +665,9 @@
         "YearlyVacationSaved": "Configuración de vacaciones anuales guardada",
         "partialVacation": "Se han creado {created} días, pero {failed} han fallado.",
         "vacationLimit": "Días de vacaciones excedidos o no válidos",
+        "vacationOverlap": "Las fechas se solapan con otra solicitud de vacaciones",
+        "vacationZeroDays": "El periodo seleccionado no cuesta ningún día de vacaciones de libre elección",
+        "vacationCrossYear": "El periodo no puede cruzar el fin de año",
         "GroupNotFound": "Grupo no encontrado",
         "NoAccessToGroup": "Sin acceso a este grupo"
     },

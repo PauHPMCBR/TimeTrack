@@ -8,8 +8,10 @@ import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import AdminBackButton from '../../../components/AdminBackButton';
 import Avatar from '@/components/Avatar';
+import VacationMonthsTable from '@/components/VacationMonthsTable';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
+import { localeTag } from '@/lib/datetime';
 import { ChevronRight, ChevronLeft, Check, X, Download } from 'lucide-react';
 import {
     VACATION_APPROVED,
@@ -28,8 +30,31 @@ type GroupedRequest = {
     reason?: string;
 };
 
+// Requests are stored as intervals with their spent days computed by the
+// backend, so each document maps to exactly one display group.
+const groupRequests = (
+    rawRequests: ElectiveVacation[]
+): GroupedRequest[] =>
+    [...rawRequests]
+        .sort((a, b) => {
+            if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
+            return (
+                new Date(a.startDate).getTime() -
+                new Date(b.startDate).getTime()
+            );
+        })
+        .map((vac) => ({
+            ids: [vac._id],
+            userId: vac.userId,
+            startDate: new Date(vac.startDate),
+            endDate: new Date(vac.endDate),
+            daysCount: vac.spentDays ?? 0,
+            status: vac.status,
+            reason: vac.reason,
+        }));
+
 export default function AdminVacationsPage() {
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
 
     const [requests, setRequests] = useState<ElectiveVacation[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -105,60 +130,6 @@ export default function AdminVacationsPage() {
         setYear(newYear);
     };
 
-    const groupRequests = (
-        rawRequests: ElectiveVacation[]
-    ): GroupedRequest[] => {
-        if (rawRequests.length === 0) return [];
-
-        const sorted = [...rawRequests].sort((a, b) => {
-            if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
-            return new Date(a.date).getTime() - new Date(b.date).getTime();
-        });
-
-        const groups: GroupedRequest[] = [];
-
-        sorted.forEach((vac) => {
-            const vacDate = new Date(vac.date);
-            vacDate.setHours(0, 0, 0, 0);
-
-            const lastGroup = groups[groups.length - 1];
-
-            if (
-                lastGroup &&
-                lastGroup.userId === vac.userId &&
-                lastGroup.status === vac.status
-            ) {
-                const groupEndDate = new Date(lastGroup.endDate);
-                groupEndDate.setHours(0, 0, 0, 0);
-
-                const diffTime = vacDate.getTime() - groupEndDate.getTime();
-                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-                const sameReason =
-                    (lastGroup.reason || '') === (vac.reason || '');
-
-                if (diffDays === 1 || (diffDays <= 4 && sameReason)) {
-                    lastGroup.endDate = new Date(vac.date);
-                    lastGroup.ids.push(vac._id);
-                    lastGroup.daysCount += 1;
-                    return;
-                }
-            }
-
-            groups.push({
-                ids: [vac._id],
-                userId: vac.userId,
-                startDate: new Date(vac.date),
-                endDate: new Date(vac.date),
-                daysCount: 1,
-                status: vac.status,
-                reason: vac.reason,
-            });
-        });
-
-        return groups;
-    };
-
     const handleBulkResolve = async (
         ids: string[],
         status: typeof VACATION_APPROVED | typeof VACATION_REJECTED
@@ -225,6 +196,13 @@ export default function AdminVacationsPage() {
                 filteredRequests.filter((r) => r.status === VACATION_REJECTED)
             ),
         [filteredRequests]
+    );
+
+    // Elective days the pending requests would spend once approved.
+    const pendingSpentDays = useMemo(
+        () =>
+            pendingGroups.reduce((sum, g) => sum + (g.daysCount ?? 0), 0),
+        [pendingGroups]
     );
 
     const stats = useMemo(
@@ -391,6 +369,10 @@ export default function AdminVacationsPage() {
                                 <span className="h-2 w-2 rounded-full bg-orange-400"></span>
                                 {t('admin.vacations.pending')} (
                                 {pendingGroups.length})
+                                <span className="font-normal normal-case tracking-normal">
+                                    · {pendingSpentDays}{' '}
+                                    {t('admin.vacations.electiveDays')}
+                                </span>
                             </h2>
 
                             {pendingGroups.length === 0 ? (
@@ -552,8 +534,14 @@ export default function AdminVacationsPage() {
                                                                     (
                                                                     {
                                                                         group.daysCount
-                                                                    }
-                                                                    d)
+                                                                    }{' '}
+                                                                    {t(
+                                                                        group.daysCount ===
+                                                                            1
+                                                                            ? 'admin.vacations.electiveDay'
+                                                                            : 'admin.vacations.electiveDays'
+                                                                    )}
+                                                                    )
                                                                 </span>
                                                             )}
                                                             {group.reason && (
@@ -617,8 +605,14 @@ export default function AdminVacationsPage() {
                                                                     (
                                                                     {
                                                                         group.daysCount
-                                                                    }
-                                                                    d)
+                                                                    }{' '}
+                                                                    {t(
+                                                                        group.daysCount ===
+                                                                            1
+                                                                            ? 'admin.vacations.electiveDay'
+                                                                            : 'admin.vacations.electiveDays'
+                                                                    )}
+                                                                    )
                                                                 </span>
                                                             )}
                                                         </div>
@@ -638,38 +632,19 @@ export default function AdminVacationsPage() {
                             </section>
                         )}
 
-                        {/* --- OBLIGATORY DAYS INFO --- */}
+                        {/* --- COMPANY OBLIGATORY HOLIDAYS --- */}
                         {obligatoryDays.length > 0 && (
                             <section>
                                 <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
                                     <span className="h-2 w-2 rounded-full bg-blue-400"></span>
-                                    {t('calendar.obligatoryVacation')} (
-                                    {obligatoryDays.length})
+                                    {t('vacations.obligatoryTitle')}
                                 </h2>
                                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
-                                    <div className="p-4">
-                                        <div className="flex flex-wrap gap-2">
-                                            {obligatoryDays
-                                                .slice(0, 10)
-                                                .map((date, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                                                    >
-                                                        <span>🏖️</span>
-                                                        {new Date(
-                                                            date
-                                                        ).toLocaleDateString()}
-                                                    </div>
-                                                ))}
-                                            {obligatoryDays.length > 10 && (
-                                                <div className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                                    +
-                                                    {obligatoryDays.length - 10}{' '}
-                                                    {t('common.more')}
-                                                </div>
-                                            )}
-                                        </div>
+                                    <div className="p-5">
+                                        <VacationMonthsTable
+                                            days={obligatoryDays}
+                                            locale={localeTag(lang)}
+                                        />
                                     </div>
                                 </div>
                             </section>

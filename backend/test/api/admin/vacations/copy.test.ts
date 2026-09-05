@@ -94,7 +94,6 @@ describe('POST /api/admin/vacations/copy', () => {
             year: 2024,
             obligatoryDays: [new Date(2024, 0, 6)],
             electiveDaysTotalCount: 22,
-            selectedElectiveDays: [],
         };
         vi.mocked(YearlyVacationDays.findOne)
             .mockResolvedValueOnce(source)
@@ -122,8 +121,7 @@ describe('POST /api/admin/vacations/copy', () => {
                 year: 2024,
                 obligatoryDays: [new Date(2024, 0, 6)],
                 electiveDaysTotalCount: 22,
-                selectedElectiveDays: [],
-            })
+                })
             .mockResolvedValueOnce(null);
 
         const req = mockReq({
@@ -139,8 +137,7 @@ describe('POST /api/admin/vacations/copy', () => {
                 year: 2025,
                 electiveDaysTotalCount: 22,
                 obligatoryDays: [new Date(2025, 0, 6)],
-                selectedElectiveDays: [],
-            })
+                })
         );
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
@@ -162,8 +159,7 @@ describe('POST /api/admin/vacations/copy', () => {
                 year: 2024,
                 obligatoryDays: [new Date(2024, 1, 1)],
                 electiveDaysTotalCount: 20,
-                selectedElectiveDays: [],
-            })
+                })
             .mockResolvedValueOnce({ _id: 'target-2025', year: 2025 });
 
         const req = mockReq({
@@ -179,8 +175,7 @@ describe('POST /api/admin/vacations/copy', () => {
             expect.objectContaining({
                 electiveDaysTotalCount: 20,
                 obligatoryDays: [new Date(2025, 1, 1)],
-                selectedElectiveDays: [],
-            })
+                })
         );
         expect(res.status).toHaveBeenCalledWith(200);
     });

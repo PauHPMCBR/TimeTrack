@@ -172,7 +172,6 @@
         "legend": {
             "holidays": "Holidays: border/ring with colored label",
             "title": "Legend",
-            "today": "Today",
             "weekends": "Weekends: light background"
         },
         "nextMonth": "Next month",
@@ -185,6 +184,7 @@
         "reason": "Reason",
         "rejectedVacation": "Rejected vacations",
         "teamVacation": "Team Vacation",
+        "teamPendingVacation": "Team pending vacations",
         "totalHours": "Total hours",
         "totalCompletedSessions": "Completed sessions",
         "vacations": "Vacations",
@@ -201,15 +201,18 @@
             "confirm": "Delete",
             "title": "Delete request?"
         },
-        "consecutiveDays": "Consecutive days",
         "date": "Date",
-        "day": "day",
+        "endDate": "End date",
         "days": "days",
         "empty": "No requests found.",
         "history": "Request History",
         "manageDesc": "Request time off and view history.",
+        "previewCost": "This period costs {count} elective vacation days",
         "reason": "Reason (optional)",
         "reasonPlaceholder": "Ex: Personal matters...",
+        "obligatoryTitle": "Company holidays",
+        "obligatoryDesc": "Holidays set by the company; they don't count against your balance.",
+        "obligatoryEmpty": "No company holidays set for this year.",
         "request": "Request Time Off",
         "status": {
             "approved": "Approved",
@@ -221,7 +224,9 @@
         "success": "Request sent successfully!",
         "title": "My Vacations",
         "total": "Total yearly",
-        "used": "Used"
+        "used": "Used",
+        "unconfirmed": "{count} unconfirmed",
+        "yearLabel": "Year"
     },
     "groups": {
         "backToProfile": "Back to profile",
@@ -393,8 +398,7 @@
                 "title": "Events",
                 "anomalies": "anomalies",
                 "noAnomalies": "no anomalies",
-                "status": {
-                }
+                "status": {}
             },
             "monthlyApprovals": {
                 "title": "Monthly confirmation",
@@ -530,6 +534,8 @@
             "approved": "Approved",
             "cancelled": "Cancelled",
             "empty": "No pending requests.",
+            "electiveDay": "elective day",
+            "electiveDays": "elective days",
             "exportCsv": "Export vacations CSV",
             "history": "History",
             "pending": "Pending",
@@ -659,6 +665,9 @@
         "YearlyVacationSaved": "Yearly vacation settings saved",
         "partialVacation": "{created} days created, but {failed} failed.",
         "vacationLimit": "Vacation limit exceeded or invalid",
+        "vacationOverlap": "These dates overlap another vacation request",
+        "vacationZeroDays": "The selected period doesn't cost any elective vacation days",
+        "vacationCrossYear": "The period cannot cross the end of the year",
         "GroupNotFound": "Group not found",
         "NoAccessToGroup": "No access to this group"
     },

@@ -131,9 +131,10 @@ describe('API Schemas', () => {
     });
 
     describe('ElectiveVacationRequestSchema', () => {
-        it('should validate correct vacation request with string date', () => {
+        it('should validate correct vacation request with string dates', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
-                date: '2024-06-15',
+                startDate: '2024-06-15',
+                endDate: '2024-06-16',
                 reason: 'Family event',
             });
             expect(result.success).toBe(true);
@@ -141,32 +142,44 @@ describe('API Schemas', () => {
 
         it('should accept vacation without reason', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
-                date: '2024-06-15',
+                startDate: '2024-06-15',
+                endDate: '2024-06-15',
             });
             expect(result.success).toBe(true);
         });
 
         it('should reject an impossible calendar date', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
-                date: '2024-02-30',
+                startDate: '2024-02-30',
+                endDate: '2024-02-30',
             });
             expect(result.success).toBe(false);
         });
 
         it('should reject an unparseable date', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
-                date: 'garbage',
+                startDate: 'garbage',
+                endDate: '2024-06-15',
             });
             expect(result.success).toBe(false);
         });
 
-        it('should parse a date key as local midnight', () => {
+        it('should reject endDate before startDate', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
-                date: '2024-06-15',
+                startDate: '2024-06-16',
+                endDate: '2024-06-15',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should parse date keys as local midnight', () => {
+            const result = ElectiveVacationRequestSchema.safeParse({
+                startDate: '2024-06-15',
+                endDate: '2024-06-16',
             });
             expect(result.success).toBe(true);
             if (result.success) {
-                const d = result.data.date;
+                const d = result.data.startDate;
                 expect(d.getFullYear()).toBe(2024);
                 expect(d.getMonth()).toBe(5);
                 expect(d.getDate()).toBe(15);
@@ -174,15 +187,12 @@ describe('API Schemas', () => {
             }
         });
 
-        it('should accept an ISO datetime and normalize to local midnight', () => {
+        it('should reject non-key date strings (instants shift days server-side)', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
-                date: '2024-06-15T10:30:00.000Z',
+                startDate: '2024-06-15T10:30:00.000Z',
+                endDate: '2024-06-16',
             });
-            expect(result.success).toBe(true);
-            if (result.success) {
-                expect(result.data.date.getHours()).toBe(0);
-                expect(result.data.date.getMinutes()).toBe(0);
-            }
+            expect(result.success).toBe(false);
         });
     });
 

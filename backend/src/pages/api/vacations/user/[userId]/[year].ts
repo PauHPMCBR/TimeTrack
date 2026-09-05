@@ -39,9 +39,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             (await Promise.all([
                 ElectiveVacation.find({
                     userId: userId,
-                    date: { $gte: startDate, $lte: endDate },
+                    // Intervals overlapping the requested year.
+                    startDate: { $lte: endDate },
+                    endDate: { $gte: startDate },
                 })
-                    .sort({ date: 1 })
+                    .sort({ startDate: 1 })
                     .lean(),
                 YearlyVacationDays.findOne({
                     year: year,
@@ -67,7 +69,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     obligatoryDays: globalSettings.obligatoryDays,
                     electiveDaysTotalCount:
                         globalSettings.electiveDaysTotalCount,
-                    selectedElectiveDays: [],
                 })) as unknown as YearlyVacationRow;
             }
         } else {

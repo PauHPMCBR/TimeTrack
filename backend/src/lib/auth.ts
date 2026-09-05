@@ -105,6 +105,8 @@ export interface AuthUserDoc {
     role: UserRole;
     deleted?: boolean;
     groups?: Types.ObjectId[];
+    // Present on the full document fetched by authenticateToken.
+    workDays?: number[];
 }
 
 export interface AuthRequest extends NextApiRequest {

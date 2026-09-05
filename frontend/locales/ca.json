@@ -172,7 +172,6 @@
         "legend": {
             "holidays": "Festius: vora/anelleta amb color amb etiqueta",
             "title": "Llegenda",
-            "today": "Avui",
             "weekends": "Caps de setmana: fons lleuger"
         },
         "nextMonth": "Mes següent",
@@ -185,6 +184,7 @@
         "reason": "Motiu",
         "rejectedVacation": "Vacances rebutjades",
         "teamVacation": "Vacances de l'Equip",
+        "teamPendingVacation": "Vacances pendents de l'equip",
         "totalHours": "Hores totals",
         "totalCompletedSessions": "Sessions completes",
         "vacations": "Vacances",
@@ -201,15 +201,18 @@
             "confirm": "Eliminar",
             "title": "Eliminar sol·licitud?"
         },
-        "consecutiveDays": "Dies consecutius",
         "date": "Data",
-        "day": "dia",
+        "endDate": "Data de fi",
         "days": "dies",
         "empty": "No tens cap sol·licitud registrada.",
         "history": "Historial de Sol·licituds",
         "manageDesc": "Demanar dies de festa i veure l'historial.",
+        "previewCost": "Aquest període costa {count} dies de vacances de lliure elecció",
         "reason": "Motiu (opcional)",
         "reasonPlaceholder": "Ex: Assumptes personals...",
+        "obligatoryTitle": "Festes de l'empresa",
+        "obligatoryDesc": "Dies de festa fixats per l'empresa; no es descompten del teu saldo.",
+        "obligatoryEmpty": "No hi ha dies de festa fixats aquest any.",
         "request": "Demanar Vacances",
         "status": {
             "approved": "Aprovada",
@@ -221,7 +224,9 @@
         "success": "Sol·licitud enviada correctament!",
         "title": "Les meves Vacances",
         "total": "Total anual",
-        "used": "Gastats"
+        "used": "Gastats",
+        "unconfirmed": "{count} sense confirmar",
+        "yearLabel": "Any"
     },
     "groups": {
         "backToProfile": "Torna al perfil",
@@ -393,8 +398,7 @@
                 "title": "Fitxatges",
                 "anomalies": "anomalies",
                 "noAnomalies": "sense anomalies",
-                "status": {
-                }
+                "status": {}
             },
             "monthlyApprovals": {
                 "title": "Confirmació mensual",
@@ -530,6 +534,8 @@
             "approved": "Aprovades",
             "cancelled": "Cancel·lades",
             "empty": "No hi ha sol·licituds pendents.",
+            "electiveDay": "dia de lliure elecció",
+            "electiveDays": "dies de lliure elecció",
             "exportCsv": "Exporta vacances CSV",
             "history": "Historial",
             "pending": "Pendents",
@@ -659,6 +665,9 @@
         "YearlyVacationSaved": "Configuració de vacances anuals desada",
         "partialVacation": "S'han creat {created} dies, però {failed} han fallat.",
         "vacationLimit": "Dies de festa excedits o no vàlids",
+        "vacationOverlap": "Les dates se superposen amb una altra sol·licitud de vacances",
+        "vacationZeroDays": "El període seleccionat no costa cap dia de vacances de lliure elecció",
+        "vacationCrossYear": "El període no pot travessar el final de l'any",
         "GroupNotFound": "Grup no trobat",
         "NoAccessToGroup": "Sense accés a aquest grup"
     },

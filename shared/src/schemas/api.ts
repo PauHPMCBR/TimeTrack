@@ -162,51 +162,61 @@ export const AvatarUploadRequestSchema = z.object({
 });
 export type AvatarUploadRequest = z.infer<typeof AvatarUploadRequestSchema>;
 
-export const ElectiveVacationRequestSchema = z.object({
-    date: z.string().refine(isValidDateString, 'Invalid date').transform(toLocalMidnightDate),
-    reason: z.string().max(1000).optional(),
-});
-export type ElectiveVacationRequest = z.infer<
+export const ElectiveVacationRequestSchema = z
+    .object({
+        // Plain "YYYY-MM-DD" keys: the client's calendar day travels intact
+        // and the backend anchors it to local midnight (storage convention).
+        // Instants must not be sent — re-normalizing them server-side shifts
+        // the day when client and server timezones differ.
+        startDate: z
+            .string()
+            .refine(isValidDateKey, 'Invalid date')
+            .transform(dateKeyToLocalMidnight),
+        endDate: z
+            .string()
+            .refine(isValidDateKey, 'Invalid date')
+            .transform(dateKeyToLocalMidnight),
+        reason: z.string().max(1000).optional(),
+    })
+    .refine((data) => data.endDate.getTime() >= data.startDate.getTime(), {
+        message: 'endDate must be on or after startDate',
+    });
+export type ElectiveVacationRequest = z.input<
     typeof ElectiveVacationRequestSchema
 >;
 
-// True for a valid "YYYY-MM-DD" key or any other parseable date string.
-function isValidDateString(value: string): boolean {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (m) {
-        const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-        const date = new Date(y, mo - 1, d, 0, 0, 0, 0);
-        return (
-            date.getFullYear() === y &&
-            date.getMonth() === mo - 1 &&
-            date.getDate() === d
-        );
-    }
-    return !isNaN(new Date(value).getTime());
+// True for a real calendar "YYYY-MM-DD" key (rejects e.g. 2024-02-30).
+export function isValidDateKey(value: string): boolean {
+    if (!DATE_KEY_REGEX.test(value)) return false;
+    const [y, m, d] = value.split('-').map(Number);
+    const date = new Date(y, m - 1, d, 0, 0, 0, 0);
+    return (
+        date.getFullYear() === y &&
+        date.getMonth() === m - 1 &&
+        date.getDate() === d
+    );
 }
 
-// Parses an incoming vacation date (date key "YYYY-MM-DD" or any ISO/parseable
-// date string) into local midnight of its local calendar day. The app stores
-// vacation dates at local midnight so day buckets and year lookups are
-// consistent regardless of the server timezone.
-export function toLocalMidnightDate(value: string): Date {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (m) {
-        return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
-    }
-    const date = new Date(value);
-    date.setHours(0, 0, 0, 0);
-    return date;
+// Parses a "YYYY-MM-DD" key into the instant at local midnight of that
+// calendar day — the app's storage convention for vacation dates. Note this
+// uses the *server's* timezone; only ever apply it to timezone-free keys,
+// never to instants sent by a client (which would shift the day).
+export function dateKeyToLocalMidnight(value: string): Date {
+    const [y, m, d] = value.split('-').map(Number);
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
 export const YearlyVacationAdminRequestSchema = z.object({
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
     obligatoryDays: z.array(
-        z.string().refine(isValidDateString, 'Invalid date').transform(toLocalMidnightDate)
+        z
+            .string()
+            .refine(isValidDateKey, 'Invalid date')
+            .transform(dateKeyToLocalMidnight)
     ),
     electiveDaysTotalCount: z.number().gte(0),
 });
-export type YearlyVacationAdminRequest = z.infer<
+export type YearlyVacationAdminRequest = z.input<
     typeof YearlyVacationAdminRequestSchema
 >;
 

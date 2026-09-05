@@ -490,6 +490,12 @@ class ApiClient {
         });
     }
 
+    async getVacationYears(): Promise<ApiResponse<{ years: number[] }>> {
+        return this.request(`/api/vacations/years`, {
+            method: 'GET',
+        });
+    }
+
     async getYearlyVacationsGlobal(
         year: number
     ): Promise<ApiResponse<{ vacations: YearlyVacationDays }>> {

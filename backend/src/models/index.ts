@@ -45,9 +45,10 @@ zWorkSessionSchema.index({ userId: 1, timestamp: -1 });
 zWorkSessionSchema.index({ timestamp: -1 });
 
 const zElectiveVacationSchema = zodSchema(ElectiveVacationSchema);
-zElectiveVacationSchema.index({ userId: 1, date: 1 });
-zElectiveVacationSchema.index({ status: 1, date: 1 });
-zElectiveVacationSchema.index({ date: 1 });
+zElectiveVacationSchema.index({ userId: 1, startDate: 1 });
+// Overlap checks filter by (userId, status) and the interval bounds.
+zElectiveVacationSchema.index({ userId: 1, status: 1, startDate: 1, endDate: 1 });
+zElectiveVacationSchema.index({ startDate: 1 });
 
 const zGroupSchema = zodSchema(GroupSchema);
 zGroupSchema.index({ members: 1, name: 1 });

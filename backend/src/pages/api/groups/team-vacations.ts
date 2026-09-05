@@ -8,7 +8,7 @@ import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { VACATION_APPROVED } from 'shared/src/lib/constants';
+import { VACATION_APPROVED, VACATION_PENDING } from 'shared/src/lib/constants';
 
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -58,10 +58,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const vacations = await ElectiveVacation.find({
             userId: { $in: activeMemberIds },
-            date: { $gte: startDate, $lte: endDate },
-            status: VACATION_APPROVED,
+            // Intervals overlapping the requested year. Pending requests are
+            // included so group mates can see upcoming time off that is not
+            // confirmed yet (the calendar marks them distinctly).
+            startDate: { $lte: endDate },
+            endDate: { $gte: startDate },
+            status: { $in: [VACATION_APPROVED, VACATION_PENDING] },
         })
-            .sort({ date: 1 })
+            .sort({ startDate: 1 })
             .lean();
 
         // Resolve the vacation owner (userId → { _id, name, email }) and the

@@ -34,7 +34,7 @@ vi.mock('@/models', () => ({
     },
 }));
 
-import { ElectiveVacation, YearlyVacationDays } from '@/models';
+import { ElectiveVacation } from '@/models';
 import vacationResolveHandler from '@/pages/api/admin/vacations/resolve/[vacationId]';
 
 describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
@@ -85,7 +85,7 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 404 if vacation not found', async () => {
-        vi.mocked(ElectiveVacation.findById).mockResolvedValue(null);
+        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue(null);
 
         const req = mockReq({
             method: 'POST',
@@ -105,14 +105,7 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 200 on successful approve', async () => {
-        vi.mocked(ElectiveVacation.findById).mockResolvedValue({
-            _id: 'vacation-123',
-            userId: 'user-456',
-            date: new Date('2024-06-15'),
-            status: 'pending',
-        });
         vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue({});
-        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(null);
 
         const req = mockReq({
             method: 'POST',
@@ -128,12 +121,6 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 200 on successful reject', async () => {
-        vi.mocked(ElectiveVacation.findById).mockResolvedValue({
-            _id: 'vacation-123',
-            userId: 'user-456',
-            date: new Date('2024-06-15'),
-            status: 'pending',
-        });
         vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue({});
 
         const req = mockReq({
@@ -150,7 +137,7 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 500 on database error', async () => {
-        vi.mocked(ElectiveVacation.findById).mockRejectedValue(
+        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockRejectedValue(
             new Error('DB Error')
         );
 
