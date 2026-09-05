@@ -42,13 +42,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
-        // Only include non-blocked, registered members.
+        // Exclude blocked/unregistered/deleted members.
         const activeMembers = memberIds.size
             ? ((await User.find(
                   {
                       _id: { $in: Array.from(memberIds) },
                       blocked: { $ne: true },
                       registered: true,
+                      deleted: { $ne: true },
                   },
                   '_id'
               ).lean()) as unknown as { _id: string }[])

@@ -41,7 +41,10 @@ export async function resolveVacationNames<
 
     if (neededIds.size === 0) return vacations;
 
-    const users = (await User.find({ _id: { $in: Array.from(neededIds) } })
+    const users = (await User.find({
+        _id: { $in: Array.from(neededIds) },
+        deleted: { $ne: true },
+    })
         .select('name email')
         .lean()) as unknown as Array<{
         _id: unknown;

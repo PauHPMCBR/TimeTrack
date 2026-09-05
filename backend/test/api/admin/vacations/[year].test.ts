@@ -42,6 +42,9 @@ vi.mock('@/models', () => ({
     YearlyVacationDays: {
         findOne: vi.fn(),
     },
+    User: {
+        find: vi.fn(),
+    },
 }));
 
 import { ElectiveVacation, YearlyVacationDays } from '@/models';
@@ -92,6 +95,11 @@ describe('GET /api/admin/vacations/[year]', () => {
             }),
         } as any);
 
+        const { User } = await import('@/models');
+        vi.mocked(User.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue([]),
+        } as any);
+
         vi.mocked(YearlyVacationDays.findOne).mockReturnValue({
             lean: vi.fn().mockResolvedValue(mockYearlyVacation),
         } as any);
@@ -117,6 +125,11 @@ describe('GET /api/admin/vacations/[year]', () => {
             sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockRejectedValue(new Error('DB Error')),
             }),
+        } as any);
+
+        const { User } = await import('@/models');
+        vi.mocked(User.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue([]),
         } as any);
 
         const req = mockReq({ method: 'GET', query: { year: '2024' } });

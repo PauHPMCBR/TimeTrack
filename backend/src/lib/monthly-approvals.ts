@@ -200,7 +200,7 @@ export async function runMonthlyAdminReview(now: Date = new Date()): Promise<num
     const reviewUrl = `${frontendUrl}/admin/monthly-approvals?year=${period.year}&month=${period.month}`;
 
     const admins = (await User.find(
-        { role: ADMIN_ROLE, registered: true },
+        { role: ADMIN_ROLE, registered: true, deleted: { $ne: true } },
         'email'
     ).lean()) as unknown as { email: string }[];
 
@@ -253,9 +253,13 @@ export async function runMonthlyApprovalReminders(
     for (const doc of pending) {
         const user = (await User.findById(
             doc.userId,
-            'name email'
-        )) as unknown as { name: string; email: string } | null;
-        if (!user?.email) continue;
+            'name email deleted'
+        )) as unknown as {
+            name: string;
+            email: string;
+            deleted?: boolean;
+        } | null;
+        if (!user?.email || user.deleted) continue;
 
         await sendMonthlyApprovalReminder({
             to: user.email,

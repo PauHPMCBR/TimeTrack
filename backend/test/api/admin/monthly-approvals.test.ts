@@ -156,6 +156,7 @@ describe('POST /api/admin/monthly-approvals/open', () => {
                 registered: true,
                 blocked: { $ne: true },
                 checkInRequired: { $ne: false },
+                deleted: { $ne: true },
             },
             'name trackingStartDate'
         );
@@ -184,7 +185,11 @@ describe('POST /api/admin/monthly-approvals/open', () => {
         await openMonthlyApprovalsHandler(req, res);
 
         expect(User.find).toHaveBeenCalledWith(
-            { _id: { $in: ['u1'] }, blocked: { $ne: true } },
+            {
+                _id: { $in: ['u1'] },
+                blocked: { $ne: true },
+                deleted: { $ne: true },
+            },
             'name trackingStartDate checkInRequired'
         );
         expect(res.json.mock.calls[0][0].data.blocked).toEqual([]);

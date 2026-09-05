@@ -39,7 +39,7 @@ vi.mock('@/lib/storage', () => ({
 
 vi.mock('@/models', () => ({
     User: {
-        findById: vi.fn(),
+        findOne: vi.fn(),
     },
 }));
 
@@ -81,7 +81,7 @@ describe('GET /api/profile/[userId]/avatar', () => {
     });
 
     it('should serve the avatar with the correct content type', async () => {
-        vi.mocked(User.findById).mockReturnValue({
+        vi.mocked(User.findOne).mockReturnValue({
             select: vi.fn().mockResolvedValue({
                 _id: 'user-123',
                 avatar: 'user-123-1.png',
@@ -107,7 +107,7 @@ describe('GET /api/profile/[userId]/avatar', () => {
     });
 
     it('should return 404 when user has no avatar', async () => {
-        vi.mocked(User.findById).mockReturnValue({
+        vi.mocked(User.findOne).mockReturnValue({
             select: vi
                 .fn()
                 .mockResolvedValue({ _id: 'user-123', avatar: null }),
@@ -127,7 +127,7 @@ describe('GET /api/profile/[userId]/avatar', () => {
     });
 
     it('should return 404 when the file is missing', async () => {
-        vi.mocked(User.findById).mockReturnValue({
+        vi.mocked(User.findOne).mockReturnValue({
             select: vi.fn().mockResolvedValue({
                 _id: 'user-123',
                 avatar: 'user-123-1.png',

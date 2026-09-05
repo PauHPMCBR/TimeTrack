@@ -32,7 +32,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             .populate({
                 path: 'members',
                 select: 'name email role registered avatar',
-                match: { blocked: { $ne: true } },
+                match: { blocked: { $ne: true }, deleted: { $ne: true } },
             })
             .lean();
 

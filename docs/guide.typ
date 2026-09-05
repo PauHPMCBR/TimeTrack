@@ -17,6 +17,9 @@ Alternativament, també es pot compartir l'enllaç que es mostra al panell d'adm
 
 L'enllaç porta a la pàgina de registre, on s'estableix la contrassenya del compte, que fa que quedi activat. A partir d'aquest moment, es pot accedir a l'eina iniciant sessió amb el correu + contrassenya.
 
+== Reinici de contrassenya
+(desbloqueja usuari)
+
 = Empleats
 
 == Fitxar entrada i sortida

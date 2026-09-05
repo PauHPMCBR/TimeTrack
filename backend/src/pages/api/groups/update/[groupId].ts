@@ -61,6 +61,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
                 const usersExist = await User.countDocuments({
                     _id: { $in: validMemberIds },
+                    deleted: { $ne: true },
                 });
 
                 if (usersExist !== validMemberIds.length) {
@@ -88,7 +89,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
                 if (members && members.length > 0) {
                     await User.updateMany(
-                        { _id: { $in: members } },
+                        { _id: { $in: members }, deleted: { $ne: true } },
                         { $addToSet: { groups: groupObjectId } },
                         groupOptions
                     );

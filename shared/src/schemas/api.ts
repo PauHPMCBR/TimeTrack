@@ -71,9 +71,7 @@ export const UpdateUserRequestSchema = z
             .string()
             .regex(DATE_KEY_REGEX, 'trackingStartDate must be YYYY-MM-DD')
             .optional(),
-        // Optional: when true, the admin invalidates the user's current
-        // password, forcing them to use the forgot-password flow to recover.
-        // Admins can never set a known password for another user.
+        // Forces forgot-password recovery; admins can never set a known password.
         invalidatePassword: z.boolean().optional(),
         // When true the user must check in/out daily; when false the system
         // does not flag missing sessions as anomalies.

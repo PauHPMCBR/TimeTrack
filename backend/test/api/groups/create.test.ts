@@ -120,7 +120,7 @@ describe('POST /api/groups/create', () => {
         await groupCreateHandler(req, res);
 
         expect(User.updateMany).toHaveBeenCalledWith(
-            { _id: { $in: ['user-1', 'user-2'] } },
+            { _id: { $in: ['user-1', 'user-2'] }, deleted: { $ne: true } },
             { $addToSet: { groups: 'group-123' } }
         );
     });

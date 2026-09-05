@@ -32,6 +32,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                       _id: { $in: userIds },
                       blocked: { $ne: true },
                       registered: true,
+                      deleted: { $ne: true },
                   },
                   'name'
               ).lean()) as unknown as { _id: string; name: string }[])

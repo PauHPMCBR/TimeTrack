@@ -3,7 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import { requireRole, AuthRequest } from '@/lib/auth';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
-import { User } from '@/models';
+import { User, Group } from '@/models';
 import { toPublicUser } from '@/lib/sanitize';
 import {
     responseErrorEntryNotFound,
@@ -11,6 +11,7 @@ import {
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
     responseErrorPut,
+    responseErrorDelete,
 } from '@/lib/response-error-generator';
 import {
     runValidation,
@@ -39,7 +40,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             const userId = req.query.userId as string;
 
             const user = await User.findById(userId);
-            if (!user) {
+            if (!user || user.deleted) {
                 return responseErrorEntryNotFound(res, 'User');
             }
 
@@ -61,6 +62,65 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         } catch (error) {
             console.error('Get user registration link error:', error);
             return responseErrorGet(res);
+        }
+        return;
+    }
+
+    // Soft delete: data stays in the DB, the user is just hidden and locked out.
+    if (req.method === 'DELETE') {
+        if (
+            !(await runValidation(
+                validateQueryParams(UserIdParamSchema),
+                req,
+                res
+            ))
+        )
+            return;
+
+        try {
+            await dbConnect();
+            const userId = req.query.userId as string;
+
+            const user = await User.findById(userId);
+            if (!user || user.deleted) {
+                return responseErrorEntryNotFound(res, 'User');
+            }
+            if (user.role === ADMIN_ROLE) {
+                return responseErrorIncorrectParameter(res, 'userId', [
+                    'CannotDeleteAdmin',
+                ]);
+            }
+            if (req.user?.userId === userId) {
+                return responseErrorIncorrectParameter(res, 'userId', [
+                    'CannotDeleteSelf',
+                ]);
+            }
+
+            // updateOne (not save()) skips full-document validation.
+            await User.updateOne(
+                { _id: user._id },
+                {
+                    $set: {
+                        deleted: true,
+                        deletedAt: new Date(),
+                        updatedAt: new Date(),
+                    },
+                }
+            );
+
+            // The user's own groups array is kept so a restore can re-add them.
+            await Group.updateMany(
+                { members: user._id },
+                { $pull: { members: user._id } }
+            );
+
+            res.status(200).json({
+                success: true,
+                data: { deleted: true },
+            });
+        } catch (error) {
+            console.error('Delete user error:', error);
+            return responseErrorDelete(res);
         }
         return;
     }
@@ -98,9 +158,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             email !== undefined &&
             email.toLowerCase() !== user.email.toLowerCase()
         ) {
+            // Email is unique per non-deleted user.
             const existingEmail = await User.findOne({
                 email: email.toLowerCase(),
                 _id: { $ne: user._id },
+                deleted: { $ne: true },
             });
             if (existingEmail) {
                 return responseErrorIncorrectParameter(res, 'email', [
@@ -139,12 +201,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             user.trackingStartDate = d;
         }
         if (req.body.invalidatePassword) {
-            // Overwrite the password with a random hash that nobody knows,
-            // forcing the employee to use the forgot-password flow. Admins
-            // can never set a known password for another user.
+            // Forces forgot-password recovery; admins never set known passwords.
             const randomPw = '!' + crypto.randomBytes(32).toString('hex') + 'A1';
             user.password = randomPw;
-            // Clear any existing reset tokens so a stale link can't be reused.
             user.resetPasswordToken = undefined;
             user.resetPasswordExpires = undefined;
         }

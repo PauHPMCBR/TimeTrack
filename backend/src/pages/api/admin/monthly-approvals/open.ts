@@ -63,13 +63,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const targetUsers = (userIds
             ? await User.find(
-                  { _id: { $in: userIds }, blocked: { $ne: true } },
+                  {
+                      _id: { $in: userIds },
+                      blocked: { $ne: true },
+                      deleted: { $ne: true },
+                  },
                   'name trackingStartDate checkInRequired'
               ).lean()
             : await User.find(
                   {
                       registered: true,
                       blocked: { $ne: true },
+                      deleted: { $ne: true },
                       checkInRequired: { $ne: false },
                   },
                   'name trackingStartDate'

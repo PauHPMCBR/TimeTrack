@@ -36,7 +36,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         if (members && members.length > 0) {
             await User.updateMany(
-                { _id: { $in: members } },
+                { _id: { $in: members }, deleted: { $ne: true } },
                 { $addToSet: { groups: group._id } }
             );
         }

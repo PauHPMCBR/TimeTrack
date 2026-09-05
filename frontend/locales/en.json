@@ -426,7 +426,11 @@
             "unblockHint": "To unblock, edit the user and reset their password.",
             "workingNow": "Working now",
             "customNonWorkDays": "Custom non-work days",
-            "registered": "Registered"
+            "registered": "Registered",
+            "deletedTitle": "Deleted users",
+            "deletedOn": "Deleted on {date}",
+            "restore": "Restore",
+            "restoreError": "Restore failed"
         },
         "usersEdit": {
             "editAction": "Edit user",
@@ -437,7 +441,10 @@
             "passwordLabel": "Password",
             "invalidatePassword": "Invalidate password",
             "invalidatePasswordOn": "Password will be invalidated",
-            "invalidatePasswordDesc": "The employee will have to recover their password using the forgot-password procedure."
+            "invalidatePasswordDesc": "The employee will have to recover their password using the forgot-password procedure.",
+            "delete": "Delete user",
+            "deleteWarning": "Before deleting, export all their data (fitxatges and vacations). Data is not erased from the database and the user can be restored, but they immediately lose access to the app.",
+            "deleteConfirm": "Are you sure you want to delete this user? They will immediately lose access to the app."
         },
         "sessionEditor": {
             "addIn": "Add check-in",
@@ -611,6 +618,10 @@
                 "OutOfDay": "Time must be on the same day",
                 "InvalidTimestamp": "Invalid date and time",
                 "CannotDemoteAdmin": "An admin cannot be demoted",
+                "CannotDeleteAdmin": "An admin cannot be deleted",
+                "CannotDeleteSelf": "You cannot delete yourself",
+                "AlreadyDeleted": "This user is already deleted",
+                "NotDeleted": "This user is not deleted",
                 "CurrentPasswordRequired": "Current password is required",
                 "InvalidCurrentPassword": "Current password is incorrect",
                 "TooLong": "Password is too long (max 72 characters)",

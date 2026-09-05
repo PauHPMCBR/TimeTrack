@@ -74,7 +74,13 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                   };
 
         const [users, sessions, approvalDocs] = (await Promise.all([
-            User.find({ _id: { $in: userIds } }, 'name email dni').lean(),
+            User.find(
+                {
+                    _id: { $in: userIds },
+                    deleted: { $ne: true },
+                },
+                'name email dni'
+            ).lean(),
             WorkSession.find(filter)
                 .select('userId timestamp type source notes')
                 .sort({ timestamp: 1 })
@@ -87,10 +93,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 .lean(),
         ])) as unknown as [UserRow[], WorkSessionRow[], { userId: string; year: number; month: number }[]];
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+        // Drops rows of deleted or unknown users.
+        const allowedUserIds = new Set(userMap.keys());
+        const visibleSessions = sessions.filter((s) =>
+            allowedUserIds.has(s.userId.toString())
+        );
+        const visibleApprovals = approvalDocs.filter((doc) =>
+            allowedUserIds.has(doc.userId.toString())
+        );
 
         // Build approvedMonths set: userId:YYYY-MM format
         const approvedMonths = new Set<string>();
-        for (const doc of approvalDocs) {
+        for (const doc of visibleApprovals) {
             const key = `${doc.userId}:${doc.year}-${String(doc.month).padStart(2, '0')}`;
             approvedMonths.add(key);
         }
@@ -105,7 +119,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             'Notes',
             'Confirmed',
         ];
-        const rows = sessions.map((s) => {
+        const rows = visibleSessions.map((s) => {
             const monthKey = new Date(s.timestamp).toISOString().slice(0, 7);
             const userMonthKey = `${s.userId.toString()}:${monthKey}`;
             const isConfirmed = approvedMonths.has(userMonthKey) ? 'Yes' : 'No';

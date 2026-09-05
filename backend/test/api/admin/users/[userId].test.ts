@@ -47,10 +47,14 @@ vi.mock('@/models', () => ({
         findById: vi.fn(),
         findOne: vi.fn(),
         findByIdAndUpdate: vi.fn(),
+        updateOne: vi.fn(),
+    },
+    Group: {
+        updateMany: vi.fn(),
     },
 }));
 
-import { User } from '@/models';
+import { User, Group } from '@/models';
 import updateUserHandler from '@/pages/api/admin/users/[userId]';
 
 describe('PUT /api/admin/users/[userId]', () => {
@@ -63,7 +67,7 @@ describe('PUT /api/admin/users/[userId]', () => {
     });
 
     it('should return 405 if method is not PUT or GET', async () => {
-        const req = mockReq({ method: 'DELETE', query: { userId: 'user-1' } });
+        const req = mockReq({ method: 'PATCH', query: { userId: 'user-1' } });
         const res = mockRes();
 
         await updateUserHandler(req, res);
@@ -160,6 +164,62 @@ describe('PUT /api/admin/users/[userId]', () => {
                 incorrectParameter: 'email',
                 reasons: ['AlreadyExists'],
             },
+        });
+        expect(User.findOne).toHaveBeenCalledWith({
+            email: 'taken@example.com',
+            _id: { $ne: 'user-1' },
+            deleted: { $ne: true },
+        });
+    });
+
+    it('allows editing a soft-deleted user (to resolve restore conflicts)', async () => {
+        const deletedUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            deleted: true,
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(deletedUser);
+        vi.mocked(User.findOne).mockResolvedValue(null);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { email: 'new@example.com' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(deletedUser.email).toBe('new@example.com');
+        expect(deletedUser.save).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('email conflict check ignores soft-deleted users', async () => {
+        const existingUser: any = {
+            _id: 'user-1',
+            email: 'old@example.com',
+            save: vi.fn().mockResolvedValue(true),
+        };
+        vi.mocked(User.findById).mockResolvedValue(existingUser);
+        // A deleted user holds the target email: no conflict.
+        vi.mocked(User.findOne).mockResolvedValue(null);
+
+        const req = mockReq({
+            method: 'PUT',
+            query: { userId: 'user-1' },
+            body: { email: 'new@example.com' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(User.findOne).toHaveBeenCalledWith({
+            email: 'new@example.com',
+            _id: { $ne: 'user-1' },
+            deleted: { $ne: true },
         });
     });
 
@@ -357,5 +417,138 @@ describe('PUT /api/admin/users/[userId]', () => {
             error: 'PutError',
             details: {},
         });
+    });
+});
+
+describe('DELETE /api/admin/users/[userId] (soft delete)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
+
+    const liveEmployee = {
+        _id: 'user-1',
+        role: 'employee',
+        deleted: false,
+        groups: [],
+    };
+
+    it('soft-deletes the user and pulls them from groups without touching other data', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            ...liveEmployee,
+        } as any);
+        vi.mocked(User.updateOne).mockResolvedValue({} as any);
+        vi.mocked(Group.updateMany).mockResolvedValue({} as any);
+
+        const req = mockReq({
+            method: 'DELETE',
+            query: { userId: 'user-1' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(User.updateOne).toHaveBeenCalledWith(
+            { _id: 'user-1' },
+            expect.objectContaining({
+                $set: expect.objectContaining({ deleted: true }),
+            })
+        );
+        expect(Group.updateMany).toHaveBeenCalledWith(
+            { members: 'user-1' },
+            { $pull: { members: 'user-1' } }
+        );
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: { deleted: true },
+        });
+    });
+
+    it('returns 404 when the user does not exist', async () => {
+        vi.mocked(User.findById).mockResolvedValue(null as any);
+
+        const req = mockReq({
+            method: 'DELETE',
+            query: { userId: 'missing' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(User.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 when the user is already deleted', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            ...liveEmployee,
+            deleted: true,
+        } as any);
+
+        const req = mockReq({
+            method: 'DELETE',
+            query: { userId: 'user-1' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(User.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('refuses to delete an admin', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            ...liveEmployee,
+            role: 'admin',
+        } as any);
+
+        const req = mockReq({
+            method: 'DELETE',
+            query: { userId: 'user-1' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'userId',
+                reasons: ['CannotDeleteAdmin'],
+            },
+        });
+        expect(User.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('refuses self-deletion', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            ...liveEmployee,
+        } as any);
+
+        const req = mockReq({
+            method: 'DELETE',
+            query: { userId: 'admin-123' },
+        });
+        const res = mockRes();
+
+        await updateUserHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IncorrectParameter',
+            details: {
+                incorrectParameter: 'userId',
+                reasons: ['CannotDeleteSelf'],
+            },
+        });
+        expect(User.updateOne).not.toHaveBeenCalled();
     });
 });

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { User } from '@/types';
+import { User, DeletedUserRow } from '@/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import {
@@ -14,6 +14,7 @@ import {
     Timer,
     Users,
     TriangleAlert,
+    ChevronDown,
 } from 'lucide-react';
 import AdminBackButton from '../../../components/AdminBackButton';
 import Avatar from '@/components/Avatar';
@@ -36,6 +37,16 @@ export default function UsersListPage() {
     const [creating, setCreating] = useState(false);
     const [total, setTotal] = useState(0);
     const [workingNow, setWorkingNow] = useState(0);
+    const [deletedUsers, setDeletedUsers] = useState<DeletedUserRow[]>([]);
+    const [showDeleted, setShowDeleted] = useState(false);
+    const [restoringId, setRestoringId] = useState<string | null>(null);
+    const [restoreError, setRestoreError] = useState<string | null>(null);
+
+    const fetchDeletedUsers = useCallback(async () => {
+        const res = await apiClient.getDeletedUsers();
+        if (res.data?.users) setDeletedUsers(res.data.users);
+        else setDeletedUsers([]);
+    }, []);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -55,7 +66,28 @@ export default function UsersListPage() {
 
     useEffect(() => {
         fetchUsers();
-    }, [fetchUsers]);
+        fetchDeletedUsers();
+    }, [fetchUsers, fetchDeletedUsers]);
+
+    const handleRestore = async (userId: string) => {
+        setRestoringId(userId);
+        setRestoreError(null);
+        const res = await apiClient.restoreUser(userId);
+        setRestoringId(null);
+        if (res.error) {
+            const reasons = res.details?.reasons || [];
+            const reasonKey = reasons.includes('AlreadyExists')
+                ? 'AlreadyExists'
+                : null;
+            setRestoreError(
+                reasonKey
+                    ? `${t('admin.users.restoreError')} (${t(`error.IncorrectParameter.reason.${reasonKey}`)})`
+                    : `${t('admin.users.restoreError')} (${res.error})`
+            );
+            return;
+        }
+        await Promise.all([fetchUsers(), fetchDeletedUsers()]);
+    };
 
     const allSelected = useMemo(
         () => users.length > 0 && selected.size === users.length,
@@ -284,11 +316,102 @@ export default function UsersListPage() {
                 )}
             </Card>
 
+            {deletedUsers.length > 0 && (
+                <Card className="overflow-hidden">
+                    <button
+                        type="button"
+                        onClick={() => setShowDeleted((v) => !v)}
+                        className="flex w-full items-center justify-between p-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/50"
+                    >
+                        <span>
+                            {t('admin.users.deletedTitle')} (
+                            {deletedUsers.length})
+                        </span>
+                        <ChevronDown
+                            size={16}
+                            className={`transition-transform ${showDeleted ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+                    {showDeleted && (
+                        <ul className="divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
+                            {deletedUsers.map((user) => (
+                                <li
+                                    key={user._id}
+                                    className="flex items-center justify-between p-4"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <Avatar
+                                            userId={user._id}
+                                            version={user.avatar ?? null}
+                                            alt={user.name}
+                                            fallback={(
+                                                user.name || '?'
+                                            ).charAt(0).toUpperCase()}
+                                            className="h-10 w-10 rounded-full object-cover grayscale"
+                                            fallbackClassName="h-10 w-10 rounded-full bg-zinc-100 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                                        />
+                                        <div>
+                                            <div className="font-medium text-zinc-500 dark:text-zinc-400">
+                                                {user.name}
+                                            </div>
+                                            <div className="text-xs text-zinc-500">
+                                                {user.email}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs text-zinc-400">
+                                            {t('admin.users.deletedOn', {
+                                                date: new Date(
+                                                    user.deletedAt
+                                                ).toLocaleDateString(),
+                                            })}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setEditingUser(user as User)
+                                            }
+                                            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+                                            aria-label={t(
+                                                'admin.usersEdit.editAction'
+                                            )}
+                                        >
+                                            <Pencil size={16} />
+                                        </button>
+                                        <Button
+                                            variant="soft"
+                                            size="sm"
+                                            disabled={restoringId === user._id}
+                                            onClick={() =>
+                                                handleRestore(user._id)
+                                            }
+                                        >
+                                            {restoringId === user._id
+                                                ? t('common.loading')
+                                                : t('admin.users.restore')}
+                                        </Button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {restoreError && (
+                        <div className="border-t border-zinc-100 p-4 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400">
+                            {restoreError}
+                        </div>
+                    )}
+                </Card>
+            )}
+
             <UserEditModal
                 user={editingUser}
                 open={!!editingUser}
                 onClose={() => setEditingUser(null)}
-                onSaved={fetchUsers}
+                onSaved={() => {
+                    fetchUsers();
+                    fetchDeletedUsers();
+                }}
             />
 
             <UserCreateModal

@@ -28,7 +28,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
 
         const users = (await User.find(
-            {},
+            { deleted: { $ne: true } },
             'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
         )
             .sort({ name: 1 })

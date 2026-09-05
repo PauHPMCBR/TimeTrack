@@ -2,7 +2,7 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
 import { ADMIN_ROLE, VACATION_PENDING } from 'shared/src/lib/constants';
-import { ElectiveVacation } from '@/models';
+import { ElectiveVacation, User } from '@/models';
 import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
@@ -16,8 +16,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
 
+        const activeUsers = await User.find(
+            { deleted: { $ne: true } },
+            '_id'
+        ).lean();
+        const activeUserIds = activeUsers.map((u) => u._id);
+
         const vacations = await ElectiveVacation.find({
             status: VACATION_PENDING,
+            userId: { $in: activeUserIds },
         })
             .sort({ date: 1 })
             .lean();

@@ -40,6 +40,7 @@ export default withRateLimit(
             const user = await User.findOne({
                 resetPasswordToken: token,
                 registered: true,
+                deleted: { $ne: true },
             });
 
             if (!user) {

@@ -81,6 +81,10 @@ export type IncorrectParameterReason =
     | 'OutOfDay'
     | 'InvalidTimestamp'
     | 'CannotDemoteAdmin'
+    | 'CannotDeleteAdmin'
+    | 'CannotDeleteSelf'
+    | 'AlreadyDeleted'
+    | 'NotDeleted'
     | 'CurrentPasswordRequired'
     | 'InvalidCurrentPassword'
     | 'InvalidTimezone';

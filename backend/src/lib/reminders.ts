@@ -76,7 +76,7 @@ export async function runDailyInconsistencyReminder(
     const { start, end } = dayRange(dateKeyStr);
 
     const users = (await User.find(
-        { registered: true },
+        { registered: true, deleted: { $ne: true } },
         'name email expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired'
     ).lean()) as unknown as ReminderUser[];
     const sentTo: string[] = [];

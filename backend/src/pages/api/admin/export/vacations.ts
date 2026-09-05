@@ -59,7 +59,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                   ).lean()
                 : [],
             User.find(
-                { blocked: { $ne: true }, registered: true },
+                {
+                    blocked: { $ne: true },
+                    registered: true,
+                    deleted: { $ne: true },
+                },
                 'name email dni'
             ).lean(),
         ])) as unknown as [

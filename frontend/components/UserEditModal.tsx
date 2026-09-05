@@ -14,13 +14,20 @@ import Label from '@/components/ui/Label';
 import TextField from '@/components/ui/TextField';
 import RoleSelector from '@/components/ui/RoleSelector';
 import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
-import { EMPLOYEE_ROLE } from 'shared/src/lib/constants';
+import { ADMIN_ROLE, EMPLOYEE_ROLE } from 'shared/src/lib/constants';
 import {
     DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_NON_WORKING_DAYS,
 } from 'shared/src/lib/defaults';
 import { COPIED_LINK_FEEDBACK_MS } from '@/lib/constants';
-import { Check, Copy, Link2, Loader2 } from 'lucide-react';
+import {
+    Check,
+    Copy,
+    Download,
+    Link2,
+    Loader2,
+    Trash2,
+} from 'lucide-react';
 
 type Props = {
     user: User | null;
@@ -58,6 +65,10 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const [customNonWorkDays, setCustomNonWorkDays] = useState(false);
     const [nonWorkDays, setNonWorkDays] = useState<number[]>([]);
     const [startDate, setStartDate] = useState('');
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
 
     const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -93,6 +104,15 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setInvalidatePassword(false);
         setCopied(false);
         setRegistrationLink(null);
+        setConfirmingDelete(false);
+        setDeleting(false);
+        setDeleteError(null);
+
+        if (!currentUserId) {
+            apiClient.getCurrentUser().then((u) => {
+                if (u?._id) setCurrentUserId(u._id);
+            });
+        }
 
         if (!user.registered) {
             apiClient.getUserRegistrationLink(user._id).then((res) => {
@@ -238,6 +258,51 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         navigator.clipboard.writeText(registrationLink);
         setCopied(true);
         setTimeout(() => setCopied(false), COPIED_LINK_FEEDBACK_MS);
+    };
+
+    const canDelete =
+        !!user &&
+        user.role !== ADMIN_ROLE &&
+        user._id !== currentUserId &&
+        !user.deleted;
+
+    const exportUserData = () => {
+        if (!user) return;
+        apiClient.exportWorkSessions([user._id]);
+        apiClient.exportVacations(new Date().getFullYear(), {
+            userIds: [user._id],
+        });
+    };
+
+    const handleDelete = async () => {
+        if (!user || !canDelete) return;
+        if (!window.confirm(t('admin.usersEdit.deleteConfirm'))) return;
+        setDeleting(true);
+        setDeleteError(null);
+        const res = await apiClient.deleteUser(user._id);
+        setDeleting(false);
+        if (res.error) {
+            if (res.error === 'IncorrectParameter') {
+                const reasons = res.details?.reasons || [];
+                const key = reasons.find(
+                    (r) =>
+                        r === 'CannotDeleteAdmin' ||
+                        r === 'CannotDeleteSelf' ||
+                        r === 'AlreadyDeleted'
+                );
+                if (key) {
+                    setDeleteError(
+                        t(`error.IncorrectParameter.reason.${key}`)
+                    );
+                    return;
+                }
+            }
+            setDeleteError(t(`error.${res.error}`) || res.error);
+            return;
+        }
+        resetDirty();
+        onClose();
+        onSaved?.();
     };
 
     return (
@@ -442,6 +507,76 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                             onChange={(role) => update({ role })}
                         />
                     </div>
+
+                    {canDelete && (
+                        <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                            {confirmingDelete ? (
+                                <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900/40 dark:bg-red-900/10">
+                                    <p className="mb-3 text-sm text-red-700 dark:text-red-300">
+                                        {t('admin.usersEdit.deleteWarning')}
+                                    </p>
+                                    <div className="mb-3 flex flex-wrap gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="soft"
+                                            size="sm"
+                                            onClick={exportUserData}
+                                        >
+                                            <Download size={14} />
+                                            {t('admin.export.button')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="soft"
+                                            size="sm"
+                                            onClick={exportUserData}
+                                        >
+                                            <Download size={14} />
+                                            {t('admin.vacations.exportCsv')}
+                                        </Button>
+                                    </div>
+                                    {deleteError && (
+                                        <div className="mb-3 rounded-lg bg-red-100 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                                            {deleteError}
+                                        </div>
+                                    )}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="danger"
+                                            disabled={deleting}
+                                            onClick={handleDelete}
+                                            className="flex-1"
+                                        >
+                                            <Trash2 size={14} />
+                                            {deleting
+                                                ? t('common.loading')
+                                                : t('admin.usersEdit.delete')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() =>
+                                                setConfirmingDelete(false)
+                                            }
+                                        >
+                                            {t('common.cancel')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    variant="soft"
+                                    onClick={() => setConfirmingDelete(true)}
+                                    className="w-full text-red-600 dark:text-red-400"
+                                >
+                                    <Trash2 size={14} />
+                                    {t('admin.usersEdit.delete')}
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </form>
             )}
         </Modal>

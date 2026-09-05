@@ -92,6 +92,7 @@ describe('POST /api/auth/login', () => {
         expect(User.findOne).toHaveBeenCalledWith({
             email: 'test@example.com',
             registered: true,
+            deleted: { $ne: true },
         });
     });
 

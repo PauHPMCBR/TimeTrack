@@ -426,7 +426,11 @@
             "unblockHint": "Per desbloquejar, edita l'usuari i restableix-ne la contrasenya.",
             "workingNow": "Treballant ara",
             "customNonWorkDays": "Dies no laborables personalitzats",
-            "registered": "Registrat"
+            "registered": "Registrat",
+            "deletedTitle": "Usuaris eliminats",
+            "deletedOn": "Eliminat el {date}",
+            "restore": "Restaurar",
+            "restoreError": "Ha fallat la restauració"
         },
         "usersEdit": {
             "editAction": "Editar usuari",
@@ -437,7 +441,10 @@
             "passwordLabel": "Contrasenya",
             "invalidatePassword": "Invalidar contrasenya",
             "invalidatePasswordOn": "S'invalidarà la contrasenya",
-            "invalidatePasswordDesc": "L'empleat haurà de recuperar la contrasenya amb el procediment de contrasenya oblidada."
+            "invalidatePasswordDesc": "L'empleat haurà de recuperar la contrasenya amb el procediment de contrasenya oblidada.",
+            "delete": "Eliminar usuari",
+            "deleteWarning": "Abans d'eliminar, exporta totes les seves dades (fitxatges i vacances). Les dades no s'esborren de la base de dades i l'usuari es pot restaurar, però perdrà immediatament l'accés a l'aplicació.",
+            "deleteConfirm": "Segur que vols eliminar aquest usuari? Perdrà immediatament l'accés a l'aplicació."
         },
         "sessionEditor": {
             "addIn": "Afegir entrada",
@@ -611,6 +618,10 @@
                 "OutOfDay": "L'hora ha de ser del mateix dia",
                 "InvalidTimestamp": "Data i hora no vàlides",
                 "CannotDemoteAdmin": "No es pot degradar un administrador",
+                "CannotDeleteAdmin": "No es pot eliminar un administrador",
+                "CannotDeleteSelf": "No et pots eliminar a tu mateix",
+                "AlreadyDeleted": "Aquest usuari ja està eliminat",
+                "NotDeleted": "Aquest usuari no està eliminat",
                 "CurrentPasswordRequired": "Cal la contrasenya actual",
                 "InvalidCurrentPassword": "La contrasenya actual no és correcta",
                 "TooLong": "La contrasenya és massa llarga (màxim 72 caràcters)",
