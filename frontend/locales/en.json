@@ -660,6 +660,7 @@
         "bannerTitle": "Monthly record confirmation",
         "bannerDesc": "The administration has reviewed your time record for the following months and asks you to confirm them:",
         "approve": "Confirm",
+        "review": "Review",
         "confirmApprove": "Do you confirm the time record for",
         "bannerNote": "By confirming, you declare the month's records are correct. The month is then locked; for any correction, contact the administration.",
         "adminTitle": "Monthly record confirmation",

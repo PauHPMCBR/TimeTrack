@@ -660,6 +660,7 @@
         "bannerTitle": "Confirmación del registro mensual",
         "bannerDesc": "La administración ha revisado tu registro de jornada de los siguientes meses y espera que lo confirmes:",
         "approve": "Confirmar",
+        "review": "Revisar",
         "confirmApprove": "¿Confirmas que el registro de jornada de",
         "bannerNote": "Al confirmar, declaras que los registros del mes son correctos. El mes queda bloqueado; para cualquier corrección, contacta con la administración.",
         "adminTitle": "Confirmación mensual del registro",

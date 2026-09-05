@@ -1,20 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { localeTag } from '@/lib/datetime';
 import { MonthlyApprovalRow } from '@/schemas/api';
 import { APPROVAL_PENDING } from 'shared/src/lib/constants';
+import { HISTORY_PERIOD, HISTORY_CURSOR } from '@/lib/storage';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Eye } from 'lucide-react';
 
 // Banner shown on the check-in page: months the administration has reviewed
 // and opened for the worker's confirmation (registro de jornada monthly
 // record). Confirming is the worker's signature on the month's record.
 export default function MonthlyApprovalsBanner() {
     const { t, lang } = useI18n();
+    const router = useRouter();
     const [pending, setPending] = useState<MonthlyApprovalRow[]>([]);
     const [busyId, setBusyId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -77,6 +80,19 @@ export default function MonthlyApprovalsBanner() {
         }
     };
 
+    const handleReview = (row: MonthlyApprovalRow) => {
+        try {
+            localStorage.setItem(HISTORY_PERIOD, JSON.stringify('month'));
+            localStorage.setItem(
+                HISTORY_CURSOR,
+                new Date(row.year, row.month - 1, 15).toISOString()
+            );
+        } catch (err) {
+            console.error('Failed to persist history filters:', err);
+        }
+        router.push('/history');
+    };
+
     return (
         <Card className="border-amber-300 bg-amber-50 p-5 dark:border-amber-700 dark:bg-amber-900/20">
             <div className="mb-2 flex items-center gap-2">
@@ -107,13 +123,23 @@ export default function MonthlyApprovalsBanner() {
                         <span className="text-sm font-medium capitalize">
                             {formatPeriod(row.year, row.month)}
                         </span>
-                        <Button
-                            variant="primary"
-                            disabled={busyId === row._id}
-                            onClick={() => handleApprove(row)}
-                        >
-                            {t('monthlyApprovals.approve')}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="soft"
+                                disabled={busyId === row._id}
+                                onClick={() => handleReview(row)}
+                            >
+                                <Eye size={16} />
+                                {t('monthlyApprovals.review')}
+                            </Button>
+                            <Button
+                                variant="primary"
+                                disabled={busyId === row._id}
+                                onClick={() => handleApprove(row)}
+                            >
+                                {t('monthlyApprovals.approve')}
+                            </Button>
+                        </div>
                     </div>
                 ))}
             </div>
