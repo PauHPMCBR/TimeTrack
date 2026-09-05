@@ -10,6 +10,7 @@ import { Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import FitxatgesTable from '@/components/FitxatgesTable';
 import WorkSessionsToolbar from '@/components/WorkSessionsToolbar';
+import MonthlyConfirmationCard from '@/components/MonthlyConfirmationCard';
 import { usePersistedState } from '@/lib/usePersistedState';
 import {
     AdminReportPeriod,
@@ -214,6 +215,20 @@ export default function HistoryPage() {
                 pageSize={PAGE_SIZE}
                 onPageChange={setOffset}
                 approvedMonths={approvedMonths}
+            />
+
+            <hr></hr>
+
+            <MonthlyConfirmationCard
+                onApproved={(userId, year, month) =>
+                    setApprovedMonths((prev) => {
+                        const next = new Set(prev);
+                        next.add(
+                            `${userId}:${year}-${String(month).padStart(2, '0')}`
+                        );
+                        return next;
+                    })
+                }
             />
         </section>
     );

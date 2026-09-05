@@ -149,6 +149,17 @@
             "label": "Exportar",
             "status": "Estat",
             "confirmed": "Confirmat"
+        },
+        "confirmation": {
+            "title": "Confirmació mensual del registre",
+            "legendConfirmed": "Confirmat",
+            "legendPending": "Pendent de confirmar",
+            "legendAwaitingReview": "Pendent de revisió",
+            "legendNotApplicable": "No aplica",
+            "tooltipConfirmed": "Confirmat",
+            "tooltipPending": "Pendent de confirmació",
+            "tooltipAwaitingReview": "Esperant revisió de l'administració",
+            "tooltipNotApplicable": "Sense registre de jornada en aquest període"
         }
     },
     "calendar": {
@@ -268,6 +279,7 @@
         },
         "thisWeek": "Aquesta setmana",
         "title": "Perfil d'usuari",
+        "weeklyGoal": "Objectiu setmanal",
         "password": {
             "title": "Canvia la contrasenya",
             "current": "Contrasenya actual",
