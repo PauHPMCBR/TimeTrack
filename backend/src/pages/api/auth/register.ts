@@ -65,10 +65,12 @@ export default withRateLimit(
                 return responseErrorIncorrectParameter(res, 'password', errors);
             }
 
+            // Email is unique per non-deleted user.
             const existingUser = await User.findOne({
                 email: emailLower,
                 registered: true,
                 _id: { $ne: user._id },
+                deleted: { $ne: true },
             });
 
             if (existingUser) {

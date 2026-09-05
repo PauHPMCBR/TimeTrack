@@ -35,6 +35,8 @@ export type YearlyVacationDays = z.infer<typeof YearlyVacationDaysSchema> & {
 export type AppSettings = z.infer<typeof AppSettingsSchema> & { _id: string };
 export type { AdminWorkSessionRow };
 
+export type DeletedUserRow = User & { deletedAt: string };
+
 export type PopulatedUserRef = { _id: string; name: string; email: string };
 export type TeamVacation = Omit<ElectiveVacation, 'userId'> & {
     userId: string | PopulatedUserRef;

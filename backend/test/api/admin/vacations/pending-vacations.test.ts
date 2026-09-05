@@ -26,6 +26,9 @@ vi.mock('@/models', () => ({
     ElectiveVacation: {
         find: vi.fn(),
     },
+    User: {
+        find: vi.fn(),
+    },
 }));
 
 import { ElectiveVacation } from '@/models';
@@ -74,6 +77,11 @@ describe('GET /api/admin/vacations/pending-vacations', () => {
             sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(mockVacations),
             }),
+        } as any);
+
+        const { User } = await import('@/models');
+        vi.mocked(User.find).mockReturnValue({
+            lean: vi.fn().mockResolvedValue([]),
         } as any);
 
         const req = mockReq({ method: 'GET' });

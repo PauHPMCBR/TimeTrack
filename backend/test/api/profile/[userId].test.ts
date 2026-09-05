@@ -36,7 +36,7 @@ vi.mock('@/lib/validation', () => ({
 
 vi.mock('@/models', () => ({
     User: {
-        findById: vi.fn(),
+        findOne: vi.fn(),
     },
 }));
 
@@ -75,7 +75,7 @@ describe('GET /api/profile/[userId]', () => {
         };
 
         const { User } = await import('@/models');
-        vi.mocked(User.findById).mockReturnValue({
+        vi.mocked(User.findOne).mockReturnValue({
             populate: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(mockUser),
             }),
@@ -86,6 +86,9 @@ describe('GET /api/profile/[userId]', () => {
 
         await profileUserHandler(req, res);
 
+        expect(User.findOne).toHaveBeenCalledWith(
+            { _id: 'user-456', deleted: { $ne: true } }
+        );
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
@@ -95,7 +98,7 @@ describe('GET /api/profile/[userId]', () => {
 
     it('should return 404 if user not found', async () => {
         const { User } = await import('@/models');
-        vi.mocked(User.findById).mockReturnValue({
+        vi.mocked(User.findOne).mockReturnValue({
             populate: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(null),
             }),
@@ -119,7 +122,7 @@ describe('GET /api/profile/[userId]', () => {
 
     it('should return 500 on database error', async () => {
         const { User } = await import('@/models');
-        vi.mocked(User.findById).mockReturnValue({
+        vi.mocked(User.findOne).mockReturnValue({
             populate: vi.fn().mockReturnValue({
                 lean: vi.fn().mockRejectedValue(new Error('DB Error')),
             }),

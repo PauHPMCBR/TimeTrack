@@ -28,6 +28,7 @@ import {
     AdminWorkSessionsResponse,
     AdminDashboardResponse,
     AppSettings,
+    DeletedUserRow,
     ElectiveVacation,
     Group,
     GroupMember,
@@ -278,6 +279,28 @@ class ApiClient {
         return this.request(`/api/groups/update/${groupId}`, {
             method: 'DELETE',
         });
+    }
+
+    async deleteUser(
+        userId: string
+    ): Promise<ApiResponse<{ deleted: boolean }>> {
+        return this.request(`/api/admin/users/${userId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async restoreUser(
+        userId: string
+    ): Promise<ApiResponse<{ user: User }>> {
+        return this.request(`/api/admin/users/${userId}/restore`, {
+            method: 'POST',
+        });
+    }
+
+    async getDeletedUsers(): Promise<
+        ApiResponse<{ users: DeletedUserRow[] }>
+    > {
+        return this.request(`/api/admin/users/deleted`);
     }
 
     async createGroup(

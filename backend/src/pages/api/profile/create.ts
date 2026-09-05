@@ -33,8 +33,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
         const { email, name, role, dni } = req.body;
 
+        // Email is unique per non-deleted user.
         const existingUser = await User.findOne({
             email: String(email).toLowerCase(),
+            deleted: { $ne: true },
         });
         if (existingUser) {
             return responseErrorIncorrectParameter(res, 'email', [

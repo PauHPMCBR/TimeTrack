@@ -24,7 +24,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     try {
         await dbConnect();
         const userId = req.query.userId as string;
-        const userDoc = await User.findById(userId)
+        const userDoc = await User.findOne({
+            _id: userId,
+            deleted: { $ne: true },
+        })
             .populate('groups', 'name description')
             .lean();
 

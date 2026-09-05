@@ -41,7 +41,11 @@ export default withRateLimit(
             // Only registered users can reset. Respond identically whether or
             // not the account exists, so the endpoint can't be used to probe
             // which emails are registered.
-            const user = await User.findOne({ email, registered: true });
+            const user = await User.findOne({
+                email,
+                registered: true,
+                deleted: { $ne: true },
+            });
 
             if (user) {
                 const resetPasswordToken = crypto.randomBytes(TOKEN_BYTE_LENGTH).toString('hex');

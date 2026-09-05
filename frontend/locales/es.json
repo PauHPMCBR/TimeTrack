@@ -426,7 +426,11 @@
             "unblockHint": "Para desbloquear, edita el usuario y restablece su contraseña.",
             "workingNow": "Trabajando ahora",
             "customNonWorkDays": "Días no laborables personalizados",
-            "registered": "Registrado"
+            "registered": "Registrado",
+            "deletedTitle": "Usuarios eliminados",
+            "deletedOn": "Eliminado el {date}",
+            "restore": "Restaurar",
+            "restoreError": "Ha fallado la restauración"
         },
         "usersEdit": {
             "editAction": "Editar usuario",
@@ -437,7 +441,10 @@
             "passwordLabel": "Contraseña",
             "invalidatePassword": "Invalidar contraseña",
             "invalidatePasswordOn": "Se invalidará la contraseña",
-            "invalidatePasswordDesc": "El empleado deberá recuperar la contraseña con el procedimiento de contraseña olvidada."
+            "invalidatePasswordDesc": "El empleado deberá recuperar la contraseña con el procedimiento de contraseña olvidada.",
+            "delete": "Eliminar usuario",
+            "deleteWarning": "Antes de eliminar, exporta todos sus datos (fichajes y vacaciones). Los datos no se borran de la base de datos y el usuario se puede restaurar, pero perderá inmediatamente el acceso a la aplicación.",
+            "deleteConfirm": "¿Seguro que quieres eliminar este usuario? Perderá inmediatamente el acceso a la aplicación."
         },
         "sessionEditor": {
             "addIn": "Añadir entrada",
@@ -611,6 +618,10 @@
                 "OutOfDay": "La hora debe ser del mismo día",
                 "InvalidTimestamp": "Fecha y hora no válidas",
                 "CannotDemoteAdmin": "No se puede degradar a un administrador",
+                "CannotDeleteAdmin": "No se puede eliminar a un administrador",
+                "CannotDeleteSelf": "No puedes eliminarte a ti mismo",
+                "AlreadyDeleted": "Este usuario ya está eliminado",
+                "NotDeleted": "Este usuario no está eliminado",
                 "CurrentPasswordRequired": "Se requiere la contraseña actual",
                 "InvalidCurrentPassword": "La contraseña actual no es correcta",
                 "TooLong": "La contraseña es demasiado larga (máximo 72 caracteres)",

@@ -188,7 +188,11 @@ describe('requireSameGroupOrAdmin', () => {
 
     it('allows users sharing at least one group', async () => {
         vi.mocked(User.findById)
-            .mockResolvedValueOnce({ groups: [objectId('g1')] } as any) // current user
+            // current user (reused by the guard via req.dbUser)
+            .mockResolvedValueOnce({
+                deleted: false,
+                groups: [objectId('g1')],
+            } as any)
             .mockResolvedValueOnce({
                 groups: [objectId('g2'), objectId('g1')],
             } as any); // target
@@ -211,7 +215,10 @@ describe('requireSameGroupOrAdmin', () => {
 
     it('rejects users with no shared groups', async () => {
         vi.mocked(User.findById)
-            .mockResolvedValueOnce({ groups: [objectId('g1')] } as any)
+            .mockResolvedValueOnce({
+                deleted: false,
+                groups: [objectId('g1')],
+            } as any)
             .mockResolvedValueOnce({ groups: [objectId('g9')] } as any);
 
         const req: any = mockReq({
@@ -319,6 +326,9 @@ describe('authenticateToken sliding expiration', () => {
     const handler = vi.fn().mockResolvedValue(undefined);
 
     it('re-issues a token in X-Auth-Token when the token is close to expiring', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            deleted: false,
+        } as any);
         const nearExpiry = jwt.sign(
             { userId: 'user-1', email: 'a@b.c', role: 'employee' },
             'test-secret-for-testing',
@@ -340,6 +350,9 @@ describe('authenticateToken sliding expiration', () => {
     });
 
     it('does not re-issue when the token is still fresh', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            deleted: false,
+        } as any);
         const fresh = jwt.sign(
             { userId: 'user-1', email: 'a@b.c', role: 'employee' },
             'test-secret-for-testing',
@@ -385,6 +398,9 @@ describe('authenticateToken sliding expiration', () => {
     });
 
     it('refresh preserves the original sessionStart and re-issues a 96h token', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            deleted: false,
+        } as any);
         const sessionStart = Math.floor(Date.now() / 1000) - 10 * 24 * 60 * 60; // 10 days ago
         const nearExpiry = jwt.sign(
             {
@@ -414,6 +430,47 @@ describe('authenticateToken sliding expiration', () => {
             96 * 3600,
             -2
         ); // ~96h
+    });
+
+    it('denies a soft-deleted user even with a valid token', async () => {
+        vi.mocked(User.findById).mockResolvedValue({ deleted: true } as any);
+        const fresh = jwt.sign(
+            { userId: 'user-1', email: 'a@b.c', role: 'employee' },
+            'test-secret-for-testing',
+            { expiresIn: '96h' }
+        );
+
+        const req: any = mockReq({
+            headers: { authorization: `Bearer ${fresh}` },
+        });
+        const res = mockRes();
+
+        await authenticateToken(handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: 'InvalidToken' })
+        );
+    });
+
+    it('denies a token whose user no longer exists', async () => {
+        vi.mocked(User.findById).mockResolvedValue(null as any);
+        const fresh = jwt.sign(
+            { userId: 'user-1', email: 'a@b.c', role: 'employee' },
+            'test-secret-for-testing',
+            { expiresIn: '96h' }
+        );
+
+        const req: any = mockReq({
+            headers: { authorization: `Bearer ${fresh}` },
+        });
+        const res = mockRes();
+
+        await authenticateToken(handler)(req, res);
+
+        expect(handler).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
     });
 
     it('signToken issues a 96h token with the expected payload', () => {

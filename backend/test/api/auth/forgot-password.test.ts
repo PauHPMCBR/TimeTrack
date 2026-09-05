@@ -76,6 +76,7 @@ describe('POST /api/auth/forgot-password', () => {
         expect(User.findOne).toHaveBeenCalledWith({
             email: 'test@example.com',
             registered: true,
+            deleted: { $ne: true },
         });
         expect(User.updateOne).toHaveBeenCalledWith(
             { _id: 'user-123' },

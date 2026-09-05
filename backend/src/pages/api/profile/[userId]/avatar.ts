@@ -25,7 +25,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         await dbConnect();
 
         const userId = req.query.userId as string;
-        const user = await User.findById(userId).select('avatar');
+        const user = await User.findOne({
+            _id: userId,
+            deleted: { $ne: true },
+        }).select('avatar');
 
         if (!user || !user.avatar) {
             return responseErrorEntryNotFound(res, 'Avatar');

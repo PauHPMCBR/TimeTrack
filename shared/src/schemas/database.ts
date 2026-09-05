@@ -53,6 +53,9 @@ export const UserSchema = z.object({
     failedLoginAttempts: z.number().int().gte(0).default(0),
     blocked: z.boolean().default(false),
     blockedSince: z.date().optional(),
+    // Soft-delete: data stays in the DB, the user is just hidden and locked out.
+    deleted: z.boolean().default(false),
+    deletedAt: z.date().optional(),
     // Password reset ("forgot password") token + expiry. Transient: they only
     // exist while a reset is pending, so they stay nullable.
     resetPasswordToken: z.string().optional(),

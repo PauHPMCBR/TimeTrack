@@ -2,7 +2,7 @@ import type { NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { ElectiveVacation, YearlyVacationDays } from '@/models';
+import { ElectiveVacation, User, YearlyVacationDays } from '@/models';
 import {
     responseErrorGet,
     responseErrorMethodNotAllowed,
@@ -21,9 +21,16 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
+        const activeUsers = await User.find(
+            { deleted: { $ne: true } },
+            '_id'
+        ).lean();
+        const activeUserIds = activeUsers.map((u) => u._id);
+
         const [vacations, yearlyVacationDays] = (await Promise.all([
             ElectiveVacation.find({
                 date: { $gte: startDate, $lte: endDate },
+                userId: { $in: activeUserIds },
             })
                 .sort({ date: 1 })
                 .lean(),

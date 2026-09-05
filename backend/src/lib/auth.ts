@@ -99,15 +99,35 @@ export function isHttpsRequest(req: NextApiRequest): boolean {
     return process.env.NODE_ENV === 'production';
 }
 
+// Minimal shape of the live User document used by the auth guards.
+export interface AuthUserDoc {
+    _id?: { toString(): string };
+    role: UserRole;
+    deleted?: boolean;
+    groups?: Types.ObjectId[];
+}
+
 export interface AuthRequest extends NextApiRequest {
     user?: {
         userId: string;
         email: string;
         role: UserRole | 'manager';
     };
+    // Live DB user fetched by authenticateToken; guards reuse it to avoid
+    // a second identical query.
+    dbUser?: AuthUserDoc | null;
 }
 
 type Handler = (req: AuthRequest, res: NextApiResponse) => unknown;
+
+// Reuses the authenticateToken fetch when available, else reads from the DB.
+const getLiveUser = async (req: AuthRequest): Promise<AuthUserDoc | null> => {
+    if (req.dbUser !== undefined) return req.dbUser;
+    await dbConnect();
+    return req.user?.userId
+        ? ((await User.findById(req.user.userId)) as AuthUserDoc | null)
+        : null;
+};
 
 export const getJwtSecret = (): string | null => process.env.JWT_SECRET ?? null;
 
@@ -171,6 +191,21 @@ export const authenticateToken = (handler: Handler) => {
             };
             req.user = user;
 
+            // Deleted users must not pass with a still-valid token; the
+            // fetched doc is cached on the request for the guards below.
+            if (user?.userId) {
+                await dbConnect();
+                const liveUser = (await User.findById(
+                    user.userId
+                )) as AuthUserDoc | null;
+                req.dbUser = liveUser;
+                if (!liveUser || liveUser.deleted) {
+                    return responseError(res, 403, 'InvalidToken');
+                }
+            } else {
+                return responseError(res, 403, 'InvalidToken');
+            }
+
             // Absolute cap: force a re-login after ABSOLUTE_MAX_MS even with activity.
             const sessionStart = user?.sessionStart ?? user?.iat;
             if (
@@ -204,15 +239,9 @@ export const authenticateToken = (handler: Handler) => {
 export const requireRole = (roles: string[], handler: Handler) => {
     return authenticateToken(async (req: AuthRequest, res: NextApiResponse) => {
         try {
-            // Reload the role from the DB: the JWT role can be stale (a demoted
-            // admin would otherwise keep admin rights until the token expires
-            // and gets re-issued with the same stale role). A missing user is
-            // denied outright.
-            await dbConnect();
-            const currentUser = req.user?.userId
-                ? await User.findById(req.user.userId)
-                : null;
-            if (!currentUser) {
+            // Live role from the DB: the JWT role can be stale.
+            const currentUser = await getLiveUser(req);
+            if (!currentUser || currentUser.deleted) {
                 return responseError(res, 403, 'InsufficientPermissions');
             }
             if (!roles.includes(currentUser.role)) {
@@ -243,11 +272,17 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
             await dbConnect();
 
             const [currentUser, targetUser] = await Promise.all([
-                User.findById(req.user.userId),
+                getLiveUser(req),
                 User.findById(targetUserId),
             ]);
 
-            if (!currentUser || !targetUser) {
+            // A deleted target is treated as not found.
+            if (
+                !currentUser ||
+                currentUser.deleted ||
+                !targetUser ||
+                targetUser.deleted
+            ) {
                 return responseError(res, 404, 'UserNotFound');
             }
 
@@ -292,8 +327,8 @@ export const requireInGroupOrAdmin = (handler: Handler) => {
             await dbConnect();
 
             // Live admin check: a demoted admin must not keep group-wide access.
-            const currentUser = await User.findById(req.user.userId);
-            if (!currentUser) {
+            const currentUser = await getLiveUser(req);
+            if (!currentUser || currentUser.deleted) {
                 return responseError(res, 404, 'UserNotFound');
             }
             if (currentUser.role === ADMIN_ROLE) {

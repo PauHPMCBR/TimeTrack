@@ -70,7 +70,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 req.body as AdminReplaceDayWorkSessionsRequest;
 
             const user = await User.findById(userId);
-            if (!user) {
+            if (!user || user.deleted) {
                 return responseErrorEntryNotFound(res, 'User');
             }
 
@@ -250,6 +250,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     {
                         blocked: { $ne: true },
                         registered: true,
+                        deleted: { $ne: true },
                         // Users who don't need to check in are excluded entirely from
                         // the events report (they never show as non-working rows).
                         checkInRequired: { $ne: false },

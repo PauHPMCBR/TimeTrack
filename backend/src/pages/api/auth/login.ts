@@ -47,6 +47,7 @@ export default withRateLimit(
             const user = await User.findOne({
                 email: emailLower,
                 registered: true,
+                deleted: { $ne: true },
             });
 
             if (!user) {
