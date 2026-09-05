@@ -149,6 +149,17 @@
             "label": "Exportar",
             "status": "Estado",
             "confirmed": "Confirmado"
+        },
+        "confirmation": {
+            "title": "Confirmación mensual del registro",
+            "legendConfirmed": "Confirmado",
+            "legendPending": "Pendiente de confirmar",
+            "legendAwaitingReview": "Pendiente de revisión",
+            "legendNotApplicable": "No aplica",
+            "tooltipConfirmed": "Confirmado",
+            "tooltipPending": "Pendiente de confirmación",
+            "tooltipAwaitingReview": "Esperando revisión de la administración",
+            "tooltipNotApplicable": "Sin registro de jornada en este período"
         }
     },
     "calendar": {

@@ -149,6 +149,17 @@
             "label": "Export",
             "status": "Status",
             "confirmed": "Confirmed"
+        },
+        "confirmation": {
+            "title": "Monthly record confirmation",
+            "legendConfirmed": "Confirmed",
+            "legendPending": "Pending confirmation",
+            "legendAwaitingReview": "Awaiting review",
+            "legendNotApplicable": "Not applicable",
+            "tooltipConfirmed": "Confirmed",
+            "tooltipPending": "Pending confirmation",
+            "tooltipAwaitingReview": "Awaiting admin review",
+            "tooltipNotApplicable": "No time record for this period"
         }
     },
     "calendar": {
