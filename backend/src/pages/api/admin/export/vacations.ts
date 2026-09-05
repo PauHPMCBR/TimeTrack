@@ -41,7 +41,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
         const filter: Record<string, unknown> = {
-            date: { $gte: startDate, $lte: endDate },
+            // Intervals overlapping the requested year.
+            startDate: { $lte: endDate },
+            endDate: { $gte: startDate },
         };
 
         const userIdsParam = req.query.userIds as string | undefined;
@@ -51,7 +53,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         }
 
         const [vacations, users, allActiveUsers] = (await Promise.all([
-            ElectiveVacation.find(filter).sort({ date: 1 }).lean(),
+            ElectiveVacation.find(filter).sort({ startDate: 1 }).lean(),
             userIdsParam
                 ? User.find(
                       { _id: { $in: userIdsParam.split(',').filter(Boolean) } },
@@ -69,7 +71,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         ])) as unknown as [
             Array<{
                 userId: string;
-                date: Date;
+                startDate: Date;
+                endDate: Date;
+                spentDays: number;
                 status: string;
                 reason?: string;
                 notes?: string;
@@ -96,12 +100,24 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             ])
         );
 
-        const headers = ['Name', 'DNI', 'Email', 'Date', 'Status', 'Reason', 'Notes'];
+        const headers = [
+            'Name',
+            'DNI',
+            'Email',
+            'Start Date',
+            'End Date',
+            'Spent Days',
+            'Status',
+            'Reason',
+            'Notes',
+        ];
         const rows = visibleVacations.map((v) => [
             userMap.get(v.userId)?.name ?? '',
             userMap.get(v.userId)?.dni ?? '',
             userMap.get(v.userId)?.email ?? '',
-            new Date(v.date).toISOString().slice(0, 10),
+            new Date(v.startDate).toISOString().slice(0, 10),
+            new Date(v.endDate).toISOString().slice(0, 10),
+            v.spentDays,
             v.status,
             v.reason ?? '',
             v.notes ?? '',

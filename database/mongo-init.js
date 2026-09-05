@@ -36,9 +36,9 @@ db.users.createIndex({ email: 1, registered: 1 });
 db.users.createIndex({ registrationToken: 1 });
 db.worksessions.createIndex({ userId: 1, timestamp: -1 });
 db.worksessions.createIndex({ timestamp: -1 });
-db.electivevacations.createIndex({ userId: 1, date: 1 });
-db.electivevacations.createIndex({ status: 1, date: 1 });
-db.electivevacations.createIndex({ date: 1 });
+db.electivevacations.createIndex({ userId: 1, startDate: 1 });
+db.electivevacations.createIndex({ userId: 1, status: 1, startDate: 1, endDate: 1 });
+db.electivevacations.createIndex({ startDate: 1 });
 db.groups.createIndex({ members: 1, name: 1 });
 // userId is absent on the global template rows; a missing field indexes as null,
 // so one global template per year and one per-user row per year are enforced.
@@ -212,13 +212,62 @@ if (process.env.SEED_DEMO === '1') {
   db.worksessions.insertMany(sessions);
   print(`Work sessions created (${sessions.length} events)`);
 
-  // --- Vacations ----------------------------------------------------------------
+  // --- Company obligatory holidays (current + previous year templates) ---------
+  const seedYear = now.getFullYear();
+  const prevYear = seedYear - 1;
+  const fixedDay = (year, month, day) => new Date(year, month - 1, day, 0, 0, 0, 0);
+  const obligatoryDaysByYear = {
+    [seedYear]: [
+      fixedDay(seedYear, 1, 1),   // Any Nou
+      fixedDay(seedYear, 5, 1),   // Dia del treballador
+      fixedDay(seedYear, 6, 24),  // Sant Joan
+      fixedDay(seedYear, 8, 15),  // Assumpció
+      fixedDay(seedYear, 9, 11),  // Diada
+      fixedDay(seedYear, 11, 1),  // Tots Sants
+      fixedDay(seedYear, 12, 25), // Nadal
+      fixedDay(seedYear, 12, 26), // Sant Esteve
+      dayAt(holidayOffset, 0, 0)  // moving demo holiday (recent Thursday)
+    ].sort((a, b) => a.getTime() - b.getTime()),
+    [prevYear]: [
+      fixedDay(prevYear, 1, 1),
+      fixedDay(prevYear, 4, 21),  // Dilluns de Pasqua
+      fixedDay(prevYear, 8, 15),
+      fixedDay(prevYear, 11, 1),
+      fixedDay(prevYear, 12, 25),
+      fixedDay(prevYear, 12, 26)
+    ]
+  };
+
+  // --- Vacations (intervals with backend-computed spent days) ------------------
   const approvedBy = ids.admin.toString();
+  const dateKey = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const NON_WORKING_DAYS = [0, 6]; // company default: Sat/Sun
+  const spentDaysBetweenDates = (start, end) => {
+    const obligatoryKeys = new Set(
+      (obligatoryDaysByYear[start.getFullYear()] ?? []).map(dateKey)
+    );
+    let count = 0;
+    const cursor = new Date(start);
+    while (cursor.getTime() <= end.getTime()) {
+      if (!NON_WORKING_DAYS.includes(cursor.getDay()) && !obligatoryKeys.has(dateKey(cursor))) count++;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return count;
+  };
+
   const vacations = [];
-  const addVacation = (userId, offset, status, reason = '') => {
+  // start/end as "YYYY-MM-DD" strings of the given year.
+  const addVacation = (userId, startDateStr, endDateStr, status, reason = '') => {
+    const [y1, m1, d1] = startDateStr.split('-').map(Number);
+    const [y2, m2, d2] = endDateStr.split('-').map(Number);
+    const startDate = new Date(y1, m1 - 1, d1, 0, 0, 0, 0);
+    const endDate = new Date(y2, m2 - 1, d2, 0, 0, 0, 0);
     const doc = {
       userId: userId.toString(),
-      date: dayAt(offset, 0, 0),
+      startDate,
+      endDate,
+      spentDays: spentDaysBetweenDates(startDate, endDate),
       status,
       reason,
       createdAt: now,
@@ -231,31 +280,46 @@ if (process.env.SEED_DEMO === '1') {
     vacations.push(doc);
   };
 
-  addVacation(ids.elena, w0, 'approved');            // past approved → shows in history
-  addVacation(ids.elena, w1, 'approved');
-  addVacation(ids.diana, f0, 'approved');
-  addVacation(ids.diana, f1, 'approved');
-  addVacation(ids.diana, f2, 'approved');
-  addVacation(ids.carles, f0, 'approved');
-  addVacation(ids.carles, f1, 'approved');
-  addVacation(ids.elena, f2, 'approved');
-  addVacation(ids.elena, f3, 'approved');
-  addVacation(ids.berta, f4, 'pending');
-  addVacation(ids.marc, f5, 'rejected');
+  // Previous year: approved / rejected / cancelled samples.
+  addVacation(ids.anna, prevYear + '-04-14', prevYear + '-04-17', 'approved');
+  addVacation(ids.carles, prevYear + '-07-28', prevYear + '-08-01', 'approved');
+  addVacation(ids.marc, prevYear + '-02-03', prevYear + '-02-07', 'rejected');
+  addVacation(ids.diana, prevYear + '-09-08', prevYear + '-09-10', 'cancelled');
+
+  // Current year: every state, several users.
+  // Past interval runs earlier offset first (w1 is older than w0); single-day
+  // pending/rejected requests land on future weekdays without an obligatory
+  // holiday so their spent days are 1.
+  const obligatoryKeysCurrent = new Set(obligatoryDaysByYear[seedYear].map(dateKey));
+  const freeFuture = futureWeekdayOffsets.filter(
+    (n) => !obligatoryKeysCurrent.has(dateKey(dayAt(n, 0, 0)))
+  );
+  const freePast = weekdayOffsets.filter(
+    (n) => !obligatoryKeysCurrent.has(dateKey(dayAt(n, 0, 0)))
+  );
+  const dateStr = (offset) => dateKey(dayAt(offset, 0, 0));
+
+  addVacation(ids.elena, dateStr(w1), dateStr(w0), 'approved');   // past approved → shows in history
+  addVacation(ids.diana, dateStr(f0), dateStr(f2), 'approved');
+  addVacation(ids.carles, dateStr(f0), dateStr(f1), 'approved');
+  addVacation(ids.elena, dateStr(f2), dateStr(f3), 'approved');
+  addVacation(ids.berta, dateStr(freeFuture[0]), dateStr(freeFuture[0]), 'pending');
+  addVacation(ids.marc, dateStr(freeFuture[1]), dateStr(freeFuture[1]), 'rejected');
+  addVacation(ids.anna, dateStr(freePast[3]), dateStr(freePast[2]), 'cancelled'); // older past interval
 
   db.electivevacations.insertMany(vacations);
-  print(`Vacations created (${vacations.length} requests)`);
+  print(`Vacations created (${vacations.length} interval requests across ${prevYear} and ${seedYear})`);
 
-  // --- Global yearly vacation template (obligatory holiday) ---------------------
-  db.yearlyvacationdays.insertOne({
-    year: now.getFullYear(),
-    obligatoryDays: [dayAt(holidayOffset, 0, 0)],
-    electiveDaysTotalCount: 22,
-    selectedElectiveDays: [],
-    createdAt: now,
-    updatedAt: now
-  });
-  print(`Global yearly vacation settings for ${now.getFullYear()} created (1 obligatory day)`);
+  for (const [year, days] of Object.entries(obligatoryDaysByYear)) {
+    db.yearlyvacationdays.insertOne({
+      year: Number(year),
+      obligatoryDays: days,
+      electiveDaysTotalCount: 22,
+      createdAt: now,
+      updatedAt: now
+    });
+    print(`Global yearly vacation settings for ${year} created (${days.length} obligatory days)`);
+  }
 
   // Global company settings
   db.appsettings.insertOne({

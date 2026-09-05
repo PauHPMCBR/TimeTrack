@@ -292,7 +292,9 @@ describe('GET /api/admin/work-sessions', () => {
                 {
                     _id: 'v1',
                     userId: 'u2',
-                    date: new Date('2025-06-09T00:00:00'),
+                    startDate: new Date('2025-06-09T00:00:00'),
+                    endDate: new Date('2025-06-09T00:00:00'),
+                    spentDays: 1,
                     status: 'approved',
                 },
             ]) as any

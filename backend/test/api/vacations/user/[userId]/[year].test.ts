@@ -82,7 +82,9 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             {
                 _id: 'vacation-1',
                 userId: 'user-456',
-                date: new Date('2024-06-15'),
+                startDate: new Date('2024-06-15'),
+                endDate: new Date('2024-06-15'),
+                spentDays: 1,
                 status: 'pending',
             },
         ];
@@ -92,7 +94,6 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             userId: 'user-456',
             obligatoryDays: ['2024-01-01'],
             electiveDaysTotalCount: 22,
-            selectedElectiveDays: [],
         };
 
         vi.mocked(ElectiveVacation.find).mockReturnValue({
@@ -169,8 +170,7 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
                     userId: 'user-456',
                     obligatoryDays: [],
                     electiveDaysTotalCount: 22,
-                    selectedElectiveDays: [],
-                }),
+                        }),
             } as any); // user yearly
 
         vi.mocked(User.find).mockReturnValue({
@@ -223,7 +223,6 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             userId: 'user-456',
             obligatoryDays: ['2024-01-01'],
             electiveDaysTotalCount: 22,
-            selectedElectiveDays: [],
         });
 
         const req = mockReq({
@@ -239,7 +238,6 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             year: 2024,
             obligatoryDays: ['2024-01-01'],
             electiveDaysTotalCount: 22,
-            selectedElectiveDays: [],
         });
 
         expect(res.status).toHaveBeenCalledWith(200);

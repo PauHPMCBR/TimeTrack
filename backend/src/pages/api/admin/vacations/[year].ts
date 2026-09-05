@@ -29,10 +29,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         const [vacations, yearlyVacationDays] = (await Promise.all([
             ElectiveVacation.find({
-                date: { $gte: startDate, $lte: endDate },
+                // Intervals overlapping the requested year.
+                startDate: { $lte: endDate },
+                endDate: { $gte: startDate },
                 userId: { $in: activeUserIds },
             })
-                .sort({ date: 1 })
+                .sort({ startDate: 1 })
                 .lean(),
 
             YearlyVacationDays.findOne({

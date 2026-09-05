@@ -10,7 +10,8 @@ export type VacationEvent = {
         | 'elective-approved'
         | 'elective-pending'
         | 'elective-rejected'
-        | 'team';
+        | 'team'
+        | 'team-pending';
     label: string;
     elective?: ElectiveVacation | TeamVacation;
     userName?: string;
@@ -28,6 +29,8 @@ export interface CalendarDayData {
     workEvent: WorkSessionEvent | null;
     isToday: boolean;
     isWeekend: boolean;
+    /** The user does not work this day: weekend, company obligatory holiday or own approved elective vacation. */
+    isNonWorking: boolean;
 }
 
 export interface CalendarProps {

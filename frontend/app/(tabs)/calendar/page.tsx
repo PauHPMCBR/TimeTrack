@@ -168,13 +168,13 @@ export default function CalendarPage() {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-200"></div>
+                            <div className="w-3 h-3 rounded bg-yellow-100 border border-dashed border-yellow-300"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.pendingVacation')}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-red-100 border border-red-200"></div>
+                            <div className="w-3 h-3 rounded bg-red-100 border border-dashed border-red-300"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.rejectedVacation')}
                             </span>
@@ -188,15 +188,15 @@ export default function CalendarPage() {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded outline-2 outline-indigo-500"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.legend.today')}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded bg-purple-100 border border-purple-200 dark:bg-purple-900/30 dark:border-purple-800/50"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.teamVacation')}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded bg-purple-50 border border-dashed border-purple-300 dark:bg-purple-900/20 dark:border-purple-800/50"></div>
+                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
+                                {t('calendar.teamPendingVacation')}
                             </span>
                         </div>
                     </div>

@@ -180,7 +180,14 @@ export const VacationStatusSchema = z.enum([
 ]);
 export const ElectiveVacationSchema = z.object({
     userId: z.string(),
-    date: z.date(),
+    // Vacation period: calendar-day interval, both bounds at local midnight
+    // and inclusive. endDate >= startDate, and both within the same year.
+    startDate: z.date(),
+    endDate: z.date(),
+    // Elective vacation days the request costs, computed by the backend on
+    // creation: calendar days in the interval minus non-working days and
+    // company obligatory days.
+    spentDays: z.number().int().gte(0).default(0),
     status: VacationStatusSchema.default('pending'),
     reason: z.string().max(1000).optional(),
     approvedBy: z.string().optional(),
@@ -191,11 +198,10 @@ export const ElectiveVacationSchema = z.object({
 });
 
 export const YearlyVacationDaysSchema = z.object({
-    userId: z.string().optional(), // if userId is not set, it's the template for all users (and selectedElectiveDays should be empty)
+    userId: z.string().optional(), // if userId is not set, it's the template for all users
     year: z.number(),
     obligatoryDays: z.array(z.date()),
     electiveDaysTotalCount: z.number().gte(0),
-    selectedElectiveDays: z.array(z.date()),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

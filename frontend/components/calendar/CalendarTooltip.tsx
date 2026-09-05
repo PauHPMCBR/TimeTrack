@@ -1,6 +1,7 @@
 import { VacationEvent, WorkSessionEvent } from '@/types/calendar';
 import { CHECK_IN } from 'shared/src/lib/constants';
 import { configuredTimezone } from '@/lib/timezone';
+import { Clock } from 'lucide-react';
 
 interface CalendarTooltipProps {
     date: Date;
@@ -29,11 +30,13 @@ export function getVacationClass(type: VacationEvent['type']): string {
         case 'elective-approved':
             return 'bg-green-100 text-green-800 border border-green-200';
         case 'elective-pending':
-            return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+            return 'bg-yellow-100 text-yellow-800 border border-dashed border-yellow-300';
         case 'elective-rejected':
-            return 'bg-red-100 text-red-800 border border-red-200';
+            return 'bg-red-100 text-red-800 border border-dashed border-red-300';
         case 'team':
             return 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50';
+        case 'team-pending':
+            return 'bg-purple-50 text-purple-700 border border-dashed border-purple-300 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800/50';
         default:
             return 'bg-gray-100 text-gray-800';
     }
@@ -74,7 +77,10 @@ export function CalendarTooltip({
                                     key={index}
                                     className={`p-2 rounded text-sm ${getVacationClass(event.type)}`}
                                 >
-                                    <div className="font-medium">
+                                    <div className="font-medium flex items-center gap-1.5">
+                                        {event.type === 'team-pending' && (
+                                            <Clock size={12} className="shrink-0" />
+                                        )}
                                         {event.label}
                                     </div>
                                     {event.elective && (

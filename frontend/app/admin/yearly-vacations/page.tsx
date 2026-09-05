@@ -10,7 +10,8 @@ import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
 import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
-import { parseDateKey } from '@/lib/datetime';
+import { YearlyVacationDays } from '@/types';
+import { parseDateKey, toLocalDateKey } from '@/lib/datetime';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
 import {
@@ -26,7 +27,7 @@ export default function AdminObligatoryVacationsPage() {
 
     const [year, setYear] = usePersistedState<number>(ADMIN_YEARLY_VACATIONS_YEAR, new Date().getFullYear());
     const [vacationDays, setVacationDays] =
-        useState<YearlyVacationAdminRequest | null>(null);
+        useState<YearlyVacationDays | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -145,7 +146,11 @@ export default function AdminObligatoryVacationsPage() {
 
             const vacationData: YearlyVacationAdminRequest = {
                 year,
-                obligatoryDays,
+                // Plain "YYYY-MM-DD" keys: the backend anchors them to local
+                // midnight, so the client timezone can't shift the day.
+                obligatoryDays: obligatoryDays.map((date) =>
+                    toLocalDateKey(date)
+                ),
                 electiveDaysTotalCount,
             };
 
@@ -165,7 +170,13 @@ export default function AdminObligatoryVacationsPage() {
                       );
                 setSuccess(successMessage);
 
-                setVacationDays(vacationData);
+                // Keep the "existing plan" marker in sync with what was saved.
+                setVacationDays({
+                    _id: vacationDays?._id ?? '',
+                    year,
+                    obligatoryDays: obligatoryDays,
+                    electiveDaysTotalCount,
+                });
                 resetDirty();
 
                 setTimeout(() => setSuccess(null), 3000);

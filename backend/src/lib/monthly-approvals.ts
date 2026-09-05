@@ -128,18 +128,30 @@ export async function computeMonthAnomalies(
         ElectiveVacation.find({
             userId,
             status: VACATION_APPROVED,
-            date: { $gte: start, $lt: end },
+            // Intervals overlapping the month.
+            startDate: { $lt: end },
+            endDate: { $gte: start },
         }).lean(),
         YearlyVacationDays.find({ userId: { $exists: false }, year }).lean(),
     ])) as unknown as [
         { timestamp: Date | string; type: 'check_in' | 'check_out' }[],
-        { date: Date | string }[],
+        { startDate: Date | string; endDate: Date | string }[],
         { obligatoryDays?: Date[] }[],
     ];
 
     const vacationSet = new Set<string>();
     for (const v of approvedVacations) {
-        vacationSet.add(dateKey(new Date(v.date)));
+        const intervalStart = new Date(v.startDate);
+        intervalStart.setHours(0, 0, 0, 0);
+        const intervalEnd = new Date(v.endDate);
+        intervalEnd.setHours(0, 0, 0, 0);
+        for (
+            let cursor = new Date(intervalStart);
+            cursor.getTime() <= intervalEnd.getTime();
+            cursor.setDate(cursor.getDate() + 1)
+        ) {
+            vacationSet.add(dateKey(cursor));
+        }
     }
     const obligatorySet = new Set<string>();
     for (const template of yearlyTemplates) {

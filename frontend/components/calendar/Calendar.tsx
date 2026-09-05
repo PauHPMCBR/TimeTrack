@@ -121,19 +121,32 @@ export function Calendar({
 
             const electiveRequests =
                 vacations.electives?.filter((elective) => {
-                    if (!elective.date) return false;
-                    const electiveDate = new Date(elective.date);
-                    electiveDate.setHours(0, 0, 0, 0);
-                    const dateToCheck = new Date(date);
-                    dateToCheck.setHours(0, 0, 0, 0);
-                    return electiveDate.getTime() === dateToCheck.getTime();
+                    if (!elective.startDate || !elective.endDate) return false;
+                    // Vacations are intervals; match days inside [start, end].
+                    const day = new Date(date);
+                    day.setHours(0, 0, 0, 0);
+                    const start = new Date(elective.startDate);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(elective.endDate);
+                    end.setHours(0, 0, 0, 0);
+                    return (
+                        day.getTime() >= start.getTime() &&
+                        day.getTime() <= end.getTime()
+                    );
                 }) || [];
 
             electiveRequests.forEach((elective) => {
                 const userName = usersMap
                     ? usersMap[elective.userId]
                     : undefined;
-                const label = userName ?? t('calendar.electiveVacation');
+                // Status-appropriate fallback when the owner's name is unknown.
+                const fallbackLabel =
+                    elective.status === VACATION_PENDING
+                        ? t('calendar.pendingVacation')
+                        : elective.status === VACATION_REJECTED
+                          ? t('calendar.rejectedVacation')
+                          : t('calendar.electiveVacation');
+                const label = userName ?? fallbackLabel;
 
                 if (elective.status === VACATION_APPROVED) {
                     events.push({
@@ -158,20 +171,30 @@ export function Calendar({
 
             if (teamVacations && teamVacations.length > 0) {
                 teamVacations.forEach((vac) => {
-                    const vacDate = new Date(vac.date);
-                    vacDate.setHours(0, 0, 0, 0);
-                    const dateToCheck = new Date(date);
-                    dateToCheck.setHours(0, 0, 0, 0);
+                    const day = new Date(date);
+                    day.setHours(0, 0, 0, 0);
+                    const start = new Date(vac.startDate);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(vac.endDate);
+                    end.setHours(0, 0, 0, 0);
 
-                    if (vacDate.getTime() === dateToCheck.getTime()) {
+                    if (
+                        day.getTime() >= start.getTime() &&
+                        day.getTime() <= end.getTime()
+                    ) {
                         const vacUser = vac.userId;
                         const vacUserName =
                             typeof vacUser === 'object' ? vacUser.name : null;
+                        const isPending =
+                            vac.status === VACATION_PENDING;
 
                         events.push({
-                            type: 'team',
+                            type: isPending ? 'team-pending' : 'team',
                             label:
-                                vacUserName || t('calendar.electiveVacation'),
+                                vacUserName ||
+                                (isPending
+                                    ? t('calendar.pendingVacation')
+                                    : t('calendar.teamVacation')),
                             userName: vacUserName ?? undefined,
                             elective: vac,
                         });
@@ -218,6 +241,15 @@ export function Calendar({
                 workEvent: getWorkSessionsForDay(date),
                 isToday: key === ymd(today),
                 isWeekend: nonWorkingDays.includes(date.getDay()),
+                // Grey out any day the user does not work: weekly non-working
+                // days, company obligatory holidays and own approved vacations.
+                isNonWorking:
+                    nonWorkingDays.includes(date.getDay()) ||
+                    getVacationsForDay(date).some(
+                        (event) =>
+                            event.type === 'obligatory' ||
+                            event.type === 'elective-approved'
+                    ),
             });
         });
         return map;

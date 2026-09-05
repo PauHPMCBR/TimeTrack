@@ -374,20 +374,24 @@ describe('Database Schemas', () => {
         it('should validate correct vacation', () => {
             const result = ElectiveVacationSchema.safeParse({
                 userId: 'user123',
-                date: new Date('2024-06-15'),
+                startDate: new Date('2024-06-15'),
+                endDate: new Date('2024-06-16'),
+                spentDays: 2,
                 status: 'pending',
             });
             expect(result.success).toBe(true);
         });
 
-        it('should default status to pending', () => {
+        it('should default status to pending and spentDays to 0', () => {
             const result = ElectiveVacationSchema.safeParse({
                 userId: 'user123',
-                date: new Date('2024-06-15'),
+                startDate: new Date('2024-06-15'),
+                endDate: new Date('2024-06-15'),
             });
             expect(result.success).toBe(true);
             if (result.success) {
                 expect(result.data.status).toBe('pending');
+                expect(result.data.spentDays).toBe(0);
             }
         });
     });
@@ -398,7 +402,6 @@ describe('Database Schemas', () => {
                 year: 2024,
                 obligatoryDays: [new Date('2024-01-01')],
                 electiveDaysTotalCount: 22,
-                selectedElectiveDays: [new Date('2024-06-15')],
             });
             expect(result.success).toBe(true);
         });

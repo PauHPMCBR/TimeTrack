@@ -111,7 +111,19 @@ export function buildWorkSessionRows(
 
     const vacationByUserDay = new Set<string>();
     for (const v of approvedVacations) {
-        vacationByUserDay.add(`${v.userId}:${dateKey(new Date(v.date))}`);
+        // Vacations are stored as [startDate, endDate] intervals; expand each
+        // one into per-day keys (intervals are short, so this stays cheap).
+        const start = new Date(v.startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(v.endDate);
+        end.setHours(0, 0, 0, 0);
+        for (
+            let cursor = new Date(start);
+            cursor.getTime() <= end.getTime();
+            cursor.setDate(cursor.getDate() + 1)
+        ) {
+            vacationByUserDay.add(`${v.userId}:${dateKey(cursor)}`);
+        }
     }
 
     const obligatoryDaySet = new Set<string>();

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Clock } from 'lucide-react';
 import { CalendarDayProps } from '@/types/calendar';
 
 function CalendarDayComponent({
@@ -8,14 +9,14 @@ function CalendarDayComponent({
     getVacationClass,
     t,
 }: CalendarDayProps) {
-    const { date, vacationEvents, workEvent, isToday, isWeekend } = day;
+    const { date, vacationEvents, workEvent, isToday, isNonWorking } = day;
 
     const cellCls = [
         'min-h-28 p-2 text-sm flex flex-col relative group',
         'bg-white dark:bg-zinc-900',
         'transition-all duration-200',
         'hover:bg-zinc-50 hover:dark:bg-zinc-800/80 hover:shadow-md hover:z-10 hover:scale-105',
-        isWeekend ? 'bg-zinc-50 dark:bg-zinc-900/80' : '',
+        isNonWorking ? 'bg-zinc-50 dark:bg-zinc-900/80' : '',
         isToday ? 'outline outline-2 outline-indigo-500' : '',
         onClick ? 'cursor-pointer' : '',
     ].join(' ');
@@ -45,8 +46,11 @@ function CalendarDayComponent({
                 {vacationEvents.map((event, eventIdx) => (
                     <div
                         key={eventIdx}
-                        className={`text-xs rounded px-1 py-0.5 ${getVacationClass(event.type)}`}
+                        className={`text-xs rounded px-1 py-0.5 flex items-center gap-1 ${getVacationClass(event.type)}`}
                     >
+                        {event.type === 'team-pending' && (
+                            <Clock size={10} className="shrink-0" />
+                        )}
                         <div className="truncate">{event.label}</div>
                     </div>
                 ))}

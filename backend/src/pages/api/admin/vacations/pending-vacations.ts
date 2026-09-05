@@ -26,7 +26,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             status: VACATION_PENDING,
             userId: { $in: activeUserIds },
         })
-            .sort({ date: 1 })
+            .sort({ startDate: 1 })
             .lean();
 
         res.status(200).json({ success: true, data: { vacations: vacations } });

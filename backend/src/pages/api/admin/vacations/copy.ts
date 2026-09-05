@@ -57,7 +57,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             await YearlyVacationDays.findByIdAndUpdate(existing._id, {
                 obligatoryDays,
                 electiveDaysTotalCount: source.electiveDaysTotalCount,
-                selectedElectiveDays: [],
                 updatedAt: new Date(),
             });
         } else {
@@ -65,7 +64,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 year: toYear,
                 obligatoryDays,
                 electiveDaysTotalCount: source.electiveDaysTotalCount,
-                selectedElectiveDays: [],
             });
         }
 

@@ -94,7 +94,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 ElectiveVacation.find({
                     userId,
                     status: VACATION_APPROVED,
-                    date: { $gte: periodStart, $lte: periodEnd },
+                    // Intervals overlapping the period.
+                    startDate: { $lte: periodEnd },
+                    endDate: { $gte: periodStart },
                 }).lean(),
                 YearlyVacationDays.find({
                     userId: { $exists: false },

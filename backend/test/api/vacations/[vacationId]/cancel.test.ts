@@ -22,7 +22,7 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/models', () => ({
     ElectiveVacation: {
         findById: vi.fn(),
-        updateMany: vi.fn().mockResolvedValue({}),
+        findByIdAndUpdate: vi.fn().mockResolvedValue({}),
     },
 }));
 
@@ -93,9 +93,9 @@ describe('POST /api/vacations/[vacationId]/cancel', () => {
 
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith({ success: true });
-        expect(ElectiveVacation.updateMany).toHaveBeenCalledWith(
-            { _id: 'vacation-123' },
-            { status: 'cancelled' }
+        expect(ElectiveVacation.findByIdAndUpdate).toHaveBeenCalledWith(
+            'vacation-123',
+            expect.objectContaining({ status: 'cancelled' })
         );
     });
 

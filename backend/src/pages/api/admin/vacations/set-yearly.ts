@@ -11,7 +11,7 @@ import {
 } from '@/lib/response-error-generator';
 import { runValidation, validateRequestBody } from '@/lib/validation';
 import {
-    toLocalMidnightDate,
+    dateKeyToLocalMidnight,
     YearlyVacationAdminRequestSchema,
 } from 'shared/src/schemas/api';
 
@@ -44,7 +44,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         // Normalize defensively: the schema already converts to local-midnight
         // Dates; this also covers mocked/raw string inputs.
         const normalized = obligatoryDays.map((day: string | Date) =>
-            typeof day === 'string' ? toLocalMidnightDate(day) : new Date(day)
+            typeof day === 'string' ? dateKeyToLocalMidnight(day) : new Date(day)
         );
 
         const invalidObligatoryDays = normalized.filter(
@@ -65,7 +65,6 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const update = {
             obligatoryDays: normalized,
             electiveDaysTotalCount,
-            selectedElectiveDays: [],
             updatedAt: new Date(),
         };
 

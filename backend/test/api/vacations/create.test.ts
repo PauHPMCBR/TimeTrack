@@ -32,9 +32,19 @@ vi.mock('@/lib/validation', () => ({
             next(),
 }));
 
+vi.mock('@/lib/settings', () => ({
+    getAppSettings: vi.fn().mockResolvedValue({ nonWorkingDays: [6, 0] }),
+    // Day bounds resolve through the company timezone; use the runner's own
+    // timezone so the "local midnight" dates in the bodies align with keys.
+    getConfiguredTimezone: vi
+        .fn()
+        .mockReturnValue(Intl.DateTimeFormat().resolvedOptions().timeZone),
+}));
+
 vi.mock('@/models', () => ({
     ElectiveVacation: {
         find: vi.fn(),
+        findOne: vi.fn(),
         create: vi.fn(),
     },
     YearlyVacationDays: {
@@ -46,9 +56,27 @@ vi.mock('@/models', () => ({
 import { ElectiveVacation, YearlyVacationDays } from '@/models';
 import vacationCreateHandler from '@/pages/api/vacations/create';
 
+// 2024-06-12 is a Wednesday, 2024-06-13 a Thursday, 2024-06-14 a Friday.
+const WED = '2024-06-12';
+const THU = '2024-06-13';
+const FRI = '2024-06-14';
+const MON = '2024-06-17';
+
+const mockUserConfig = (overrides: Record<string, unknown> = {}) => ({
+    year: 2024,
+    userId: 'user-123',
+    obligatoryDays: [],
+    electiveDaysTotalCount: 10,
+    ...overrides,
+});
+
 describe('POST /api/vacations/create', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // Overlap check: no overlapping interval by default.
+        vi.mocked(ElectiveVacation.findOne).mockResolvedValue(null);
+        // Balance query: no existing requests by default.
+        vi.mocked(ElectiveVacation.find).mockResolvedValue([]);
     });
 
     afterEach(() => {
@@ -69,18 +97,10 @@ describe('POST /api/vacations/create', () => {
         });
     });
 
-    it('should return 400 if all vacations are used', async () => {
-        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
-            year: 2024,
-            userId: 'user-123',
-            obligatoryDays: [],
-            electiveDaysTotalCount: 0,
-            selectedElectiveDays: [],
-        });
-
+    it('should return 400 if the period crosses a year boundary', async () => {
         const req = mockReq({
             method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
+            body: { startDate: '2024-12-30', endDate: '2025-01-02' },
         });
         const res = mockRes();
 
@@ -90,109 +110,183 @@ describe('POST /api/vacations/create', () => {
         expect(res.json).toHaveBeenCalledWith({
             success: false,
             error: 'IllegalAction',
-            details: {
-                illegalAction: 'AllVacationsUsed',
-            },
+            details: { illegalAction: 'VacationCrossYear' },
         });
     });
 
-    it('should return 400 if duplicate vacation request exists', async () => {
-        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
-            year: 2024,
-            userId: 'user-123',
-            obligatoryDays: [],
-            electiveDaysTotalCount: 10,
-            selectedElectiveDays: [],
+    it('should return 400 if an overlapping request exists', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig()
+        );
+        vi.mocked(ElectiveVacation.findOne).mockResolvedValue({
+            _id: 'existing-vacation',
+        } as any);
+
+        const req = mockReq({
+            method: 'POST',
+            body: { startDate: WED, endDate: THU },
+        });
+        const res = mockRes();
+
+        await vacationCreateHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IllegalAction',
+            details: { illegalAction: 'VacationOverlap' },
+        });
+    });
+
+    it('should discount weekends when computing spent days', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig()
+        );
+        vi.mocked(ElectiveVacation.create as any).mockResolvedValue({
+            _id: 'vacation-123',
         });
 
+        // Fri → Mon spans a weekend: 4 calendar days, 2 spent days.
+        const req = mockReq({
+            method: 'POST',
+            body: { startDate: FRI, endDate: MON },
+        });
+        const res = mockRes();
+
+        await vacationCreateHandler(req, res);
+
+        expect(ElectiveVacation.create).toHaveBeenCalledWith(
+            expect.objectContaining({ spentDays: 2 })
+        );
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should not discount obligatory days when computing spent days', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig({ obligatoryDays: [THU] })
+        );
+        vi.mocked(ElectiveVacation.create as any).mockResolvedValue({
+            _id: 'vacation-123',
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: { startDate: WED, endDate: THU },
+        });
+        const res = mockRes();
+
+        await vacationCreateHandler(req, res);
+
+        expect(ElectiveVacation.create).toHaveBeenCalledWith(
+            expect.objectContaining({ spentDays: 1 })
+        );
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should return 400 if the period costs no elective days', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig()
+        );
+
+        // Sat → Sun: only non-working days.
+        const req = mockReq({
+            method: 'POST',
+            body: { startDate: '2024-06-15', endDate: '2024-06-16' },
+        });
+        const res = mockRes();
+
+        await vacationCreateHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IllegalAction',
+            details: { illegalAction: 'VacationZeroDays' },
+        });
+    });
+
+    it('should return 400 if the balance would be exceeded', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig({ electiveDaysTotalCount: 0 })
+        );
+
+        const req = mockReq({
+            method: 'POST',
+            body: { startDate: WED, endDate: THU },
+        });
+        const res = mockRes();
+
+        await vacationCreateHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IllegalAction',
+            details: { illegalAction: 'AllVacationsUsed' },
+        });
+    });
+
+    it('should account for the spent days of existing requests in the balance', async () => {
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig({ electiveDaysTotalCount: 3 })
+        );
         vi.mocked(ElectiveVacation.find).mockResolvedValue([
-            { _id: 'existing-vacation' },
-        ]);
+            { spentDays: 2 },
+        ] as any);
 
         const req = mockReq({
             method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
+            body: { startDate: WED, endDate: THU },
         });
         const res = mockRes();
 
         await vacationCreateHandler(req, res);
 
+        // 2 used + 2 new > 3 total.
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith({
             success: false,
             error: 'IllegalAction',
-            details: {
-                illegalAction: 'DuplicateVacationRequest',
-            },
-        });
-    });
-
-    it('should return 400 if date is obligatory vacation', async () => {
-        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
-            year: 2024,
-            userId: 'user-123',
-            obligatoryDays: ['2024-06-15'],
-            electiveDaysTotalCount: 10,
-            selectedElectiveDays: [],
-        });
-
-        vi.mocked(ElectiveVacation.find).mockResolvedValue([]);
-
-        const req = mockReq({
-            method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
-        });
-        const res = mockRes();
-
-        await vacationCreateHandler(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            error: 'IllegalAction',
-            details: {
-                illegalAction: 'AlreadyObligatoryVacation',
-            },
+            details: { illegalAction: 'AllVacationsUsed' },
         });
     });
 
     it('should return 201 with vacation on successful creation', async () => {
-        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
-            year: 2024,
-            userId: 'user-123',
-            obligatoryDays: [],
-            electiveDaysTotalCount: 10,
-            selectedElectiveDays: [],
-        });
-
-        vi.mocked(ElectiveVacation.find).mockResolvedValue([]);
-
+        vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
+            mockUserConfig()
+        );
         const mockVacation = {
             _id: 'vacation-123',
             userId: 'user-123',
-            date: new Date('2024-06-15'),
+            startDate: new Date(WED),
+            endDate: new Date(THU),
+            spentDays: 2,
             reason: 'Doctor appointment',
             status: 'pending',
         };
-
         vi.mocked(ElectiveVacation.create as any).mockResolvedValue(
             mockVacation
         );
 
         const req = mockReq({
             method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
+            body: { startDate: WED, endDate: THU, reason: 'Doctor appointment' },
         });
         const res = mockRes();
 
         await vacationCreateHandler(req, res);
 
+        expect(ElectiveVacation.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                userId: 'user-123',
+                spentDays: 2,
+                reason: 'Doctor appointment',
+            })
+        );
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: {
-                vacation: mockVacation,
-            },
+            data: { vacation: mockVacation },
         });
     });
 
@@ -203,7 +297,7 @@ describe('POST /api/vacations/create', () => {
 
         const req = mockReq({
             method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
+            body: { startDate: WED, endDate: THU },
         });
         const res = mockRes();
 
@@ -224,7 +318,7 @@ describe('POST /api/vacations/create', () => {
 
         const req = mockReq({
             method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
+            body: { startDate: WED, endDate: THU },
         });
         const res = mockRes();
 
@@ -234,9 +328,7 @@ describe('POST /api/vacations/create', () => {
         expect(res.json).toHaveBeenCalledWith({
             success: false,
             error: 'IllegalAction',
-            details: {
-                illegalAction: 'NoVacationConfig',
-            },
+            details: { illegalAction: 'NoVacationConfig' },
         });
     });
 
@@ -246,31 +338,20 @@ describe('POST /api/vacations/create', () => {
             .mockResolvedValueOnce({
                 year: 2024,
                 userId: undefined,
-                obligatoryDays: ['2024-01-01'],
+                obligatoryDays: [],
                 electiveDaysTotalCount: 22,
-                selectedElectiveDays: [],
-            });
+            } as any);
 
-        vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({
-            year: 2024,
-            userId: 'user-123',
-            obligatoryDays: ['2024-01-01'],
-            electiveDaysTotalCount: 22,
-            selectedElectiveDays: [],
-        });
-
-        vi.mocked(ElectiveVacation.find).mockResolvedValue([]);
+        vi.mocked(YearlyVacationDays.create as any).mockResolvedValue(
+            mockUserConfig({ electiveDaysTotalCount: 22 })
+        );
         vi.mocked(ElectiveVacation.create as any).mockResolvedValue({
             _id: 'vacation-123',
-            userId: 'user-123',
-            date: new Date('2024-06-15'),
-            reason: 'Doctor appointment',
-            status: 'pending',
         });
 
         const req = mockReq({
             method: 'POST',
-            body: { date: '2024-06-15', reason: 'Doctor appointment' },
+            body: { startDate: WED, endDate: THU },
         });
         const res = mockRes();
 
@@ -279,9 +360,8 @@ describe('POST /api/vacations/create', () => {
         expect(YearlyVacationDays.create).toHaveBeenCalledWith({
             userId: 'user-123',
             year: 2024,
-            obligatoryDays: ['2024-01-01'],
+            obligatoryDays: [],
             electiveDaysTotalCount: 22,
-            selectedElectiveDays: [],
         });
         expect(res.status).toHaveBeenCalledWith(201);
     });
