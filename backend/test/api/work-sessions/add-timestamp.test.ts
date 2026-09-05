@@ -42,6 +42,7 @@ vi.mock('@/models', () => {
             sort: vi.fn().mockResolvedValue([]),
         });
         static countDocuments = vi.fn().mockResolvedValue(0);
+        static updateMany = vi.fn().mockResolvedValue({});
         constructor(doc: any) {
             constructed.push(doc);
         }
@@ -322,5 +323,218 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         expect(res1.status).toHaveBeenCalledWith(201);
         expect(res2.status).toHaveBeenCalledWith(201);
         expect(findCalls.length).toBe(2);
+    });
+
+    describe('manual punch vs programmed automatic sessions', () => {
+        const past = (msAgo: number) => new Date(Date.now() - msAgo);
+        const future = (msAhead: number) => new Date(Date.now() + msAhead);
+        const HOUR = 3_600_000;
+
+        it('should override the programmed auto check-in/out when checking in manually after auto-apply', async () => {
+            const req = mockReq({
+                method: 'POST',
+                body: { type: 'check_in', notes: null },
+            });
+            const res = mockRes();
+
+            // Auto timetable 09:00-17:00 applied earlier today: the check-out
+            // is still in the future, so it must not block the real punch.
+            mockStaticFind.mockReturnValue({
+                sort: vi.fn().mockResolvedValue([
+                    {
+                        _id: 'auto-in',
+                        type: 'check_in',
+                        timestamp: past(2 * HOUR),
+                        source: 'automatic',
+                        version: 2,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'auto-out',
+                        type: 'check_out',
+                        timestamp: future(6 * HOUR),
+                        source: 'automatic',
+                        version: 2,
+                        status: 'active',
+                    },
+                ]),
+            } as any);
+
+            await addTimestampHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(WorkSession.updateMany).toHaveBeenCalledTimes(1);
+            expect(WorkSession.updateMany).toHaveBeenCalledWith(
+                { _id: { $in: expect.arrayContaining(['auto-in', 'auto-out']) } },
+                {
+                    $set: expect.objectContaining({
+                        status: 'replaced',
+                        replacedByVersion: 2,
+                    }),
+                }
+            );
+            expect(constructed).toHaveLength(1);
+            expect(constructed[0]).toMatchObject({
+                type: 'check_in',
+                source: 'user',
+                version: 2,
+                status: 'active',
+            });
+        });
+
+        it('should keep the open automatic check-in and only drop the future check-out when checking out manually', async () => {
+            const req = mockReq({
+                method: 'POST',
+                body: { type: 'check_out', notes: null },
+            });
+            const res = mockRes();
+
+            mockStaticFind.mockReturnValue({
+                sort: vi.fn().mockResolvedValue([
+                    {
+                        _id: 'auto-in',
+                        type: 'check_in',
+                        timestamp: past(2 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'auto-out',
+                        type: 'check_out',
+                        timestamp: future(6 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                ]),
+            } as any);
+
+            await addTimestampHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        message: 'CheckOutRegistered',
+                        hoursWorked: expect.any(Number),
+                    }),
+                })
+            );
+            expect(WorkSession.updateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['auto-out'] } },
+                expect.anything()
+            );
+        });
+
+        it('should not allow stacked check-ins after a manual check-in even with a future automatic check-out', async () => {
+            const req = mockReq({
+                method: 'POST',
+                body: { type: 'check_in', notes: null },
+            });
+            const res = mockRes();
+
+            mockStaticFind.mockReturnValue({
+                sort: vi.fn().mockResolvedValue([
+                    {
+                        _id: 'auto-in',
+                        type: 'check_in',
+                        timestamp: past(3 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'manual-in',
+                        type: 'check_in',
+                        timestamp: past(1 * HOUR),
+                        source: 'user',
+                        version: 1,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'auto-out',
+                        type: 'check_out',
+                        timestamp: future(6 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                ]),
+            } as any);
+
+            await addTimestampHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                error: 'IncorrectParameter',
+                details: {
+                    incorrectParameter: 'type',
+                    reasons: ['AlreadyCheckedIn'],
+                },
+            });
+            expect(WorkSession.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('should keep closed automatic intervals and replace the open one plus later programmed ones', async () => {
+            const req = mockReq({
+                method: 'POST',
+                body: { type: 'check_in', notes: null },
+            });
+            const res = mockRes();
+
+            // Timetable 09:00-13:00 + 15:00-19:00, now ~16:00: the first
+            // interval is closed, the second is open with a future check-out.
+            mockStaticFind.mockReturnValue({
+                sort: vi.fn().mockResolvedValue([
+                    {
+                        _id: 'in-09',
+                        type: 'check_in',
+                        timestamp: past(8 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'out-13',
+                        type: 'check_out',
+                        timestamp: past(4 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'in-15',
+                        type: 'check_in',
+                        timestamp: past(1 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'out-19',
+                        type: 'check_out',
+                        timestamp: future(2 * HOUR),
+                        source: 'automatic',
+                        version: 1,
+                        status: 'active',
+                    },
+                ]),
+            } as any);
+
+            await addTimestampHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(201);
+            // The manual punch overrides the open auto check-in (15:00) and
+            // the still-programmed 19:00 check-out; the closed 09-13 interval
+            // stays untouched.
+            expect(WorkSession.updateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['out-19', 'in-15'] } },
+                expect.anything()
+            );
+            expect(constructed).toHaveLength(1);
+            expect(constructed[0]).toMatchObject({ type: 'check_in' });
+        });
     });
 });
