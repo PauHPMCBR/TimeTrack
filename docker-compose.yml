@@ -9,7 +9,7 @@ services:
       MONGO_APP_USER: ${MONGO_APP_USER:-alumne}
       MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD in .env}
       SEED_DEMO: ${SEED_DEMO:-0}
-      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:-}
     ports:
       - "127.0.0.1:27018:27017"
     volumes:

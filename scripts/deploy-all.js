@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// Deploys every company on the server in one shot. Meant to run on the VPS
-// where /opt/timetrack lives (after `git pull` in the repo):
+// Deploys every company on the server in one shot. Meant to run on the
+// deployment host (after `git pull` in the repo), with COMPANIES_DIR/--dir
+// and INFRA_DIR configured (see scripts/README.md):
 //
 //   node scripts/deploy-all.js
 //
-// What it does, per company compose file under /opt/timetrack/companies/*/:
+// What it does, per company compose file under <companies dir>/*/:
 //   0. rebuilds the static landing site (scripts/build-landing.js) and syncs
 //      it to <infra>/landing (the dir Caddy serves at the apex domain), also
 //      staging guide.pdf into branding/ so company frontend builds bake the
@@ -21,8 +22,8 @@
 //   --skip-health     don't wait for /api/health after recreating
 //   --skip-index-sync don't POST /api/admin/indexes/sync after recreating
 //   --skip-landing    don't refresh the static landing site
-//   --dir <path>      companies base dir (default: $COMPANIES_DIR or /opt/timetrack/companies)
-//   --domain <d>      root domain override (default: /opt/timetrack/.env DOMAIN=)
+//   --dir <path>      companies base dir (required unless $COMPANIES_DIR is set)
+//   --domain <d>      root domain override (default: DOMAIN= in <INFRA_DIR>/.env)
 import { readdirSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,7 +37,6 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
-const DEFAULT_COMPANIES_DIR = "/opt/timetrack/companies";
 
 function usage() {
   console.error(
@@ -64,13 +64,19 @@ for (let i = 0; i < argv.length; i++) {
   else if (argv[i] === "--domain") args.domain = argv[++i];
   else usage();
 }
-if (!args.companiesDir) args.companiesDir = DEFAULT_COMPANIES_DIR;
+if (!args.companiesDir) {
+  console.error(
+    "No companies dir configured. Pass --dir <path> or set COMPANIES_DIR\n" +
+      "(expected layout: <dir>/<company>/compose.yml; see scripts/README.md)."
+  );
+  process.exit(1);
+}
 
 const domain = resolveDomain({ flag: args.domain, env: process.env.DEPLOY_DOMAIN });
 if (!domain) {
   console.error(
     "No root domain configured. Pass --domain <root-domain>, set DEPLOY_DOMAIN,\n" +
-      "or add DOMAIN=<root-domain> to /opt/timetrack/.env."
+      "or add DOMAIN=<root-domain> to <INFRA_DIR>/.env (set INFRA_DIR; see scripts/README.md)."
   );
   process.exit(1);
 }
@@ -106,7 +112,7 @@ function syncLanding() {
     console.warn("== landing: nothing to deploy (no build output) — skipped ==");
     return;
   }
-  // Infra dir is the parent of the companies dir (/opt/timetrack by default).
+  // Infra dir is the parent of the companies dir.
   const landingTarget = join(dirname(args.companiesDir), "landing");
   console.log(`== landing: syncing to ${landingTarget} ==`);
   mkdirSync(landingTarget, { recursive: true });

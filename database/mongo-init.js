@@ -6,7 +6,9 @@
 //   - Application user is created here from MONGO_APP_USER / MONGO_APP_PASSWORD.
 //
 // Demo data (groups + admin account) is only seeded when SEED_DEMO=1.
-// The demo admin password must be provided via DEMO_ADMIN_PASSWORD.
+// Demo accounts share the password whose bcrypt hash must be provided via
+// DEMO_PASSWORD_HASH (mongosh cannot hash bcrypt itself). Generate it with:
+//   cd backend && node -e "console.log(require('bcryptjs').hashSync('YOUR_PASSWORD', 12))"
 
 const APP_USER = process.env.MONGO_APP_USER || 'alumne';
 const APP_PASSWORD = process.env.MONGO_APP_PASSWORD;
@@ -58,18 +60,14 @@ db.createUser({
 print(`Application user "${APP_USER}" created in myapp database`);
 
 if (process.env.SEED_DEMO === '1') {
-  const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD;
-  if (!DEMO_ADMIN_PASSWORD) {
-    throw new Error('SEED_DEMO=1 requires DEMO_ADMIN_PASSWORD to be set');
+  const DEMO_PASSWORD_HASH = process.env.DEMO_PASSWORD_HASH;
+  if (!DEMO_PASSWORD_HASH) {
+    throw new Error('SEED_DEMO=1 requires DEMO_PASSWORD_HASH to be set');
   }
 
   print('Seeding demo data...');
 
   const now = new Date();
-
-  // Fixed demo password for all registered employees (bcryptjs hash).
-  //   Email: <name>@demo.com   Password: Password123!
-  const DEMO_PASSWORD_HASH = '$2a$12$qLBbrH0xrSwZaO083YmxqugjsKjFqDB/mGTg0r9Au6Zs9PmjvNqKe';
 
   // --- Object ids referenced across collections ---------------------------------
   const ids = {
@@ -130,7 +128,7 @@ if (process.env.SEED_DEMO === '1') {
   ]);
   print('Demo groups created');
 
-  // --- Employees (registered, can log in with Password123!) ----------------------
+  // --- Employees (registered, can log in with the demo password) ---------------
   const employee = (id, name, email, dni, expectedWorkHours, groupIds) => ({
     _id: id, name, email,
     password: DEMO_PASSWORD_HASH,
@@ -154,7 +152,7 @@ if (process.env.SEED_DEMO === '1') {
     employee(ids.marc, 'Marc Soler', 'marc@demo.com', '55555555E', 6, [groups.design]),
     employee(ids.elena, 'Elena Grau', 'elena@demo.com', '66666666F', 8, [groups.dev])
   ]);
-  print('Demo employees created (password: Password123!)');
+  print('Demo employees created (password: value of DEMO_PASSWORD_HASH)');
 
   // --- Work sessions (mix of every status the admin view can show) --------------
   const sessions = [];
@@ -362,8 +360,9 @@ if (process.env.SEED_DEMO === '1') {
     updatedAt: now
   });
   print('Demo admin user created (registered).');
-  print('Admin login: admin@company.com / Password123!');
-  print('Demo employees: anna@demo.com, berta@demo.com, carles@demo.com, diana@demo.com, marc@demo.com, elena@demo.com (password: Password123!)');
+  print('Admin login: admin@company.com');
+  print('Demo employees: anna@demo.com, berta@demo.com, carles@demo.com, diana@demo.com, marc@demo.com, elena@demo.com');
+  print('All demo accounts share the password hashed in DEMO_PASSWORD_HASH.');
 } else {
   print('SEED_DEMO not enabled - skipping demo data.');
 }

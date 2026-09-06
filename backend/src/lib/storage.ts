@@ -7,7 +7,7 @@ import { AVATAR_MAX_BYTES } from 'shared/src/lib/constants';
 export { AVATAR_MAX_BYTES };
 
 // Per-company runtime data directory. In production each company's backend
-// mounts its own host directory (e.g. /opt/timetrack/companies/<company>/data)
+// mounts its own host directory (e.g. <INFRA_DIR>/companies/<company>/data)
 // at the path given by DATA_DIR, so files never live inside the container and
 // survive container recreation / redeploys.
 export function getDataDir(): string {

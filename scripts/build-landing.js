@@ -18,7 +18,13 @@
 // the Tailwind CLI. Override the typst binary with TYPST=/path/to/typst.
 //
 // Usage: node scripts/build-landing.js [--minify]
-// Deploy: copy the contents of landing/dist/ to /opt/timetrack/landing/.
+// Deploy: copy the contents of landing/dist/ to the infra landing/ dir.
+//
+// Placeholders in landing/src/index.html are replaced at build time from env
+// (generic defaults are used when unset — no real domains in the repo):
+//   EXAMPLE_DOMAIN  example company subdomain shown in the copy
+//                   (default: empresa.example.com)
+//   CONTACT_EMAIL   contact address in the footer (default: contact@example.com)
 import { readFileSync, writeFileSync, rmSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,12 +94,15 @@ try {
   fail(`typst compile failed:\n${err.stderr || err.message}`);
 }
 
-// 3. Landing index is static — just copy it.
-writeFileSync(join(distDir, "index.html"), readFileSync(join(srcDir, "index.html")));
+// 3. Landing index: copy and substitute placeholders from env.
+const html = readFileSync(join(srcDir, "index.html"), "utf8")
+  .replaceAll("{{EXAMPLE_DOMAIN}}", process.env.EXAMPLE_DOMAIN || "empresa.example.com")
+  .replaceAll("{{CONTACT_EMAIL}}", process.env.CONTACT_EMAIL || "contact@example.com");
+writeFileSync(join(distDir, "index.html"), html);
 
 console.log(`
 == done ==
-landing/dist/ contents (deploy to /srv/landing, i.e. /opt/timetrack/landing/):`);
+landing/dist/ contents (deploy to the landing dir Caddy serves at the apex domain):`);
 for (const f of ["index.html", "landing.css", "guide.pdf"]) {
   const p = join(distDir, f);
   if (!existsSync(p)) fail(`expected output missing: ${p}`);

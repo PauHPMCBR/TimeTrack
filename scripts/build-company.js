@@ -8,8 +8,7 @@
 // NOT part of company configs: it is resolved from (highest priority first):
 //   1. the --domain CLI flag,
 //   2. the DEPLOY_DOMAIN environment variable,
-//   3. the `DOMAIN` line in /opt/timetrack/.env (the infra dir, overridable
-//      with INFRA_DIR).
+//   3. the `DOMAIN` line in <INFRA_DIR>/.env (see scripts/README.md)
 // This keeps company configs deployment-agnostic and keeps the real domain out
 // of anything pushed to a public repo.
 //
@@ -24,8 +23,8 @@
 //   5. prints the Caddyfile entries the operator needs.
 //
 // Usage:
-//   node scripts/build-company.js --compose /opt/timetrack/companies/mobe/compose.yml [--backend] [--domain x.com]
-//   node scripts/build-company.js --compose /opt/timetrack/companies/mobe/compose.yml --push-tag ghcr.io/me
+//   node scripts/build-company.js --compose $INFRA_DIR/companies/mobe/compose.yml [--backend] [--domain x.com]
+//   node scripts/build-company.js --compose $INFRA_DIR/companies/mobe/compose.yml --push-tag ghcr.io/me
 //
 // The `x-company` block in the compose file carries the build metadata:
 //   x-company:
@@ -43,9 +42,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const brandingDir = join(repoRoot, "branding");
 
-// Infra dir holds the shared compose + .env (root domain, secrets). Overridable
-// with INFRA_DIR for other layouts.
-export const DEFAULT_INFRA_DIR = process.env.INFRA_DIR || "/opt/timetrack";
+// Infra dir holds the shared compose + .env (root domain, secrets). Required:
+// set INFRA_DIR (see scripts/README.md).
+export const DEFAULT_INFRA_DIR = process.env.INFRA_DIR;
 
 // Reads KEY=VALUE lines from a .env file (no shell parsing, no exports).
 export function readDotEnv(path) {
@@ -113,7 +112,8 @@ export function readCompanyFromCompose(composePath) {
 }
 
 export function resolveDomain({ infraDir = DEFAULT_INFRA_DIR, flag, env }) {
-  return flag || env || readDotEnv(join(infraDir, ".env")).DOMAIN;
+  if (flag || env || !infraDir) return flag || env;
+  return readDotEnv(join(infraDir, ".env")).DOMAIN;
 }
 
 // Normalizes a branding source into a true PNG (any input format: PNG, AVIF,
@@ -216,7 +216,7 @@ if (isMain) {
   if (!domain) {
     console.error(
       "No root domain configured. Pass --domain <root-domain>, set DEPLOY_DOMAIN,\n" +
-        "or add DOMAIN=<root-domain> to /opt/timetrack/.env."
+        "or add DOMAIN=<root-domain> to <INFRA_DIR>/.env (set INFRA_DIR; see scripts/README.md)."
     );
     process.exit(1);
   }

@@ -153,8 +153,15 @@ export async function sendMail(input: SendMailInput): Promise<void> {
         return;
     }
 
+    const from = process.env.EMAIL_FROM;
+    if (!from) {
+        console.warn(
+            `[mail] EMAIL_FROM not configured; skipping email to ${input.to}`
+        );
+        return;
+    }
+
     const fromName = getSenderDisplayName();
-    const from = process.env.EMAIL_FROM || 'no-reply@registrejornada.fyi';
 
     await smtp.sendMail({
         from: `"${fromName}" <${from}>`,
