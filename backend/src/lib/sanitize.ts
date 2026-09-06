@@ -10,6 +10,7 @@ const PUBLIC_USER_FIELDS = [
     'workDays',
     'avatar',
     'autoTimetable',
+    'notifyNewFile',
     'trackingStartDate',
 ] as const;
 

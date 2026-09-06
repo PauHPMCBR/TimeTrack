@@ -2,11 +2,16 @@ import type {
     AdminReplaceDayWorkSessionsRequest,
     AdminWorkSessionsQueryWithPagination,
     AdminWorkSessionInput,
+    AdminFilesQuery,
     AppSettingsRequest,
     ApplyAutoScheduleRequest,
     CreateGroupRequest,
     CreateUserRequest,
     ElectiveVacationRequest,
+    FileRow,
+    FileUpdateRequest,
+    FileUploadRequest,
+    FilesResponse,
     ForgotPasswordRequest,
     LoginRequest,
     MonthlyApprovalOpenRequest,
@@ -14,6 +19,7 @@ import type {
     MonthlyApprovalRevokeRequest,
     MonthlyApprovalRow,
     MonthlyWorkRecordResponse,
+    MyFilesQuery,
     RegisterRequest,
     ResetPasswordRequest,
     UpdateProfileRequest,
@@ -56,6 +62,9 @@ const API_BASE_URL =
  *  perpetual "Loading..." state. */
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 
+/** Extended timeout for file uploads/downloads (10 MB over slow links). */
+const FILE_REQUEST_TIMEOUT_MS = 60_000;
+
 class ApiClient {
     private currentUser: User | undefined = undefined;
     private errorListener: ((error: string, details?: unknown) => void) | null =
@@ -80,7 +89,8 @@ class ApiClient {
 
     private async request<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
     ): Promise<ApiResponse<T>> {
         // Auth is via the httpOnly cookie: send it across origins and skip the
         // Authorization header (the JWT is no longer stored in localStorage).
@@ -96,10 +106,7 @@ class ApiClient {
         const controller = new AbortController();
         let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
         try {
-            timeoutId = setTimeout(
-                () => controller.abort(),
-                DEFAULT_REQUEST_TIMEOUT_MS
-            );
+            timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
             const response = await fetch(
                 `${API_BASE_URL}${endpoint}`,
@@ -772,6 +779,139 @@ class ApiClient {
                 blob,
                 `vacations_${year}_${new Date().toISOString().slice(0, 10)}.csv`
             );
+            return { data: null };
+        } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                const result: ApiResponse<null> = { error: 'NetworkTimeout' };
+                if (this.errorListener && result.error) {
+                    this.errorListener(result.error);
+                }
+                return result;
+            }
+
+            const result: ApiResponse<null> = { error: 'NetworkError' };
+            if (this.errorListener && result.error) {
+                this.errorListener(result.error);
+            }
+            return result;
+        } finally {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
+        }
+    }
+
+    // --- Admin-shared employee files ---
+
+    async getMyFiles(
+        params: MyFilesQuery = {}
+    ): Promise<ApiResponse<FilesResponse>> {
+        const search = new URLSearchParams();
+        if (params.sortBy) search.set('sortBy', params.sortBy);
+        if (params.order) search.set('order', params.order);
+        const query = search.toString();
+        return this.request(
+            `/api/files${query ? `?${query}` : ''}`,
+            { method: 'GET' },
+            FILE_REQUEST_TIMEOUT_MS
+        );
+    }
+
+    async getAdminFiles(
+        params: AdminFilesQuery
+    ): Promise<ApiResponse<FilesResponse>> {
+        const search = new URLSearchParams();
+        if (params.userId) search.set('userId', params.userId);
+        if (params.sortBy) search.set('sortBy', params.sortBy);
+        if (params.order) search.set('order', params.order);
+        return this.request(
+            `/api/admin/files?${search.toString()}`,
+            { method: 'GET' },
+            FILE_REQUEST_TIMEOUT_MS
+        );
+    }
+
+    async uploadFile(
+        input: FileUploadRequest
+    ): Promise<ApiResponse<{ file: FileRow }>> {
+        return this.request(
+            `/api/admin/files`,
+            {
+                method: 'POST',
+                body: JSON.stringify(input),
+            },
+            FILE_REQUEST_TIMEOUT_MS
+        );
+    }
+
+    async deleteFile(
+        fileId: string
+    ): Promise<ApiResponse<{ deleted: boolean }>> {
+        return this.request(`/api/admin/files/${fileId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // Edit display name and/or description; the backend refreshes the upload
+    // date on every edit.
+    async updateFile(
+        fileId: string,
+        params: FileUpdateRequest
+    ): Promise<ApiResponse<{ file: FileRow }>> {
+        return this.request(`/api/admin/files/${fileId}`, {
+            method: 'PUT',
+            body: JSON.stringify(params),
+        });
+    }
+
+    // Download with the auth cookie, saved via a blob (same pattern as the CSV
+    // exports); `fileName` comes from the already-known FileRow.
+    async downloadFile(
+        fileId: string,
+        fileName: string
+    ): Promise<ApiResponse<null>> {
+        const endpoint = `/api/files/${fileId}`;
+
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+        try {
+            timeoutId = setTimeout(
+                () => controller.abort(),
+                FILE_REQUEST_TIMEOUT_MS
+            );
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                credentials: 'include',
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+
+            if (!response.ok) {
+                let data: { error?: string; details?: unknown } = {};
+                try {
+                    data = await response.json();
+                } catch {
+                    data = {};
+                }
+                const error = (data.error ||
+                    response.statusText ||
+                    'Request failed') as ErrorCode;
+                const result: ApiResponse<null> = {
+                    error,
+                    details: (data.details ?? {}) as ErrorDetails,
+                };
+                if (this.errorListener) {
+                    this.errorListener(
+                        result.error ?? 'Request failed',
+                        result.details
+                    );
+                }
+                return result;
+            }
+
+            const blob = await response.blob();
+            triggerDownload(blob, fileName);
             return { data: null };
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {

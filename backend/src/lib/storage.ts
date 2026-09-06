@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import { randomBytes } from 'crypto';
 import path from 'path';
 import sharp from 'sharp';
 import { AVATAR_MAX_BYTES } from 'shared/src/lib/constants';
@@ -80,4 +81,34 @@ export async function saveAvatar(
     const filename = `${userId}-${Date.now()}.${AVATAR_EXT}`;
     await fs.writeFile(path.join(dir, filename), image);
     return filename;
+}
+
+// --- Admin-shared employee files (payrolls, etc.) ----------------------------
+
+function documentsDir(): string {
+    return path.join(getDataDir(), 'documents');
+}
+
+// Saves a document and returns the generated filename. The name is
+// server-generated (owner id + timestamp + random suffix) so same-named or
+// repeated uploads never collide; the employee-facing name is kept in the DB.
+export async function saveDocument(
+    userId: string,
+    data: Buffer
+): Promise<string> {
+    const dir = documentsDir();
+    await fs.mkdir(dir, { recursive: true });
+    const filename = `${userId}-${Date.now()}-${randomBytes(6).toString('hex')}`;
+    await fs.writeFile(path.join(dir, filename), data);
+    return filename;
+}
+
+export async function readDocument(filename: string): Promise<Buffer> {
+    return fs.readFile(path.join(documentsDir(), sanitizeFilename(filename)));
+}
+
+export async function deleteDocument(filename: string): Promise<void> {
+    await fs.rm(path.join(documentsDir(), sanitizeFilename(filename)), {
+        force: true,
+    });
 }

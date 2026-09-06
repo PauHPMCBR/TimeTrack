@@ -296,6 +296,11 @@
             "CannotDemoteAdmin": "No se puede degradar a un administrador",
             "CurrentPasswordRequired": "Se requiere la contraseña actual",
             "InvalidCurrentPassword": "La contraseña actual no es correcta"
+        },
+        "notifications": {
+            "title": "Notificaciones",
+            "filesEmail": "Avísame por correo cuando se comparta un archivo conmigo",
+            "filesEmailHelp": "Recibe un correo cada vez que la administración comparta un archivo nuevo contigo."
         }
     },
     "admin": {
@@ -359,8 +364,10 @@
         },
         "menu": {
             "sections": {
-                "users": "Usuarios y fichajes",
-                "vacations": "Grupos y vacaciones",
+                "users": "Usuarios y grupos",
+                "files": "Archivos",
+                "events": "Fichajes",
+                "vacations": "Vacaciones",
                 "settings": "Configuración global"
             },
             "groups": {
@@ -402,6 +409,10 @@
                 "desc": "Registro de confirmaciones mensuales del registro de jornada.",
                 "pending": "pendientes",
                 "none": "ninguna pendiente"
+            },
+            "files": {
+                "title": "Archivos de empleados",
+                "desc": "Sube y gestiona archivos (nóminas...) para cada empleado."
             }
         },
         "stats": {
@@ -525,6 +536,19 @@
             },
             "title": "Fichajes"
         },
+        "files": {
+            "allEmployees": "Todos los empleados",
+            "deleteConfirm": "¿Seguro que quieres eliminar este archivo? El empleado dejará de verlo y no se puede deshacer.",
+            "edit": "Editar",
+            "editTitle": "Editar archivo",
+            "editHint": "Edita el nombre y la descripción. Al guardar se actualiza la fecha de subida.",
+            "empty": "Todavía no hay ningún archivo.",
+            "emptyDesc": "Sube el primer archivo para un empleado.",
+            "storage": "Almacenamiento utilizado",
+            "subtitle": "Sube archivos (nóminas, documentos...) para cada empleado y gestiona los existentes.",
+            "title": "Archivos de empleados",
+            "upload": "Subir archivo"
+        },
         "vacations": {
             "allUsers": "Todos los empleados",
             "approve": "Aprobar",
@@ -632,9 +656,13 @@
                 "DatesNotInYear": "Las fechas no pertenecen al año seleccionado",
                 "SomeUsersNotFound": "Algunos usuarios no se encontraron",
                 "AvatarTooLarge": "La imagen de perfil es demasiado grande",
-                "InvalidAvatarFormat": "El formato de la imagen de perfil no es válido"
+                "InvalidAvatarFormat": "El formato de la imagen de perfil no es válido",
+                "FileTooLarge": "El archivo es demasiado grande (máx. {maxSize})",
+                "InvalidFileData": "El contenido del archivo no es válido",
+                "StorageQuotaExceeded": "Se ha superado la cuota de almacenamiento"
             },
             "type": "tipo",
+            "file": "archivo",
             "year": "año"
         },
         "InsufficientPermissions": "Permisos insuficientes",
@@ -671,7 +699,39 @@
     "errorBoundary": {
         "message": "Se ha producido un error inesperado.",
         "reload": "Recargar página",
-        "title": "Algo ha salido mal"
+        "title": "Algo ha ido mal"
+    },
+    "files": {
+        "title": "Mis archivos",
+        "subtitle": "Archivos compartidos contigo por la administración.",
+        "empty": "Todavía no tienes ningún archivo.",
+        "emptyDesc": "Los archivos que la administración comparta contigo (por ejemplo, nóminas) aparecerán aquí.",
+        "download": "Descargar",
+        "delete": "Eliminar",
+        "sort": {
+            "label": "Ordenar por",
+            "date": "Fecha",
+            "name": "Nombre"
+        },
+        "order": {
+            "asc": "Ascendente",
+            "desc": "Descendente"
+        },
+        "upload": {
+            "subtitle": "Sube un archivo para un empleado. Solo el empleado y la administración podrán verlo.",
+            "employee": "Empleado",
+            "selectEmployeePlaceholder": "Selecciona un empleado",
+            "selectEmployee": "Selecciona el empleado que recibirá el archivo.",
+            "file": "Archivo",
+            "filePlaceholder": "Elige un archivo (máx. {maxSize})",
+            "fileHelp": "Cualquier tipo de archivo, hasta {maxSize}.",
+            "description": "Descripción (opcional)",
+            "descriptionPlaceholder": "Ej: Nómina de julio...",
+            "uploading": "Subiendo...",
+            "submit": "Subir archivo",
+            "noFile": "Elige un archivo.",
+            "error": "No se ha podido subir el archivo. Inténtalo de nuevo."
+        }
     },
     "monthlyApprovals": {
         "bannerTitle": "Confirmación del registro mensual",

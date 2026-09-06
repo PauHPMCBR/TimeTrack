@@ -23,7 +23,7 @@ import {
     MS_PER_HOUR,
 } from 'shared/src/lib/constants';
 import { usePathname, useRouter } from 'next/navigation';
-import { Users, ChevronRight, Camera, LogOut } from 'lucide-react';
+import { Users, ChevronRight, Camera, LogOut, FolderOpen } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/Avatar';
@@ -69,6 +69,7 @@ export default function ProfilePage() {
     const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
 
     const [autoModalOpen, setAutoModalOpen] = useState(false);
+    const [savingNotify, setSavingNotify] = useState(false);
 
     const readFileAsDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -191,6 +192,15 @@ export default function ProfilePage() {
         setTheme(next);
         localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
+    };
+
+    const toggleNotifyNewFile = async (next: boolean) => {
+        // Optimistic toggle; revert if the save fails.
+        setUser((prev) => (prev ? { ...prev, notifyNewFile: next } : prev));
+        const res = await apiClient.updateMyProfile({ notifyNewFile: next });
+        if (res.error) {
+            setUser((prev) => (prev ? { ...prev, notifyNewFile: !next } : prev));
+        }
     };
 
     const saveAutoSchedule = async (next: TimetableEntry[]) => {
@@ -413,6 +423,27 @@ export default function ProfilePage() {
                 <ChevronRight className="h-5 w-5 text-zinc-400" />
             </Link>
 
+            <Link
+                href="/files"
+                className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 hover:border-indigo-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50 dark:hover:border-indigo-700"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                        <FolderOpen size={24} />
+                    </div>
+                    <div>
+                        <div className="font-semibold text-zinc-900 dark:text-white text-lg">
+                            {t('files.title')}
+                        </div>
+                        <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                            {t('files.subtitle')}
+                        </div>
+                    </div>
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-zinc-400" />
+            </Link>
+
             <div className="grid gap-4 sm:grid-cols-2">
                 <Card className="p-4">
                     <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
@@ -498,6 +529,46 @@ export default function ProfilePage() {
                             </button>
                         ))}
                     </div>
+                </Card>
+
+                <Card className="p-4">
+                    <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
+                        {t('profile.notifications.title')}
+                    </div>
+                    <label className="flex cursor-pointer items-center justify-between gap-4">
+                        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                            {t('profile.notifications.filesEmail')}
+                        </span>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={user.notifyNewFile !== false}
+                            disabled={savingNotify}
+                            onClick={async () => {
+                                setSavingNotify(true);
+                                await toggleNotifyNewFile(
+                                    user.notifyNewFile === false
+                                );
+                                setSavingNotify(false);
+                            }}
+                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                                user.notifyNewFile !== false
+                                    ? 'bg-indigo-600'
+                                    : 'bg-zinc-300 dark:bg-zinc-700'
+                            }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                                    user.notifyNewFile !== false
+                                        ? 'translate-x-6'
+                                        : 'translate-x-1'
+                                }`}
+                            />
+                        </button>
+                    </label>
+                    <p className="mt-2 text-xs text-zinc-500">
+                        {t('profile.notifications.filesEmailHelp')}
+                    </p>
                 </Card>
             </div>
 

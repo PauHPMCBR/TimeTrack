@@ -30,6 +30,12 @@ ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 # NEXT_PUBLIC_APP_NAME: text name (login page, header, browser tab).
 ARG NEXT_PUBLIC_APP_NAME=TimeTrack360
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
+
+# NEXT_PUBLIC_FILE_MAX_BYTES: per-file upload cap (bytes) shown/enforced in the
+# UI. Must match the backend's FILE_MAX_BYTES runtime env (see the company
+# compose template); empty => shared 10 MB default.
+ARG NEXT_PUBLIC_FILE_MAX_BYTES=
+ENV NEXT_PUBLIC_FILE_MAX_BYTES=$NEXT_PUBLIC_FILE_MAX_BYTES
 # NEXT_PUBLIC_* URL vars stay empty (=> stock branding) unless branding files
 # are provided; they are set in the build step below via brand.env.
 ENV NEXT_PUBLIC_APP_ICON_URL=

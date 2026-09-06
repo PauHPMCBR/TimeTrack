@@ -296,6 +296,11 @@
             "CannotDemoteAdmin": "No es pot degradar un administrador",
             "CurrentPasswordRequired": "Cal la contrasenya actual",
             "InvalidCurrentPassword": "La contrasenya actual no és correcta"
+        },
+        "notifications": {
+            "title": "Notificacions",
+            "filesEmail": "Correu quan es comparteixi un fitxer amb tu",
+            "filesEmailHelp": "Rep un correu cada vegada que l'administració comparteixi un fitxer nou amb tu."
         }
     },
     "admin": {
@@ -359,8 +364,10 @@
         },
         "menu": {
             "sections": {
-                "users": "Usuaris i fitxatges",
-                "vacations": "Grups i vacances",
+                "users": "Usuaris i grups",
+                "files": "Fitxers",
+                "events": "Fitxatges",
+                "vacations": "Vacances",
                 "settings": "Configuració global"
             },
             "groups": {
@@ -402,6 +409,10 @@
                 "desc": "Registre de confirmacions mensuals del registre de jornada.",
                 "pending": "pendents",
                 "none": "cap de pendent"
+            },
+            "files": {
+                "title": "Fitxers d'empleats",
+                "desc": "Puja i gestiona fitxers (nòmines...) per a cada empleat."
             }
         },
         "stats": {
@@ -525,6 +536,19 @@
             },
             "title": "Fitxatges"
         },
+        "files": {
+            "allEmployees": "Tots els empleats",
+            "deleteConfirm": "Segur que vols eliminar aquest fitxer? L'empleat deixarà de veure'l i no es pot desfer.",
+            "edit": "Edita",
+            "editTitle": "Edita el fitxer",
+            "editHint": "Edita el nom i la descripció. En desar s'actualitza la data de pujada.",
+            "empty": "Encara no hi ha cap fitxer.",
+            "emptyDesc": "Puja el primer fitxer per a un empleat.",
+            "storage": "Emmagatzematge utilitzat",
+            "subtitle": "Puja fitxers (nòmines, documents...) per a cada empleat i gestiona els existents.",
+            "title": "Fitxers d'empleats",
+            "upload": "Puja fitxer"
+        },
         "vacations": {
             "allUsers": "Tots els empleats",
             "approve": "Aprovar",
@@ -632,9 +656,13 @@
                 "DatesNotInYear": "Les dates no pertanyen a l'any seleccionat",
                 "SomeUsersNotFound": "Alguns usuaris no s'han trobat",
                 "AvatarTooLarge": "La imatge de perfil és massa gran",
-                "InvalidAvatarFormat": "El format de la imatge de perfil no és vàlid"
+                "InvalidAvatarFormat": "El format de la imatge de perfil no és vàlid",
+                "FileTooLarge": "El fitxer és massa gran (màxim {maxSize})",
+                "InvalidFileData": "El contingut del fitxer no és vàlid",
+                "StorageQuotaExceeded": "S'ha superat la quota d'emmagatzematge"
             },
             "type": "tipus",
+            "file": "fitxer",
             "year": "any"
         },
         "InsufficientPermissions": "Permisos insuficients",
@@ -672,6 +700,38 @@
         "message": "S'ha produït un error inesperat.",
         "reload": "Recarregar pàgina",
         "title": "Alguna cosa ha anat malament"
+    },
+    "files": {
+        "title": "Els meus fitxers",
+        "subtitle": "Fitxers compartits amb tu per l'administració.",
+        "empty": "Encara no tens cap fitxer.",
+        "emptyDesc": "Els fitxers que l'administració comparteixi amb tu (per exemple, nòmines) apareixeran aquí.",
+        "download": "Descarregar",
+        "delete": "Eliminar",
+        "sort": {
+            "label": "Ordena per",
+            "date": "Data",
+            "name": "Nom"
+        },
+        "order": {
+            "asc": "Ascendent",
+            "desc": "Descendent"
+        },
+        "upload": {
+            "subtitle": "Puja un fitxer per a un empleat. Només l'empleat i l'administració el podran veure.",
+            "employee": "Empleat",
+            "selectEmployeePlaceholder": "Selecciona un empleat",
+            "selectEmployee": "Selecciona l'empleat que rebrà el fitxer.",
+            "file": "Fitxer",
+            "filePlaceholder": "Tria un fitxer (màxim {maxSize})",
+            "fileHelp": "Qualsevol tipus de fitxer, fins a {maxSize}.",
+            "description": "Descripció (opcional)",
+            "descriptionPlaceholder": "Ex: Nòmina de juliol...",
+            "uploading": "Pujant...",
+            "submit": "Puja el fitxer",
+            "noFile": "Tria un fitxer.",
+            "error": "No s'ha pogut pujar el fitxer. Torna-ho a provar."
+        }
     },
     "monthlyApprovals": {
         "bannerTitle": "Confirmació del registre mensual",

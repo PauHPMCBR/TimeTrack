@@ -9,6 +9,7 @@ import {
     WorkSessionReasonSchema,
     AppSettingsSchema,
     MonthlyApprovalSchema,
+    UserFileSchema,
 } from 'shared/src/schemas/database';
 import { extendZod, zodSchema } from '@zodyac/zod-mongoose';
 import { z } from 'zod';
@@ -66,6 +67,12 @@ zMonthlyApprovalSchema.index({ userId: 1, year: 1, month: 1 }, { unique: true })
 // Reminder scans look for pending docs by requestedAt.
 zMonthlyApprovalSchema.index({ status: 1, requestedAt: 1 });
 
+const zUserFileSchema = zodSchema(UserFileSchema);
+// Per-employee listings (user page + admin employee filter), newest first.
+zUserFileSchema.index({ userId: 1, uploadedAt: -1 });
+// Covered index for the storage-quota aggregate (sum of size across all docs).
+zUserFileSchema.index({ size: 1 });
+
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);
 export const WorkSessionReason =
     mongoose.models.WorkSessionReason ||
@@ -87,3 +94,5 @@ export const AppSettings =
 export const MonthlyApproval =
     mongoose.models.MonthlyApproval ||
     mongoose.model('MonthlyApproval', zMonthlyApprovalSchema);
+export const UserFile =
+    mongoose.models.UserFile || mongoose.model('UserFile', zUserFileSchema);

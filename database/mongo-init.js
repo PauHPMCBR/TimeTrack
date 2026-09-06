@@ -26,6 +26,7 @@ db.createCollection('electivevacations');
 db.createCollection('yearlyvacationdays');
 db.createCollection('worksessionreasons');
 db.createCollection('appsettings');
+db.createCollection('userfiles');
 print('Collections created');
 
 // Mirror the indexes declared in backend/src/models/index.ts. They are created
@@ -44,6 +45,9 @@ db.groups.createIndex({ members: 1, name: 1 });
 // so one global template per year and one per-user row per year are enforced.
 db.yearlyvacationdays.createIndex({ userId: 1, year: 1 }, { unique: true });
 db.yearlyvacationdays.createIndex({ year: 1 });
+db.userfiles.createIndex({ userId: 1, uploadedAt: -1 });
+// Covered index for the storage-quota aggregate (sum of size across all docs).
+db.userfiles.createIndex({ size: 1 });
 print('Indexes created');
 
 db.createUser({

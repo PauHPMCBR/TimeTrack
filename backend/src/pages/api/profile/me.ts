@@ -27,7 +27,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         try {
             await dbConnect();
-            const { autoTimetable, currentPassword, password } = req.body;
+            const { autoTimetable, currentPassword, password, notifyNewFile } =
+                req.body;
 
             // Self-service password change: requires the current password and
             // passes the full policy validation.
@@ -68,6 +69,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
             if (autoTimetable !== undefined) update.autoTimetable = autoTimetable;
+            if (notifyNewFile !== undefined)
+                update.notifyNewFile = notifyNewFile;
 
             const userDoc = await User.findByIdAndUpdate(
                 req.user?.userId,

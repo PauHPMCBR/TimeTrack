@@ -36,10 +36,6 @@ export const UserSchema = z.object({
         .string()
         .min(6, 'Password must be at least 6 characters')
         .optional(),
-    // `.optional()` because zod-mongoose compiles `z.string().default('')` to a
-    // `required: true` String path, and Mongoose's required validator rejects
-    // empty strings — which would make every `User.save()` fail. The default is
-    // still applied on creation.
     registrationToken: z.string().default('').optional(),
     registered: z.boolean().default(false),
     role: UserRoleSchema.default('employee'),
@@ -57,30 +53,17 @@ export const UserSchema = z.object({
     // Soft-delete: data stays in the DB, the user is just hidden and locked out.
     deleted: z.boolean().default(false),
     deletedAt: z.date().optional(),
-    // Password reset ("forgot password") token + expiry. Transient: they only
-    // exist while a reset is pending, so they stay nullable.
     resetPasswordToken: z.string().optional(),
     resetPasswordExpires: z.date().optional(),
-    // Automatic timetable: list of check-in/check-out intervals ("HH:MM").
-    // Always present (default applied on user creation); used by the "set
-    // automatic timetable" action and the end-of-day reminder email.
     autoTimetable: z
         .array(AutoScheduleEntrySchema)
         .default(DEFAULT_AUTO_TIMETABLE),
+    notifyNewFile: z.boolean().default(true),
     // Date key (YYYY-MM-DD, local) of the last inconsistency-reminder email.
-    // Empty string = never reminded yet. `.optional()` because zod-mongoose
-    // compiles `z.string().default('')` to a `required: true` String path, and
-    // Mongoose's required validator rejects empty strings — which would make
-    // every `User.save()` fail. The default is still applied on creation.
+    // Empty string = never reminded yet.
     lastInconsistencyReminder: z.string().default('').optional(),
-    // When the user started time tracking (local date key "YYYY-MM-DD"). Used
-    // to only evaluate a user's months from their tracking start onward.
-    // Non-nullable: new users get it as a Date on creation, it is pinned to the
-    // activation date in register.ts, and existing users are backfilled to
-    // their first ever check-in by migration.
-    // When true the user must check in/out daily; when false (typical for
-    // admins) the system does not flag missing sessions as anomalies.
     checkInRequired: z.boolean().default(true),
+    // When the user started time tracking (local date key "YYYY-MM-DD").
     trackingStartDate: z.date().default(() => new Date()),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
@@ -98,7 +81,6 @@ export const AppSettingsSchema = z.object({
     nonWorkingDays: z
         .array(z.number().int().min(0).max(6))
         .default(DEFAULT_NON_WORKING_DAYS),
-    // Send the end-of-day inconsistency-reminder email (on by default).
     inconsistencyReminderEnabled: z.boolean().default(true),
     // Days to wait after an approval request before reminding the worker
     // (single reminder) about their pending monthly record confirmation.
@@ -108,19 +90,12 @@ export const AppSettingsSchema = z.object({
         .min(1)
         .max(60)
         .default(DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS),
-    // IANA time-zone name used for all date-bucketing, automatic-timetable
-    // construction and displayed times. Stored as UTC in MongoDB; the local
-    // calendar day is derived from this zone so records are correct regardless
-    // of the server's own timezone (e.g. a Spain company on a UTC server).
     timezone: z
         .string()
         .min(1, 'Timezone is required')
         .default(DEFAULT_TIMEZONE),
     // Month key (YYYY-MM) of the last end-of-month "review the month's times"
-    // mail sent to admins. Empty string = never sent. `.optional()` because
-    // zod-mongoose compiles `z.string().default('')` to a `required: true`
-    // String path whose required validator rejects empty strings (same
-    // workaround as lastInconsistencyReminder).
+    // mail sent to admins. Empty string = never sent.
     lastMonthlyReviewReminder: z.string().default('').optional(),
     // Privacy notice shown to workers (GDPR/art. 34.9). Empty string = not
     // configured yet.
@@ -180,13 +155,9 @@ export const VacationStatusSchema = z.enum([
 ]);
 export const ElectiveVacationSchema = z.object({
     userId: z.string(),
-    // Vacation period: calendar-day interval, both bounds at local midnight
-    // and inclusive. endDate >= startDate, and both within the same year.
     startDate: z.date(),
     endDate: z.date(),
-    // Elective vacation days the request costs, computed by the backend on
-    // creation: calendar days in the interval minus non-working days and
-    // company obligatory days.
+    // Elective vacation days the request costs
     spentDays: z.number().int().gte(0).default(0),
     status: VacationStatusSchema.default('pending'),
     reason: z.string().max(1000).optional(),
@@ -223,6 +194,19 @@ export const MonthlyApprovalSchema = z.object({
     approvedAt: z.date().optional(),
     // Set once the (single) X-days reminder has been sent.
     reminderSentAt: z.date().optional(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+});
+
+export const UserFileSchema = z.object({
+    userId: z.string(),
+    filename: z.string().min(1),
+    originalName: z.string().min(1).max(255),
+    description: z.string().max(1000).default('').optional(),
+    mimeType: z.string().min(1).default('application/octet-stream'),
+    size: z.number().int().gte(0),
+    uploadedBy: z.string(),
+    uploadedAt: z.date().default(() => new Date()),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

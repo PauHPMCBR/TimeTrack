@@ -55,6 +55,15 @@ export const MS_PER_DAY = 86_400_000;
 // Avatar upload cap (bytes), enforced by both the API and the upload UI.
 export const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
 
+// Per-file upload cap (bytes) for admin-shared employee files.
+// the backend overrides it with the
+// FILE_MAX_BYTES env var (and the frontend with NEXT_PUBLIC_FILE_MAX_BYTES).
+export const DEFAULT_FILE_MAX_BYTES = 10 * 1024 * 1024;
+
+// Default total-storage quota (bytes) for employee files. The backend can
+// override it with the FILES_STORAGE_QUOTA_BYTES env var.
+export const DEFAULT_FILES_STORAGE_QUOTA_BYTES = 1024 * 1024 * 1024;
+
 // HTTP header used to return the re-issued JWT on refresh (rolling session).
 export const REFRESH_TOKEN_HEADER = 'X-Auth-Token';
 

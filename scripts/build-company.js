@@ -88,11 +88,21 @@ export function readCompanyFromCompose(composePath) {
         "Add it at the top of the compose file — see deploy-docs/templates/company-compose.yml."
     );
   }
+  // The per-file upload cap is enforced by the backend at runtime (env var
+  // FILE_MAX_BYTES) and mirrored in the UI via NEXT_PUBLIC_FILE_MAX_BYTES,
+  // which must be baked at build time. Single source of truth: the company
+  // compose's backend environment block.
+  const backendEnv = data.services?.backend?.environment ?? {};
+  const fileMaxBytes =
+    backendEnv.FILE_MAX_BYTES !== undefined
+      ? String(backendEnv.FILE_MAX_BYTES)
+      : undefined;
   return {
     subdomain: String(meta.subdomain),
     name: meta.name,
     iconFile: meta.iconFile,
     faviconFile: meta.faviconFile,
+    fileMaxBytes,
   };
 }
 
@@ -124,22 +134,20 @@ export async function buildFrontend(cfg, domain, root = repoRoot) {
   const appName = cfg.name || "TimeTrack360";
   const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
   await stageBranding(cfg);
-  execFileSync(
-    "docker",
-    [
-      "build",
-      "-f",
-      "frontend/Dockerfile",
-      "--build-arg",
-      `NEXT_PUBLIC_BACKEND_URL=${backendUrl}`,
-      "--build-arg",
-      `NEXT_PUBLIC_APP_NAME=${appName}`,
-      "-t",
-      `registre-jornada-frontend:${cfg.subdomain}`,
-      ".",
-    ],
-    { cwd: root, stdio: "inherit" }
-  );
+  const buildArgs = [
+    "build",
+    "-f",
+    "frontend/Dockerfile",
+    "--build-arg",
+    `NEXT_PUBLIC_BACKEND_URL=${backendUrl}`,
+    "--build-arg",
+    `NEXT_PUBLIC_APP_NAME=${appName}`,
+  ];
+  if (cfg.fileMaxBytes) {
+    buildArgs.push("--build-arg", `NEXT_PUBLIC_FILE_MAX_BYTES=${cfg.fileMaxBytes}`);
+  }
+  buildArgs.push("-t", `registre-jornada-frontend:${cfg.subdomain}`);
+  execFileSync("docker", buildArgs, { cwd: root, stdio: "inherit" });
 }
 
 export function buildBackend(root = repoRoot) {

@@ -20,6 +20,7 @@ import {
     buildWorkerMonthlyApprovalMessage,
     MonthlyApprovalPeriod,
 } from './templates/monthlyApprovals';
+import { buildNewFileMessage, NewFileVars } from './templates/fileNotification';
 
 export type { EmailLanguage };
 export type {
@@ -28,6 +29,7 @@ export type {
     InconsistencyReminderVars,
     ReminderSessionTime,
     MonthlyApprovalPeriod,
+    NewFileVars,
 };
 
 export type EmailKind =
@@ -36,7 +38,8 @@ export type EmailKind =
     | 'inconsistencyReminder'
     | 'adminMonthlyReview'
     | 'monthlyApprovalRequest'
-    | 'monthlyApprovalReminder';
+    | 'monthlyApprovalReminder'
+    | 'newFile';
 
 const SUPPORTED_LANGUAGES: EmailLanguage[] = ['ca', 'en', 'es'];
 const DEFAULT_LANGUAGE: EmailLanguage = 'ca';
@@ -68,7 +71,8 @@ type AnyVars =
     | PasswordResetVars
     | InconsistencyReminderVars
     | AdminMonthlyReviewVars
-    | WorkerMonthlyApprovalVars;
+    | WorkerMonthlyApprovalVars
+    | NewFileVars;
 
 export function buildMessage(
     kind: EmailKind,
@@ -102,6 +106,8 @@ export function buildMessage(
                 lang,
                 vars as WorkerMonthlyApprovalVars
             );
+        case 'newFile':
+            return buildNewFileMessage(lang, vars as NewFileVars);
     }
 }
 
@@ -314,4 +320,25 @@ export function sendMonthlyApprovalReminder(
         approveUrl: input.approveUrl,
     };
     return sendEmail('monthlyApprovalReminder', { to: input.to, vars });
+}
+
+export interface NewFileEmailInput {
+    to: string;
+    name: string;
+    fileName: string;
+    description?: string;
+    filesUrl: string;
+    companyName?: string;
+}
+
+export function sendNewFileEmail(input: NewFileEmailInput): Promise<void> {
+    const vars: NewFileVars = {
+        companyName:
+            input.companyName || process.env.COMPANY_NAME || getCompanyName(),
+        name: input.name,
+        fileName: input.fileName,
+        description: input.description,
+        filesUrl: input.filesUrl,
+    };
+    return sendEmail('newFile', { to: input.to, vars });
 }

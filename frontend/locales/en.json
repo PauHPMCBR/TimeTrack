@@ -296,6 +296,11 @@
             "CannotDemoteAdmin": "An admin cannot be demoted",
             "CurrentPasswordRequired": "Current password is required",
             "InvalidCurrentPassword": "Current password is incorrect"
+        },
+        "notifications": {
+            "title": "Notifications",
+            "filesEmail": "Email me when a file is shared with me",
+            "filesEmailHelp": "Receive an email whenever the administration shares a new file with you."
         }
     },
     "admin": {
@@ -359,8 +364,10 @@
         },
         "menu": {
             "sections": {
-                "users": "Users & fitxatges",
-                "vacations": "Groups and vacations",
+                "users": "Users & groups",
+                "files": "Files",
+                "events": "Time tracking",
+                "vacations": "Vacations",
                 "settings": "Global settings"
             },
             "groups": {
@@ -402,6 +409,10 @@
                 "desc": "Registry of monthly time record confirmations.",
                 "pending": "pending",
                 "none": "none pending"
+            },
+            "files": {
+                "title": "Employee files",
+                "desc": "Upload and manage files (payslips...) for each employee."
             }
         },
         "stats": {
@@ -525,6 +536,19 @@
             },
             "title": "Events"
         },
+        "files": {
+            "allEmployees": "All employees",
+            "deleteConfirm": "Delete this file? The employee will no longer see it and this cannot be undone.",
+            "edit": "Edit",
+            "editTitle": "Edit file",
+            "editHint": "Edit the name and description. Saving refreshes the upload date.",
+            "empty": "No files yet.",
+            "emptyDesc": "Upload the first file for an employee.",
+            "storage": "Storage used",
+            "subtitle": "Upload files (payslips, documents...) for each employee and manage existing ones.",
+            "title": "Employee files",
+            "upload": "Upload file"
+        },
         "vacations": {
             "allUsers": "All employees",
             "approve": "Approve",
@@ -632,9 +656,13 @@
                 "DatesNotInYear": "The dates are not in the selected year",
                 "SomeUsersNotFound": "Some users were not found",
                 "AvatarTooLarge": "The profile picture is too large",
-                "InvalidAvatarFormat": "The profile picture format is invalid"
+                "InvalidAvatarFormat": "The profile picture format is invalid",
+                "FileTooLarge": "The file is too large (max {maxSize})",
+                "InvalidFileData": "The file content is not valid",
+                "StorageQuotaExceeded": "The storage quota has been exceeded"
             },
             "type": "type",
+            "file": "file",
             "year": "year"
         },
         "InsufficientPermissions": "Insufficient permissions",
@@ -672,6 +700,38 @@
         "message": "An unexpected error occurred.",
         "reload": "Reload page",
         "title": "Something went wrong"
+    },
+    "files": {
+        "title": "My files",
+        "subtitle": "Files shared with you by the administration.",
+        "empty": "You don't have any files yet.",
+        "emptyDesc": "Files the administration shares with you (e.g. payslips) will appear here.",
+        "download": "Download",
+        "delete": "Delete",
+        "sort": {
+            "label": "Sort by",
+            "date": "Date",
+            "name": "Name"
+        },
+        "order": {
+            "asc": "Ascending",
+            "desc": "Descending"
+        },
+        "upload": {
+            "subtitle": "Upload a file for an employee. Only the employee and the administration can see it.",
+            "employee": "Employee",
+            "selectEmployeePlaceholder": "Select an employee",
+            "selectEmployee": "Select the employee who will receive the file.",
+            "file": "File",
+            "filePlaceholder": "Choose a file (max {maxSize})",
+            "fileHelp": "Any file type, up to {maxSize}.",
+            "description": "Description (optional)",
+            "descriptionPlaceholder": "e.g. July payslip...",
+            "uploading": "Uploading...",
+            "submit": "Upload file",
+            "noFile": "Choose a file.",
+            "error": "The file could not be uploaded. Please try again."
+        }
     },
     "monthlyApprovals": {
         "bannerTitle": "Monthly record confirmation",

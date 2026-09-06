@@ -5,6 +5,7 @@ import {
     MonthlyApprovalSchema,
     UserRoleSchema,
     UserSchema,
+    UserFileSchema,
     WorkSessionSchema,
     WorkSessionTypeSchema,
     YearlyVacationDaysSchema,
@@ -143,6 +144,8 @@ export type ApplyAutoScheduleRequest = z.infer<
 
 export const UpdateProfileRequestSchema = z.object({
     autoTimetable: z.array(AutoScheduleEntrySchema).optional(),
+    // Per-user email notification for files shared by admins (profile toggle).
+    notifyNewFile: z.boolean().optional(),
     // Self-service password change: both must be provided together.
     currentPassword: z.string().optional(),
     password: z
@@ -527,3 +530,75 @@ export const WorkSessionsResponseSchema = z.object({
 });
 
 export type WorkSessionsResponse = z.infer<typeof WorkSessionsResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Admin-shared employee files
+// ---------------------------------------------------------------------------
+
+export const FileSortFieldSchema = z.enum(['uploadedAt', 'originalName']);
+export type FileSortField = z.infer<typeof FileSortFieldSchema>;
+
+export const FileSortOrderSchema = z.enum(['asc', 'desc']);
+export type FileSortOrder = z.infer<typeof FileSortOrderSchema>;
+
+// GET /api/admin/files (query). userId filters by employee; sortBy/order drive
+// the list ordering. All fields optional (defaults: everyone, uploadedAt desc).
+export const AdminFilesQuerySchema = z.object({
+    userId: z.string().min(1).optional(),
+    sortBy: FileSortFieldSchema.optional(),
+    order: FileSortOrderSchema.optional(),
+});
+export type AdminFilesQuery = z.infer<typeof AdminFilesQuerySchema>;
+
+// GET /api/files (own list): same sorting options, no employee filter.
+export const MyFilesQuerySchema = AdminFilesQuerySchema.omit({ userId: true });
+export type MyFilesQuery = z.infer<typeof MyFilesQuerySchema>;
+
+// PUT /api/admin/files/[fileId] (edit metadata: display name and/or
+// description; at least one field). Editing also refreshes the upload date.
+export const FileUpdateRequestSchema = z
+    .object({
+        originalName: z.string().min(1, 'File name is required').max(255).optional(),
+        description: z.string().max(1000).optional(),
+    })
+    .refine(
+        (data) => Object.keys(data).length > 0,
+        'At least one field is required'
+    );
+export type FileUpdateRequest = z.infer<typeof FileUpdateRequestSchema>;
+
+// POST /api/admin/files (upload). The file travels as a base64 data URL in the
+// JSON body (same transport as avatar uploads); the binary must fit within
+// FILE_MAX_BYTES after decoding.
+export const FileUploadRequestSchema = z.object({
+    userId: z.string().min(1, 'User ID is required'),
+    originalName: z.string().min(1, 'File name is required').max(255),
+    description: z.string().max(1000).optional(),
+    dataUrl: z
+        .string()
+        .regex(/^data:[\w.+-]+\/[\w.+-]+;base64,/, 'Invalid file data url'),
+});
+export type FileUploadRequest = z.infer<typeof FileUploadRequestSchema>;
+
+export const FileIdParamSchema = z.object({
+    fileId: z.string().min(1, 'File ID is required'),
+});
+export type FileIdParam = z.infer<typeof FileIdParamSchema>;
+
+// A file entry as returned by the list/upload endpoints.
+export const FileRowSchema = UserFileSchema.extend({
+    _id: z.string(),
+    // Resolved server-side: display name of the employee the file belongs to.
+    userName: z.string().optional(),
+});
+export type FileRow = z.infer<typeof FileRowSchema>;
+
+// Response of the file-list endpoints (admin and self). totalSize is the
+// storage used by all employee files and quotaBytes the configured cap (null
+// when no quota could be determined).
+export const FilesResponseSchema = z.object({
+    files: z.array(FileRowSchema),
+    totalSize: z.number().int().gte(0),
+    quotaBytes: z.number().int().gte(0).nullable(),
+});
+export type FilesResponse = z.infer<typeof FilesResponseSchema>;
