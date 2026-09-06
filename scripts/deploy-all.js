@@ -5,9 +5,10 @@
 //   node scripts/deploy-all.js
 //
 // What it does, per company compose file under /opt/timetrack/companies/*/:
-//   0. syncs the static landing site (landing/dist -> <infra>/landing, the dir
-//      Caddy serves at the apex domain) and stages landing/dist/guide.pdf into
-//      branding/ so company frontend builds bake the newest guide PDF,
+//   0. rebuilds the static landing site (scripts/build-landing.js) and syncs
+//      it to <infra>/landing (the dir Caddy serves at the apex domain), also
+//      staging guide.pdf into branding/ so company frontend builds bake the
+//      newest guide PDF,
 //   1. builds the shared backend image once (tag registre-jornada-backend:latest),
 //   2. builds the company's frontend image (branding + baked backend URL) from
 //      the `x-company` block in the company's compose file,
@@ -79,26 +80,41 @@ if (args.pull) {
   execFileSync("git", ["pull"], { cwd: repoRoot, stdio: "inherit" });
 }
 
-// Refreshes the static landing site served by Caddy at the apex domain:
-// landing/dist/ (built by scripts/build-landing.js) -> <infra>/landing/, and
-// stages landing/dist/guide.pdf into branding/ so the frontend builds below
-// bake the newest guide PDF (served per company at /guide.pdf). Skipped (with
-// a notice) when no build exists; disable with --skip-landing.
+// Rebuilds the static landing site (landing page + guide PDF) and refreshes
+// what Caddy serves at the apex domain: landing/dist/ -> <infra>/landing/.
+// The build (scripts/build-landing.js) also stages guide.pdf into branding/,
+// which the frontend Dockerfile bakes into every company image at /guide.pdf.
+// If the build fails (typically: typst missing on PATH) an existing stale
+// build is still synced so the page doesn't disappear. Disable with
+// --skip-landing.
 function syncLanding() {
   const landingDist = join(repoRoot, "landing", "dist");
-  // Infra dir is the parent of the companies dir (/opt/timetrack by default).
-  const landingTarget = join(dirname(args.companiesDir), "landing");
+  console.log("== landing: building (scripts/build-landing.js) ==");
+  let built = false;
+  try {
+    execFileSync("node", [join(repoRoot, "scripts", "build-landing.js")], {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+    built = true;
+  } catch {
+    console.warn(
+      "== landing: build FAILED — falling back to the existing landing/dist (if any) =="
+    );
+  }
   if (!existsSync(join(landingDist, "index.html"))) {
-    console.log("== landing: no landing/dist build found — skipped (run scripts/build-landing.js) ==");
+    console.warn("== landing: nothing to deploy (no build output) — skipped ==");
     return;
   }
+  // Infra dir is the parent of the companies dir (/opt/timetrack by default).
+  const landingTarget = join(dirname(args.companiesDir), "landing");
   console.log(`== landing: syncing to ${landingTarget} ==`);
   mkdirSync(landingTarget, { recursive: true });
   execFileSync("rsync", ["-a", "--delete", `${landingDist}/`, `${landingTarget}/`], {
     stdio: "inherit",
   });
   const guidePdf = join(landingDist, "guide.pdf");
-  if (existsSync(guidePdf)) {
+  if (built && existsSync(guidePdf)) {
     mkdirSync(join(repoRoot, "branding"), { recursive: true });
     copyFileSync(guidePdf, join(repoRoot, "branding", "guide.pdf"));
   }
