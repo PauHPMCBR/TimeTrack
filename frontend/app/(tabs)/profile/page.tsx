@@ -23,11 +23,12 @@ import {
     MS_PER_HOUR,
 } from 'shared/src/lib/constants';
 import { usePathname, useRouter } from 'next/navigation';
-import { Users, ChevronRight, Camera, LogOut, FolderOpen } from 'lucide-react';
+import { Users, ChevronRight, Camera, LogOut, FolderOpen, BookOpen } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/Avatar';
 import PasswordField from '@/components/ui/PasswordField';
+import { GUIDE_URL } from '@/lib/brand';
 
 const AVATAR_TYPES = [
     'image/jpeg',
@@ -443,6 +444,28 @@ export default function ProfilePage() {
 
                 <ChevronRight className="h-5 w-5 text-zinc-400" />
             </Link>
+
+            {GUIDE_URL && (
+                <a
+                    href={GUIDE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 hover:border-indigo-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50 dark:hover:border-indigo-700"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                            <BookOpen size={24} />
+                        </div>
+                        <div>
+                            <div className="font-semibold text-zinc-900 dark:text-white text-lg">
+                                {t('common.userGuide')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <ChevronRight className="h-5 w-5 text-zinc-400" />
+                </a>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
                 <Card className="p-4">

@@ -17,6 +17,7 @@
         "saving": "Saving...",
         "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?",
         "yes": "Yes",
+        "userGuide": "User guide",
         "password": {
             "show": "Show password",
             "hide": "Hide password"

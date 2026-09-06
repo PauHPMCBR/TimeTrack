@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
-import { APP_NAME, APP_ICON_URL } from '@/lib/brand';
+import { APP_NAME, APP_ICON_URL, GUIDE_URL } from '@/lib/brand';
 import { apiClient } from '@/lib/api';
 import { Alert } from './ui/Alert';
 import { LoginRequestSchema } from '@/schemas/api';
@@ -147,6 +147,19 @@ export default function LoginForm() {
                     </Link>
                 </div>
             </div>
+
+            {GUIDE_URL && (
+                <div className="mt-4 border-t border-zinc-200 pt-4 text-center text-sm dark:border-zinc-800">
+                    <a
+                        href={GUIDE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                        {t('common.userGuide')}
+                    </a>
+                </div>
+            )}
         </form>
     );
 }

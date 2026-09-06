@@ -14,6 +14,9 @@ before `docker build`:
   and letting the width follow). Used on the login page, in the email footer
   (via `EMAIL_LOGO_URL`) and as the source for the top-toolbar logo.
 - `favicon.png` — browser-tab favicon (must be square; 32x32 or 64x64 is fine)
+- `guide.pdf` — usage guide (`docs/guide.typ` compiled by
+  `scripts/build-landing.js`, which stages it here). Baked into each frontend
+  image as `/guide.pdf`; the login and profile pages link to it.
 
 The build generates a **128px-height toolbar variant** (`icon-toolbar.png`) from
 `icon.png` automatically (ImageMagick, in the Dockerfile), so small renders

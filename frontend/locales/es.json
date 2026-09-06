@@ -17,6 +17,7 @@
         "saving": "Guardando...",
         "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Salir sin guardar?",
         "yes": "Sí",
+        "userGuide": "Guía de uso",
         "password": {
             "show": "Mostrar contraseña",
             "hide": "Ocultar contraseña"

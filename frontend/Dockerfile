@@ -41,6 +41,7 @@ ENV NEXT_PUBLIC_FILE_MAX_BYTES=$NEXT_PUBLIC_FILE_MAX_BYTES
 ENV NEXT_PUBLIC_APP_ICON_URL=
 ENV NEXT_PUBLIC_APP_ICON_TOOLBAR_URL=
 ENV NEXT_PUBLIC_FAVICON_URL=
+ENV NEXT_PUBLIC_GUIDE_URL=
 
 WORKDIR /app/frontend
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -60,6 +61,10 @@ RUN mkdir -p public/brand && rm -f /app/brand.env && { \
       if [ -f /app/branding/favicon.png ]; then \
         cp /app/branding/favicon.png public/brand/favicon.png && \
         echo "NEXT_PUBLIC_FAVICON_URL=/brand/favicon.png" >> /app/brand.env; \
+      fi; \
+      if [ -f /app/branding/guide.pdf ]; then \
+        cp /app/branding/guide.pdf public/guide.pdf && \
+        echo "NEXT_PUBLIC_GUIDE_URL=/guide.pdf" >> /app/brand.env; \
       fi; \
     }
 

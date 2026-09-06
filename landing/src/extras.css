@@ -1,0 +1,9 @@
+/* Landing-specific additions, appended to the Tailwind output generated from
+   frontend/app/globals.css by scripts/build-landing.js. */
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}

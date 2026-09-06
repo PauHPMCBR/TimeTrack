@@ -5,6 +5,9 @@
 //   node scripts/deploy-all.js
 //
 // What it does, per company compose file under /opt/timetrack/companies/*/:
+//   0. syncs the static landing site (landing/dist -> <infra>/landing, the dir
+//      Caddy serves at the apex domain) and stages landing/dist/guide.pdf into
+//      branding/ so company frontend builds bake the newest guide PDF,
 //   1. builds the shared backend image once (tag registre-jornada-backend:latest),
 //   2. builds the company's frontend image (branding + baked backend URL) from
 //      the `x-company` block in the company's compose file,
@@ -16,9 +19,10 @@
 //   --skip-backend    don't rebuild the shared backend image
 //   --skip-health     don't wait for /api/health after recreating
 //   --skip-index-sync don't POST /api/admin/indexes/sync after recreating
+//   --skip-landing    don't refresh the static landing site
 //   --dir <path>      companies base dir (default: $COMPANIES_DIR or /opt/timetrack/companies)
 //   --domain <d>      root domain override (default: /opt/timetrack/.env DOMAIN=)
-import { readdirSync, existsSync } from "node:fs";
+import { readdirSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -35,18 +39,26 @@ const DEFAULT_COMPANIES_DIR = "/opt/timetrack/companies";
 
 function usage() {
   console.error(
-    "Usage: node scripts/deploy-all.js [--pull] [--skip-backend] [--skip-health] [--dir <path>] [--domain <root-domain>]"
+    "Usage: node scripts/deploy-all.js [--pull] [--skip-backend] [--skip-health] [--skip-landing] [--dir <path>] [--domain <root-domain>]"
   );
   process.exit(1);
 }
 
 const argv = process.argv.slice(2);
-const args = { pull: false, backend: true, health: true, indexSync: true, companiesDir: process.env.COMPANIES_DIR };
+const args = {
+  pull: false,
+  backend: true,
+  health: true,
+  indexSync: true,
+  landing: true,
+  companiesDir: process.env.COMPANIES_DIR,
+};
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--pull") args.pull = true;
   else if (argv[i] === "--skip-backend") args.backend = false;
   else if (argv[i] === "--skip-health") args.health = false;
   else if (argv[i] === "--skip-index-sync") args.indexSync = false;
+  else if (argv[i] === "--skip-landing") args.landing = false;
   else if (argv[i] === "--dir") args.companiesDir = argv[++i];
   else if (argv[i] === "--domain") args.domain = argv[++i];
   else usage();
@@ -66,6 +78,33 @@ if (args.pull) {
   console.log("== git pull ==");
   execFileSync("git", ["pull"], { cwd: repoRoot, stdio: "inherit" });
 }
+
+// Refreshes the static landing site served by Caddy at the apex domain:
+// landing/dist/ (built by scripts/build-landing.js) -> <infra>/landing/, and
+// stages landing/dist/guide.pdf into branding/ so the frontend builds below
+// bake the newest guide PDF (served per company at /guide.pdf). Skipped (with
+// a notice) when no build exists; disable with --skip-landing.
+function syncLanding() {
+  const landingDist = join(repoRoot, "landing", "dist");
+  // Infra dir is the parent of the companies dir (/opt/timetrack by default).
+  const landingTarget = join(dirname(args.companiesDir), "landing");
+  if (!existsSync(join(landingDist, "index.html"))) {
+    console.log("== landing: no landing/dist build found — skipped (run scripts/build-landing.js) ==");
+    return;
+  }
+  console.log(`== landing: syncing to ${landingTarget} ==`);
+  mkdirSync(landingTarget, { recursive: true });
+  execFileSync("rsync", ["-a", "--delete", `${landingDist}/`, `${landingTarget}/`], {
+    stdio: "inherit",
+  });
+  const guidePdf = join(landingDist, "guide.pdf");
+  if (existsSync(guidePdf)) {
+    mkdirSync(join(repoRoot, "branding"), { recursive: true });
+    copyFileSync(guidePdf, join(repoRoot, "branding", "guide.pdf"));
+  }
+}
+
+if (args.landing) syncLanding();
 
 const composeFiles = readdirSync(args.companiesDir)
   .map((name) => join(args.companiesDir, name, "compose.yml"))
