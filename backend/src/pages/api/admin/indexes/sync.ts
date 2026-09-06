@@ -1,4 +1,5 @@
 import type { NextApiResponse } from 'next';
+import type { NextApiRequest } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { AuthRequest, requireRole } from '@/lib/auth';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
@@ -9,6 +10,8 @@ import {
     Group,
     YearlyVacationDays,
     WorkSessionReason,
+    MonthlyApproval,
+    UserFile,
 } from '@/models';
 import {
     responseErrorPost,
@@ -21,6 +24,10 @@ import {
 //
 //   curl -X POST -H "Authorization: Bearer <admin-token>" \
 //     http://localhost:3001/api/admin/indexes/sync
+//
+// scripts/deploy-all.js also calls this automatically after recreating each
+// company's stack, using the company's CRON_SECRET env (x-cron-secret header),
+// since it has no admin credentials.
 async function handler(req: AuthRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         return responseErrorMethodNotAllowed(res);
@@ -37,6 +44,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             Group,
             YearlyVacationDays,
             WorkSessionReason,
+            MonthlyApproval,
+            UserFile,
         })) {
             results[name] = await model.syncIndexes();
         }
@@ -48,4 +57,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
     }
 }
 
-export default requireRole([ADMIN_ROLE], handler);
+// Admin token OR the CRON_SECRET env (x-cron-secret header), mirroring the
+// cron-trigger pattern of /api/admin/inconsistencies/notify.
+export default function (req: NextApiRequest, res: NextApiResponse) {
+    const secret = process.env.CRON_SECRET;
+    if (secret && req.headers['x-cron-secret'] === secret) {
+        return handler(req as AuthRequest, res);
+    }
+    return requireRole([ADMIN_ROLE], handler)(req as AuthRequest, res);
+}

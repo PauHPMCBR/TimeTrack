@@ -15,6 +15,7 @@
 //   --pull            run `git pull` in the repo first
 //   --skip-backend    don't rebuild the shared backend image
 //   --skip-health     don't wait for /api/health after recreating
+//   --skip-index-sync don't POST /api/admin/indexes/sync after recreating
 //   --dir <path>      companies base dir (default: $COMPANIES_DIR or /opt/timetrack/companies)
 //   --domain <d>      root domain override (default: /opt/timetrack/.env DOMAIN=)
 import { readdirSync, existsSync } from "node:fs";
@@ -40,11 +41,12 @@ function usage() {
 }
 
 const argv = process.argv.slice(2);
-const args = { pull: false, backend: true, health: true, companiesDir: process.env.COMPANIES_DIR };
+const args = { pull: false, backend: true, health: true, indexSync: true, companiesDir: process.env.COMPANIES_DIR };
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--pull") args.pull = true;
   else if (argv[i] === "--skip-backend") args.backend = false;
   else if (argv[i] === "--skip-health") args.health = false;
+  else if (argv[i] === "--skip-index-sync") args.indexSync = false;
   else if (argv[i] === "--dir") args.companiesDir = argv[++i];
   else if (argv[i] === "--domain") args.domain = argv[++i];
   else usage();
@@ -93,6 +95,40 @@ if (args.backend) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Applies missing Mongo indexes via /api/admin/indexes/sync, authenticated with
+// the company's CRON_SECRET (the endpoint also accepts admin tokens for manual
+// runs). Index changes are NOT applied automatically in production (autoIndex
+// off), so this runs after every stack recreation. Non-fatal: reported, not
+// counted as a deploy failure.
+function syncIndexes(composeDir, cfg) {
+  if (!cfg.cronSecret) {
+    console.log(
+      `  ${cfg.subdomain}: index sync skipped (no CRON_SECRET in compose file)`
+    );
+    return false;
+  }
+  try {
+    const out = execFileSync(
+      "docker",
+      [
+        "compose",
+        "exec",
+        "-T",
+        "-e",
+        `SYNC_SECRET=${cfg.cronSecret}`,
+        "backend",
+        "sh",
+        "-c",
+        'wget -qO- --header "x-cron-secret: $SYNC_SECRET" --post-data \'sync=1\' http://localhost:3001/api/admin/indexes/sync',
+      ],
+      { cwd: composeDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+    );
+    return out.includes('"success":true');
+  } catch {
+    return false;
+  }
+}
 
 async function waitHealthy(composeDir, timeoutMs = 120000) {
   const deadline = Date.now() + timeoutMs;
@@ -144,6 +180,14 @@ for (const cfg of companies) {
     const healthy = await waitHealthy(composeDir);
     console.log(`  ${cfg.subdomain}: ${healthy ? "healthy" : "NOT healthy (check docker compose logs)"}`);
     if (!healthy) failed.push(cfg.subdomain);
+  }
+
+  if (args.indexSync) {
+    console.log(`== ${cfg.subdomain}: syncing Mongo indexes ==`);
+    const ok = syncIndexes(composeDir, cfg);
+    console.log(
+      `  ${cfg.subdomain}: ${ok ? "indexes synced" : "index sync FAILED (run manually: curl -X POST -H \"x-cron-secret: <CRON_SECRET>\" http://localhost:3001/api/admin/indexes/sync)"}`
+    );
   }
 }
 
