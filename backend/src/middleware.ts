@@ -3,13 +3,19 @@ import type { NextRequest } from 'next/server';
 import { DEFAULT_FRONTEND_URL } from 'shared/src/lib/defaults';
 
 // Allowed frontend origins. Keep this list explicit — never reflect arbitrary
-// origins, and don't ship dev-only hosts.
+// origins. Dev-only convenience hosts are added outside production; in
+// production set FRONTEND_URL to the real browser-facing origin.
+const isDev = process.env.NODE_ENV !== 'production';
 const allowedOrigins = [
     process.env.FRONTEND_URL,
-    'http://frontend:3000', // Docker container name
-    DEFAULT_FRONTEND_URL, // Browser access
-    'http://127.0.0.1:3000', // Alternative localhost
-    'http://host.docker.internal:3000', // Docker host (fallback)
+    DEFAULT_FRONTEND_URL, // Browser access fallback
+    ...(isDev
+        ? [
+              'http://frontend:3000', // Docker container name
+              'http://127.0.0.1:3000', // Alternative localhost
+              'http://host.docker.internal:3000', // Docker host (fallback)
+          ]
+        : []),
 ].filter(Boolean) as string[];
 
 function applyCorsHeaders(response: NextResponse | Response, origin: string) {

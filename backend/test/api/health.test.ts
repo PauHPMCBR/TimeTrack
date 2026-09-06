@@ -1,61 +1,34 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockReq, mockRes } from '../utils/mocks';
-
-vi.mock('mongoose', () => ({
-    default: {
-        connection: {
-            readyState: 1,
-        },
-    },
-}));
 
 import healthHandler from '@/pages/api/health';
 
 describe('GET /api/health', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.stubEnv('JWT_SECRET', 'test-secret-for-testing');
     });
 
-    afterEach(() => {
-        vi.unstubAllEnvs();
-        vi.resetModules();
-    });
-
-    it('returns 200 with ok status when configured', async () => {
+    it('returns a minimal 200 payload without config details', async () => {
         const req = mockReq({ method: 'GET' });
         const res = mockRes();
 
         await healthHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'ok',
-                database: 'connected',
-                jwtConfigured: true,
-            })
-        );
+        expect(res.json).toHaveBeenCalledWith({ ok: true });
     });
 
-    it('reports disconnected database and missing jwt secret', async () => {
-        const mongoose = await import('mongoose');
-        (mongoose.default.connection as any).readyState = 0;
-        vi.stubEnv('JWT_SECRET', '');
-
+    it('leaks no environment or database information', async () => {
         const req = mockReq({ method: 'GET' });
         const res = mockRes();
 
         await healthHandler(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'ok',
-                database: 'disconnected',
-                jwtConfigured: false,
-            })
-        );
+        const payload = res.json.mock.calls[0][0] as Record<string, unknown>;
+        expect(Object.keys(payload)).toEqual(['ok']);
+        expect(payload).not.toHaveProperty('jwtConfigured');
+        expect(payload).not.toHaveProperty('database');
+        expect(payload).not.toHaveProperty('uptime');
     });
 
     it('returns 405 for non-GET requests', async () => {
