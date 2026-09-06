@@ -5,11 +5,10 @@
 /backend/node_modules/
 /frontend/node_modules/
 /shared/node_modules/
-/chatbot/node_modules/
+/database/node_modules/
 /backend/.next/
 /frontend/.next/
 /shared/.next/
-/chatbot/.next/
 /.pnp
 .pnp.*
 .yarn/*

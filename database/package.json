@@ -1,8 +1,4 @@
 {
   "name": "mongodb-seed",
-  "type": "module",
-  "dependencies": {
-    "mongoose": "^7.0.0",
-    "mongodb": "^5.0.0"
-  }
+  "type": "module"
 }

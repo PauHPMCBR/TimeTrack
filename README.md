@@ -30,9 +30,6 @@ frontend/   UI Next.js app on port 3000
 database/   MongoDB init script + local dev Docker setup
 ```
 
-Authentication is a hand-rolled email/password flow issuing stateless JWTs
-(stored in `localStorage` by the frontend). There is no NextAuth/SAML.
-
 ## Getting Started
 
 ### Prerequisites

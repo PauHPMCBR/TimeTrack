@@ -1,11 +1,12 @@
 {
-    "name": "your-time-record-app",
+    "name": "timetrack",
     "private": true,
     "packageManager": "npm@11.6.2",
     "workspaces": [
         "shared",
         "frontend",
-        "backend"
+        "backend",
+        "database"
     ],
     "scripts": {
         "db:up": "docker compose -f database/docker-compose.yml up -d --wait",

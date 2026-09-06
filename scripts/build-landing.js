@@ -1,4 +1,4 @@
-#!/usr/bin/node
+#!/usr/bin/env node
 // Builds the static site served by Caddy at the apex domain (see
 // deploy-docs/03-infra-docker.md §3.4):
 //

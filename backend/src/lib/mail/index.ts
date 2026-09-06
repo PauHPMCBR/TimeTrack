@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
 import type { EmailLanguage } from './types';
 import { RESET_TOKEN_TTL_HOURS } from 'shared/src/lib/defaults';
@@ -113,9 +113,9 @@ export function buildMessage(
 
 // Lazily-created SMTP transport (Brevo relay). Null until SMTP_HOST is set so
 // dev/test environments without mail configuration never attempt to send.
-let transport: nodemailer.Transporter | null = null;
+let transport: Transporter | null = null;
 
-function getTransport(): nodemailer.Transporter | null {
+function getTransport(): Transporter | null {
     const host = process.env.SMTP_HOST;
     if (!host) {
         return null;
