@@ -91,11 +91,16 @@ export function readCompanyFromCompose(composePath) {
   // The per-file upload cap is enforced by the backend at runtime (env var
   // FILE_MAX_BYTES) and mirrored in the UI via NEXT_PUBLIC_FILE_MAX_BYTES,
   // which must be baked at build time. Single source of truth: the company
-  // compose's backend environment block.
+  // compose's backend environment block. CRON_SECRET is likewise read from
+  // there so deploy-all.js can trigger the post-deploy index sync.
   const backendEnv = data.services?.backend?.environment ?? {};
   const fileMaxBytes =
     backendEnv.FILE_MAX_BYTES !== undefined
       ? String(backendEnv.FILE_MAX_BYTES)
+      : undefined;
+  const cronSecret =
+    backendEnv.CRON_SECRET !== undefined
+      ? String(backendEnv.CRON_SECRET)
       : undefined;
   return {
     subdomain: String(meta.subdomain),
@@ -103,6 +108,7 @@ export function readCompanyFromCompose(composePath) {
     iconFile: meta.iconFile,
     faviconFile: meta.faviconFile,
     fileMaxBytes,
+    cronSecret,
   };
 }
 
