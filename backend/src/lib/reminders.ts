@@ -17,7 +17,7 @@ import { sendInconsistencyReminder } from '@/lib/mail';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { DEFAULT_BENEVOLENCE_HOURS } from 'shared/src/lib/defaults';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { resolveExpectedWorkHours } from '@/lib/user-overrides';
+import { resolveExpectedWorkHours } from 'shared/src/lib/user-overrides';
 
 interface ReminderUser {
     _id: string;

@@ -29,7 +29,8 @@ import {
     sendMonthlyApprovalRequest,
 } from '@/lib/mail';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { resolveExpectedWorkHours, resolveWorkDays } from '@/lib/user-overrides';
+import { resolveExpectedWorkHours, resolveWorkDays } from 'shared/src/lib/user-overrides';
+import { monthRange, daysInMonth } from 'shared/src/lib/date-ranges';
 
 export interface MonthPeriod {
     year: number;
@@ -108,10 +109,8 @@ export async function computeMonthAnomalies(
     );
     const nonWorkingDays = resolveWorkDays(user, settings.nonWorkingDays);
 
-    const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
-    const end =
-        month === 12 ? new Date(year + 1, 0, 1) : new Date(year, month, 1);
-    const daysInMonth = new Date(year, month, 0).getDate();
+    const { start, end } = monthRange(year, month);
+    const nDaysInMonth = daysInMonth(year, month);
 
     // Only evaluate days from the user's tracking start onward (if known).
     const trackingStart = user.trackingStartDate
@@ -156,7 +155,7 @@ export async function computeMonthAnomalies(
     }
 
     const anomalySet = new Set<WorkSessionAnomaly>();
-    for (let day = 1; day <= daysInMonth; day++) {
+    for (let day = 1; day <= nDaysInMonth; day++) {
         const dayDate = new Date(year, month - 1, day);
         const key = dateKey(dayDate);
         if (trackingStart && dayDate < trackingStart) continue;

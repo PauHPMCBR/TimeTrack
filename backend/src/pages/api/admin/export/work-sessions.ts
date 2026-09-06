@@ -1,4 +1,5 @@
 import { withApi } from '@/lib/api-handler';
+import { toCsv } from 'shared/src/lib/csv';
 import { SOURCE_USER, APPROVAL_APPROVED } from 'shared/src/lib/constants';
 import { WorkSession, User, MonthlyApproval } from '@/models';
 import { notReplaced } from '@/repositories/work-session-repository';
@@ -7,13 +8,6 @@ import { responseErrorGet, responseErrorIncorrectParameter } from '@/lib/respons
 import { UserRow, WorkSessionRow } from '@/lib/rows';
 import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
 
-function escapeCsvField(value: unknown): string {
-    const str = value === null || value === undefined ? '' : String(value);
-    if (/[",\n\r]/.test(str)) {
-        return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-}
 
 export default withApi(
     {
@@ -121,9 +115,7 @@ export default withApi(
             ];
         });
 
-        const csv = [headers, ...rows]
-            .map((line) => line.map(escapeCsvField).join(','))
-            .join('\r\n');
+        const csv = toCsv(headers, rows);
 
         const filename = `work_sessions_${new Date().toISOString().slice(0, 10)}.csv`;
 

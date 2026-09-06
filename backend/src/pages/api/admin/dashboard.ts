@@ -17,7 +17,7 @@ import { startOfDay } from '@/lib/date-range';
 import {
     resolveExpectedWorkHours,
     resolveWorkDays,
-} from '@/lib/user-overrides';
+} from 'shared/src/lib/user-overrides';
 import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
 import { responseErrorGet } from '@/lib/response-error-generator';
 

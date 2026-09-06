@@ -1,5 +1,6 @@
 import { withApi } from '@/lib/api-handler';
 import { findActiveInRange } from '@/repositories/work-session-repository';
+import { monthRange } from 'shared/src/lib/date-ranges';
 import {
     MonthlyWorkRecordResponse,
     YearMonthParamSchema,
@@ -19,11 +20,7 @@ export default withApi(
         const year = parseInt(String(req.query.year));
         const month = parseInt(String(req.query.month));
 
-        const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0); // Note: month is 0-indexed in Date constructor
-        const nextMonth =
-            month == 12
-                ? new Date(startOfMonth.getFullYear() + 1, 0, 1)
-                : new Date(startOfMonth.getFullYear(), month, 1, 0, 0, 0);
+        const { start: startOfMonth, end: nextMonth } = monthRange(year, month);
 
         const sessions = (await findActiveInRange(startOfMonth, nextMonth, {
             userId,

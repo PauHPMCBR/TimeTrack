@@ -16,6 +16,7 @@ import {
     VACATION_REJECTED,
 } from 'shared/src/lib/constants';
 import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
+import { dayIsWithinInterval } from 'shared/src/lib/vacation-days';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
@@ -120,20 +121,16 @@ export function Calendar({
             }
 
             const electiveRequests =
-                vacations.electives?.filter((elective) => {
-                    if (!elective.startDate || !elective.endDate) return false;
-                    // Vacations are intervals; match days inside [start, end].
-                    const day = new Date(date);
-                    day.setHours(0, 0, 0, 0);
-                    const start = new Date(elective.startDate);
-                    start.setHours(0, 0, 0, 0);
-                    const end = new Date(elective.endDate);
-                    end.setHours(0, 0, 0, 0);
-                    return (
-                        day.getTime() >= start.getTime() &&
-                        day.getTime() <= end.getTime()
-                    );
-                }) || [];
+                vacations.electives?.filter(
+                    (elective) =>
+                        elective.startDate &&
+                        elective.endDate &&
+                        dayIsWithinInterval(
+                            date,
+                            elective.startDate,
+                            elective.endDate
+                        )
+                ) || [];
 
             electiveRequests.forEach((elective) => {
                 const userName = usersMap
@@ -171,16 +168,10 @@ export function Calendar({
 
             if (teamVacations && teamVacations.length > 0) {
                 teamVacations.forEach((vac) => {
-                    const day = new Date(date);
-                    day.setHours(0, 0, 0, 0);
-                    const start = new Date(vac.startDate);
-                    start.setHours(0, 0, 0, 0);
-                    const end = new Date(vac.endDate);
-                    end.setHours(0, 0, 0, 0);
-
                     if (
-                        day.getTime() >= start.getTime() &&
-                        day.getTime() <= end.getTime()
+                        vac.startDate &&
+                        vac.endDate &&
+                        dayIsWithinInterval(date, vac.startDate, vac.endDate)
                     ) {
                         const vacUser = vac.userId;
                         const vacUserName =

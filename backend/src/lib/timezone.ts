@@ -1,4 +1,5 @@
 import { TZDate } from '@date-fns/tz';
+import { dateKeyInTz as sharedDateKeyInTz } from 'shared/src/lib/day-key';
 import { getConfiguredTimezone } from './settings';
 
 
@@ -10,13 +11,9 @@ function toMs(utcMs: number | Date): number {
     return typeof utcMs === 'number' ? utcMs : utcMs.getTime();
 }
 
-/** "YYYY-MM-DD" of a stored UTC instant in the given time-zone. */
+/** "YYYY-MM-DD" of a stored UTC instant in the given time-zone (defaults to the configured company zone). */
 export function dateKeyInTz(utcMs: number | Date, tz?: string): string {
-    const td = new TZDate(toMs(utcMs), resolveTz(tz));
-    const y = td.getFullYear();
-    const m = String(td.getMonth() + 1).padStart(2, '0');
-    const d = String(td.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return sharedDateKeyInTz(utcMs, resolveTz(tz));
 }
 
 /** Start (inclusive) / end (exclusive) of a local day ("YYYY-MM-DD") as UTC instants. */

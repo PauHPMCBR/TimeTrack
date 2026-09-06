@@ -9,7 +9,7 @@ import {
 import {
     resolveExpectedWorkHours,
     resolveWorkDays,
-} from '@/lib/user-overrides';
+} from 'shared/src/lib/user-overrides';
 import {
     UserRow,
     WorkSessionRow,

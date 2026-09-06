@@ -16,7 +16,7 @@ export function configuredTimezone(): string {
 }
 
 /** Format a stored UTC instant as "HH:MM" in the configured company zone. */
-export function formatHM(utcMs: number | Date, locale?: string): string {
+export function formatClockHM(utcMs: number | Date, locale?: string): string {
     const t = configuredTimezone();
     const loc = locale || 'ca';
     return new Intl.DateTimeFormat(loc, {

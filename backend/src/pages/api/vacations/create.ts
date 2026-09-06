@@ -9,6 +9,7 @@ import {
 } from '@/lib/response-error-generator';
 import { ElectiveVacationRequestSchema } from 'shared/src/schemas/api';
 import { withApi } from '@/lib/api-handler';
+import { yearRange } from 'shared/src/lib/date-ranges';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
@@ -75,8 +76,7 @@ export default withApi(
 
         // Balance: spent days of every live request this year (pending ones
         // included — they may still be approved).
-        const yearStart = new Date(year, 0, 1);
-        const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+        const { start: yearStart, end: yearEnd } = yearRange(year);
         const yearRequests = (await ElectiveVacation.find({
             userId,
             status: { $in: [VACATION_PENDING, VACATION_APPROVED] },

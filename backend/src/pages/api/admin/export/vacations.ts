@@ -1,17 +1,12 @@
 import { withApi } from '@/lib/api-handler';
+import { toCsv } from 'shared/src/lib/csv';
+import { yearRange } from 'shared/src/lib/date-ranges';
 import { User } from '@/models';
 import { findOverlapping } from '@/repositories/vacation-repository';
 import { responseErrorGet } from '@/lib/response-error-generator';
 import { notDeleted } from '@/repositories/user-repository';
 import { AdminExportVacationsQuerySchema } from 'shared/src/schemas/api';
 
-function escapeCsvField(value: unknown): string {
-    const str = value === null || value === undefined ? '' : String(value);
-    if (/[",\n\r]/.test(str)) {
-        return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-}
 
 export default withApi(
     { method: 'GET', guard: 'admin', query: AdminExportVacationsQuerySchema },
@@ -19,8 +14,7 @@ export default withApi(
     try {
         const year = parseInt(String(_req.query.year));
 
-        const startDate = new Date(year, 0, 1);
-        const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+        const { start: startDate, end: endDate } = yearRange(year);
 
         const userIdsParam = _req.query.userIds as string | undefined;
         const userIds = userIdsParam?.split(',').filter(Boolean);
@@ -99,9 +93,7 @@ export default withApi(
             v.notes ?? '',
         ]);
 
-        const csv = [headers, ...rows]
-            .map((line) => line.map(escapeCsvField).join(','))
-            .join('\r\n');
+        const csv = toCsv(headers, rows);
 
         const filename = `vacations_${year}_${new Date().toISOString().slice(0, 10)}.csv`;
 

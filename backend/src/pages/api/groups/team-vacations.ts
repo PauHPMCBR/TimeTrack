@@ -1,4 +1,5 @@
 import { withApi } from '@/lib/api-handler';
+import { yearRange } from 'shared/src/lib/date-ranges';
 import { User, Group } from '@/models';
 import { findOverlapping } from '@/repositories/vacation-repository';
 import { UserRow, GroupRow } from '@/lib/rows';
@@ -30,8 +31,7 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             g.members.forEach((m) => memberIds.add(m.toString()));
         });
 
-        const startDate = new Date(year, 0, 1);
-        const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+        const { start: startDate, end: endDate } = yearRange(year);
 
         // Exclude blocked/unregistered/deleted members.
         const activeMembers = memberIds.size

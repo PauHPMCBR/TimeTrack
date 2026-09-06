@@ -1,4 +1,5 @@
 import { withApi } from '@/lib/api-handler';
+import { yearRange } from 'shared/src/lib/date-ranges';
 import {
     ensureUserYearConfig,
     findOverlapping,
@@ -19,8 +20,7 @@ export default withApi(
             // Tests stub validateQueryParams as a passthrough, so parse here
             // instead of trusting the schema transform.
             const year = parseInt(String(_req.query.year));
-            const startDate = new Date(year, 0, 1);
-            const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+            const { start: startDate, end: endDate } = yearRange(year);
 
             const [vacations, yearlyVacationDays] = (await Promise.all([
                 findOverlapping(startDate, endDate, { userId })

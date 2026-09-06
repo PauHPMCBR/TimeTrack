@@ -1,18 +1,6 @@
-export function escapeCsvField(value: unknown): string {
-    const str = value === null || value === undefined ? '' : String(value);
-    if (/[",\n\r]/.test(str)) {
-        return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-}
-
-export function toCsv(
-    headers: string[],
-    rows: (string | number | null | undefined)[][]
-): string {
-    const lines = [headers, ...rows];
-    return lines.map((line) => line.map(escapeCsvField).join(',')).join('\r\n');
-}
+// CSV building lives in shared (same escaping rules as the backend exports);
+// this module keeps the browser-specific download helpers.
+export { escapeCsvField, toCsv } from 'shared/src/lib/csv';
 
 export function triggerDownload(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);

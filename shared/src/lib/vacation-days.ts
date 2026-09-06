@@ -1,44 +1,31 @@
+import { dateKeyInTz } from './day-key';
+
+// Override resolution moved to user-overrides.ts; re-exported here so
+// existing imports keep working.
+export { resolveNonWorkingDays } from './user-overrides';
+
 /**
  * Elective vacation day accounting, shared by the backend (request
  * validation / storage) and the frontend (request-form preview) so both
  * compute the cost of a period identically.
  */
 
-export interface UserWorkDaysOwner {
-    workDays?: number[];
-}
-
 /**
- * Non-working week days for a user. `user.workDays` stores the user's
- * *working* days (see the user editor), so a custom override means the
- * complement; without an override the company-wide non-working days apply.
+ * Whether a calendar day (truncated to local midnight) falls within an
+ * inclusive [start, end] vacation interval.
  */
-export function resolveNonWorkingDays(
-    user: UserWorkDaysOwner | null | undefined,
-    fallbackNonWorkingDays: number[]
-): number[] {
-    const workDays = user?.workDays;
-    if (Array.isArray(workDays) && workDays.length > 0) {
-        const allDays = [0, 1, 2, 3, 4, 5, 6];
-        return allDays.filter((d) => !workDays.includes(d));
-    }
-    return fallbackNonWorkingDays;
-}
-
-/** Calendar day of an instant ("YYYY-MM-DD") in the given IANA time-zone (or the runtime's local zone when omitted). */
-function dayKeyInTz(date: Date, timeZone?: string): string {
-    if (!timeZone) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    }
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    }).format(date);
+export function dayIsWithinInterval(
+    date: Date,
+    start: Date | string,
+    end: Date | string
+): boolean {
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+    const s = new Date(start);
+    s.setHours(0, 0, 0, 0);
+    const e = new Date(end);
+    e.setHours(0, 0, 0, 0);
+    return day.getTime() >= s.getTime() && day.getTime() <= e.getTime();
 }
 
 /**
@@ -55,11 +42,11 @@ export function countSpentVacationDays(
     timeZone?: string
 ): number {
     const obligatoryKeys = new Set(
-        obligatoryDays.map((day) => dayKeyInTz(new Date(day), timeZone))
+        obligatoryDays.map((day) => dateKeyInTz(new Date(day), timeZone))
     );
 
-    const startKey = dayKeyInTz(startDate, timeZone);
-    const endKey = dayKeyInTz(endDate, timeZone);
+    const startKey = dateKeyInTz(startDate, timeZone);
+    const endKey = dateKeyInTz(endDate, timeZone);
     if (startKey > endKey) return 0;
 
     const [y, m, d] = startKey.split('-').map(Number);

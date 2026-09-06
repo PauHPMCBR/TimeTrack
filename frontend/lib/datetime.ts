@@ -1,4 +1,7 @@
 import { MS_PER_HOUR, MS_PER_MINUTE } from 'shared/src/lib/constants';
+import { dateKeyToLocalMidnight } from 'shared/src/schemas/api';
+
+export { dateKeyToLocalMidnight as parseDateKey };
 
 export function toLocalDateKey(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -6,16 +9,6 @@ export function toLocalDateKey(date: Date | string): string {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
-}
-
-/**
- * Parses a "YYYY-MM-DD" value (e.g. from `<input type="date">`) as local
- * midnight. `new Date("2024-01-15")` would parse as UTC midnight and shift a
- * day in negative-offset timezones.
- */
-export function parseDateKey(dateKey: string): Date {
-    const [y, m, d] = dateKey.split('-').map(Number);
-    return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
 export function formatHM(ms: number, t?: (k: string) => string): string {
