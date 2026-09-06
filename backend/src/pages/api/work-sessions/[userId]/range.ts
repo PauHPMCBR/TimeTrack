@@ -1,38 +1,19 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireSelfOrAdmin, AuthRequest } from '@/lib/auth';
-import { WorkSession } from '@/models';
-import { SESSION_REPLACED } from 'shared/src/lib/constants';
-import {
-    responseErrorGet,
-    responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
+import { withApi } from '@/lib/api-handler';
+import { findActiveInRange } from '@/repositories/work-session-repository';
+import { responseErrorIncorrectParameter } from '@/lib/response-error-generator';
 import { WorkSessionRangeQuerySchema } from 'shared/src/schemas/api';
 
 // Flat list of a user's work sessions within an inclusive date range (local
 // day bounds). Lighter than fetching N monthly records for range views such as
 // the history page.
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(WorkSessionRangeQuerySchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    try {
-        await dbConnect();
-        const userId = req.query.userId as string;
-        const from = req.query.from as string;
-        const to = req.query.to as string;
+export default withApi(
+    {
+        method: 'GET',
+        guard: 'selfOrAdmin',
+        query: WorkSessionRangeQuerySchema,
+    },
+    async (req, res, { query }) => {
+        const { userId, from, to } = query;
 
         const fromDate = new Date(`${from}T00:00:00`);
         const toDate = new Date(`${to}T23:59:59.999`);
@@ -42,10 +23,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             ]);
         }
 
-        const sessions = await WorkSession.find({
-            userId: userId,
-            timestamp: { $gte: fromDate, $lte: toDate },
-            status: { $ne: SESSION_REPLACED },
+        const sessions = await findActiveInRange(fromDate, toDate, {
+            userId,
+            endInclusive: true,
         })
             .sort({ timestamp: 1 })
             .lean();
@@ -54,10 +34,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: { workSessions: sessions },
         });
-    } catch (error) {
-        console.error('Get user range sessions error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireSelfOrAdmin(handler);
+);

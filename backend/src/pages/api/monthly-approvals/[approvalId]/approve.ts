@@ -1,25 +1,18 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, authenticateToken } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { MonthlyApproval } from '@/models';
 import {
     responseErrorEntryNotFound,
     responseErrorIllegalAction,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { APPROVAL_APPROVED } from 'shared/src/lib/constants';
+import { sameId } from '@/lib/objectid';
 
 // The worker confirms their monthly record. Owner-only on purpose: nobody can
 // confirm a month on behalf of a worker (the confirmation is the worker's
 // signature on the record, per the registro de jornada requirements).
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
+export default withApi({ method: 'POST' }, async (req, res) => {
     try {
-        await dbConnect();
         const approvalId = req.query.approvalId as string;
 
         const approval = await MonthlyApproval.findById(approvalId);
@@ -27,7 +20,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             return responseErrorEntryNotFound(res, 'MonthlyApproval');
         }
 
-        if (approval.userId.toString() !== req.user!.userId) {
+        if (!sameId(approval.userId, req.user!.userId)) {
             return responseErrorIllegalAction(res, 'ModifyingFromAnotherUser');
         }
 
@@ -47,6 +40,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Approve monthly record error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default authenticateToken(handler);
+});

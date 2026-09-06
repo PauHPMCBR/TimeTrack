@@ -1,34 +1,39 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { authenticateToken, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { User } from '@/models';
 import { toPublicUser } from '@/lib/sanitize';
 import {
     responseErrorEntryNotFound,
-    responseErrorGet,
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import { UpdateProfileRequestSchema } from 'shared/src/schemas/api';
 import { validatePassword } from '@/lib/password';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method === 'PUT') {
-        if (
-            !(await runValidation(
-                validateRequestBody(UpdateProfileRequestSchema),
-                req,
-                res
-            ))
-        )
-            return;
+const getHandler = withApi({ method: 'GET' }, async (req, res) => {
+    const userDoc = await User.findById(req.user?.userId)
+        .populate('groups', 'name description')
+        .lean();
 
+    if (!userDoc) {
+        return responseErrorEntryNotFound(res, 'User');
+    }
+
+    res.status(200).json({
+        success: true,
+        data: {
+            user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+        },
+    });
+});
+
+const putHandler = withApi(
+    { method: 'PUT', body: UpdateProfileRequestSchema },
+    async (req, res, { body }) => {
         try {
-            await dbConnect();
             const { autoTimetable, currentPassword, password, notifyNewFile } =
-                req.body;
+                body;
 
             // Self-service password change: requires the current password and
             // passes the full policy validation.
@@ -48,9 +53,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     String(currentPassword)
                 );
                 if (!currentOk) {
-                    return responseErrorIncorrectParameter(res, 'currentPassword', [
-                        'InvalidCurrentPassword',
-                    ]);
+                    return responseErrorIncorrectParameter(
+                        res,
+                        'currentPassword',
+                        ['InvalidCurrentPassword']
+                    );
                 }
 
                 const errors = validatePassword(
@@ -94,33 +101,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             console.error('Update profile error:', error);
             return responseErrorPut(res);
         }
-        return;
     }
+);
 
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    try {
-        await dbConnect();
-        const userDoc = await User.findById(req.user?.userId)
-            .populate('groups', 'name description')
-            .lean();
-
-        if (!userDoc) {
-            return responseErrorEntryNotFound(res, 'User');
-        }
-
-        res.status(200).json({
-            success: true,
-            data: {
-                user: toPublicUser(userDoc as unknown as Record<string, unknown>),
-            },
-        });
-    } catch (error) {
-        console.error('Get profile error:', error);
-        return responseErrorGet(res);
-    }
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method === 'GET') return getHandler(req, res);
+    if (req.method === 'PUT') return putHandler(req, res);
+    return responseErrorMethodNotAllowed(res);
 }
-
-export default authenticateToken(handler);

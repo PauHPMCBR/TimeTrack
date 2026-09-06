@@ -1,32 +1,16 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireSameGroupOrAdmin, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { User } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-    responseErrorEntryNotFound,
-} from '@/lib/response-error-generator';
+import { responseErrorEntryNotFound } from '@/lib/response-error-generator';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 import { toPublicUser } from '@/lib/sanitize';
+import { notDeleted } from '@/repositories/user-repository';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(validateQueryParams(UserIdParamSchema), req, res))
-    )
-        return;
-
-    try {
-        await dbConnect();
-        const userId = req.query.userId as string;
+export default withApi(
+    { method: 'GET', guard: 'sameGroupOrAdmin', query: UserIdParamSchema },
+    async (_req, res, { query }) => {
         const userDoc = await User.findOne({
-            _id: userId,
-            deleted: { $ne: true },
+            _id: query.userId,
+            ...notDeleted,
         })
             .populate('groups', 'name description')
             .lean();
@@ -41,10 +25,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 user: toPublicUser(userDoc as unknown as Record<string, unknown>),
             },
         });
-    } catch (error) {
-        console.error('Get user profile error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireSameGroupOrAdmin(handler);
+);

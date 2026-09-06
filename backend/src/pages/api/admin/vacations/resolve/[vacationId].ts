@@ -1,8 +1,5 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import {
-    ADMIN_ROLE,
     VACATION_APPROVED,
     VACATION_CANCELLED,
     VACATION_PENDING,
@@ -12,17 +9,11 @@ import { ElectiveVacation } from '@/models';
 import {
     responseErrorEntryNotFound,
     responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
+export default withApi({ method: 'POST', guard: 'admin' }, async (req, res) => {
     try {
-        await dbConnect();
         const vacationId = req.query.vacationId as string;
         const { status } = req.body;
 
@@ -60,6 +51,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Resolve vacation error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+});

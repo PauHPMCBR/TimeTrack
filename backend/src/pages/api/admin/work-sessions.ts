@@ -1,8 +1,5 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import {
-    ADMIN_ROLE,
     SOURCE_ADMIN,
     SESSION_ACTIVE,
     SESSION_REPLACED,
@@ -13,12 +10,21 @@ import {
 import {
     User,
     WorkSession,
-    ElectiveVacation,
-    YearlyVacationDays,
     MonthlyApproval,
 } from '@/models';
+import {
+    findActiveInRange,
+} from '@/repositories/work-session-repository';
+import {
+    findOverlapping,
+    findGlobalTemplates,
+} from '@/repositories/vacation-repository';
 import { getAppSettings } from '@/lib/settings';
 import { runInTransaction } from '@/lib/transaction';
+import {
+    parsePagination,
+    paginateRows,
+} from '@/lib/pagination';
 import {
     UserRow,
     WorkSessionRow,
@@ -35,39 +41,28 @@ import {
     responseErrorPut,
 } from '@/lib/response-error-generator';
 import {
-    runValidation,
-    validateQueryParams,
-    validateRequestBody,
-} from '@/lib/validation';
-import {
     AdminWorkSessionsQueryWithPaginationSchema,
     AdminWorkSessionsQuery,
     AdminWorkSessionRow,
-    AdminReplaceDayWorkSessionsRequest,
     AdminReplaceDayWorkSessionsRequestSchema,
 } from 'shared/src/schemas/api';
 import { withUserLock } from '@/lib/user-lock';
 import { isMonthApproved } from '@/lib/monthly-approvals';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import {
     buildWorkSessionRows,
     computeDaysForPeriod,
 } from '@/lib/work-session-rows';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method === 'PUT') {
-        if (
-            !(await runValidation(
-                validateRequestBody(AdminReplaceDayWorkSessionsRequestSchema),
-                req,
-                res
-            ))
-        )
-            return;
-
+const putHandler = withApi(
+    {
+        method: 'PUT',
+        guard: 'admin',
+        body: AdminReplaceDayWorkSessionsRequestSchema,
+    },
+    async (_req, res, { body }) => {
         try {
-            await dbConnect();
-            const { userId, date, sessions, reason } =
-                req.body as AdminReplaceDayWorkSessionsRequest;
+            const { userId, date, sessions, reason } = body;
 
             const user = await User.findById(userId);
             if (!user || user.deleted) {
@@ -146,17 +141,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                         const txOptions = session
                             ? { session }
                             : undefined;
-                        const active = (await WorkSession.find(
-                            {
-                                userId,
-                                timestamp: {
-                                    $gte: dayStart,
-                                    $lte: dayEnd,
-                                },
-                                status: { $ne: SESSION_REPLACED },
-                            },
-                            undefined,
-                            txOptions
+                        const active = (await findActiveInRange(
+                            dayStart,
+                            dayEnd,
+                            { userId, endInclusive: true, session: session ?? undefined }
                         )) as unknown as (WorkSessionRow & {
                             version?: number;
                         })[];
@@ -203,31 +191,20 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             console.error('Admin replace day work sessions error:', error);
             return responseErrorPut(res);
         }
-        return;
     }
+);
 
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(AdminWorkSessionsQueryWithPaginationSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    try {
-        await dbConnect();
-
+const getHandler = withApi(
+    {
+        method: 'GET',
+        guard: 'admin',
+        query: AdminWorkSessionsQueryWithPaginationSchema,
+    },
+    async (req, res) => {
+        try {
         const query = req.query as unknown as AdminWorkSessionsQuery;
         const { period } = query;
-        const limit =
-            req.query.limit !== undefined ? Number(req.query.limit) : undefined;
-        const offset =
-            req.query.offset !== undefined ? Number(req.query.offset) : 0;
+        const { limit, offset } = parsePagination(req.query);
 
         const days: Date[] = computeDaysForPeriod(
             period,
@@ -259,23 +236,16 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 )
                     .sort({ name: 1 })
                     .lean(),
-                WorkSession.find({
-                    timestamp: { $gte: periodStart, $lte: periodEnd },
-                    status: { $ne: SESSION_REPLACED },
+                findActiveInRange(periodStart, periodEnd, {
+                    endInclusive: true,
                 })
                     .select('userId type timestamp source')
                     .sort({ timestamp: 1 })
                     .lean(),
-                ElectiveVacation.find({
-                    status: VACATION_APPROVED,
-                    // Intervals overlapping the period.
-                    startDate: { $lte: periodEnd },
-                    endDate: { $gte: periodStart },
+                findOverlapping(periodStart, periodEnd, {
+                    statuses: VACATION_APPROVED,
                 }).lean(),
-                YearlyVacationDays.find({
-                    userId: { $exists: false },
-                    year: { $in: Array.from(yearSet) },
-                }).lean(),
+                findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
             ])) as unknown as [
                 UserRow[],
@@ -332,9 +302,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
         // Server-side pagination bounds the response (critical for year views,
         // where rows = users × days). When no limit is given, behave as before.
-        const total = rows.length;
-        const pageRows =
-            limit !== undefined ? rows.slice(offset, offset + limit) : rows;
+        const { total, pageRows } = paginateRows(rows, limit, offset);
 
         res.status(200).json({
             success: true,
@@ -343,10 +311,15 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     ? { rows: pageRows, total, limit, offset, approvedMonths: Array.from(approvedMonths) }
                     : { rows: pageRows, approvedMonths: Array.from(approvedMonths) },
         });
-    } catch (error) {
-        console.error('Admin work sessions error:', error);
-        return responseErrorGet(res);
+        } catch (error) {
+            console.error('Admin work sessions error:', error);
+            return responseErrorGet(res);
+        }
     }
-}
+);
 
-export default requireRole([ADMIN_ROLE], handler);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method === 'PUT') return putHandler(req, res);
+    if (req.method === 'GET') return getHandler(req, res);
+    return responseErrorMethodNotAllowed(res);
+}

@@ -1,13 +1,5 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireSelfOrAdmin, AuthRequest } from '@/lib/auth';
-import { WorkSession } from '@/models';
-import { SESSION_REPLACED } from 'shared/src/lib/constants';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
+import { withApi } from '@/lib/api-handler';
+import { findActiveInRange } from '@/repositories/work-session-repository';
 import {
     MonthlyWorkRecordResponse,
     YearMonthParamSchema,
@@ -18,26 +10,14 @@ import {
 } from 'shared/src/lib/work-hours';
 import { WorkSessionRow } from '@/lib/rows';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(YearMonthParamSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    try {
-        await dbConnect();
-
-        const userId = req.query.userId as string;
-        const year = parseInt(req.query.year as string);
-        const month = parseInt(req.query.month as string);
+export default withApi(
+    { method: 'GET', guard: 'selfOrAdmin', query: YearMonthParamSchema },
+    async (req, res, { query }) => {
+        const userId = query.userId;
+        // Tests stub validateQueryParams as a passthrough, so parse here
+        // instead of trusting the schema transform.
+        const year = parseInt(String(req.query.year));
+        const month = parseInt(String(req.query.month));
 
         const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0); // Note: month is 0-indexed in Date constructor
         const nextMonth =
@@ -45,13 +25,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 ? new Date(startOfMonth.getFullYear() + 1, 0, 1)
                 : new Date(startOfMonth.getFullYear(), month, 1, 0, 0, 0);
 
-        const sessions = (await WorkSession.find({
-            userId: userId,
-            timestamp: {
-                $gte: startOfMonth,
-                $lt: nextMonth,
-            },
-            status: { $ne: SESSION_REPLACED },
+        const sessions = (await findActiveInRange(startOfMonth, nextMonth, {
+            userId,
         })
             .sort({ timestamp: 1 })
             .lean()) as unknown as WorkSessionRow[];
@@ -124,10 +99,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: response,
         });
-    } catch (error) {
-        console.error('Get user month sessions error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireSelfOrAdmin(handler);
+);

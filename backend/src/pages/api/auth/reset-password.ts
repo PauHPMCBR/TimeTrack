@@ -1,41 +1,25 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/mongodb';
-import { signToken } from '@/lib/auth';
+import { signToken, setAuthCookie, isHttpsRequest } from '@/lib/auth';
 import { User } from '@/models';
 import {
     responseErrorIncorrectParameter,
     responseErrorInvalidResetToken,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
     responseErrorResetTokenExpired,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import { ResetPasswordRequestSchema } from 'shared/src/schemas/api';
 import { MS_PER_HOUR } from 'shared/src/lib/constants';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
+import { withApi } from '@/lib/api-handler';
 import { validatePassword } from '@/lib/password';
-import { setAuthCookie, isHttpsRequest } from '@/lib/auth';
 
 export default withRateLimit(
-    async function handler(req: NextApiRequest, res: NextApiResponse) {
-        if (req.method !== 'POST') {
-            return responseErrorMethodNotAllowed(res);
-        }
-
-        if (
-            !(await runValidation(
-                validateRequestBody(ResetPasswordRequestSchema),
-                req,
-                res
-            ))
-        )
-            return;
-
+    withApi(
+        { method: 'POST', guard: 'none', body: ResetPasswordRequestSchema },
+        async (req, res, { body }) => {
         try {
-            await dbConnect();
-            const { token, email, password } = req.body;
+            const { token, email, password } = body;
 
             const user = await User.findOne({
                 resetPasswordToken: token,
@@ -113,6 +97,7 @@ export default withRateLimit(
             console.error('Reset password error:', error);
             return responseErrorPost(res);
         }
-    },
+        }
+    ),
     { limit: 10, windowMs: MS_PER_HOUR }
 );

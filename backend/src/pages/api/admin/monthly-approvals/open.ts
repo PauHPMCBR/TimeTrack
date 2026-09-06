@@ -1,16 +1,12 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE, APPROVAL_PENDING } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { MonthlyApproval, User } from '@/models';
+import { notDeleted } from '@/repositories/user-repository';
 import {
     responseErrorIllegalAction,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
+import { APPROVAL_PENDING } from 'shared/src/lib/constants';
 import {
-    MonthlyApprovalOpenRequest,
     MonthlyApprovalOpenRequestSchema,
     MonthlyApprovalRow,
     WorkSessionAnomaly,
@@ -41,52 +37,39 @@ interface SkippedEntry {
 // The result distinguishes users actually notified (request email sent just
 // now) from those opened but whose email could not be sent ("emailFailed" —
 // revoke + re-open to retry notifying them).
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
+export default withApi(
+    { method: 'POST', guard: 'admin', body: MonthlyApprovalOpenRequestSchema },
+    async (_req, res, { body }) => {
+        try {
+            const { year, month, userIds, force = false } = body;
 
-    if (
-        !(await runValidation(
-            validateRequestBody(MonthlyApprovalOpenRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
+            if (!isPastMonth(year, month, new Date())) {
+                return responseErrorIllegalAction(res, 'MonthNotPast');
+            }
 
-    try {
-        await dbConnect();
-        const { year, month, userIds, force = false } =
-            req.body as MonthlyApprovalOpenRequest;
-
-        if (!isPastMonth(year, month, new Date())) {
-            return responseErrorIllegalAction(res, 'MonthNotPast');
-        }
-
-        const targetUsers = (userIds
-            ? await User.find(
-                  {
-                      _id: { $in: userIds },
-                      blocked: { $ne: true },
-                      deleted: { $ne: true },
-                  },
-                  'name trackingStartDate checkInRequired'
-              ).lean()
-            : await User.find(
-                  {
-                      registered: true,
-                      blocked: { $ne: true },
-                      deleted: { $ne: true },
-                      checkInRequired: { $ne: false },
-                  },
-                  'name trackingStartDate'
-              ).lean()) as unknown as {
-            _id: string;
-            name: string;
-            trackingStartDate?: Date | null;
-            checkInRequired?: boolean;
-        }[];
+            const targetUsers = (userIds
+                ? await User.find(
+                      {
+                          _id: { $in: userIds },
+                          blocked: { $ne: true },
+                          ...notDeleted,
+                      },
+                      'name trackingStartDate checkInRequired'
+                  ).lean()
+                : await User.find(
+                      {
+                          registered: true,
+                          blocked: { $ne: true },
+                          ...notDeleted,
+                          checkInRequired: { $ne: false },
+                      },
+                      'name trackingStartDate'
+                  ).lean()) as unknown as {
+                _id: string;
+                name: string;
+                trackingStartDate?: Date | null;
+                checkInRequired?: boolean;
+            }[];
 
         const now = new Date();
         const notified: MonthlyApprovalRow[] = [];
@@ -168,6 +151,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Open monthly approvals error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+    }
+);

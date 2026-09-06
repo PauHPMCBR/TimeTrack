@@ -73,9 +73,8 @@ const mockUserConfig = (overrides: Record<string, unknown> = {}) => ({
 describe('POST /api/vacations/create', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Overlap check: no overlapping interval by default.
-        vi.mocked(ElectiveVacation.findOne).mockResolvedValue(null);
-        // Balance query: no existing requests by default.
+        // Overlap + balance queries: no overlapping interval and no existing
+        // requests by default (both go through ElectiveVacation.find now).
         vi.mocked(ElectiveVacation.find).mockResolvedValue([]);
     });
 
@@ -118,9 +117,9 @@ describe('POST /api/vacations/create', () => {
         vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
             mockUserConfig()
         );
-        vi.mocked(ElectiveVacation.findOne).mockResolvedValue({
-            _id: 'existing-vacation',
-        } as any);
+        vi.mocked(ElectiveVacation.find).mockResolvedValue([
+            { _id: 'existing-vacation' } as any,
+        ]);
 
         const req = mockReq({
             method: 'POST',
@@ -230,9 +229,10 @@ describe('POST /api/vacations/create', () => {
         vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
             mockUserConfig({ electiveDaysTotalCount: 3 })
         );
-        vi.mocked(ElectiveVacation.find).mockResolvedValue([
-            { spentDays: 2 },
-        ] as any);
+        // First find = overlap check (empty), second = balance query.
+        vi.mocked(ElectiveVacation.find)
+            .mockResolvedValueOnce([] as any)
+            .mockResolvedValueOnce([{ spentDays: 2 }] as any);
 
         const req = mockReq({
             method: 'POST',

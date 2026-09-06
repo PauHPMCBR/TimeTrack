@@ -1,22 +1,12 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireSameGroupOrAdmin, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { MonthlyApproval } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
 import { MonthlyApprovalRow } from 'shared/src/schemas/api';
 
 // The worker's monthly record confirmations: months opened for approval
 // (pending) and months they already confirmed (approved).
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    try {
-        await dbConnect();
+export default withApi(
+    { method: 'GET', guard: 'sameGroupOrAdmin' },
+    async (req, res) => {
         const userId = req.query.userId as string;
 
         const approvals = (await MonthlyApproval.find({ userId })
@@ -27,10 +17,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: { approvals },
         });
-    } catch (error) {
-        console.error('Get user monthly approvals error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireSameGroupOrAdmin(handler);
+);

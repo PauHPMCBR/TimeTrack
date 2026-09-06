@@ -102,17 +102,14 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             }),
         } as any);
 
+        // ensureUserYearConfig order: per-user config first, then global template.
         vi.mocked(YearlyVacationDays.findOne)
-            .mockReturnValueOnce({
-                lean: vi.fn().mockResolvedValueOnce({
-                    year: 2024,
-                    electiveDaysTotalCount: 22,
-                    obligatoryDays: [],
-                }),
-            } as any) // globalSettings
-            .mockReturnValueOnce({
-                lean: vi.fn().mockResolvedValueOnce(mockYearlyVacation),
-            } as any); // user yearly
+            .mockResolvedValueOnce(mockYearlyVacation as any) // per-user config
+            .mockResolvedValueOnce({
+                year: 2024,
+                electiveDaysTotalCount: 22,
+                obligatoryDays: [],
+            } as any); // global template
 
         const req = mockReq({
             method: 'GET',
@@ -157,21 +154,17 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
         } as any);
 
         vi.mocked(YearlyVacationDays.findOne)
-            .mockReturnValueOnce({
-                lean: vi.fn().mockResolvedValueOnce({
-                    year: 2024,
-                    electiveDaysTotalCount: 22,
-                    obligatoryDays: [],
-                }),
-            } as any) // globalSettings
-            .mockReturnValueOnce({
-                lean: vi.fn().mockResolvedValueOnce({
-                    year: 2024,
-                    userId: 'user-456',
-                    obligatoryDays: [],
-                    electiveDaysTotalCount: 22,
-                        }),
-            } as any); // user yearly
+            .mockResolvedValueOnce({
+                year: 2024,
+                userId: 'user-456',
+                obligatoryDays: [],
+                electiveDaysTotalCount: 22,
+            } as any) // per-user config
+            .mockResolvedValueOnce({
+                year: 2024,
+                electiveDaysTotalCount: 22,
+                obligatoryDays: [],
+            } as any); // global template
 
         vi.mocked(User.find).mockReturnValue({
             select: vi.fn().mockReturnValue({
@@ -207,16 +200,12 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
         } as any);
 
         vi.mocked(YearlyVacationDays.findOne)
-            .mockReturnValueOnce({
-                lean: vi.fn().mockResolvedValueOnce({
-                    year: 2024,
-                    electiveDaysTotalCount: 22,
-                    obligatoryDays: ['2024-01-01'],
-                }),
-            } as any) // globalSettings
-            .mockReturnValueOnce({
-                lean: vi.fn().mockResolvedValueOnce(null),
-            } as any); // user yearly not found
+            .mockResolvedValueOnce(null as any) // per-user config not found
+            .mockResolvedValueOnce({
+                year: 2024,
+                electiveDaysTotalCount: 22,
+                obligatoryDays: ['2024-01-01'],
+            } as any); // global template
 
         vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({
             year: 2024,

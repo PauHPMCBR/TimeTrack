@@ -1,9 +1,7 @@
-import type { NextApiResponse } from 'next';
 import mongoose from 'mongoose';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { Group, User } from '@/models';
+import { notDeleted, countActiveByIds } from '@/repositories/user-repository';
 import { runInTransaction } from '@/lib/transaction';
 import {
     responseErrorDelete,
@@ -13,39 +11,22 @@ import {
     responseErrorPut,
 } from '@/lib/response-error-generator';
 import {
-    runValidation,
-    validateQueryParams,
-    validateRequestBody,
-} from '@/lib/validation';
-import {
     GroupIdParamSchema,
     CreateGroupRequestSchema,
 } from 'shared/src/schemas/api';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (
-        !(await runValidation(
-            validateQueryParams(GroupIdParamSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    if (req.method === 'PUT') {
-        if (
-            !(await runValidation(
-                validateRequestBody(CreateGroupRequestSchema),
-                req,
-                res
-            ))
-        )
-            return;
-
+const putHandler = withApi(
+    {
+        method: 'PUT',
+        guard: 'admin',
+        query: GroupIdParamSchema,
+        body: CreateGroupRequestSchema,
+    },
+    async (_req, res, { query, body }) => {
         try {
-            await dbConnect();
-            const groupId = req.query.groupId as string;
-            const { name, description, members } = req.body;
+            const groupId = query.groupId;
+            const { name, description, members } = body;
 
             const groupObjectId = new mongoose.Types.ObjectId(groupId);
             const group = await Group.findById(groupObjectId);
@@ -59,10 +40,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     mongoose.Types.ObjectId.isValid(m)
                 );
 
-                const usersExist = await User.countDocuments({
-                    _id: { $in: validMemberIds },
-                    deleted: { $ne: true },
-                });
+                const usersExist = await countActiveByIds(validMemberIds);
 
                 if (usersExist !== validMemberIds.length) {
                     return responseErrorIncorrectParameter(res, 'members', [
@@ -89,7 +67,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
 
                 if (members && members.length > 0) {
                     await User.updateMany(
-                        { _id: { $in: members }, deleted: { $ne: true } },
+                        { _id: { $in: members }, ...notDeleted },
                         { $addToSet: { groups: groupObjectId } },
                         groupOptions
                     );
@@ -106,10 +84,14 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             console.error('Update group error:', error);
             return responseErrorPut(res);
         }
-    } else if (req.method === 'DELETE') {
+    }
+);
+
+const deleteHandler = withApi(
+    { method: 'DELETE', guard: 'admin', query: GroupIdParamSchema },
+    async (_req, res, { query }) => {
         try {
-            await dbConnect();
-            const groupId = req.query.groupId as string;
+            const groupId = query.groupId;
 
             await runInTransaction(async (session) => {
                 const groupOptions = session ? { session } : undefined;
@@ -138,9 +120,11 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             console.error('Delete group error:', error);
             return responseErrorDelete(res);
         }
-    } else {
-        return responseErrorMethodNotAllowed(res);
     }
-}
+);
 
-export default requireRole([ADMIN_ROLE], handler);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method === 'PUT') return putHandler(req, res);
+    if (req.method === 'DELETE') return deleteHandler(req, res);
+    return responseErrorMethodNotAllowed(res);
+}

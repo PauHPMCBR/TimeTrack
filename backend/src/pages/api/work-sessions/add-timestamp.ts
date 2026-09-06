@@ -1,18 +1,12 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { authenticateToken, AuthRequest } from '@/lib/auth';
 import { WorkSession } from '@/models';
-import {
-    responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
-    responseErrorPost,
-} from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
+import { responseErrorIncorrectParameter, responseErrorPost } from '@/lib/response-error-generator';
 import { WorkSessionRequestSchema } from 'shared/src/schemas/api';
+import { withApi } from '@/lib/api-handler';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { CheckInIncorrectParameterReason } from 'shared/src/types/response-errors';
 import { withUserLock } from '@/lib/user-lock';
 import { todayRange } from '@/lib/date-range';
+import { findActiveInRange } from '@/repositories/work-session-repository';
 import {
     CHECK_IN,
     CHECK_OUT,
@@ -32,11 +26,7 @@ async function getTodaySessions(
 ): Promise<InstanceType<typeof WorkSession>[]> {
     const { start, end } = todayRange();
 
-    return WorkSession.find({
-        userId: userId,
-        timestamp: { $gte: start, $lt: end },
-        status: { $ne: SESSION_REPLACED },
-    }).sort({ timestamp: 1 });
+    return findActiveInRange(start, end, { userId }).sort({ timestamp: 1 });
 }
 
 function verifyInOut(
@@ -80,25 +70,12 @@ type CheckInOutResult =
           hoursWorked: number | null;
       };
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateRequestBody(WorkSessionRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    const { type, notes } = req.body;
+export default withApi(
+    { method: 'POST', body: WorkSessionRequestSchema },
+    async (req, res, { body }) => {
+    const { type, notes } = body;
 
     try {
-        await dbConnect();
-
         if (![CHECK_IN, CHECK_OUT].includes(type)) {
             return responseErrorIncorrectParameter(res, 'type');
         }
@@ -203,6 +180,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Work session error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default authenticateToken(handler);
+    }
+);

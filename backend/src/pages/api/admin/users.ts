@@ -1,26 +1,13 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { User } from '@/models';
+import { withApi } from '@/lib/api-handler';
+import { listActive } from '@/repositories/user-repository';
 import { toPublicUser } from '@/lib/sanitize';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    try {
-        await dbConnect();
-
-        const users = await User.find({
+export default withApi(
+    { method: 'GET', guard: 'admin' },
+    async (_req, res) => {
+        const users = await listActive({
             blocked: { $ne: true },
             registered: true,
-            deleted: { $ne: true },
         }).lean();
         // toPublicUser strips the password hash, registration tokens and lockout
         // state (failedLoginAttempts/blocked/blockedSince) before sending.
@@ -30,10 +17,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 users: users.map((u) => toPublicUser(u)),
             },
         });
-    } catch (error) {
-        console.error('Admin get users error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+);

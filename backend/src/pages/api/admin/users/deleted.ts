@@ -1,24 +1,12 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { User } from '@/models';
-import { UserRow } from '@/lib/rows';
+import type { UserRow } from '@/lib/rows';
 import { toPublicUser } from '@/lib/sanitize';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
 
 // Admin list of soft-deleted users (edit to resolve conflicts, or restore).
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    try {
-        await dbConnect();
-
+export default withApi(
+    { method: 'GET', guard: 'admin' },
+    async (_req, res) => {
         const users = (await User.find({ deleted: true })
             .sort({ deletedAt: -1 })
             .lean()) as unknown as UserRow[];
@@ -37,10 +25,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 })),
             },
         });
-    } catch (error) {
-        console.error('Admin get deleted users error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+);

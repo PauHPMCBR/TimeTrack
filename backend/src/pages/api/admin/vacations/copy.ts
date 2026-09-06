@@ -1,40 +1,20 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { YearlyVacationDays } from '@/models';
+import { findGlobalTemplate } from '@/repositories/vacation-repository';
 import {
     responseErrorEntryNotFound,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import { CopyYearlyVacationRequestSchema } from 'shared/src/schemas/api';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateRequestBody(CopyYearlyVacationRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
+export default withApi(
+    { method: 'POST', guard: 'admin', body: CopyYearlyVacationRequestSchema },
+    async (_req, res, { body }) => {
     try {
-        await dbConnect();
-
-        const { fromYear, toYear } = req.body;
+        const { fromYear, toYear } = body;
         const sourceYear = fromYear ?? toYear - 1;
 
-        const source = await YearlyVacationDays.findOne({
-            year: sourceYear,
-            userId: { $exists: false },
-        });
+        const source = await findGlobalTemplate(sourceYear);
 
         if (!source) {
             return responseErrorEntryNotFound(res, 'YearlyVacationDays');
@@ -48,10 +28,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             }
         );
 
-        const existing = await YearlyVacationDays.findOne({
-            year: toYear,
-            userId: { $exists: false },
-        });
+        const existing = await findGlobalTemplate(toYear);
 
         if (existing) {
             await YearlyVacationDays.findByIdAndUpdate(existing._id, {
@@ -79,6 +56,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Copy yearly vacations error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+    }
+);

@@ -1,44 +1,25 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { AppSettings } from '@/models';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
-import {
-    responseErrorGet,
-    responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
-    responseErrorPut,
-} from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
+import { responseErrorIncorrectParameter, responseErrorMethodNotAllowed } from '@/lib/response-error-generator';
 import { AppSettingsRequestSchema } from 'shared/src/schemas/api';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method === 'GET') {
-        try {
-            await dbConnect();
-            const settings = await getAppSettings();
-            res.status(200).json({
-                success: true,
-                data: { settings },
-            });
-        } catch (error) {
-            console.error('Get settings error:', error);
-            return responseErrorGet(res);
-        }
-    } else if (req.method === 'PUT') {
-        if (
-            !(await runValidation(
-                validateRequestBody(AppSettingsRequestSchema),
-                req,
-                res
-            ))
-        )
-            return;
+const getHandler = withApi({ method: 'GET', guard: 'admin' }, async (
+    _req,
+    res
+) => {
+    const settings = await getAppSettings();
+    res.status(200).json({
+        success: true,
+        data: { settings },
+    });
+});
 
-        try {
-            await dbConnect();
-            const {
+const putHandler = withApi(
+    { method: 'PUT', guard: 'admin', body: AppSettingsRequestSchema },
+    async (_req, res, { body }) => {
+        const {
                 defaultExpectedHours,
                 benevolenceHours,
                 toleranceHours,
@@ -49,7 +30,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 timezone,
                 privacyNoticeText,
                 workerConsultationAcknowledged,
-            } = req.body;
+            } = body;
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
             if (defaultExpectedHours !== undefined)
@@ -70,9 +51,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             if (timezone !== undefined) {
                 // Validate it is a known IANA time-zone before persisting.
                 try {
-                    Intl.DateTimeFormat(undefined, {
-                        timeZone: timezone as string,
-                    });
+                    Intl.DateTimeFormat(undefined, { timeZone: timezone });
                 } catch {
                     return responseErrorIncorrectParameter(res, 'timezone', [
                         'InvalidTimezone',
@@ -102,13 +81,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 success: true,
                 data: { settings },
             });
-        } catch (error) {
-            console.error('Update settings error:', error);
-            return responseErrorPut(res);
-        }
-    } else {
-        return responseErrorMethodNotAllowed(res);
     }
+);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method === 'GET') return getHandler(req, res);
+    if (req.method === 'PUT') return putHandler(req, res);
+    return responseErrorMethodNotAllowed(res);
 }
-
-export default requireRole([ADMIN_ROLE], handler);

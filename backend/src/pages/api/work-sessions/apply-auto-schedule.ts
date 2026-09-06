@@ -1,15 +1,12 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { authenticateToken, AuthRequest } from '@/lib/auth';
 import { User, WorkSession } from '@/models';
+import { findActiveInRange } from '@/repositories/work-session-repository';
 import {
     responseErrorEntryNotFound,
     responseErrorIllegalAction,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import { ApplyAutoScheduleRequestSchema } from 'shared/src/schemas/api';
+import { withApi } from '@/lib/api-handler';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { withUserLock } from '@/lib/user-lock';
 import { dateKey } from '@/lib/date-key';
@@ -37,26 +34,12 @@ interface AutoScheduleUser {
 // that day (the previous set is flagged 'replaced', never deleted). Sessions
 // get source "automatic" so manual edits are never overwritten by the reminder
 // again.
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateRequestBody(ApplyAutoScheduleRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
+export default withApi(
+    { method: 'POST', body: ApplyAutoScheduleRequestSchema },
+    async (req, res, { body }) => {
     try {
-        await dbConnect();
         const requestedDate =
-            typeof req.body?.date === 'string'
-                ? req.body.date
-                : dateKey(new Date());
+            typeof body?.date === 'string' ? body.date : dateKey(new Date());
 
         if (requestedDate > dateKey(new Date())) {
             return responseErrorIllegalAction(res, 'FutureDate');
@@ -85,10 +68,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             // Versioning / audit trail: the day's current sessions are flagged
             // 'replaced' (never deleted) and the timetable set is stored as
             // the next version of that (user, day) sequence.
-            const active = (await WorkSession.find({
+            const active = (await findActiveInRange(start, end, {
                 userId: req.user!.userId,
-                timestamp: { $gte: start, $lt: end },
-                status: { $ne: SESSION_REPLACED },
             }).lean()) as unknown as { _id: unknown; version?: number }[];
             const now = new Date();
             const nextVersion =
@@ -151,6 +132,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Apply auto schedule error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default authenticateToken(handler);
+    }
+);

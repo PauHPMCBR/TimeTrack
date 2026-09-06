@@ -1,33 +1,16 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireSameGroupOrAdmin, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { User } from '@/models';
-import {
-    responseErrorEntryNotFound,
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+import { responseErrorEntryNotFound } from '@/lib/response-error-generator';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 import { AVATAR_MIME, readAvatar } from '@/lib/storage';
+import { notDeleted } from '@/repositories/user-repository';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(validateQueryParams(UserIdParamSchema), req, res))
-    )
-        return;
-
-    try {
-        await dbConnect();
-
-        const userId = req.query.userId as string;
+export default withApi(
+    { method: 'GET', guard: 'sameGroupOrAdmin', query: UserIdParamSchema },
+    async (_req, res, { query }) => {
         const user = await User.findOne({
-            _id: userId,
-            deleted: { $ne: true },
+            _id: query.userId,
+            ...notDeleted,
         }).select('avatar');
 
         if (!user || !user.avatar) {
@@ -44,10 +27,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         res.setHeader('Content-Type', AVATAR_MIME);
         res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
         res.status(200).send(data);
-    } catch (error) {
-        console.error('Get avatar error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireSameGroupOrAdmin(handler);
+);

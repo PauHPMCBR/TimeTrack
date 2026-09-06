@@ -1,37 +1,18 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireSelfOrAdmin, AuthRequest } from '@/lib/auth';
-import { WorkSession } from '@/models';
-import { SESSION_REPLACED } from 'shared/src/lib/constants';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+import { withApi } from '@/lib/api-handler';
+import { findActiveInRange } from '@/repositories/work-session-repository';
 import { DateParamSchema } from 'shared/src/schemas/api';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 import { dayRange } from '@/lib/date-range';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (!(await runValidation(validateQueryParams(DateParamSchema), req, res)))
-        return;
-
-    try {
-        await dbConnect();
-        const userId = req.query.userId as string;
+export default withApi(
+    { method: 'GET', guard: 'selfOrAdmin', query: DateParamSchema },
+    async (_req, res, { query }) => {
+        const userId = query.userId;
         // Build the day bucket from the raw "YYYY-MM-DD" string so it matches
         // the local calendar day regardless of the server timezone (parsing
         // with `new Date()` would resolve to UTC midnight and shift the day).
-        const { start, end } = dayRange(req.query.date as string);
+        const { start, end } = dayRange(query.date);
 
-        const sessions = await WorkSession.find({
-            userId: userId,
-            timestamp: { $gte: start, $lt: end },
-            status: { $ne: SESSION_REPLACED },
-        })
+        const sessions = await findActiveInRange(start, end, { userId })
             .sort({ timestamp: 1 })
             .lean();
 
@@ -39,10 +20,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: { workSessions: sessions },
         });
-    } catch (error) {
-        console.error('Get user day sessions error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireSelfOrAdmin(handler);
+);

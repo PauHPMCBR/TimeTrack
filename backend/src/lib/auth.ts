@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { User, Group } from '@/models';
+import { sameId, shareGroup } from '@/lib/objectid';
 import { responseError } from './response-error-generator';
 import {
     ADMIN_ROLE,
@@ -294,19 +295,7 @@ export const requireSameGroupOrAdmin = (handler: Handler) => {
                 return handler(req, res);
             }
 
-            const currentUserGroups = (currentUser.groups ?? []).map(
-                (g: Types.ObjectId) => g.toString()
-            );
-            const targetUserGroups = new Set(
-                (targetUser.groups ?? []).map((g: Types.ObjectId) =>
-                    g.toString()
-                )
-            );
-            const sharedGroups = currentUserGroups.filter((groupId: string) =>
-                targetUserGroups.has(groupId)
-            );
-
-            if (sharedGroups.length === 0) {
+            if (!shareGroup(currentUser.groups, targetUser.groups)) {
                 return responseError(res, 403, 'NoAccessToUser');
             }
 
@@ -379,8 +368,8 @@ export const requireInGroupOrAdmin = (handler: Handler) => {
             }
 
             const isMember = (group.members ?? []).some(
-                (memberId: Types.ObjectId) =>
-                    memberId.toString() === req.user!.userId
+                (memberId: { toString(): string }) =>
+                    sameId(memberId, req.user!.userId)
             );
             if (!isMember) {
                 return responseError(res, 403, 'NoAccessToGroup');

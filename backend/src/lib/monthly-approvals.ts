@@ -2,17 +2,18 @@ import dbConnect from '@/lib/mongodb';
 import {
     MonthlyApproval,
     User,
-    WorkSession,
-    ElectiveVacation,
-    YearlyVacationDays,
     AppSettings,
 } from '@/models';
+import { findActiveInRange } from '@/repositories/work-session-repository';
+import {
+    findOverlapping,
+    findGlobalTemplates,
+} from '@/repositories/vacation-repository';
 import {
     ADMIN_ROLE,
     APPROVAL_APPROVED,
     APPROVAL_PENDING,
     MS_PER_DAY,
-    SESSION_REPLACED,
     VACATION_APPROVED,
 } from 'shared/src/lib/constants';
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
@@ -118,21 +119,15 @@ export async function computeMonthAnomalies(
         : null;
 
     const [sessions, approvedVacations, yearlyTemplates] = (await Promise.all([
-        WorkSession.find({
-            userId,
-            timestamp: { $gte: start, $lt: end },
-            status: { $ne: SESSION_REPLACED },
-        })
+        findActiveInRange(start, end, { userId })
             .sort({ timestamp: 1 })
             .lean(),
-        ElectiveVacation.find({
+        findOverlapping(start, end, {
             userId,
-            status: VACATION_APPROVED,
-            // Intervals overlapping the month.
-            startDate: { $lt: end },
-            endDate: { $gte: start },
+            statuses: VACATION_APPROVED,
+            endExclusive: true,
         }).lean(),
-        YearlyVacationDays.find({ userId: { $exists: false }, year }).lean(),
+        findGlobalTemplates(year).lean(),
     ])) as unknown as [
         { timestamp: Date | string; type: 'check_in' | 'check_out' }[],
         { startDate: Date | string; endDate: Date | string }[],

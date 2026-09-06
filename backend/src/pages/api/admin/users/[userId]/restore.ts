@@ -1,32 +1,21 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { Group, User } from '@/models';
 import { toPublicUser } from '@/lib/sanitize';
+import { findActiveByEmail } from '@/repositories/user-repository';
 import {
     responseErrorEntryNotFound,
     responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 
 // Restores a soft-deleted user: clears the flag and re-adds them to their groups.
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(validateQueryParams(UserIdParamSchema), req, res))
-    )
-        return;
-
+export default withApi(
+    { method: 'POST', guard: 'admin', query: UserIdParamSchema },
+    async (_req, res, { query }) => {
     try {
-        await dbConnect();
-        const userId = req.query.userId as string;
+        const userId = query.userId;
 
         const user = await User.findById(userId);
         if (!user) {
@@ -44,11 +33,10 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         }
 
         // Email must stay unique among non-deleted users.
-        const emailConflict = await User.findOne({
-            email: user.email.toLowerCase(),
-            _id: { $ne: user._id },
-            deleted: { $ne: true },
-        });
+        const emailConflict = await findActiveByEmail(
+            user.email.toLowerCase(),
+            { excludeId: user._id }
+        );
         if (emailConflict) {
             return responseErrorIncorrectParameter(res, 'email', [
                 'AlreadyExists',
@@ -83,6 +71,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Restore user error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+    }
+);

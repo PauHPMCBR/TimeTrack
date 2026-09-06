@@ -1,12 +1,5 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { authenticateToken, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { UserFile } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 import {
     FileRow,
     FilesResponse,
@@ -14,24 +7,10 @@ import {
 } from 'shared/src/schemas/api';
 import { getFilesQuotaBytes, getFilesTotalSizeBytes } from '@/lib/files';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(MyFilesQuerySchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    const { sortBy = 'uploadedAt', order = 'desc' } = req.query;
-
-    try {
-        await dbConnect();
+export default withApi(
+    { method: 'GET', query: MyFilesQuerySchema },
+    async (req, res, { query }) => {
+        const { sortBy = 'uploadedAt', order = 'desc' } = query;
 
         const sortDir = order === 'asc' ? 1 : -1;
         const sortField = String(sortBy);
@@ -53,10 +32,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         };
 
         res.status(200).json({ success: true, data });
-    } catch (error) {
-        console.error('List my files error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default authenticateToken(handler);
+);

@@ -1,21 +1,14 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, authenticateToken } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { ElectiveVacation } from '@/models';
 import {
     responseErrorIllegalAction,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { VACATION_CANCELLED } from 'shared/src/lib/constants';
+import { sameId } from '@/lib/objectid';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
+export default withApi({ method: 'POST' }, async (req, res) => {
     try {
-        await dbConnect();
         const vacationId = req.query.vacationId as string;
         const userId = req.user!.userId;
 
@@ -25,7 +18,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             return responseErrorIllegalAction(res, 'ModifyingFromAnotherUser');
         }
 
-        if (vacation.userId.toString() !== userId) {
+        if (!sameId(vacation.userId, userId)) {
             return responseErrorIllegalAction(res, 'ModifyingFromAnotherUser');
         }
 
@@ -39,6 +32,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Cancel elective vacation error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default authenticateToken(handler);
+});

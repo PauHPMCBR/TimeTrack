@@ -1,24 +1,18 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { authenticateToken, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import {
     User,
-    WorkSession,
-    ElectiveVacation,
-    YearlyVacationDays,
 } from '@/models';
+import { findActiveInRange } from '@/repositories/work-session-repository';
+import {
+    findOverlapping,
+    findGlobalTemplates,
+} from '@/repositories/vacation-repository';
 import { getAppSettings } from '@/lib/settings';
 import {
-    SESSION_REPLACED,
     VACATION_APPROVED,
     APPROVAL_APPROVED,
 } from 'shared/src/lib/constants';
 import { MonthlyApproval } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 import {
     AdminWorkSessionsQueryWithPaginationSchema,
     AdminWorkSessionsQuery,
@@ -30,39 +24,32 @@ import {
     ElectiveVacationRow,
     YearlyVacationRow,
 } from '@/lib/rows';
+import { responseErrorGet } from '@/lib/response-error-generator';
 import {
     buildWorkSessionRows,
     computeDaysForPeriod,
 } from '@/lib/work-session-rows';
+import {
+    parsePagination,
+    paginateRows,
+} from '@/lib/pagination';
 
 // Personal work-session report: the same rows (status, expected hours,
 // anomalies) shown in the admin fitxatges view, but restricted to the
 // authenticated user's own data. Shares the row-building logic with the admin
 // endpoint so personal and admin views always agree.
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(AdminWorkSessionsQueryWithPaginationSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
+export default withApi(
+    {
+        method: 'GET',
+        query: AdminWorkSessionsQueryWithPaginationSchema,
+    },
+    async (req, res) => {
     try {
-        await dbConnect();
 
         const userId = req.user!.userId as string;
         const query = req.query as unknown as AdminWorkSessionsQuery;
         const { period } = query;
-        const limit =
-            req.query.limit !== undefined ? Number(req.query.limit) : undefined;
-        const offset =
-            req.query.offset !== undefined ? Number(req.query.offset) : 0;
+        const { limit, offset } = parsePagination(req.query);
 
         const days: Date[] = computeDaysForPeriod(
             period,
@@ -83,25 +70,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             (await Promise.all([
                 User.findById(userId, 'name email dni expectedWorkHours workDays')
                     .lean(),
-                WorkSession.find({
+                findActiveInRange(periodStart, periodEnd, {
                     userId,
-                    timestamp: { $gte: periodStart, $lte: periodEnd },
-                    status: { $ne: SESSION_REPLACED },
+                    endInclusive: true,
                 })
                     .select('userId type timestamp source')
                     .sort({ timestamp: 1 })
                     .lean(),
-                ElectiveVacation.find({
+                findOverlapping(periodStart, periodEnd, {
                     userId,
-                    status: VACATION_APPROVED,
-                    // Intervals overlapping the period.
-                    startDate: { $lte: periodEnd },
-                    endDate: { $gte: periodStart },
+                    statuses: VACATION_APPROVED,
                 }).lean(),
-                YearlyVacationDays.find({
-                    userId: { $exists: false },
-                    year: { $in: Array.from(yearSet) },
-                }).lean(),
+                findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
             ])) as unknown as [
                 UserRow | null,
@@ -156,9 +136,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             }
         }
 
-        const total = rows.length;
-        const pageRows =
-            limit !== undefined ? rows.slice(offset, offset + limit) : rows;
+        const { total, pageRows } = paginateRows(rows, limit, offset);
 
         res.status(200).json({
             success: true,
@@ -171,6 +149,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Personal work sessions error:', error);
         return responseErrorGet(res);
     }
-}
-
-export default authenticateToken(handler);
+    }
+);

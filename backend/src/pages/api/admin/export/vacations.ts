@@ -1,13 +1,8 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { ElectiveVacation, User } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
+import { withApi } from '@/lib/api-handler';
+import { User } from '@/models';
+import { findOverlapping } from '@/repositories/vacation-repository';
+import { responseErrorGet } from '@/lib/response-error-generator';
+import { notDeleted } from '@/repositories/user-repository';
 import { AdminExportVacationsQuerySchema } from 'shared/src/schemas/api';
 
 function escapeCsvField(value: unknown): string {
@@ -18,53 +13,34 @@ function escapeCsvField(value: unknown): string {
     return str;
 }
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(AdminExportVacationsQuerySchema),
-            req,
-            res
-        ))
-    )
-        return;
-
+export default withApi(
+    { method: 'GET', guard: 'admin', query: AdminExportVacationsQuerySchema },
+    async (_req, res) => {
     try {
-        await dbConnect();
-
-        const year = parseInt(req.query.year as string);
+        const year = parseInt(String(_req.query.year));
 
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
-        const filter: Record<string, unknown> = {
-            // Intervals overlapping the requested year.
-            startDate: { $lte: endDate },
-            endDate: { $gte: startDate },
-        };
-
-        const userIdsParam = req.query.userIds as string | undefined;
-        if (userIdsParam) {
-            const userIds = userIdsParam.split(',').filter(Boolean);
-            filter.userId = { $in: userIds };
-        }
+        const userIdsParam = _req.query.userIds as string | undefined;
+        const userIds = userIdsParam?.split(',').filter(Boolean);
 
         const [vacations, users, allActiveUsers] = (await Promise.all([
-            ElectiveVacation.find(filter).sort({ startDate: 1 }).lean(),
-            userIdsParam
-                ? User.find(
-                      { _id: { $in: userIdsParam.split(',').filter(Boolean) } },
-                      'name email dni'
-                  ).lean()
+            findOverlapping(
+                startDate,
+                endDate,
+                userIds ? { userId: { $in: userIds } } : {}
+            )
+                .sort({ startDate: 1 })
+                .lean(),
+            userIds
+                ? User.find({ _id: { $in: userIds } }, 'name email dni').lean()
                 : [],
             User.find(
                 {
                     blocked: { $ne: true },
                     registered: true,
-                    deleted: { $ne: true },
+                    ...notDeleted,
                 },
                 'name email dni'
             ).lean(),
@@ -139,6 +115,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Admin export vacations error:', error);
         return responseErrorGet(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+    }
+);

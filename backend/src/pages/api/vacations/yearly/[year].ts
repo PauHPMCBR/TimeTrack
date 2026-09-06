@@ -1,39 +1,18 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { authenticateToken, AuthRequest } from '@/lib/auth';
-import { YearlyVacationDays } from '@/models';
-import {
-    responseErrorEntryNotFound,
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+import { withApi } from '@/lib/api-handler';
+import { findGlobalTemplate } from '@/repositories/vacation-repository';
+import { responseErrorEntryNotFound } from '@/lib/response-error-generator';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
+export default withApi({ method: 'GET' }, async (req, res) => {
+    const year = parseInt(String(req.query.year));
+
+    const yearlyVacationDays = await findGlobalTemplate(year).lean();
+
+    if (!yearlyVacationDays) {
+        return responseErrorEntryNotFound(res, 'YearlyVacationDays');
     }
 
-    try {
-        await dbConnect();
-        const year = parseInt(req.query.year as string);
-
-        const yearlyVacationDays = await YearlyVacationDays.findOne({
-            userId: { $exists: false },
-            year,
-        }).lean();
-
-        if (!yearlyVacationDays) {
-            return responseErrorEntryNotFound(res, 'YearlyVacationDays');
-        }
-
-        res.status(200).json({
-            success: true,
-            data: { vacations: yearlyVacationDays },
-        });
-    } catch (error) {
-        console.error('Get vacations error:', error);
-        return responseErrorGet(res);
-    }
-}
-
-export default authenticateToken(handler);
+    res.status(200).json({
+        success: true,
+        data: { vacations: yearlyVacationDays },
+    });
+});

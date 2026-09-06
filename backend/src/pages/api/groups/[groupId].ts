@@ -1,32 +1,15 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireInGroupOrAdmin } from '@/lib/auth';
-import { Group, User } from '@/models';
+import { withApi } from '@/lib/api-handler';
+import { Group } from '@/models';
+import { listActive } from '@/repositories/user-repository';
 import {
     responseErrorEntryNotFound,
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
 } from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
 import { GroupIdParamSchema } from 'shared/src/schemas/api';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(GroupIdParamSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    try {
-        await dbConnect();
-        const groupId = req.query.groupId as string;
+export default withApi(
+    { method: 'GET', guard: 'inGroupOrAdmin', query: GroupIdParamSchema },
+    async (_req, res, { query }) => {
+        const groupId = query.groupId;
 
         const group = (await Group.findById(
             groupId
@@ -41,10 +24,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         // users are excluded; the stored order is preserved.
         const memberIds = (group.members as string[]) ?? [];
         const memberDocs = memberIds.length
-            ? await User.find({
+            ? await listActive({
                   _id: { $in: memberIds },
                   blocked: { $ne: true },
-                  deleted: { $ne: true },
               })
                   .select('name email role registered avatar')
                   .lean()
@@ -60,10 +42,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: { group: { ...group, members } },
         });
-    } catch (error) {
-        console.error('Get group error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireInGroupOrAdmin(handler);
+);

@@ -1,14 +1,14 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, authenticateToken } from '@/lib/auth';
-import { ElectiveVacation, YearlyVacationDays } from '@/models';
+import { ElectiveVacation } from '@/models';
+import {
+    ensureUserYearConfig,
+    findOverlapping,
+} from '@/repositories/vacation-repository';
 import {
     responseErrorIllegalAction,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import { ElectiveVacationRequestSchema } from 'shared/src/schemas/api';
+import { withApi } from '@/lib/api-handler';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
@@ -19,23 +19,11 @@ import {
     resolveNonWorkingDays,
 } from 'shared/src/lib/vacation-days';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateRequestBody(ElectiveVacationRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
-
+export default withApi(
+    { method: 'POST', body: ElectiveVacationRequestSchema },
+    async (req, res, { body }) => {
     try {
-        await dbConnect();
-        const { startDate, endDate, reason } = req.body;
+        const { startDate, endDate, reason } = body;
         const userId = req.user!.userId;
         // Both bounds arrive at local midnight (see ElectiveVacationRequestSchema).
         const start = new Date(startDate);
@@ -48,39 +36,19 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             return responseErrorIllegalAction(res, 'VacationCrossYear');
         }
 
-        let yearlyVacationDays = await YearlyVacationDays.findOne({
-            year,
-            userId,
-        });
-
+        const yearlyVacationDays = await ensureUserYearConfig(userId, year);
         if (!yearlyVacationDays) {
-            const globalConfig = await YearlyVacationDays.findOne({
-                year,
-                userId: { $exists: false },
-            });
-
-            if (!globalConfig) {
-                return responseErrorIllegalAction(res, 'NoVacationConfig');
-            }
-
-            yearlyVacationDays = await YearlyVacationDays.create({
-                userId,
-                year: globalConfig.year,
-                obligatoryDays: globalConfig.obligatoryDays,
-                electiveDaysTotalCount: globalConfig.electiveDaysTotalCount,
-            });
+            return responseErrorIllegalAction(res, 'NoVacationConfig');
         }
 
         // Overlap check: one interval per user (pending/approved), so the same
         // day can never be discounted twice.
-        const overlapping = await ElectiveVacation.findOne({
+        const overlapping = await findOverlapping(start, end, {
             userId,
-            status: { $in: [VACATION_PENDING, VACATION_APPROVED] },
-            startDate: { $lte: end },
-            endDate: { $gte: start },
+            statuses: [VACATION_PENDING, VACATION_APPROVED],
         });
 
-        if (overlapping) {
+        if (overlapping.length > 0) {
             return responseErrorIllegalAction(res, 'VacationOverlap');
         }
 
@@ -139,6 +107,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Create elective vacation error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default authenticateToken(handler);
+    }
+);

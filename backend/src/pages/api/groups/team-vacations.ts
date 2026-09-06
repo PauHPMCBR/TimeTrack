@@ -1,24 +1,15 @@
-import { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, authenticateToken } from '@/lib/auth';
-import { User, Group, ElectiveVacation } from '@/models';
+import { withApi } from '@/lib/api-handler';
+import { User, Group } from '@/models';
+import { findOverlapping } from '@/repositories/vacation-repository';
 import { UserRow, GroupRow } from '@/lib/rows';
 import { resolveVacationNames } from '@/lib/vacation-names';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+import { responseErrorGet } from '@/lib/response-error-generator';
 import { VACATION_APPROVED, VACATION_PENDING } from 'shared/src/lib/constants';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
+export default withApi({ method: 'GET' }, async (req, res) => {
     try {
-        await dbConnect();
         const userId = req.user?.userId;
-        const year = parseInt(req.query.year as string);
+        const year = parseInt(String(req.query.year));
 
         if (!year) {
             return res.status(400).json({ error: 'YearRequired' });
@@ -56,14 +47,12 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             : [];
         const activeMemberIds = activeMembers.map((m) => m._id.toString());
 
-        const vacations = await ElectiveVacation.find({
-            userId: { $in: activeMemberIds },
+        const vacations = await findOverlapping(startDate, endDate, {
             // Intervals overlapping the requested year. Pending requests are
             // included so group mates can see upcoming time off that is not
             // confirmed yet (the calendar marks them distinctly).
-            startDate: { $lte: endDate },
-            endDate: { $gte: startDate },
-            status: { $in: [VACATION_APPROVED, VACATION_PENDING] },
+            userId: { $in: activeMemberIds },
+            statuses: [VACATION_APPROVED, VACATION_PENDING],
         })
             .sort({ startDate: 1 })
             .lean();
@@ -79,6 +68,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Get team vacations error:', error);
         return responseErrorGet(res);
     }
-}
-
-export default authenticateToken(handler);
+});

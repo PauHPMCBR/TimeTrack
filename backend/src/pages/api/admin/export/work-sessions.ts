@@ -1,14 +1,9 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE, SOURCE_USER, SESSION_REPLACED, APPROVAL_APPROVED } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
+import { SOURCE_USER, APPROVAL_APPROVED } from 'shared/src/lib/constants';
 import { WorkSession, User, MonthlyApproval } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
-import { runValidation, validateQueryParams } from '@/lib/validation';
+import { notReplaced } from '@/repositories/work-session-repository';
+import { notDeleted } from '@/repositories/user-repository';
+import { responseErrorGet, responseErrorIncorrectParameter } from '@/lib/response-error-generator';
 import { UserRow, WorkSessionRow } from '@/lib/rows';
 import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
 
@@ -20,23 +15,14 @@ function escapeCsvField(value: unknown): string {
     return str;
 }
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    if (
-        !(await runValidation(
-            validateQueryParams(AdminExportWorkSessionsQuerySchema),
-            req,
-            res
-        ))
-    )
-        return;
-
+export default withApi(
+    {
+        method: 'GET',
+        guard: 'admin',
+        query: AdminExportWorkSessionsQuerySchema,
+    },
+    async (req, res) => {
     try {
-        await dbConnect();
-
         const userIds = (req.query.userIds as string)
             .split(',')
             .filter(Boolean);
@@ -66,18 +52,18 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 ? {
                       userId: { $in: userIds },
                       timestamp: timestampFilter,
-                      status: { $ne: SESSION_REPLACED },
+                      ...notReplaced,
                   }
                 : {
                       userId: { $in: userIds },
-                      status: { $ne: SESSION_REPLACED },
+                      ...notReplaced,
                   };
 
         const [users, sessions, approvalDocs] = (await Promise.all([
             User.find(
                 {
                     _id: { $in: userIds },
-                    deleted: { $ne: true },
+                    ...notDeleted,
                 },
                 'name email dni'
             ).lean(),
@@ -151,6 +137,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Admin export work sessions error:', error);
         return responseErrorGet(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+    }
+);

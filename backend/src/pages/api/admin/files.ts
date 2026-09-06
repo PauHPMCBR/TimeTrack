@@ -1,20 +1,12 @@
-import type { NextApiResponse } from 'next';
 import path from 'path';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import { User, UserFile } from '@/models';
 import {
     responseErrorEntryNotFound,
-    responseErrorGet,
     responseErrorIncorrectParameter,
     responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import {
-    runValidation,
-    validateQueryParams,
-    validateRequestBody,
-} from '@/lib/validation';
 import {
     AdminFilesQuerySchema,
     FileRow,
@@ -26,9 +18,10 @@ import {
     getFilesTotalSizeBytes,
 } from '@/lib/files';
 import { saveDocument } from '@/lib/storage';
+import { notDeleted } from '@/repositories/user-repository';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendNewFileEmail } from '@/lib/mail';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
 
 export const config = {
     api: {
@@ -43,20 +36,10 @@ function toRow(doc: Record<string, unknown>, userName?: string): FileRow {
     return { ...doc, _id: String(doc._id), userName } as FileRow;
 }
 
-async function handleGet(req: AuthRequest, res: NextApiResponse) {
-    if (
-        !(await runValidation(
-            validateQueryParams(AdminFilesQuerySchema),
-            req,
-            res
-        ))
-    )
-        return;
-
-    const { userId, sortBy = 'uploadedAt', order = 'desc' } = req.query;
-
-    try {
-        await dbConnect();
+const getHandler = withApi(
+    { method: 'GET', guard: 'admin', query: AdminFilesQuerySchema },
+    async (_req, res, { query }) => {
+        const { userId, sortBy = 'uploadedAt', order = 'desc' } = query;
 
         const filter: Record<string, unknown> = {};
         if (userId) filter.userId = userId;
@@ -97,35 +80,23 @@ async function handleGet(req: AuthRequest, res: NextApiResponse) {
                 quotaBytes: getFilesQuotaBytes(),
             },
         });
-    } catch (error) {
-        console.error('List files error:', error);
-        return responseErrorGet(res);
     }
-}
+);
 
-async function handlePost(req: AuthRequest, res: NextApiResponse) {
-    if (
-        !(await runValidation(
-            validateRequestBody(FileUploadRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
+const postHandler = withApi(
+    { method: 'POST', guard: 'admin', body: FileUploadRequestSchema },
+    async (req, res, { body }) => {
+        const { userId, description, dataUrl } = body;
+        // Employee-facing name: keep only the basename (never a client path).
+        const originalName = path
+            .basename(String(body.originalName))
+            .slice(0, 255);
 
-    const { userId, description, dataUrl } = req.body;
-    // Employee-facing name: keep only the basename (never a client path).
-    const originalName = path
-        .basename(String(req.body.originalName))
-        .slice(0, 255);
-
-    try {
-        await dbConnect();
-
-        const target = await User.findOne({
-            _id: userId,
-            deleted: { $ne: true },
-        }).select('name email notifyNewFile');
+        try {
+            const target = await User.findOne({
+                _id: userId,
+                ...notDeleted,
+            }).select('name email notifyNewFile');
         if (!target) {
             return responseErrorEntryNotFound(res, 'User');
         }
@@ -176,20 +147,19 @@ async function handlePost(req: AuthRequest, res: NextApiResponse) {
             });
         }
 
-        res.status(200).json({
-            success: true,
-            data: { file: toRow(doc.toObject() as Record<string, unknown>) },
-        });
-    } catch (error) {
-        console.error('Upload file error:', error);
-        return responseErrorPost(res);
+            res.status(200).json({
+                success: true,
+                data: { file: toRow(doc.toObject() as Record<string, unknown>) },
+            });
+        } catch (error) {
+            console.error('Upload file error:', error);
+            return responseErrorPost(res);
+        }
     }
-}
+);
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method === 'GET') return handleGet(req, res);
-    if (req.method === 'POST') return handlePost(req, res);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method === 'GET') return getHandler(req, res);
+    if (req.method === 'POST') return postHandler(req, res);
     return responseErrorMethodNotAllowed(res);
 }
-
-export default requireRole([ADMIN_ROLE], handler);

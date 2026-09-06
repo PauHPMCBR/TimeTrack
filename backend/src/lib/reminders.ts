@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
-import { User, WorkSession } from '@/models';
+import { User } from '@/models';
+import { findActiveInRange } from '@/repositories/work-session-repository';
 import { computeDayHours, DaySessionLike } from 'shared/src/lib/work-hours';
 import { getAppSettings } from '@/lib/settings';
 import { dateKey } from '@/lib/date-key';
@@ -13,7 +14,7 @@ import {
     AutoScheduleEntry,
 } from '@/lib/auto-schedule';
 import { sendInconsistencyReminder } from '@/lib/mail';
-import { MS_PER_MINUTE, SESSION_REPLACED } from 'shared/src/lib/constants';
+import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { DEFAULT_BENEVOLENCE_HOURS } from 'shared/src/lib/defaults';
 import { getFrontendUrl } from '@/lib/frontend-url';
 import { resolveExpectedWorkHours } from '@/lib/user-overrides';
@@ -83,10 +84,8 @@ export async function runDailyInconsistencyReminder(
     for (const user of users) {
         if (user.checkInRequired === false) continue;
 
-        const sessions = (await WorkSession.find({
+        const sessions = (await findActiveInRange(start, end, {
             userId: user._id.toString(),
-            timestamp: { $gte: start, $lt: end },
-            status: { $ne: SESSION_REPLACED },
         })
             .sort({ timestamp: 1 })
             .lean()) as unknown as DaySessionLike[];

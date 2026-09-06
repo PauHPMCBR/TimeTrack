@@ -1,23 +1,16 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { ElectiveVacation, User, YearlyVacationDays } from '@/models';
+import { withApi } from '@/lib/api-handler';
+import { User } from '@/models';
 import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+    findOverlapping,
+    findGlobalTemplate,
+} from '@/repositories/vacation-repository';
 import { YearlyVacationResponse } from 'shared/src/schemas/api';
+import { responseErrorGet } from '@/lib/response-error-generator';
 import { ElectiveVacationRow, YearlyVacationRow } from '@/lib/rows';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
+export default withApi({ method: 'GET', guard: 'admin' }, async (_req, res) => {
     try {
-        await dbConnect();
-        const year = parseInt(req.query.year as string);
+        const year = parseInt(String(_req.query.year));
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
@@ -28,19 +21,13 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         const activeUserIds = activeUsers.map((u) => u._id);
 
         const [vacations, yearlyVacationDays] = (await Promise.all([
-            ElectiveVacation.find({
+            findOverlapping(startDate, endDate, {
                 // Intervals overlapping the requested year.
-                startDate: { $lte: endDate },
-                endDate: { $gte: startDate },
                 userId: { $in: activeUserIds },
             })
                 .sort({ startDate: 1 })
                 .lean(),
-
-            YearlyVacationDays.findOne({
-                userId: { $exists: false },
-                year: year,
-            }).lean(),
+            findGlobalTemplate(year).lean(),
         ])) as unknown as [ElectiveVacationRow[], YearlyVacationRow | null];
 
         const response: YearlyVacationResponse = {
@@ -57,6 +44,4 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Get vacations error:', error);
         return responseErrorGet(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+});

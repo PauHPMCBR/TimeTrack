@@ -1,25 +1,15 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
-import { ADMIN_ROLE, APPROVAL_PENDING } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { MonthlyApproval, User } from '@/models';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+import { notDeleted } from '@/repositories/user-repository';
+import { APPROVAL_PENDING } from 'shared/src/lib/constants';
 import { MonthlyApprovalRow } from 'shared/src/schemas/api';
 
 // Registry of monthly record confirmations: which months are pending worker
 // approval and which are already confirmed. Pending rows come first (oldest
 // request first) so admins can chase stragglers.
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    try {
-        await dbConnect();
-
+export default withApi(
+    { method: 'GET', guard: 'admin' },
+    async (_req, res) => {
         const approvals = (await MonthlyApproval.find({})
             .lean()) as unknown as (MonthlyApprovalRow & {
             userId: string;
@@ -32,7 +22,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                       _id: { $in: userIds },
                       blocked: { $ne: true },
                       registered: true,
-                      deleted: { $ne: true },
+                      ...notDeleted,
                   },
                   'name'
               ).lean()) as unknown as { _id: string; name: string }[])
@@ -63,10 +53,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             success: true,
             data: { approvals: rows },
         });
-    } catch (error) {
-        console.error('Admin monthly approvals error:', error);
-        return responseErrorGet(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+);

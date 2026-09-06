@@ -1,14 +1,15 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { AuthRequest, requireRole } from '@/lib/auth';
+import { withApi } from '@/lib/api-handler';
 import {
-    ADMIN_ROLE,
     APPROVAL_PENDING,
     CHECK_IN,
-    SESSION_REPLACED,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
 import { User, Group, WorkSession, ElectiveVacation, MonthlyApproval } from '@/models';
+import {
+    findActiveInRange,
+    notReplaced,
+} from '@/repositories/work-session-repository';
+import { notDeleted } from '@/repositories/user-repository';
 import { getAppSettings } from '@/lib/settings';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { dateKey } from '@/lib/date-key';
@@ -18,25 +19,18 @@ import {
     resolveWorkDays,
 } from '@/lib/user-overrides';
 import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
-import {
-    responseErrorGet,
-    responseErrorMethodNotAllowed,
-} from '@/lib/response-error-generator';
+import { responseErrorGet } from '@/lib/response-error-generator';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
-    try {
-        await dbConnect();
-
-        const users = (await User.find(
-            { deleted: { $ne: true } },
-            'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
-        )
-            .sort({ name: 1 })
-            .lean()) as unknown as UserRow[];
+export default withApi(
+    { method: 'GET', guard: 'admin' },
+    async (_req, res) => {
+        try {
+            const users = (await User.find(
+                notDeleted,
+                'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
+            )
+                .sort({ name: 1 })
+                .lean()) as unknown as UserRow[];
 
         // Active employees = registered, not blocked, and required to check in.
         // These are the ones used for operational counts (anomalies / currently
@@ -59,7 +53,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                     {
                         $match: {
                             timestamp: { $gte: today },
-                            status: { $ne: SESSION_REPLACED },
+                            ...notReplaced,
                         },
                     },
                     { $sort: { timestamp: -1 } },
@@ -83,9 +77,8 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         weekEnd.setDate(monday.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);
 
-        const weekSessions = (await WorkSession.find({
-            timestamp: { $gte: monday, $lte: weekEnd },
-            status: { $ne: SESSION_REPLACED },
+        const weekSessions = (await findActiveInRange(monday, weekEnd, {
+            endInclusive: true,
         })
             .sort({ timestamp: 1 })
             .lean()) as unknown as WorkSessionRow[];
@@ -166,10 +159,9 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
                 anomalyCount,
             },
         });
-    } catch (error) {
-        console.error('Admin dashboard error:', error);
-        return responseErrorGet(res);
+        } catch (error) {
+            console.error('Admin dashboard error:', error);
+            return responseErrorGet(res);
+        }
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+);

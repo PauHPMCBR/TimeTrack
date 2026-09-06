@@ -1,95 +1,78 @@
-import type { NextApiResponse } from 'next';
-import { requireRole, AuthRequest } from '@/lib/auth';
+import crypto from 'crypto';
 import { ADMIN_ROLE, EMPLOYEE_ROLE, TOKEN_BYTE_LENGTH } from 'shared/src/lib/constants';
 import { User } from '@/models';
-import crypto from 'crypto';
-import dbConnect from '@/lib/mongodb';
 import { getFrontendUrl } from '@/lib/frontend-url';
 import {
     responseErrorIncorrectParameter,
-    responseErrorMethodNotAllowed,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import { CreateUserRequestSchema } from 'shared/src/schemas/api';
 import { getAppSettings } from '@/lib/settings';
 import { sendRegistrationInvite } from '@/lib/mail';
+import { withApi } from '@/lib/api-handler';
+import { findActiveByEmail } from '@/repositories/user-repository';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
+export default withApi(
+    { method: 'POST', guard: 'admin', body: CreateUserRequestSchema },
+    async (_req, res, { body }) => {
+        try {
+            const { email, name, role, dni } = body;
 
-    if (
-        !(await runValidation(
-            validateRequestBody(CreateUserRequestSchema),
-            req,
-            res
-        ))
-    )
-        return;
+            // Email is unique per non-deleted user.
+            const existingUser = await findActiveByEmail(
+                String(email).toLowerCase()
+            );
+            if (existingUser) {
+                return responseErrorIncorrectParameter(res, 'email', [
+                    'AlreadyExists',
+                ]);
+            }
 
-    try {
-        await dbConnect();
-        const { email, name, role, dni } = req.body;
+            const registrationToken = crypto.randomBytes(TOKEN_BYTE_LENGTH).toString('hex');
 
-        // Email is unique per non-deleted user.
-        const existingUser = await User.findOne({
-            email: String(email).toLowerCase(),
-            deleted: { $ne: true },
-        });
-        if (existingUser) {
-            return responseErrorIncorrectParameter(res, 'email', [
-                'AlreadyExists',
-            ]);
-        }
+            const settings = await getAppSettings();
 
-        const registrationToken = crypto.randomBytes(TOKEN_BYTE_LENGTH).toString('hex');
-
-        const settings = await getAppSettings();
-
-        const newUser = await User.create({
-            name,
-            email: email.toLowerCase(),
-            registrationToken,
-            registered: false,
-            role: role || EMPLOYEE_ROLE,
-            checkInRequired: (role || EMPLOYEE_ROLE) !== ADMIN_ROLE,
-            groups: [],
-            dni,
-            expectedWorkHours: settings.defaultExpectedHours,
-        });
-
-        const frontendUrl = getFrontendUrl();
-        const inviteParams = new URLSearchParams({ name, email });
-        const registrationLink = `${frontendUrl}/register/${registrationToken}?${inviteParams.toString()}`;
-
-        void sendRegistrationInvite({
-            to: newUser.email,
-            name: newUser.name,
-            registrationLink,
-        });
-
-        res.status(201).json({
-            success: true,
-            data: {
-                user: {
-                    id: newUser._id,
-                    name: newUser.name,
-                    email: newUser.email,
-                    role: newUser.role,
-                    registered: newUser.registered,
-                    dni: newUser.dni,
-                    expectedWorkHours: newUser.expectedWorkHours,
-                },
-                registrationLink,
+            const newUser = await User.create({
+                name,
+                email: email.toLowerCase(),
                 registrationToken,
-            },
-        });
-    } catch (error) {
-        console.error('Create user error:', error);
-        return responseErrorPost(res);
-    }
-}
+                registered: false,
+                role: role || EMPLOYEE_ROLE,
+                checkInRequired: (role || EMPLOYEE_ROLE) !== ADMIN_ROLE,
+                groups: [],
+                dni,
+                expectedWorkHours: settings.defaultExpectedHours,
+            });
 
-export default requireRole([ADMIN_ROLE], handler);
+            const frontendUrl = getFrontendUrl();
+            const inviteParams = new URLSearchParams({ name, email });
+            const registrationLink = `${frontendUrl}/register/${registrationToken}?${inviteParams.toString()}`;
+
+            void sendRegistrationInvite({
+                to: newUser.email,
+                name: newUser.name,
+                registrationLink,
+            });
+
+            res.status(201).json({
+                success: true,
+                data: {
+                    user: {
+                        id: newUser._id,
+                        name: newUser.name,
+                        email: newUser.email,
+                        role: newUser.role,
+                        registered: newUser.registered,
+                        dni: newUser.dni,
+                        expectedWorkHours: newUser.expectedWorkHours,
+                    },
+                    registrationLink,
+                    registrationToken,
+                },
+            });
+        } catch (error) {
+            console.error('Create user error:', error);
+            return responseErrorPost(res);
+        }
+    }
+);

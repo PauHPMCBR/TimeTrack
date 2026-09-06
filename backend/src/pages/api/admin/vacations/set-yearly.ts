@@ -1,45 +1,24 @@
-import type { NextApiResponse } from 'next';
-import dbConnect from '@/lib/mongodb';
-import { requireRole, AuthRequest } from '@/lib/auth';
-import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { withApi } from '@/lib/api-handler';
 import { YearlyVacationDays } from '@/models';
+import { findGlobalTemplate } from '@/repositories/vacation-repository';
 import {
-    responseErrorMethodNotAllowed,
-    responseErrorPost,
     responseErrorIncorrectParameter,
-    responseErrorValidation,
+    responseErrorPost,
 } from '@/lib/response-error-generator';
-import { runValidation, validateRequestBody } from '@/lib/validation';
 import {
     dateKeyToLocalMidnight,
     YearlyVacationAdminRequestSchema,
 } from 'shared/src/schemas/api';
 
-async function handler(req: AuthRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return responseErrorMethodNotAllowed(res);
-    }
-
+export default withApi(
+    {
+        method: 'POST',
+        guard: 'admin',
+        body: YearlyVacationAdminRequestSchema,
+    },
+    async (_req, res, { body }) => {
     try {
-        if (
-            !(await runValidation(
-                validateRequestBody(YearlyVacationAdminRequestSchema),
-                req,
-                res
-            ))
-        )
-            return;
-    } catch (error) {
-        console.error('Validation error:', error);
-        return responseErrorValidation(res, [
-            error instanceof Error ? error.message : String(error),
-        ]);
-    }
-
-    try {
-        await dbConnect();
-
-        const { year, obligatoryDays, electiveDaysTotalCount } = req.body;
+        const { year, obligatoryDays, electiveDaysTotalCount } = body;
 
         // Normalize defensively: the schema already converts to local-midnight
         // Dates; this also covers mocked/raw string inputs.
@@ -57,10 +36,7 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
             ]);
         }
 
-        const existingVacation = await YearlyVacationDays.findOne({
-            year,
-            userId: { $exists: false },
-        });
+        const existingVacation = await findGlobalTemplate(year);
 
         const update = {
             obligatoryDays: normalized,
@@ -85,6 +61,5 @@ async function handler(req: AuthRequest, res: NextApiResponse) {
         console.error('Set yearly vacations error:', error);
         return responseErrorPost(res);
     }
-}
-
-export default requireRole([ADMIN_ROLE], handler);
+    }
+);
