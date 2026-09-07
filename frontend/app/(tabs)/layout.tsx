@@ -16,9 +16,14 @@ export default function TabsLayout({
 }) {
     return (
         <RequireAuth>
-            <div className="min-h-dvh bg-gradient-to-b from-zinc-50 to-white text-zinc-900 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100">
-                {/* TOP BAR: sense contenidor i sense padding */}
-                <div className="sticky top-0 z-30 border-b border-zinc-200/60 bg-white/70 backdrop-blur dark:border-zinc-900/60">
+            {/* min-h-svh (stable) instead of min-h-dvh: dvh recomputes every time
+                the mobile URL bar hides/shows and makes the page height breathe,
+                which the user perceives as the top/bottom bars wobbling. */}
+            <div className="min-h-svh bg-gradient-to-b from-zinc-50 to-white text-zinc-900 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100">
+                {/* TOP BAR: sense contenidor i sense padding. transform-gpu gives
+                    the bar its own compositing layer so backdrop-blur repaints
+                    cannot jitter it while scrolling. */}
+                <div className="sticky top-0 z-30 transform-gpu border-b border-zinc-200/60 bg-white/70 backdrop-blur dark:border-zinc-900/60">
                     <div className="flex h-12 w-full items-center justify-start">
                         <HeaderBar />
                     </div>

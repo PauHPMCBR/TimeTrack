@@ -235,8 +235,11 @@ export default function AdminVacationsPage() {
                 <AdminBackButton />
 
                 <div className="mb-8">
-                    <div className="flex items-center justify-between">
-                        <div>
+                    {/* Stack title above the controls on narrow screens: a
+                        side-by-side row crushes the title to one word per
+                        line on phones. */}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
                             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
                                 {t('admin.vacations.title')}
                             </h1>
@@ -246,7 +249,7 @@ export default function AdminVacationsPage() {
                         </div>
 
                         {/* Year selector */}
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                             <select
                                 value={filterUserId}
                                 onChange={(e) =>

@@ -66,6 +66,16 @@ export default function FitxatgesTable({
             timeZone: configuredTimezone(),
         }).format(new Date(ts));
 
+    const dateLabelOf = (row: AdminWorkSessionRow) =>
+        new Date(`${row.date}T00:00:00`).toLocaleDateString(locale, {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+        });
+
+    const isConfirmedRow = (row: AdminWorkSessionRow) =>
+        approvedMonths?.has(`${row.userId}:${row.date.slice(0, 7)}`) ?? false;
+
     const rowClass = (row: AdminWorkSessionRow) => {
         if (row.status === 'vacation')
             return 'border-l-4 border-l-blue-500 bg-blue-100/90 dark:bg-blue-900/40';
@@ -84,6 +94,36 @@ export default function FitxatgesTable({
         if (status === 'vacation')
             return <Palmtree className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
         return <Ban className="h-4 w-4 text-zinc-400" />;
+    };
+
+    // Session chips shared by the desktop table and the mobile cards.
+    const renderSessionChips = (row: AdminWorkSessionRow) => {
+        if (row.sessions.length === 0) {
+            return <span className="text-zinc-400">—</span>;
+        }
+        return row.sessions.map((s, idx) => {
+            const source = s.source ?? SOURCE_USER;
+            const SourceIcon =
+                source === SOURCE_ADMIN
+                    ? ShieldCheck
+                    : source === SOURCE_AUTOMATIC
+                      ? Zap
+                      : User;
+            return (
+                <span key={s._id} className="flex items-center gap-1">
+                    {idx > 0 && <span className="text-zinc-400">→</span>}
+                    <span
+                        title={t(`admin.events.source.${source}`)}
+                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm font-medium text-white ${
+                            s.type === CHECK_IN ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                    >
+                        <SourceIcon size={14} />
+                        {fmtTime(s.timestamp)}
+                    </span>
+                </span>
+            );
+        });
     };
 
     // Loading / empty states showing only filtered count
@@ -119,7 +159,8 @@ export default function FitxatgesTable({
 
     return (
         <>
-            <Card className="overflow-hidden">
+            {/* Desktop: full table (≥640px) */}
+            <Card className="hidden overflow-hidden sm:block">
                 <div className="overflow-x-auto">
                     <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
                         <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -146,21 +187,16 @@ export default function FitxatgesTable({
                         </thead>
                         <tbody>
                             {filteredRows.map((row, i) => {
-                                 const dateLabel = new Date(
-                                     `${row.date}T00:00:00`
-                                 ).toLocaleDateString(locale, {
-                                     weekday: 'short',
-                                     day: 'numeric',
-                                     month: 'short',
-                                 });
+                                 const dateLabel = dateLabelOf(row);
                                  const newDay =
                                      i > 0 &&
                                      filteredRows[i - 1].date !== row.date;
                                  const monthKey = row.date.slice(0, 7);
                                  const userMonthKey = `${row.userId}:${monthKey}`;
-                                 const isConfirmed = approvedMonths?.has(
-                                     userMonthKey
-                                 ) ?? false;
+                                 const isConfirmed =
+                                     approvedMonths?.has(
+                                         userMonthKey
+                                     ) ?? false;
 
                                  return (
                                      <Fragment
@@ -209,62 +245,7 @@ export default function FitxatgesTable({
                                             )}
                                             <td className="px-3 py-3">
                                                 <div className="flex flex-wrap items-center gap-1.5">
-                                                    {row.sessions.length === 0 ? (
-                                                        <span className="text-zinc-400">
-                                                            —
-                                                        </span>
-                                                    ) : (
-                                                        row.sessions.map(
-                                                            (s, idx) => {
-                                                                const source =
-                                                                    s.source ??
-                                                                    SOURCE_USER;
-                                                                const SourceIcon =
-                                                                    source ===
-                                                                    SOURCE_ADMIN
-                                                                        ? ShieldCheck
-                                                                        : source ===
-                                                                          SOURCE_AUTOMATIC
-                                                                          ? Zap
-                                                                          : User;
-                                                                return (
-                                                                    <span
-                                                                        key={
-                                                                            s._id
-                                                                        }
-                                                                        className="flex items-center gap-1"
-                                                                    >
-                                                                        {idx >
-                                                                            0 && (
-                                                                            <span className="text-zinc-400">
-                                                                                →
-                                                                            </span>
-                                                                        )}
-                                                                        <span
-                                                                            title={t(
-                                                                                `admin.events.source.${source}`
-                                                                            )}
-                                                                            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm font-medium text-white ${
-                                                                                s.type ===
-                                                                                CHECK_IN
-                                                                                    ? 'bg-green-500'
-                                                                                    : 'bg-red-500'
-                                                                            }`}
-                                                                        >
-                                                                            <SourceIcon
-                                                                                size={
-                                                                                    14
-                                                                                }
-                                                                            />
-                                                                            {fmtTime(
-                                                                                s.timestamp
-                                                                            )}
-                                                                        </span>
-                                                                    </span>
-                                                                );
-                                                            }
-                                                        )
-                                                    )}
+                                                    {renderSessionChips(row)}
                                                 </div>
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-3 text-right font-medium text-zinc-900 dark:text-white">
@@ -288,6 +269,87 @@ export default function FitxatgesTable({
                 </div>
             </Card>
 
+            {/* Mobile (<640px): the same data as stacked cards. A fixed-width
+                table either overflows horizontally or squeezes its headers
+                into each other on phones; one card per day keeps every field
+                readable and the whole card is the tap target. */}
+            <Card className="space-y-2 p-2 sm:hidden">
+                {filteredRows.map((row) => {
+                    const isConfirmed = isConfirmedRow(row);
+                    return (
+                        <button
+                            type="button"
+                            key={`${row.date}:${row.userId}`}
+                            disabled={isConfirmed}
+                            onClick={() => !isConfirmed && onRowClick?.(row)}
+                            title={
+                                isConfirmed
+                                    ? t('admin.events.monthConfirmed')
+                                    : undefined
+                            }
+                            className={`block w-full rounded-lg p-3 text-left transition-transform active:scale-[0.99] ${rowClass(
+                                row
+                            )} ${
+                                isConfirmed
+                                    ? 'cursor-not-allowed opacity-75'
+                                    : 'cursor-pointer'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-white">
+                                    {statusIcon(row.status)}
+                                    <span className="truncate">
+                                        {dateLabelOf(row)}
+                                    </span>
+                                    {isConfirmed && (
+                                        <Lock
+                                            size={14}
+                                            className="shrink-0 text-zinc-400 dark:text-zinc-500"
+                                        />
+                                    )}
+                                </span>
+                                <span className="shrink-0 text-sm font-medium text-zinc-900 dark:text-white">
+                                    {row.totalHours > 0
+                                        ? formatHM(
+                                              row.totalHours * MS_PER_HOUR,
+                                              t
+                                          )
+                                        : '—'}
+                                </span>
+                            </div>
+
+                            {showEmployee && (
+                                <div className="mt-0.5 truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                    {row.userName}
+                                </div>
+                            )}
+
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                {renderSessionChips(row)}
+                            </div>
+
+                            <div className="mt-2 flex items-center justify-between gap-2 border-t border-zinc-900/10 pt-2 text-xs dark:border-white/10">
+                                <span className="text-zinc-600 dark:text-zinc-300">
+                                    {t('admin.events.table.hours')}:{' '}
+                                    <span className="font-semibold text-zinc-900 dark:text-white">
+                                        {row.totalHours > 0
+                                            ? formatHM(
+                                                  row.totalHours * MS_PER_HOUR,
+                                                  t
+                                              )
+                                            : '—'}
+                                    </span>
+                                </span>
+                                <span className="text-zinc-500 dark:text-zinc-400">
+                                    {t('admin.events.table.expected')}:{' '}
+                                    {row.expectedHours} {t('time.h')}
+                                </span>
+                            </div>
+                        </button>
+                    );
+                })}
+            </Card>
+
             {!anomalyOnly && total > pageSize && (
                 <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -300,7 +362,7 @@ export default function FitxatgesTable({
                                 onPageChange(Math.max(0, offset - pageSize))
                             }
                             disabled={offset === 0}
-                            className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                            className="rounded-lg border border-zinc-300 bg-white p-2.5 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                             aria-label={t('admin.events.pagination.previous')}
                         >
                             <ChevronLeft className="h-4 w-4" />
@@ -308,7 +370,7 @@ export default function FitxatgesTable({
                         <button
                             onClick={() => onPageChange(offset + pageSize)}
                             disabled={offset + pageSize >= total}
-                            className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                            className="rounded-lg border border-zinc-300 bg-white p-2.5 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                             aria-label={t('admin.events.pagination.next')}
                         >
                             <ChevronRight className="h-4 w-4" />

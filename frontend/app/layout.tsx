@@ -38,6 +38,30 @@ const themeInitScript = `
   } catch (_) {}
 `;
 
+// Pre-hydration password-reveal bridge.
+// On slow phones a tap on the eye toggle can land before React hydrates
+// (handlers not attached yet → tap silently lost). This capture-phase
+// listener runs as soon as the HTML parses and toggles the input directly.
+// Once the PasswordField mounts it sets data-hydrated="1" on its button and
+// this bridge stops touching it, so the two never double-toggle.
+const passwordRevealBridgeScript = `
+  (function () {
+    if (window.__ttRevealBridge) return;
+    window.__ttRevealBridge = true;
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var btn = t.closest('[data-password-toggle]');
+      if (!btn || btn.getAttribute('data-hydrated') === '1') return;
+      var input = document.getElementById(btn.getAttribute('data-password-target') || '');
+      if (!input) return;
+      e.preventDefault();
+      input.type = input.type === 'password' ? 'text' : 'password';
+      btn.setAttribute('data-pre-revealed', input.type === 'text' ? '1' : '0');
+    }, true);
+  })();
+`;
+
 export default function RootLayout({
     children,
 }: {
@@ -47,9 +71,14 @@ export default function RootLayout({
         <html lang="ca" suppressHydrationWarning className={sora.variable}>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: passwordRevealBridgeScript,
+                    }}
+                />
             </head>
             <body
-                className={`${inter.className} min-h-dvh antialiased
+                className={`${inter.className} min-h-svh antialiased
         bg-gradient-to-b from-zinc-50 to-white text-zinc-900
         dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100`}
             >

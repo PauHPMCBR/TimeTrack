@@ -46,7 +46,10 @@ export default function WorkSessionsToolbar({
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                {/* Narrow screens: pills + date picker share the first row and
+                    the ‹ period › navigator gets its own full-width row, so the
+                    label stays on ONE line. sm+: everything back on one row. */}
+                <div className="order-1 flex min-w-0 items-center gap-1.5">
                     <div className="flex rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
                         {PERIODS.map((p) => (
                             <button
@@ -62,22 +65,6 @@ export default function WorkSessionsToolbar({
                             </button>
                         ))}
                     </div>
-
-                    <button
-                        onClick={() => onShift(-1)}
-                        className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <div className="min-w-0 flex-1 px-1 text-center text-sm font-semibold text-zinc-900 dark:text-white">
-                        {periodLabel}
-                    </div>
-                    <button
-                        onClick={() => onShift(1)}
-                        className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
                 </div>
 
                 <input
@@ -88,8 +75,26 @@ export default function WorkSessionsToolbar({
                         const d = new Date(e.target.value + 'T00:00:00');
                         onCursorChange(d);
                     }}
-                    className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                    className="order-2 shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white sm:order-3"
                 />
+
+                <div className="order-3 flex w-full min-w-0 items-center gap-1.5 sm:order-2 sm:w-auto sm:min-w-0 sm:flex-1">
+                    <button
+                        onClick={() => onShift(-1)}
+                        className="shrink-0 rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="min-w-0 flex-1 px-1 text-center text-sm font-semibold text-zinc-900 dark:text-white">
+                        {periodLabel}
+                    </div>
+                    <button
+                        onClick={() => onShift(1)}
+                        className="shrink-0 rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4">

@@ -42,7 +42,11 @@ export default function MonthlyConfirmationCard({
             try {
                 const me = await apiClient.getCurrentUser();
                 if (!me || cancelled) return;
-                setStartKey(toLocalDateKey(me.trackingStartDate));
+                setStartKey(
+                    me.trackingStartDate
+                        ? toLocalDateKey(me.trackingStartDate)
+                        : null
+                );
                 const res = await apiClient.getMonthlyApprovals(me._id);
                 if (!cancelled && res.data?.approvals) {
                     setApprovals(res.data.approvals);

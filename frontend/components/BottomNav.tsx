@@ -46,7 +46,7 @@ export default function BottomNav() {
     const cols = items.length;
 
     return (
-        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200/70 bg-white pb-[env(safe-area-inset-bottom)] dark:border-zinc-800 dark:bg-zinc-900">
+        <nav className="fixed inset-x-0 bottom-0 z-50 transform-gpu border-t border-zinc-200/70 bg-white pb-[env(safe-area-inset-bottom)] dark:border-zinc-800 dark:bg-zinc-900">
             <div
                 className="mx-auto grid h-16 max-w-3xl"
                 style={{
@@ -66,11 +66,17 @@ export default function BottomNav() {
                         <Link
                             key={href}
                             href={href}
-                            className="flex min-w-0 flex-col items-center justify-center px-0.5 text-center text-xs"
+                            className="flex min-w-0 flex-col items-center justify-center px-0.5 text-center text-xs transition-transform active:scale-90"
                             aria-label={label}
                         >
                             <Icon size={22} className={cls} />
-                            <span className={`mt-1 w-full truncate scale-90 ${cls}`}>
+                            {/* Narrow-screen alternative composition: below 380px
+                                a 5-6 column grid leaves ~50-60px per item, so
+                                truncated labels become unreadable noise. Switch
+                                to an icon-only bar (standard mobile pattern). */}
+                            <span
+                                className={`mt-1 hidden w-full truncate scale-90 min-[381px]:block ${cls}`}
+                            >
                                 {label}
                             </span>
                         </Link>

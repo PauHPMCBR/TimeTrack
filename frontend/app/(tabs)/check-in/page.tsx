@@ -333,7 +333,7 @@ export default function CheckInPage() {
                         <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
                             {t('checkin.reasonLabel')}
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
                             {currentReasons.map((reason) => (
                                 <button
                                     key={reason._id}

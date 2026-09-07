@@ -441,7 +441,14 @@ html[data-theme="macchiato"] {
 /* —— Res: cap gradient aquí. El fons el posarem des del layout amb classes —— */
 
 @layer base {
-  html, body { height: 100%; width: 100%; }
+  /* min-height with svh (stable small-viewport height) instead of height:100%.
+     A fixed percentage height tracks the LAYOUT viewport, which Chrome/Safari
+     resize every time the URL bar hides or shows → the whole page (and the
+     sticky/fixed bars anchored to it) visibly wobbles while scrolling. */
+  html, body {
+     min-height: 100svh;
+     width: 100%;
+  }
 }
 
 @layer components {

@@ -19,7 +19,8 @@ export default function LanguageSwitcher() {
                     <button
                         key={l.code}
                         onClick={() => setLang(l.code)}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                        aria-pressed={active}
+                        className={`flex h-8 min-w-9 items-center justify-center rounded-md px-1.5 text-xs font-semibold transition-colors ${
                             active
                                 ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white'
                                 : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'

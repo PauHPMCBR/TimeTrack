@@ -148,8 +148,10 @@ export default function UsersListPage() {
                 </Button>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
-                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+            {/* Wrap as one block on narrow screens instead of squeezing the
+                select-all label into two lines. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-300">
                     <input
                         type="checkbox"
                         checked={allSelected}

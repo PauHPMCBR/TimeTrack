@@ -73,7 +73,7 @@ export default function LoginForm() {
     return (
         <form
             onSubmit={onSubmit}
-            className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
         >
             <div className="mb-6 flex flex-col items-center">
                 {APP_ICON_URL ? (
