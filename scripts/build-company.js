@@ -138,7 +138,9 @@ export async function stageBranding(cfg, dir = brandingDir) {
 
 export async function buildFrontend(cfg, domain, root = repoRoot) {
   const appName = cfg.name || "TimeTrack360";
-  const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
+  // Same-origin API: the backend is proxied under /api/* on the company's own
+  // domain (see deploy-docs/09). An explicit cfg.backendUrl still overrides.
+  const backendUrl = cfg.backendUrl || `https://${cfg.subdomain}.${domain}`;
   await stageBranding(cfg);
   const buildArgs = [
     "build",
@@ -166,18 +168,20 @@ export function buildBackend(root = repoRoot) {
 export function printInfo(cfg, domain) {
   const frontendTag = `registre-jornada-frontend:${cfg.subdomain}`;
   const backendTag = "registre-jornada-backend:latest";
-  const backendUrl = cfg.backendUrl || `https://api.${cfg.subdomain}.${domain}`;
-  const frontendUrl = cfg.frontendUrl || `https://${cfg.subdomain}.${domain}`;
+  const backendUrl = cfg.backendUrl || `https://${cfg.subdomain}.${domain}`;
+  const frontendUrl = `https://${cfg.subdomain}.${domain}`;
 
   console.log(`\n=== ${cfg.subdomain}.${domain} ===
 frontend:  ${frontendTag}
 backend:   ${backendTag}
 frontendUrl: ${frontendUrl}
-backendUrl:  ${backendUrl}
+backendUrl:  ${backendUrl} (same origin, proxied under /api/*)
 
-Caddyfile entries to append (Caddyfile):
-${cfg.subdomain}.${domain}         { reverse_proxy ${cfg.subdomain}-frontend:3000 }
-api.${cfg.subdomain}.${domain}     { reverse_proxy ${cfg.subdomain}-backend:3001 }
+Caddyfile entry to append (Caddyfile):
+${cfg.subdomain}.${domain} {
+	handle /api/* { reverse_proxy ${cfg.subdomain}-backend:3001 }
+	handle       { reverse_proxy ${cfg.subdomain}-frontend:3000 }
+}
 
 Runtime config now lives in the company compose file. Remember to fill in its
 secrets (MONGODB_URI, JWT_SECRET, SMTP_USER/SMTP_PASS, CRON_SECRET) and, if the
