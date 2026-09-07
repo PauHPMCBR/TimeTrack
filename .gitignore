@@ -64,5 +64,5 @@ branding/guide.pdf
 backend/data/
 deploy-docs/
 TODO.md
-# Landing build output (scripts/build-landing.js)
-landing/dist/
+# Landing page
+landing/

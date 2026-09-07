@@ -67,9 +67,7 @@ execFileSync(
 );
 writeFileSync(
   join(distDir, "landing.css"),
-  readFileSync(join(distDir, "landing.css"), "utf8") +
-    "\n" +
-    readFileSync(join(srcDir, "extras.css"), "utf8")
+  readFileSync(join(distDir, "landing.css"), "utf8")
 );
 
 // 2. Guide: PDF export via typst.
