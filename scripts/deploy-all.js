@@ -6,6 +6,8 @@
 //   node scripts/deploy-all.js
 //
 // What it does, per company compose file under <companies dir>/*/:
+//   0. copies the committed docs/guide.pdf to <infra>/landing/ (so the guide
+//      served at the apex domain matches the one baked into the images),
 //   1. builds the shared backend image once (tag registre-jornada-backend:latest),
 //   2. builds the company's frontend image (branding + baked backend URL) from
 //      the `x-company` block in the company's compose file,
@@ -19,7 +21,7 @@
 //   --skip-index-sync don't POST /api/admin/indexes/sync after recreating
 //   --dir <path>      companies base dir (required unless $COMPANIES_DIR is set)
 //   --domain <d>      root domain override (default: DOMAIN= in <INFRA_DIR>/.env)
-import { readdirSync, existsSync } from "node:fs";
+import { readdirSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -77,6 +79,18 @@ if (!domain) {
 if (args.pull) {
   console.log("== git pull ==");
   execFileSync("git", ["pull"], { cwd: repoRoot, stdio: "inherit" });
+}
+
+// Keeps the guide PDF served at the apex domain in sync with the one baked
+// into the frontend images: docs/guide.pdf -> <INFRA_DIR>/landing/guide.pdf.
+const guidePdf = join(repoRoot, "docs", "guide.pdf");
+if (existsSync(guidePdf)) {
+  const landingDir = join(process.env.INFRA_DIR || dirname(args.companiesDir), "landing");
+  mkdirSync(landingDir, { recursive: true });
+  copyFileSync(guidePdf, join(landingDir, "guide.pdf"));
+  console.log(`== guide.pdf: copied to ${join(landingDir, "guide.pdf")} ==`);
+} else {
+  console.warn("== guide.pdf: docs/guide.pdf missing — apex copy not refreshed ==");
 }
 
 const composeFiles = readdirSync(args.companiesDir)
