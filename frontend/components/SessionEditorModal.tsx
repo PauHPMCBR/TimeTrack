@@ -209,7 +209,7 @@ export default function SessionEditorModal({ row, onClose, onSaved }: Props) {
             footer={
                 <div className="flex justify-end gap-2">
                     <Button
-                        onClick={requestClose}
+                        onClick={onClose}
                         disabled={saving}
                         variant="secondary"
                     >
