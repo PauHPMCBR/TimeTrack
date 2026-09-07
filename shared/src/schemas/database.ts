@@ -97,9 +97,12 @@ export const AppSettingsSchema = z.object({
     // Month key (YYYY-MM) of the last end-of-month "review the month's times"
     // mail sent to admins. Empty string = never sent.
     lastMonthlyReviewReminder: z.string().default('').optional(),
-    // Privacy notice shown to workers (GDPR/art. 34.9). Empty string = not
-    // configured yet.
-    privacyNoticeText: z.string().max(5000).default(''),
+    // Privacy notice shown to workers (GDPR/art. 34.9). Empty = not
+    // configured yet. The trailing .optional() matters: zod-mongoose maps
+    // default('') to a required path, and Mongoose rejects '' as missing,
+    // which breaks creation of the settings document (see
+    // lastMonthlyReviewReminder for the same pattern).
+    privacyNoticeText: z.string().max(5000).default('').optional(),
     // Acknowledgment that the company consulted worker representation before
     // establishing the time-registration system (art. 34.9 LT obligation).
     workerConsultationAcknowledged: z.boolean().default(false),

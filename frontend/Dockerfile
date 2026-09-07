@@ -21,7 +21,7 @@ COPY frontend ./frontend
 # absent => guide links are hidden).
 COPY docs ./docs
 
-# Optional per-company branding (see branding/README.md). The folder is always
+# Optional per-company branding. The folder is always
 # copied; icon.png / favicon.png inside it override the defaults if present.
 COPY branding ./branding
 
