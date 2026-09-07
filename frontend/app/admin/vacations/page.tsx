@@ -246,7 +246,7 @@ export default function AdminVacationsPage() {
                         </div>
 
                         {/* Year selector */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <select
                                 value={filterUserId}
                                 onChange={(e) =>

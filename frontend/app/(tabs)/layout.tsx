@@ -24,7 +24,7 @@ export default function TabsLayout({
                     </div>
                 </div>
 
-                <main className="mx-auto w-full max-w-6xl animate-fade-in px-4 pb-24 pt-4 sm:pb-28">
+                <main className="mx-auto w-full max-w-6xl animate-fade-in px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:pb-28">
                     {children}
                 </main>
 

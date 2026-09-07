@@ -347,17 +347,21 @@ export function Calendar({
                 )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
                 <Button
                     onClick={prevMonth}
                     variant="secondary"
                     size="sm"
                     disabled={loading}
+                    aria-label={t('calendar.prevMonth')}
                 >
-                    ← {t('calendar.prevMonth')}
+                    <span aria-hidden>←</span>{' '}
+                    <span className="hidden sm:inline">
+                        {t('calendar.prevMonth')}
+                    </span>
                 </Button>
 
-                <div className="text-lg font-semibold flex items-center gap-2">
+                <div className="min-w-0 flex-1 truncate px-1 text-center text-base font-semibold sm:text-lg">
                     {monthLabel}
                 </div>
 
@@ -366,8 +370,12 @@ export function Calendar({
                     variant="secondary"
                     size="sm"
                     disabled={loading}
+                    aria-label={t('calendar.nextMonth')}
                 >
-                    {t('calendar.nextMonth')} →
+                    <span className="hidden sm:inline">
+                        {t('calendar.nextMonth')}
+                    </span>{' '}
+                    <span aria-hidden>→</span>
                 </Button>
             </div>
 

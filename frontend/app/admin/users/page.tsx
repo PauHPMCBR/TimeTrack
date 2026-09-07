@@ -158,7 +158,7 @@ export default function UsersListPage() {
                     />
                     {t('admin.export.selectAll')}
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-end gap-3">
                     <span className="text-sm text-zinc-500 dark:text-zinc-400">
                         {t('admin.export.selectedCount', {
                             count: selected.size,

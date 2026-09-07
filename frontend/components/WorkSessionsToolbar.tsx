@@ -45,8 +45,8 @@ export default function WorkSessionsToolbar({
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                     <div className="flex rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
                         {PERIODS.map((p) => (
                             <button
@@ -69,7 +69,7 @@ export default function WorkSessionsToolbar({
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <div className="min-w-[320px] px-1 text-center text-sm font-semibold text-zinc-900 dark:text-white">
+                    <div className="min-w-0 flex-1 px-1 text-center text-sm font-semibold text-zinc-900 dark:text-white">
                         {periodLabel}
                     </div>
                     <button
