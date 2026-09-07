@@ -13,7 +13,7 @@ export const APP_ICON_TOOLBAR_URL =
 
 export const FAVICON_URL = process.env.NEXT_PUBLIC_FAVICON_URL || null;
 
-// Usage guide PDF, staged into branding/ by scripts/build-landing.js and
-// baked into public/ at build time (NEXT_PUBLIC_GUIDE_URL=/guide.pdf).
-// Null in dev (no staged PDF) => guide links are hidden.
+// Usage guide PDF, compiled from docs/guide.typ and baked into public/ at
+// build time (NEXT_PUBLIC_GUIDE_URL=/guide.pdf). See frontend/Dockerfile.
+// Null in dev (no compiled PDF) => guide links are hidden.
 export const GUIDE_URL = process.env.NEXT_PUBLIC_GUIDE_URL || null;

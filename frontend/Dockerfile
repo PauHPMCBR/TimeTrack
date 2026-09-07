@@ -17,6 +17,10 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY shared ./shared
 COPY frontend ./frontend
 
+# Usage guide source (docs/guide.pdf is compiled from guide.typ and committed;
+# absent => guide links are hidden).
+COPY docs ./docs
+
 # Optional per-company branding (see branding/README.md). The folder is always
 # copied; icon.png / favicon.png inside it override the defaults if present.
 COPY branding ./branding
@@ -62,8 +66,8 @@ RUN mkdir -p public/brand && rm -f /app/brand.env && { \
         cp /app/branding/favicon.png public/brand/favicon.png && \
         echo "NEXT_PUBLIC_FAVICON_URL=/brand/favicon.png" >> /app/brand.env; \
       fi; \
-      if [ -f /app/branding/guide.pdf ]; then \
-        cp /app/branding/guide.pdf public/guide.pdf && \
+      if [ -f /app/docs/guide.pdf ]; then \
+        cp /app/docs/guide.pdf public/guide.pdf && \
         echo "NEXT_PUBLIC_GUIDE_URL=/guide.pdf" >> /app/brand.env; \
       fi; \
     }

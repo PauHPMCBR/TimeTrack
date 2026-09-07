@@ -6,10 +6,6 @@
 //   node scripts/deploy-all.js
 //
 // What it does, per company compose file under <companies dir>/*/:
-//   0. rebuilds the static landing site (scripts/build-landing.js) and syncs
-//      it to <infra>/landing (the dir Caddy serves at the apex domain), also
-//      staging guide.pdf into branding/ so company frontend builds bake the
-//      newest guide PDF,
 //   1. builds the shared backend image once (tag registre-jornada-backend:latest),
 //   2. builds the company's frontend image (branding + baked backend URL) from
 //      the `x-company` block in the company's compose file,
@@ -21,10 +17,9 @@
 //   --skip-backend    don't rebuild the shared backend image
 //   --skip-health     don't wait for /api/health after recreating
 //   --skip-index-sync don't POST /api/admin/indexes/sync after recreating
-//   --skip-landing    don't refresh the static landing site
 //   --dir <path>      companies base dir (required unless $COMPANIES_DIR is set)
 //   --domain <d>      root domain override (default: DOMAIN= in <INFRA_DIR>/.env)
-import { readdirSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
+import { readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -40,7 +35,7 @@ const repoRoot = resolve(__dirname, "..");
 
 function usage() {
   console.error(
-    "Usage: node scripts/deploy-all.js [--pull] [--skip-backend] [--skip-health] [--skip-landing] [--dir <path>] [--domain <root-domain>]"
+    "Usage: node scripts/deploy-all.js [--pull] [--skip-backend] [--skip-health] [--dir <path>] [--domain <root-domain>]"
   );
   process.exit(1);
 }
@@ -51,7 +46,6 @@ const args = {
   backend: true,
   health: true,
   indexSync: true,
-  landing: true,
   companiesDir: process.env.COMPANIES_DIR,
 };
 for (let i = 0; i < argv.length; i++) {
@@ -59,7 +53,6 @@ for (let i = 0; i < argv.length; i++) {
   else if (argv[i] === "--skip-backend") args.backend = false;
   else if (argv[i] === "--skip-health") args.health = false;
   else if (argv[i] === "--skip-index-sync") args.indexSync = false;
-  else if (argv[i] === "--skip-landing") args.landing = false;
   else if (argv[i] === "--dir") args.companiesDir = argv[++i];
   else if (argv[i] === "--domain") args.domain = argv[++i];
   else usage();
@@ -85,48 +78,6 @@ if (args.pull) {
   console.log("== git pull ==");
   execFileSync("git", ["pull"], { cwd: repoRoot, stdio: "inherit" });
 }
-
-// Rebuilds the static landing site (landing page + guide PDF) and refreshes
-// what Caddy serves at the apex domain: landing/dist/ -> <infra>/landing/.
-// The build (scripts/build-landing.js) also stages guide.pdf into branding/,
-// which the frontend Dockerfile bakes into every company image at /guide.pdf.
-// If the build fails (typically: typst missing on PATH) an existing stale
-// build is still synced so the page doesn't disappear. Disable with
-// --skip-landing.
-function syncLanding() {
-  const landingDist = join(repoRoot, "landing", "dist");
-  console.log("== landing: building (scripts/build-landing.js) ==");
-  let built = false;
-  try {
-    execFileSync("node", [join(repoRoot, "scripts", "build-landing.js")], {
-      cwd: repoRoot,
-      stdio: "inherit",
-    });
-    built = true;
-  } catch {
-    console.warn(
-      "== landing: build FAILED — falling back to the existing landing/dist (if any) =="
-    );
-  }
-  if (!existsSync(join(landingDist, "index.html"))) {
-    console.warn("== landing: nothing to deploy (no build output) — skipped ==");
-    return;
-  }
-  // Infra dir is the parent of the companies dir.
-  const landingTarget = join(dirname(args.companiesDir), "landing");
-  console.log(`== landing: syncing to ${landingTarget} ==`);
-  mkdirSync(landingTarget, { recursive: true });
-  execFileSync("rsync", ["-a", "--delete", `${landingDist}/`, `${landingTarget}/`], {
-    stdio: "inherit",
-  });
-  const guidePdf = join(landingDist, "guide.pdf");
-  if (built && existsSync(guidePdf)) {
-    mkdirSync(join(repoRoot, "branding"), { recursive: true });
-    copyFileSync(guidePdf, join(repoRoot, "branding", "guide.pdf"));
-  }
-}
-
-if (args.landing) syncLanding();
 
 const composeFiles = readdirSync(args.companiesDir)
   .map((name) => join(args.companiesDir, name, "compose.yml"))

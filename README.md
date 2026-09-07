@@ -1,6 +1,7 @@
 # TimeTrack — Registre de jornada
 
-> Per a una introducció a alt nivell en català, visiteu la web <registrejornada.fyi>
+> [!TIP]
+> Per a una introducció a alt nivell en **català**, visiteu la web [registrejornada.fyi](registrejornada.fyi).
 
 A full-stack employee time-tracking application: check-in/check-out registration,
 vacation management, groups, and an admin panel.
