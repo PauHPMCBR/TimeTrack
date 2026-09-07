@@ -48,17 +48,22 @@ const passwordRevealBridgeScript = `
   (function () {
     if (window.__ttRevealBridge) return;
     window.__ttRevealBridge = true;
-    document.addEventListener('click', function (e) {
+    var lastToggle = 0;
+    function toggle(e) {
       var t = e.target;
       if (!t || !t.closest) return;
       var btn = t.closest('[data-password-toggle]');
       if (!btn || btn.getAttribute('data-hydrated') === '1') return;
+      if (Date.now() - lastToggle < 400) return;
+      lastToggle = Date.now();
       var input = document.getElementById(btn.getAttribute('data-password-target') || '');
       if (!input) return;
       e.preventDefault();
       input.type = input.type === 'password' ? 'text' : 'password';
       btn.setAttribute('data-pre-revealed', input.type === 'text' ? '1' : '0');
-    }, true);
+    }
+    document.addEventListener('pointerdown', toggle, true);
+    document.addEventListener('click', toggle, true);
   })();
 `;
 

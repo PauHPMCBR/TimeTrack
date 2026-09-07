@@ -17,15 +17,19 @@ export type PasswordFieldProps = InputHTMLAttributes<HTMLInputElement> & {
  * is entered (login, registration, reset, profile, admin) so the look and the
  * reveal behaviour stay consistent.
  *
- * Why the toggle does NOT use React's onClick:
- * React 17+ attaches ONE delegated listener per event type on the root
- * container. On some real mobile browsers that delegated dispatch never runs —
- * most commonly on Firefox Android with password-manager extensions, whose
- * Xray-wrapped nodes make React's getEventTarget/getClosestInstanceFromNode
- * throw "Permission denied to access property ..." — so onClick handlers
- * simply never fire, while the same button works fine in desktop emulators.
- * Attaching a native click listener directly to the button element bypasses
- * React's delegated system entirely and keeps the toggle working there.
+ * Why the toggle does NOT use React handlers:
+ * 1. React 17+ attaches ONE delegated listener per event type on the root
+ *    container. On some real devices that delegated dispatch never runs
+ *    (confirmed empirically: plain React onPointerDown fails where a native
+ *    listener on the same element works), so handlers are attached directly
+ *    to the button element instead.
+ * 2. Even with a native listener, it must fire on pointerdown, not click:
+ *    click is a derived event that mobile browsers cancel when the layout
+ *    shifts between touchstart and touchend (e.g. the input taking focus
+ *    opens the soft keyboard). preventDefault on pointerdown also keeps focus
+ *    (and the keyboard) off the input. It does NOT reliably suppress the
+ *    resulting click on desktop Firefox, so the click listener ignores
+ *    mouse-generated clicks (detail > 0) and serves keyboard activation only.
  * A pre-hydration bridge in app/layout.tsx additionally covers taps that land
  * before React hydrates (slow phones running the dev server).
  */
@@ -39,8 +43,7 @@ export default function PasswordField({
     const { t } = useI18n();
     const [show, setShow] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
-    const autoId = useId();
-    const inputId = id ?? autoId;
+    const inputId = id ?? useId();
 
     useEffect(() => {
         const button = buttonRef.current;
@@ -57,16 +60,28 @@ export default function PasswordField({
         }
 
         const toggle = (event: Event) => {
-            // Capture phase + stopPropagation keeps this independent of (and
-            // shielded from) whatever else is listening up the tree.
+            // Mouse clicks must be ignored here: pointerdown already handled
+            // them, and Firefox does not reliably suppress the click after
+            // preventDefault on pointerdown, so honoring it would flip the
+            // toggle twice (down + release). Keyboard-activated clicks have
+            // detail === 0 — those are what this listener is for.
+            if (event.type === 'click' && (event as MouseEvent).detail !== 0) {
+                return;
+            }
+            // preventDefault on pointerdown stops the input from taking focus
+            // (and the keyboard from covering the button); stopPropagation
+            // keeps this shielded from whatever else is listening up the tree.
             event.preventDefault();
             event.stopPropagation();
             setShow((s) => !s);
         };
 
+        button.addEventListener('pointerdown', toggle);
         button.addEventListener('click', toggle, { capture: true });
-        return () =>
+        return () => {
+            button.removeEventListener('pointerdown', toggle);
             button.removeEventListener('click', toggle, { capture: true });
+        };
     }, []);
 
     return (
