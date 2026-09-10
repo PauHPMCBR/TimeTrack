@@ -21,6 +21,10 @@ import {
     defaultNonWorkingDays,
     DEFAULT_TIMEZONE,
 } from 'shared/src/lib/defaults';
+import {
+    InconsistencyReminderMode,
+    InconsistencyReminderModeSchema,
+} from 'shared/src/schemas/database';
 import { Check } from 'lucide-react';
 
 type FormState = {
@@ -28,12 +32,18 @@ type FormState = {
     toleranceHours: number;
     endOfDayHour: number;
     nonWorkingDays: number[];
-    inconsistencyReminderEnabled: boolean;
+    inconsistencyReminderMode: InconsistencyReminderMode;
     monthlyApprovalReminderDays: number;
     timezone: string;
     privacyNoticeText: string;
     workerConsultationAcknowledged: boolean;
 };
+
+const INCONSISTENCY_MODES: InconsistencyReminderMode[] = [
+    'disabled',
+    'user_choice',
+    'forced',
+];
 
 const COMMON_TIMEZONES = [
     DEFAULT_TIMEZONE,
@@ -59,7 +69,7 @@ export default function AdminSettingsPage() {
         toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
         endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
         nonWorkingDays: defaultNonWorkingDays(),
-        inconsistencyReminderEnabled: true,
+        inconsistencyReminderMode: 'forced',
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
         timezone: DEFAULT_TIMEZONE,
         privacyNoticeText: '',
@@ -101,8 +111,10 @@ export default function AdminSettingsPage() {
                         endOfDayHour: s.endOfDayHour,
                         nonWorkingDays:
                             s.nonWorkingDays ?? defaultNonWorkingDays(),
-                        inconsistencyReminderEnabled:
-                            s.inconsistencyReminderEnabled ?? true,
+                        inconsistencyReminderMode:
+                            InconsistencyReminderModeSchema.catch(
+                                'forced'
+                            ).parse(s.inconsistencyReminderMode),
                         monthlyApprovalReminderDays:
                             s.monthlyApprovalReminderDays ??
                             DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
@@ -145,8 +157,8 @@ export default function AdminSettingsPage() {
                 toleranceHours: formData.toleranceHours,
                 endOfDayHour: formData.endOfDayHour,
                 nonWorkingDays: formData.nonWorkingDays,
-                inconsistencyReminderEnabled:
-                    formData.inconsistencyReminderEnabled,
+                inconsistencyReminderMode:
+                    formData.inconsistencyReminderMode,
                 monthlyApprovalReminderDays:
                     formData.monthlyApprovalReminderDays,
                 timezone: formData.timezone,
@@ -358,25 +370,34 @@ export default function AdminSettingsPage() {
                             </div>
 
                             <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <input
-                                    id="inconsistency-reminder"
-                                    type="checkbox"
-                                    className="mt-0.5 h-4 w-4 accent-indigo-600"
-                                    checked={formData.inconsistencyReminderEnabled}
-                                    onChange={(e) =>
-                                        updateForm({
-                                            inconsistencyReminderEnabled:
-                                                e.target.checked,
-                                        })
-                                    }
-                                />
-                                <div>
+                                <div className="flex-1">
                                     <label
-                                        htmlFor="inconsistency-reminder"
-                                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                        htmlFor="inconsistency-reminder-mode"
+                                        className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100"
                                     >
                                         {t('admin.settings.reminderLabel')}
                                     </label>
+                                    <select
+                                        id="inconsistency-reminder-mode"
+                                        value={formData.inconsistencyReminderMode}
+                                        onChange={(e) =>
+                                            updateForm({
+                                                inconsistencyReminderMode:
+                                                    InconsistencyReminderModeSchema.catch(
+                                                        'forced'
+                                                    ).parse(e.target.value),
+                                            })
+                                        }
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                    >
+                                        {INCONSISTENCY_MODES.map((mode) => (
+                                            <option key={mode} value={mode}>
+                                                {t(
+                                                    `admin.settings.reminderMode.${mode}`
+                                                )}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <p className="mt-1 text-xs text-zinc-500">
                                         {t('admin.settings.reminderHelp')}
                                     </p>

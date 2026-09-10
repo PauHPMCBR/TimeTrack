@@ -32,7 +32,7 @@ const putHandler = withApi(
     { method: 'PUT', body: UpdateProfileRequestSchema },
     async (req, res, { body }) => {
         try {
-            const { autoTimetable, currentPassword, password, notifyNewFile } =
+            const { autoTimetable, currentPassword, password, notifyNewFile, notifyInconsistency } =
                 body;
 
             // Self-service password change: requires the current password and
@@ -78,6 +78,8 @@ const putHandler = withApi(
             if (autoTimetable !== undefined) update.autoTimetable = autoTimetable;
             if (notifyNewFile !== undefined)
                 update.notifyNewFile = notifyNewFile;
+            if (notifyInconsistency !== undefined)
+                update.notifyInconsistency = notifyInconsistency;
 
             const userDoc = await User.findByIdAndUpdate(
                 req.user?.userId,

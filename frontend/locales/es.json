@@ -310,7 +310,9 @@
         "notifications": {
             "title": "Notificaciones",
             "filesEmail": "Avísame por correo cuando se comparta un archivo conmigo",
-            "filesEmailHelp": "Recibe un correo cada vez que la administración comparta un archivo nuevo contigo."
+            "filesEmailHelp": "Recibe un correo cada vez que la administración comparta un archivo nuevo contigo.",
+            "inconsistencyEmail": "Recordatorio de fichaje inconsistente",
+            "inconsistencyEmailHelp": "Recibe un correo a final de día cuando tu fichaje sea inconsistente, con el enlace para aplicar el horario automático."
         }
     },
     "admin": {
@@ -497,8 +499,13 @@
             "endOfDayLabel": "Hora de fin de día",
             "nonWorkingDaysHelp": "Días de la semana en los que no se espera trabajo (no se marcará anomalía).",
             "nonWorkingDaysLabel": "Días no laborables",
-            "reminderHelp": "Envía un correo al final del día a los usuarios con un fichaje inconsistente, con el enlace para aplicar el horario automático.",
+            "reminderHelp": "Envía un correo al final del día a los usuarios con un fichaje inconsistente, con el enlace para aplicar el horario automático. En «La elección de cada persona trabajadora», cada persona activa o desactiva el recordatorio en su perfil.",
             "reminderLabel": "Recordatorio de fichaje inconsistente por correo",
+            "reminderMode": {
+                "disabled": "Desactivado",
+                "user_choice": "La elección de cada persona trabajadora",
+                "forced": "Activado para todos"
+            },
             "saved": "Configuración guardada correctamente",
             "subtitle": "Configura los valores generales de la empresa.",
             "title": "Configuración de la empresa",

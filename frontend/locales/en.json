@@ -310,7 +310,9 @@
         "notifications": {
             "title": "Notifications",
             "filesEmail": "Email me when a file is shared with me",
-            "filesEmailHelp": "Receive an email whenever the administration shares a new file with you."
+            "filesEmailHelp": "Receive an email whenever the administration shares a new file with you.",
+            "inconsistencyEmail": "Inconsistent check-in reminder",
+            "inconsistencyEmailHelp": "Receive an email at the end of the day when your check-in/out is inconsistent, with the link to apply the automatic timetable."
         }
     },
     "admin": {
@@ -497,8 +499,13 @@
             "endOfDayLabel": "End of day time",
             "nonWorkingDaysHelp": "Days of the week when no work is expected (won't flag an anomaly).",
             "nonWorkingDaysLabel": "Non-working days",
-            "reminderHelp": "Send an end-of-day email to users with an inconsistent check-in/out, with the link to apply the automatic timetable.",
+            "reminderHelp": "Send an end-of-day email to users with an inconsistent check-in/out, with the link to apply the automatic timetable. With \"Each worker's choice\", each worker enables or disables the reminder in their profile.",
             "reminderLabel": "Inconsistent check-in/out email reminder",
+            "reminderMode": {
+                "disabled": "Disabled",
+                "user_choice": "Each worker's choice",
+                "forced": "Enabled for everyone"
+            },
             "saved": "Settings saved successfully",
             "subtitle": "Configure the company-wide values.",
             "title": "Company settings",

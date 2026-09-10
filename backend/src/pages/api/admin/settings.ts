@@ -32,7 +32,7 @@ const putHandler = withApi({
                 toleranceHours,
                 endOfDayHour,
                 nonWorkingDays,
-                inconsistencyReminderEnabled,
+                inconsistencyReminderMode,
                 monthlyApprovalReminderDays,
                 timezone,
                 privacyNoticeText,
@@ -49,9 +49,8 @@ const putHandler = withApi({
             if (endOfDayHour !== undefined) update.endOfDayHour = endOfDayHour;
             if (nonWorkingDays !== undefined)
                 update.nonWorkingDays = nonWorkingDays;
-            if (inconsistencyReminderEnabled !== undefined)
-                update.inconsistencyReminderEnabled =
-                    inconsistencyReminderEnabled;
+            if (inconsistencyReminderMode !== undefined)
+                update.inconsistencyReminderMode = inconsistencyReminderMode;
             if (monthlyApprovalReminderDays !== undefined)
                 update.monthlyApprovalReminderDays =
                     monthlyApprovalReminderDays;

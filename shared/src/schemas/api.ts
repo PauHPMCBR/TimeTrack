@@ -5,6 +5,7 @@ import {
     MonthlyApprovalSchema,
     MonthlyApprovalEventSchema,
     AuditEventSchema,
+    InconsistencyReminderModeSchema,
     UserRoleSchema,
     UserSchema,
     UserFileSchema,
@@ -101,7 +102,8 @@ export const AppSettingsRequestSchema = z
         toleranceHours: z.number().gte(0).optional(),
         endOfDayHour: z.number().min(0).max(24).optional(),
         nonWorkingDays: z.array(z.number().int().min(0).max(6)).optional(),
-        inconsistencyReminderEnabled: z.boolean().optional(),
+        inconsistencyReminderMode:
+            InconsistencyReminderModeSchema.optional(),
         monthlyApprovalReminderDays: z.number().int().min(1).max(60).optional(),
         timezone: z.string().min(1, 'Timezone is required').optional(),
         privacyNoticeText: z.string().max(5000).optional(),
@@ -148,6 +150,9 @@ export const UpdateProfileRequestSchema = z.object({
     autoTimetable: z.array(AutoScheduleEntrySchema).optional(),
     // Per-user email notification for files shared by admins (profile toggle).
     notifyNewFile: z.boolean().optional(),
+    // Per-user inconsistency-reminder email preference (profile toggle, only
+    // effective while the company mode is 'user_choice').
+    notifyInconsistency: z.boolean().optional(),
     // Self-service password change: both must be provided together.
     currentPassword: z.string().optional(),
     password: z

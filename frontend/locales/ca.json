@@ -310,7 +310,9 @@
         "notifications": {
             "title": "Notificacions",
             "filesEmail": "Correu quan es comparteixi un fitxer amb tu",
-            "filesEmailHelp": "Rep un correu cada vegada que l'administració comparteixi un fitxer nou amb tu."
+            "filesEmailHelp": "Rep un correu cada vegada que l'administració comparteixi un fitxer nou amb tu.",
+            "inconsistencyEmail": "Recordatori de fitxatge inconsistent",
+            "inconsistencyEmailHelp": "Rep un correu a final de dia quan el teu fitxatge sigui inconsistent, amb l'enllaç per aplicar l'horari automàtic."
         }
     },
     "admin": {
@@ -497,8 +499,13 @@
             "endOfDayLabel": "Hora de fi de dia",
             "nonWorkingDaysHelp": "Dies de la setmana en què no s'espera treball (no es marcarà cap anomalia).",
             "nonWorkingDaysLabel": "Dies no laborables",
-            "reminderHelp": "Envia un correu a final de dia als usuaris amb el fitxatge inconsistent, amb l'enllaç per aplicar l'horari automàtic.",
+            "reminderHelp": "Envia un correu a final de dia als usuaris amb el fitxatge inconsistent, amb l'enllaç per aplicar l'horari automàtic. En «L'elecció de cada persona treballadora», cada persona activa o desactiva el recordatori al seu perfil.",
             "reminderLabel": "Recordatori de fitxatge inconsistent per correu",
+            "reminderMode": {
+                "disabled": "Desactivat",
+                "user_choice": "L'elecció de cada persona treballadora",
+                "forced": "Activat per a tothom"
+            },
             "saved": "Configuració desada correctament",
             "subtitle": "Configura els valors generals de l'empresa.",
             "title": "Configuració de l'empresa",

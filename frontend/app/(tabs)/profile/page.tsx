@@ -23,6 +23,7 @@ import {
     CHECK_OUT,
     MS_PER_HOUR,
 } from 'shared/src/lib/constants';
+import type { InconsistencyReminderMode } from 'shared/src/schemas/database';
 import { usePathname, useRouter } from 'next/navigation';
 import { Users, ChevronRight, Camera, LogOut, FolderOpen, BookOpen } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -45,6 +46,50 @@ const FLAVORS = [
     { id: 'latte', base: '#eff1f5', labelKey: 'profile.theme.light' },
     { id: 'frappe', base: '#303446', labelKey: 'profile.theme.dark' },
 ] as const;
+
+function NotificationToggle({
+    labelKey,
+    helpKey,
+    checked,
+    disabled,
+    onToggle,
+}: {
+    labelKey: string;
+    helpKey: string;
+    checked: boolean;
+    disabled: boolean;
+    onToggle: () => void;
+}) {
+    const { t } = useI18n();
+    return (
+        <div>
+            <label className="flex cursor-pointer items-center justify-between gap-4">
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {t(labelKey)}
+                </span>
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={checked}
+                    disabled={disabled}
+                    onClick={onToggle}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                        checked
+                            ? 'bg-indigo-600'
+                            : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                >
+                    <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                            checked ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                </button>
+            </label>
+            <p className="mt-2 text-xs text-zinc-500">{t(helpKey)}</p>
+        </div>
+    );
+}
 
 export default function ProfilePage() {
     const { t } = useI18n();
@@ -72,6 +117,10 @@ export default function ProfilePage() {
 
     const [autoModalOpen, setAutoModalOpen] = useState(false);
     const [savingNotify, setSavingNotify] = useState(false);
+    const [savingNotifyInconsistency, setSavingNotifyInconsistency] =
+        useState(false);
+    const [reminderMode, setReminderMode] =
+        useState<InconsistencyReminderMode>('forced');
 
     const readFileAsDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -155,6 +204,14 @@ export default function ProfilePage() {
                 if (currentUser) {
                     setUser(currentUser);
 
+                    const settingsRes = await apiClient.getPublicSettings();
+                    if (!cancelled && settingsRes.data?.settings) {
+                        setReminderMode(
+                            settingsRes.data.settings
+                                .inconsistencyReminderMode
+                        );
+                    }
+
                     const today = new Date();
                     const res = await apiClient.getDailyRecords(
                         currentUser._id,
@@ -202,6 +259,21 @@ export default function ProfilePage() {
         const res = await apiClient.updateMyProfile({ notifyNewFile: next });
         if (res.error) {
             setUser((prev) => (prev ? { ...prev, notifyNewFile: !next } : prev));
+        }
+    };
+
+    const toggleNotifyInconsistency = async (next: boolean) => {
+        // Optimistic toggle; revert if the save fails.
+        setUser((prev) =>
+            prev ? { ...prev, notifyInconsistency: next } : prev
+        );
+        const res = await apiClient.updateMyProfile({
+            notifyInconsistency: next,
+        });
+        if (res.error) {
+            setUser((prev) =>
+                prev ? { ...prev, notifyInconsistency: !next } : prev
+            );
         }
     };
 
@@ -559,40 +631,36 @@ export default function ProfilePage() {
                     <div className="mb-3 text-sm font-medium text-zinc-900 dark:text-white">
                         {t('profile.notifications.title')}
                     </div>
-                    <label className="flex cursor-pointer items-center justify-between gap-4">
-                        <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                            {t('profile.notifications.filesEmail')}
-                        </span>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={user.notifyNewFile !== false}
+                    <div className="space-y-4">
+                        <NotificationToggle
+                            labelKey="profile.notifications.filesEmail"
+                            helpKey="profile.notifications.filesEmailHelp"
+                            checked={user.notifyNewFile !== false}
                             disabled={savingNotify}
-                            onClick={async () => {
+                            onToggle={async () => {
                                 setSavingNotify(true);
                                 await toggleNotifyNewFile(
                                     user.notifyNewFile === false
                                 );
                                 setSavingNotify(false);
                             }}
-                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                                user.notifyNewFile !== false
-                                    ? 'bg-indigo-600'
-                                    : 'bg-zinc-300 dark:bg-zinc-700'
-                            }`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                                    user.notifyNewFile !== false
-                                        ? 'translate-x-6'
-                                        : 'translate-x-1'
-                                }`}
+                        />
+                        {reminderMode === 'user_choice' && (
+                            <NotificationToggle
+                                labelKey="profile.notifications.inconsistencyEmail"
+                                helpKey="profile.notifications.inconsistencyEmailHelp"
+                                checked={user.notifyInconsistency !== false}
+                                disabled={savingNotifyInconsistency}
+                                onToggle={async () => {
+                                    setSavingNotifyInconsistency(true);
+                                    await toggleNotifyInconsistency(
+                                        user.notifyInconsistency === false
+                                    );
+                                    setSavingNotifyInconsistency(false);
+                                }}
                             />
-                        </button>
-                    </label>
-                    <p className="mt-2 text-xs text-zinc-500">
-                        {t('profile.notifications.filesEmailHelp')}
-                    </p>
+                        )}
+                    </div>
                 </Card>
             </div>
 

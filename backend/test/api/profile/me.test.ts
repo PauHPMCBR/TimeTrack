@@ -218,6 +218,40 @@ describe('PUT /api/profile/me (automatic timetable)', () => {
     });
 });
 
+describe('PUT /api/profile/me (notification preferences)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
+
+    it('updates notifyInconsistency on PUT', async () => {
+        const { User } = await import('@/models');
+        vi.mocked(User.findByIdAndUpdate).mockReturnValue({
+            populate: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue({ _id: 'user-123' }),
+            }),
+        } as any);
+
+        const req = mockReq({
+            method: 'PUT',
+            body: { notifyInconsistency: false },
+        });
+        const res = mockRes();
+
+        await profileMeHandler(req, res);
+
+        expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+            'user-123',
+            expect.objectContaining({ notifyInconsistency: false }),
+            { new: true }
+        );
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+});
+
 describe('PUT /api/profile/me (password change)', () => {
     beforeEach(() => {
         vi.clearAllMocks();

@@ -29,6 +29,14 @@ export const DEFAULT_AUTO_TIMETABLE: AutoScheduleEntry[] = [
 
 export const UserRoleSchema = z.enum(['employee', 'admin']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
+export const InconsistencyReminderModeSchema = z.enum([
+    'disabled',
+    'user_choice',
+    'forced',
+]);
+export type InconsistencyReminderMode = z.infer<
+    typeof InconsistencyReminderModeSchema
+>;
 export const UserSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     // Decrypted views, hydrated by the backend read hooks; never persisted.
@@ -66,6 +74,9 @@ export const UserSchema = z.object({
         .array(AutoScheduleEntrySchema)
         .default(DEFAULT_AUTO_TIMETABLE),
     notifyNewFile: z.boolean().default(true),
+    // Employee preference for inconsistency-reminder emails, only effective
+    // when the company mode is 'user_choice'.
+    notifyInconsistency: z.boolean().default(true),
     // Date key (YYYY-MM-DD, local) of the last inconsistency-reminder email.
     // Empty string = never reminded yet.
     lastInconsistencyReminder: z.string().default('').optional(),
@@ -91,7 +102,9 @@ export const AppSettingsSchema = z.object({
     nonWorkingDays: z
         .array(z.number().int().min(0).max(6))
         .default(DEFAULT_NON_WORKING_DAYS),
-    inconsistencyReminderEnabled: z.boolean().default(true),
+    inconsistencyReminderMode: InconsistencyReminderModeSchema.default(
+        'forced'
+    ),
     // Days to wait after an approval request before reminding the worker
     // (single reminder) about their pending monthly record confirmation.
     monthlyApprovalReminderDays: z

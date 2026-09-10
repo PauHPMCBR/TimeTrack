@@ -8,6 +8,10 @@ import {
     DEFAULT_NON_WORKING_DAYS,
     DEFAULT_TIMEZONE,
 } from 'shared/src/lib/defaults';
+import {
+    InconsistencyReminderMode,
+    InconsistencyReminderModeSchema,
+} from 'shared/src/schemas/database';
 
 export { DEFAULT_TIMEZONE };
 
@@ -17,7 +21,7 @@ export interface AppSettingsValues {
     toleranceHours: number;
     endOfDayHour: number;
     nonWorkingDays: number[];
-    inconsistencyReminderEnabled: boolean;
+    inconsistencyReminderMode: InconsistencyReminderMode;
     monthlyApprovalReminderDays: number;
     timezone?: string;
     // Worker-facing privacy notice (RGPD arts. 13-14). Empty = not configured.
@@ -30,7 +34,7 @@ const DEFAULTS: AppSettingsValues = {
     toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
     endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
     nonWorkingDays: DEFAULT_NON_WORKING_DAYS,
-    inconsistencyReminderEnabled: true,
+    inconsistencyReminderMode: 'forced',
     monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     timezone: DEFAULT_TIMEZONE,
 };
@@ -72,9 +76,10 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
             settings.nonWorkingDays.length > 0
                 ? settings.nonWorkingDays
                 : DEFAULTS.nonWorkingDays,
-        inconsistencyReminderEnabled:
-            settings.inconsistencyReminderEnabled ??
-            DEFAULTS.inconsistencyReminderEnabled,
+        inconsistencyReminderMode:
+            InconsistencyReminderModeSchema.catch('forced').parse(
+                settings.inconsistencyReminderMode
+            ),
         monthlyApprovalReminderDays:
             settings.monthlyApprovalReminderDays ??
             DEFAULTS.monthlyApprovalReminderDays,

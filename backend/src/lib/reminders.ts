@@ -27,6 +27,7 @@ interface ReminderUser {
     autoTimetable?: AutoScheduleEntry[];
     lastInconsistencyReminder?: string;
     checkInRequired?: boolean;
+    notifyInconsistency?: boolean;
 }
 
 /** "09:00 – 13:00, 15:00 – 19:00" — human-readable timetable for the email. */
@@ -55,7 +56,7 @@ export interface ReminderSummary {
  * inconsistent (structural anomaly such as a forgotten check-in/out, or worked
  * hours outside expected ± benevolence). Users are emailed at most once per day
  * (lastInconsistencyReminder date key) so cron retries and restarts are safe.
- * Respects the company's `inconsistencyReminderEnabled` setting (off = no-op).
+ * Respects the company's `inconsistencyReminderMode` setting ('disabled' = no-op).
  */
 export async function runDailyInconsistencyReminder(
     dateKeyStr: string = dateKey(new Date())
@@ -63,7 +64,7 @@ export async function runDailyInconsistencyReminder(
     await dbConnect();
     const settings = await getAppSettings();
 
-    if (settings.inconsistencyReminderEnabled === false) {
+            if (settings.inconsistencyReminderMode === 'disabled') {
         return {
             date: dateKeyStr,
             scannedUsers: 0,
@@ -77,12 +78,17 @@ export async function runDailyInconsistencyReminder(
 
     const users = (await User.find(
         { registered: true, deleted: { $ne: true } },
-        'name email emailEncrypted expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired'
+        'name email emailEncrypted expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired notifyInconsistency'
     ).lean()) as unknown as ReminderUser[];
     const sentTo: string[] = [];
 
     for (const user of users) {
         if (user.checkInRequired === false) continue;
+        if (
+            settings.inconsistencyReminderMode === 'user_choice' &&
+            user.notifyInconsistency === false
+        )
+            continue;
 
         const sessions = (await findActiveInRange(start, end, {
             userId: user._id.toString(),
@@ -156,7 +162,7 @@ const CHECK_INTERVAL_MS = 5 * MS_PER_MINUTE;
 /**
  * In-process daily scheduler. Reads the end-of-day hour, non-working days and
  * the inconsistency-reminder toggle from the company settings (DB) on every
- * tick, so admin changes to `endOfDayHour` / `inconsistencyReminderEnabled` are
+ * tick, so admin changes to `endOfDayHour` / `inconsistencyReminderMode` are
  * picked up without touching any cron. Started from instrumentation.ts.
  */
 export function scheduleDailyReminder(): void {
@@ -179,7 +185,7 @@ export function scheduleDailyReminder(): void {
 
             // Toggle off: skip without marking the day done, so re-enabling
             // later (still after end of day) fires for today.
-            if (settings.inconsistencyReminderEnabled === false) {
+    if (settings.inconsistencyReminderMode === 'disabled') {
                 return;
             }
 

@@ -11,6 +11,7 @@ const PUBLIC_USER_FIELDS = [
     'avatar',
     'autoTimetable',
     'notifyNewFile',
+    'notifyInconsistency',
     'trackingStartDate',
     'privacyNoticeAcknowledgedAt',
 ] as const;
