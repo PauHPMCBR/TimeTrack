@@ -1,11 +1,14 @@
 import { withApi } from '@/lib/api-handler';
-import { MonthlyApproval } from '@/models';
+import { MonthlyApproval, MonthlyApprovalEvent } from '@/models';
 import {
     responseErrorEntryNotFound,
     responseErrorIllegalAction,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import { APPROVAL_APPROVED } from 'shared/src/lib/constants';
+import {
+    APPROVAL_APPROVED,
+    APPROVAL_EVENT_CONFIRMED,
+} from 'shared/src/lib/constants';
 import { sameId } from '@/lib/objectid';
 
 // The worker confirms their monthly record. Owner-only on purpose: nobody can
@@ -28,9 +31,22 @@ export default withApi({ method: 'POST' }, async (req, res) => {
             return responseErrorIllegalAction(res, 'MonthAlreadyApproved');
         }
 
+        const now = new Date();
         approval.status = APPROVAL_APPROVED;
-        approval.approvedAt = new Date();
+        approval.approvedAt = now;
         await approval.save();
+
+        // Append-only history: the confirmation is the worker's signature on
+        // the record, so the actor (always the worker themself) and the
+        // moment are kept even after a later revoke deletes the doc.
+        await MonthlyApprovalEvent.create({
+            userId: approval.userId,
+            year: approval.year,
+            month: approval.month,
+            action: APPROVAL_EVENT_CONFIRMED,
+            actorId: req.user!.userId,
+            timestamp: now,
+        });
 
         res.status(200).json({
             success: true,

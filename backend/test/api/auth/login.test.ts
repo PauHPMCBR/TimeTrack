@@ -30,6 +30,7 @@ vi.stubEnv('BLOCK_MINUTES', '10');
 vi.stubEnv('MAX_FAILED_LOGIN_ATTEMPTS', '5');
 
 import loginHandler from '@/pages/api/auth/login';
+import { lookupHash } from '@/lib/crypto';
 
 describe('POST /api/auth/login', () => {
     beforeEach(() => {
@@ -90,7 +91,7 @@ describe('POST /api/auth/login', () => {
         await loginHandler(req, res);
 
         expect(User.findOne).toHaveBeenCalledWith({
-            email: 'test@example.com',
+            emailHash: lookupHash('test@example.com'),
             registered: true,
             deleted: { $ne: true },
         });

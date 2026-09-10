@@ -13,8 +13,22 @@ import { withApi } from '@/lib/api-handler';
 import { findActiveByEmail } from '@/repositories/user-repository';
 
 export default withApi(
-    { method: 'POST', guard: 'admin', body: CreateUserRequestSchema },
-    async (_req, res, { body }) => {
+    {
+        method: 'POST',
+        guard: 'admin',
+        body: CreateUserRequestSchema,
+        audit: {
+            action: 'user_created',
+            targetType: 'user',
+            // Set by the handler once the document exists (ctx.auditExtra).
+            targetId: (_req, ctx) =>
+                ctx.auditExtra.targetId as string | undefined,
+            metadata: (_req, ctx) => ({
+                role: ctx.auditExtra.role,
+            }),
+        },
+    },
+    async (req, res, { body, auditExtra }) => {
         try {
             const { email, name, role, dni } = body;
 
@@ -53,6 +67,9 @@ export default withApi(
                 name: newUser.name,
                 registrationLink,
             });
+
+            auditExtra.targetId = newUser._id.toString();
+            auditExtra.role = newUser.role;
 
             res.status(201).json({
                 success: true,

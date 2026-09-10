@@ -45,14 +45,21 @@ vi.mock('@/models', () => ({
     MonthlyApproval: {
         find: vi.fn(),
     },
+    AuditEvent: {
+        create: vi.fn().mockResolvedValue({}),
+    },
 }));
 
-import { User, WorkSession, MonthlyApproval } from '@/models';
+import { User, WorkSession, MonthlyApproval, AuditEvent } from '@/models';
 import exportHandler from '@/pages/api/admin/export/work-sessions';
 
 const mockExportRes = () => {
     const res: any = {
-        status: vi.fn().mockReturnThis(),
+        statusCode: undefined,
+        status: vi.fn(function (this: any, code: number) {
+            this.statusCode = code;
+            return this;
+        }),
         json: vi.fn().mockReturnThis(),
         send: vi.fn().mockReturnThis(),
         setHeader: vi.fn().mockReturnThis(),
@@ -104,7 +111,7 @@ describe('GET /api/admin/export/work-sessions', () => {
                 userId: 'user-2',
                 type: 'check_in',
                 timestamp: new Date('2024-01-15T08:00:00Z'),
-                source: 'user',
+                source: 'userClick',
                 notes: 'note',
             },
             {
@@ -112,7 +119,7 @@ describe('GET /api/admin/export/work-sessions', () => {
                 userId: 'user-1',
                 type: 'check_out',
                 timestamp: new Date('2024-01-14T17:00:00Z'),
-                source: 'admin',
+                source: 'adminManual',
             },
         ];
         const mockApprovals = [
@@ -171,17 +178,27 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         const csv = res.send.mock.calls[0][0] as string;
         expect(csv).toContain(
-            'Name,DNI,Email,Timestamp,Type,Source,Notes,Confirmed'
+            'Name,DNI,Email,Timestamp,Type,Source,Notes,Overtime,Confirmed'
         );
         expect(csv).toContain(
-            'Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,admin,,Yes'
+            'Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,adminManual,,No,Yes'
         );
         expect(csv).toContain(
-            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,user,note,No'
+            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,userClick,note,No,No'
         );
         expect(csv).toContain('note');
         expect(csv.indexOf('2024-01-14')).toBeLessThan(
             csv.indexOf('2024-01-15')
+        );
+
+        // The DNI/email-bearing export is logged with the acting admin and
+        // the exported row count (RGPD art. 32 accountability).
+        expect(AuditEvent.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                actorId: 'admin-123',
+                action: 'export_work_sessions',
+                metadata: expect.stringContaining('"rows":2'),
+            })
         );
     });
 

@@ -41,7 +41,7 @@ export default withApi(
                     registered: true,
                     ...notDeleted,
                 },
-                'name email'
+                'name email emailEncrypted'
             ).lean();
 
             res.status(200).json({

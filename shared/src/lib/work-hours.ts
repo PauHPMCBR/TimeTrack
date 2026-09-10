@@ -4,6 +4,7 @@ import { CHECK_IN, CHECK_OUT, MS_PER_HOUR } from './constants';
 export interface DaySessionLike {
     type: 'check_in' | 'check_out';
     timestamp: Date | string;
+    overtime?: boolean;
 }
 
 export interface DayHoursOptions {
@@ -15,6 +16,7 @@ export interface DayHoursOptions {
 
 export interface DayHoursResult {
     totalHours: number;
+    overtimeHours: number;
     anomalies: WorkSessionAnomaly[];
 }
 
@@ -30,8 +32,10 @@ export function computeDayHours(
     options: DayHoursOptions = {}
 ): DayHoursResult {
     let totalMs = 0;
+    let overtimeMs = 0;
     const anomalies: WorkSessionAnomaly[] = [];
     let pendingCheckIn: Date | null = null;
+    let pendingOvertime = false;
 
     for (const session of sessions) {
         const timestamp = new Date(session.timestamp);
@@ -40,10 +44,17 @@ export function computeDayHours(
                 anomalies.push('forgot_check_out');
             }
             pendingCheckIn = timestamp;
+            pendingOvertime = session.overtime === true;
         } else if (session.type === CHECK_OUT) {
             if (pendingCheckIn) {
-                totalMs += timestamp.getTime() - pendingCheckIn.getTime();
+                const ms = timestamp.getTime() - pendingCheckIn.getTime();
+                totalMs += ms;
+                // Either end flagged marks the whole interval as overtime.
+                if (pendingOvertime || session.overtime === true) {
+                    overtimeMs += ms;
+                }
                 pendingCheckIn = null;
+                pendingOvertime = false;
             } else {
                 anomalies.push('forgot_check_in');
             }
@@ -53,18 +64,23 @@ export function computeDayHours(
     if (pendingCheckIn) {
         anomalies.push('forgot_check_out');
         if (options.countOpenUntil) {
-            totalMs += Math.max(
+            const ms = Math.max(
                 0,
                 options.countOpenUntil.getTime() - pendingCheckIn.getTime()
             );
+            totalMs += ms;
+            if (pendingOvertime) {
+                overtimeMs += ms;
+            }
         }
     }
 
-    const rawHours = Math.max(0, totalMs / MS_PER_HOUR);
-    const totalHours =
-        options.round === false ? rawHours : Math.round(rawHours * 100) / 100;
+    const roundHours = (raw: number) =>
+        options.round === false ? raw : Math.round(raw * 100) / 100;
+    const totalHours = roundHours(Math.max(0, totalMs / MS_PER_HOUR));
+    const overtimeHours = roundHours(Math.max(0, overtimeMs / MS_PER_HOUR));
 
-    return { totalHours, anomalies };
+    return { totalHours, overtimeHours, anomalies };
 }
 
 /**

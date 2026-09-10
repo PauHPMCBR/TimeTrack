@@ -5,6 +5,8 @@ import {
     WorkSessionStatusSchema,
     WorkSessionTypeSchema,
     MonthlyApprovalStatusSchema,
+    MonthlyApprovalEventActionSchema,
+    AuditActionSchema,
 } from '../schemas/database';
 
 // Canonical enum values derived from the shared Zod schemas (single source of
@@ -22,9 +24,10 @@ export const ADMIN_ROLE = USER_ROLES.admin;
 export const CHECK_IN = WORK_SESSION_TYPES.check_in;
 export const CHECK_OUT = WORK_SESSION_TYPES.check_out;
 
-export const SOURCE_USER = WORK_SESSION_SOURCES.user;
-export const SOURCE_ADMIN = WORK_SESSION_SOURCES.admin;
-export const SOURCE_AUTOMATIC = WORK_SESSION_SOURCES.automatic;
+export const SOURCE_USER_CLICK = WORK_SESSION_SOURCES.userClick;
+export const SOURCE_USER_AUTOMATIC = WORK_SESSION_SOURCES.userAutomatic;
+export const SOURCE_USER_MANUAL = WORK_SESSION_SOURCES.userManual;
+export const SOURCE_ADMIN_MANUAL = WORK_SESSION_SOURCES.adminManual;
 
 export const SESSION_ACTIVE = WORK_SESSION_STATUSES.active;
 export const SESSION_REPLACED = WORK_SESSION_STATUSES.replaced;
@@ -38,10 +41,20 @@ export const MONTHLY_APPROVAL_STATUSES = MonthlyApprovalStatusSchema.enum;
 export const APPROVAL_PENDING = MONTHLY_APPROVAL_STATUSES.pending;
 export const APPROVAL_APPROVED = MONTHLY_APPROVAL_STATUSES.approved;
 
-// Audit "why" recorded in `notes` on documents created by the replacement
+export const MONTHLY_APPROVAL_EVENT_ACTIONS =
+    MonthlyApprovalEventActionSchema.enum;
+export const APPROVAL_EVENT_OPENED = MONTHLY_APPROVAL_EVENT_ACTIONS.opened;
+export const APPROVAL_EVENT_CONFIRMED =
+    MONTHLY_APPROVAL_EVENT_ACTIONS.confirmed;
+export const APPROVAL_EVENT_REVOKED = MONTHLY_APPROVAL_EVENT_ACTIONS.revoked;
+
+export const AUDIT_ACTIONS = AuditActionSchema.enum;
+
+// Audit "why" recorded in `editReason` on documents created by the replacement
 // flows (kept as fixed, non-localized strings: they are part of the record).
 export const SESSION_REASON_ADMIN_CORRECTION = 'Admin day correction';
 export const SESSION_REASON_AUTO_TIMETABLE = 'Automatic timetable applied';
+export const SESSION_REASON_MANUAL_CORRECTION = 'Worker day correction';
 
 // Admin report periods, shared by the query schemas and the admin UI.
 export const ADMIN_REPORT_PERIODS = ['day', 'week', 'month', 'year'] as const;

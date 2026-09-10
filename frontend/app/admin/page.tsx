@@ -16,6 +16,7 @@ import {
     ClipboardList,
     ShieldCheck,
     FolderOpen,
+    ScrollText,
 } from 'lucide-react';
 
 type MenuItem = {
@@ -135,6 +136,14 @@ export default function AdminDashboard() {
             iconColor: 'text-zinc-600 dark:text-zinc-300',
             bgColor: 'bg-zinc-100 dark:bg-zinc-800',
             icon: <Settings size={24} />,
+        },
+        {
+            title: t('admin.menu.audit.title'),
+            desc: t('admin.menu.audit.desc'),
+            href: '/admin/audit',
+            iconColor: 'text-slate-600 dark:text-slate-300',
+            bgColor: 'bg-slate-50 dark:bg-slate-900/20',
+            icon: <ScrollText size={24} />,
         },
     ];
 

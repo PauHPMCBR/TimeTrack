@@ -14,7 +14,11 @@ const mockReq = (body: Record<string, unknown>) => ({
 });
 const mockRes = () => {
     const res: any = {
-        status: vi.fn().mockReturnThis(),
+        statusCode: undefined,
+        status: vi.fn(function (this: any, code: number) {
+            this.statusCode = code;
+            return this;
+        }),
         json: vi.fn().mockReturnThis(),
         setHeader: vi.fn().mockReturnThis(),
     };

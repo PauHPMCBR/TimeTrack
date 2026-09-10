@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BottomNav from '@/components/BottomNav';
 import HeaderBar from '@/components/HeaderBar';
 import RequireAuth from '@/components/RequireAuth';
+import PrivacyNoticeGate from '@/components/PrivacyNoticeGate';
 import { APP_NAME } from '@/lib/brand';
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function TabsLayout({
 }) {
     return (
         <RequireAuth>
+            <PrivacyNoticeGate>
             {/* min-h-svh (stable) instead of min-h-dvh: dvh recomputes every time
                 the mobile URL bar hides/shows and makes the page height breathe,
                 which the user perceives as the top/bottom bars wobbling. */}
@@ -35,6 +37,7 @@ export default function TabsLayout({
 
                 <BottomNav />
             </div>
+            </PrivacyNoticeGate>
         </RequireAuth>
     );
 }

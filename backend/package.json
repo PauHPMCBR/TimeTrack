@@ -11,7 +11,8 @@
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit",
     "migrate:work-session-source": "node scripts/migrate-work-session-source.cjs",
-    "migrate:tracking-start": "node scripts/migrate-tracking-start.cjs"
+    "migrate:tracking-start": "node scripts/migrate-tracking-start.cjs",
+    "migrate:user-encryption": "node scripts/migrate-user-encryption.cjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

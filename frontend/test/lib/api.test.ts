@@ -651,6 +651,59 @@ describe('apiClient', () => {
         });
     });
 
+    describe('acknowledgePrivacyNotice', () => {
+        it('should clear the cached current user after a successful acknowledgment', async () => {
+            await apiClient.logoff();
+            const userA = { data: { user: { id: '1' } } };
+            mockFetchSuccess(userA);
+            await apiClient.getCurrentUser();
+
+            const ackResponse = {
+                data: { acknowledgedAt: '2026-09-09T17:03:14.833Z' },
+            };
+            const userB = { data: { user: { id: '1', privacy: true } } };
+            global.fetch = vi
+                .fn()
+                .mockResolvedValueOnce({
+                    ok: true,
+                    headers: { get: () => null },
+                    json: () => Promise.resolve(ackResponse),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    headers: { get: () => null },
+                    json: () => Promise.resolve(userB),
+                }) as any;
+
+            const ackResult = await apiClient.acknowledgePrivacyNotice();
+            expect(ackResult.error).toBeUndefined();
+
+            const result = await apiClient.getCurrentUser();
+            expect(result).toEqual(userB.data.user);
+            expect(fetch).toHaveBeenCalledTimes(2);
+        });
+
+        it('should keep the cached current user when the acknowledgment fails', async () => {
+            await apiClient.logoff();
+            const userA = { data: { user: { id: '1' } } };
+            mockFetchSuccess(userA);
+            await apiClient.getCurrentUser();
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: false,
+                status: 500,
+                headers: { get: () => null },
+                json: () => Promise.resolve({ error: 'PostError' }),
+            }) as any;
+
+            await apiClient.acknowledgePrivacyNotice();
+
+            const result = await apiClient.getCurrentUser();
+            expect(result).toEqual(userA.data.user);
+            expect(fetch).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('setErrorListener', () => {
         it('should set and call error listener on error', async () => {
             const mockError = 'TestError';

@@ -27,7 +27,7 @@ export default withApi(
         try {
             const users = (await User.find(
                 notDeleted,
-                'name email dni role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
+                'name email emailEncrypted dni dniEncrypted role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
             )
                 .sort({ name: 1 })
                 .lean()) as unknown as UserRow[];

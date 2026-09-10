@@ -95,8 +95,8 @@ describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
                 timestamp: new Date('2024-01-15T09:00:00'),
                 version: 2,
                 status: 'active',
-                source: 'admin',
-                notes: 'Admin day correction',
+                source: 'adminManual',
+                editReason: 'Admin day correction',
             },
             {
                 _id: 's4',
@@ -104,8 +104,8 @@ describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
                 timestamp: new Date('2024-01-15T17:30:00'),
                 version: 2,
                 status: 'active',
-                source: 'admin',
-                notes: 'Admin day correction',
+                source: 'adminManual',
+                editReason: 'Admin day correction',
             },
         ];
 

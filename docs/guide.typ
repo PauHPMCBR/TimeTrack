@@ -40,7 +40,9 @@ Existeix el mètode clàssic d'enviar un correu electrònic per restablir la con
 
 == Fitxar entrada i sortida
 
-La utilitat principal de l'eina és el fitxatge d'entrada i sortida de la feina. A la primera pàgina, es pot indicar entrada/sortida, i incloure un motiu/observació opcional. Els caps d'empresa *no* estan obligats per llei a fitxar.
+La utilitat principal de l'eina és el fitxatge d'entrada i sortida de la feina. A la primera pàgina, es pot indicar entrada/sortida, i incloure un motiu/observació opcional.
+
+L'obligació legal de fitxar afecta gairebé totes les persones treballadores (art. 34.9 ET): només l'alta direcció (fora de l'àmbit de l'art. 1.3.c ET) n'està exempta.
 
 #img("pic/fitxar.png")
 
@@ -54,7 +56,7 @@ Aquest correu inclou un enllaç per aplicar ràpidament el fitxatge automàtic. 
 
 #img("pic/horari_auto.png")
 
-L'aplicació de fitxatge automàtic és legal: la llei demana que es guardin uns registres de hores de treball mensuals confirmades per l'empleat, per tant tota la informació que l'empleat consideri com a vàlida és vàlida. Cal recordar que és possible modificar les hores que aplica el fitxatge automàtic abans d'aplicar-lo al dia corresponent.
+L'aplicació de fitxatge automàtic és compatible amb la llei: els sistemes d'auto-declaració són vàlids sempre que el registre continuï sent objectiu, fiable i accessible (STS 41/2023), i aquesta eina garanteix els tres requisits: les marques són generades i datades pel servidor, les modificacions queden versionades sense esborrar res, i la persona treballadora pot consultar el seu historial complet. Cal recordar que és possible modificar les hores que aplica el fitxatge automàtic abans d'aplicar-lo al dia corresponent.
 
 == Historial i validació de dades mensuals
 
@@ -74,7 +76,9 @@ Es pot confirmar des de la pàgina inicial (de fitxatge) quan hi ha un mes pende
 
 #img("pic/history_confirm.png")
 
-És obligatori per llei que els empleats confirmin els registres mensuals. Un cop confirmats, no es poden modificar (a no ser que un administrador invalidi aquesta confirmació, cosa que requereix repetir el procés per tornar a bloquejar les dades). Els dies amb dades bloquejades apareixen més atenuats i amb una icona de candau a l'historial.
+És obligatori per llei que les dades de fitxatge quedin confirmades pels empleats i per l'equip directiu. És per això que es demana fer una confirmació mútua de les dades al final de cada mes.
+
+Un cop confirmats, no es poden modificar (a no ser que un administrador invalidi aquesta confirmació, cosa que requereix repetir el procés per tornar a bloquejar les dades). Els dies amb dades bloquejades apareixen més atenuats i amb una icona de candau a l'historial.
 
 == Sol·licitud de vacances
 

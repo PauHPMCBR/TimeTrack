@@ -16,9 +16,16 @@ const getHandler = withApi({ method: 'GET', guard: 'admin' }, async (
     });
 });
 
-const putHandler = withApi(
-    { method: 'PUT', guard: 'admin', body: AppSettingsRequestSchema },
-    async (_req, res, { body }) => {
+const putHandler = withApi({
+    method: 'PUT',
+    guard: 'admin',
+    body: AppSettingsRequestSchema,
+    audit: {
+        action: 'settings_updated',
+        targetType: 'settings',
+        metadata: (_req, ctx) => ({ fields: Object.keys(ctx.body as object) }),
+    },
+}, async (_req, res, { body }) => {
         const {
                 defaultExpectedHours,
                 benevolenceHours,

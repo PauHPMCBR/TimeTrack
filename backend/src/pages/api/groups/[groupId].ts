@@ -28,7 +28,7 @@ export default withApi(
                   _id: { $in: memberIds },
                   blocked: { $ne: true },
               })
-                  .select('name email role registered avatar')
+                  .select('name email emailEncrypted role registered avatar')
                   .lean()
             : [];
         const byId = new Map(

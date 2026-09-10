@@ -77,7 +77,7 @@ export async function runDailyInconsistencyReminder(
 
     const users = (await User.find(
         { registered: true, deleted: { $ne: true } },
-        'name email expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired'
+        'name email emailEncrypted expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired'
     ).lean()) as unknown as ReminderUser[];
     const sentTo: string[] = [];
 
@@ -102,9 +102,11 @@ export async function runDailyInconsistencyReminder(
             settings.defaultExpectedHours
         );
         const benevolence = settings.benevolenceHours ?? DEFAULT_BENEVOLENCE_HOURS;
-        if (result.totalHours < expected - benevolence) {
+        // Overtime-flagged hours are declared beyond the expected band.
+        const regularHours = result.totalHours - result.overtimeHours;
+        if (regularHours < expected - benevolence) {
             anomalies.push('hours_short');
-        } else if (result.totalHours > expected + benevolence) {
+        } else if (regularHours > expected + benevolence) {
             anomalies.push('hours_over');
         }
 

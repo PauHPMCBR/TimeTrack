@@ -1,6 +1,6 @@
 import { withApi } from '@/lib/api-handler';
 import { toCsv } from 'shared/src/lib/csv';
-import { SOURCE_USER, APPROVAL_APPROVED } from 'shared/src/lib/constants';
+import { SOURCE_USER_CLICK, APPROVAL_APPROVED } from 'shared/src/lib/constants';
 import { WorkSession, User, MonthlyApproval } from '@/models';
 import { notReplaced } from '@/repositories/work-session-repository';
 import { notDeleted } from '@/repositories/user-repository';
@@ -14,8 +14,18 @@ export default withApi(
         method: 'GET',
         guard: 'admin',
         query: AdminExportWorkSessionsQuerySchema,
+        audit: {
+            action: 'export_work_sessions',
+            targetType: 'work_session_export',
+            metadata: (req, ctx) => ({
+                users: (req.query.userIds as string).split(',').filter(Boolean).length,
+                from: (req.query.from as string) ?? '',
+                to: (req.query.to as string) ?? '',
+                rows: ctx.auditExtra.rows,
+            }),
+        },
     },
-    async (req, res) => {
+    async (req, res, ctx) => {
     try {
         const userIds = (req.query.userIds as string)
             .split(',')
@@ -59,10 +69,10 @@ export default withApi(
                     _id: { $in: userIds },
                     ...notDeleted,
                 },
-                'name email dni'
+                'name email emailEncrypted dni dniEncrypted'
             ).lean(),
             WorkSession.find(filter)
-                .select('userId timestamp type source notes')
+                .select('userId timestamp type source notes notesEncrypted overtime')
                 .sort({ timestamp: 1 })
                 .lean(),
             MonthlyApproval.find({
@@ -97,6 +107,7 @@ export default withApi(
             'Type',
             'Source',
             'Notes',
+            'Overtime',
             'Confirmed',
         ];
         const rows = visibleSessions.map((s) => {
@@ -109,13 +120,16 @@ export default withApi(
                 userMap.get(s.userId.toString())?.email ?? '',
                 new Date(s.timestamp).toISOString(),
                 s.type,
-                s.source ?? SOURCE_USER,
+                s.source ?? SOURCE_USER_CLICK,
                 s.notes ?? '',
+                s.overtime ? 'Yes' : 'No',
                 isConfirmed,
             ];
         });
 
         const csv = toCsv(headers, rows);
+
+        ctx.auditExtra.rows = rows.length;
 
         const filename = `work_sessions_${new Date().toISOString().slice(0, 10)}.csv`;
 

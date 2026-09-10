@@ -9,9 +9,10 @@ import Card from '@/components/ui/Card';
 import {
     CHECK_IN,
     MS_PER_HOUR,
-    SOURCE_ADMIN,
-    SOURCE_AUTOMATIC,
-    SOURCE_USER,
+    SOURCE_ADMIN_MANUAL,
+    SOURCE_USER_AUTOMATIC,
+    SOURCE_USER_CLICK,
+    SOURCE_USER_MANUAL,
 } from 'shared/src/lib/constants';
 import {
     ChevronLeft,
@@ -19,6 +20,8 @@ import {
     ShieldCheck,
     User,
     Zap,
+    Pencil,
+    Clock,
     CheckCircle2,
     AlertTriangle,
     Palmtree,
@@ -102,24 +105,36 @@ export default function FitxatgesTable({
             return <span className="text-zinc-400">—</span>;
         }
         return row.sessions.map((s, idx) => {
-            const source = s.source ?? SOURCE_USER;
+            const source = s.source ?? SOURCE_USER_CLICK;
             const SourceIcon =
-                source === SOURCE_ADMIN
+                source === SOURCE_ADMIN_MANUAL
                     ? ShieldCheck
-                    : source === SOURCE_AUTOMATIC
+                    : source === SOURCE_USER_AUTOMATIC
                       ? Zap
-                      : User;
+                      : source === SOURCE_USER_MANUAL
+                        ? Pencil
+                        : User;
+            const label = s.overtime
+                ? `${t(`admin.events.source.${source}`)} · ${t('admin.events.overtime')}`
+                : t(`admin.events.source.${source}`);
             return (
                 <span key={s._id} className="flex items-center gap-1">
                     {idx > 0 && <span className="text-zinc-400">→</span>}
                     <span
-                        title={t(`admin.events.source.${source}`)}
+                        title={label}
                         className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm font-medium text-white ${
-                            s.type === CHECK_IN ? 'bg-green-500' : 'bg-red-500'
+                            s.type === CHECK_IN
+                                ? s.overtime
+                                    ? 'bg-amber-500'
+                                    : 'bg-green-500'
+                                : s.overtime
+                                  ? 'bg-amber-600'
+                                  : 'bg-red-500'
                         }`}
                     >
                         <SourceIcon size={14} />
                         {fmtTime(s.timestamp)}
+                        {s.overtime && <Clock size={12} />}
                     </span>
                 </span>
             );

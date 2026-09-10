@@ -97,7 +97,15 @@
         "saving": "Guardant...",
         "subtitle": "Crea una contrasenya per activar el teu compte.",
         "success": "Compte activat! Ara pots iniciar sessió.",
-        "welcome": "Benvingut/da!"
+        "welcome": "Benvingut/da!",
+        "privacyNoticeTitle": "Protecció de dades",
+        "privacyNoticeAccept": "He llegit i entenc l'avís de protecció de dades.",
+        "privacyNoticeRequired": "Has d'acceptar l'avís de protecció de dades per continuar."
+    },
+    "privacyNotice": {
+        "gateTitle": "Protecció de dades",
+        "gateHint": "Per continuar fent servir l'aplicació, cal que confirmis que has llegit aquest avís. Pots consultar-lo sempre des del teu perfil.",
+        "acknowledge": "D'acord"
     },
     "checkin": {
         "btnIn": "Fitxar entrada",
@@ -147,6 +155,7 @@
             "date": "Data",
             "formatted": "Hores (formatat)",
             "hours": "Hores (número)",
+            "overtime": "Hores extra",
             "label": "Exporta fitxatges CSV",
             "status": "Estat",
             "confirmed": "Confirmat"
@@ -414,6 +423,10 @@
             "files": {
                 "title": "Fitxers d'empleats",
                 "desc": "Puja i gestiona fitxers (nòmines...) per a cada empleat."
+            },
+            "audit": {
+                "title": "Registre d'activitat",
+                "desc": "Revisa inicis de sessió, exportacions i canvis d'administració."
             }
         },
         "stats": {
@@ -463,7 +476,13 @@
             "addIn": "Afegir entrada",
             "addOut": "Afegir sortida",
             "hint": "L'ordre d'entrades i sortides s'ha de mantenir. Els canvis es desen amb el botó de desar.",
+            "hintSelf": "L'ordre d'entrades i sortides s'ha de mantenir. L'edició es desarà al teu registre com a correcció pròpia, amb la data i el motiu.",
+            "lastEdit": "Última edició",
             "noSessions": "Encara no hi ha cap fitxatge.",
+            "notes": "Notes",
+            "overtime": "Hores extra: aquestes hores no es comparen amb les hores esperades",
+            "reason": "Motiu de la correcció",
+            "reasonPlaceholder": "Ex.: He oblidat fitxar la sortida",
             "remove": "Eliminar fitxatge",
             "removeLocked": "No es pot eliminar per mantenir l'ordre entrades/sortides",
             "title": "Editar fitxatges"
@@ -531,9 +550,14 @@
                 "sessions": "Fitxatges"
             },
             "source": {
-                "admin": "Admin",
-                "automatic": "Automàtic",
-                "user": "Empleat"
+                "userClick": "Empleat",
+                "userAutomatic": "Automàtic",
+                "userManual": "Correcció pròpia",
+                "adminManual": "Admin"
+            },
+            "overtime": "hores extra",
+            "legend": {
+                "overtime": "Hores extra"
             },
             "title": "Fitxatges"
         },
@@ -607,6 +631,33 @@
             "unsavedWarning": "Canvis sense desar per a l'any {year}",
             "weekdays": "Dies laborables",
             "weekends": "Cap de setmana"
+        },
+        "audit": {
+            "title": "Registre d'activitat",
+            "subtitle": "Historial de seguretat (només lectura): qui ha fet què i quan.",
+            "filterAction": "Acció",
+            "filterAll": "Totes les accions",
+            "filterUser": "Usuari",
+            "filterAllUsers": "Tots els usuaris",
+            "filterFrom": "Des de",
+            "filterTo": "Fins a",
+            "empty": "Encara no hi ha esdeveniments registrats.",
+            "action": {
+                "login_success": "Inici de sessió",
+                "login_failed": "Inici de sessió fallit",
+                "account_locked": "Compte bloquejat",
+                "login_blocked": "Intent amb compte bloquejat",
+                "export_work_sessions": "Exportació de fitxatges",
+                "user_created": "Usuari creat",
+                "user_updated": "Usuari actualitzat",
+                "user_deleted": "Usuari eliminat",
+                "user_restored": "Usuari restaurat",
+                "settings_updated": "Configuració actualitzada",
+                "file_downloaded": "Fitxer descarregat",
+                "file_updated": "Fitxer actualitzat",
+                "file_deleted": "Fitxer eliminat",
+                "work_sessions_replaced": "Dia de fitxatge editat"
+            }
         }
     },
     "error": {
@@ -765,6 +816,15 @@
         "statusPending": "Pendent",
         "revoke": "Revocar",
         "confirmRevoke": "Segur que vols revocar la confirmació de",
+        "history": "Historial",
+        "historyTitle": "Historial del mes",
+        "historyEmpty": "No hi ha esdeveniments registrats per a aquest mes.",
+        "eventActor": "Per",
+        "event": {
+            "opened": "obert per a confirmació",
+            "confirmed": "confirmat",
+            "revoked": "revocat"
+        },
         "filterState": "Estat",
         "filterAllStates": "Tots els estats",
         "filterAllEmployees": "Totes les persones",

@@ -68,13 +68,15 @@ export default withApi(
 
         const [user, sessions, approvedVacations, yearlyTemplates, settings] =
             (await Promise.all([
-                User.findById(userId, 'name email dni expectedWorkHours workDays')
+                User.findById(userId, 'name email emailEncrypted dni dniEncrypted expectedWorkHours workDays')
                     .lean(),
                 findActiveInRange(periodStart, periodEnd, {
                     userId,
                     endInclusive: true,
                 })
-                    .select('userId type timestamp source')
+                    .select(
+                        'userId type timestamp source overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
+                    )
                     .sort({ timestamp: 1 })
                     .lean(),
                 findOverlapping(periodStart, periodEnd, {

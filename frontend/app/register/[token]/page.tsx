@@ -41,12 +41,32 @@ export default function CompleteRegistrationPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+    const [privacyNotice, setPrivacyNotice] = useState<string>('');
+    const [noticeAccepted, setNoticeAccepted] = useState(false);
+
+    // RGPD arts. 13-14: the notice (if the company configured one) must be
+    // shown before the worker's data is processed, i.e. at registration.
+    useEffect(() => {
+        let cancelled = false;
+        apiClient.getPublicPrivacyNotice().then((res) => {
+            if (!cancelled && res.data?.privacyNoticeText) {
+                setPrivacyNotice(res.data.privacyNoticeText);
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setPasswordErrors([]);
 
+        if (privacyNotice && !noticeAccepted) {
+            setError(t('register.privacyNoticeRequired'));
+            return;
+        }
         if (formData.password !== formData.confirmPassword) {
             setError(t('register.error.match'));
             return;
@@ -200,6 +220,29 @@ export default function CompleteRegistrationPage() {
                                 })
                             }
                         />
+
+                        {privacyNotice && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                    {t('register.privacyNoticeTitle')}
+                                </p>
+                                <div className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-zinc-200 p-3 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+                                    {privacyNotice}
+                                </div>
+                                <label className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={noticeAccepted}
+                                        onChange={(e) =>
+                                            setNoticeAccepted(e.target.checked)
+                                        }
+                                        required
+                                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600"
+                                    />
+                                    {t('register.privacyNoticeAccept')}
+                                </label>
+                            </div>
+                        )}
 
                         {error && (
                             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">

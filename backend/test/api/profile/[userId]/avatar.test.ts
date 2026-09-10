@@ -49,7 +49,11 @@ import avatarServeHandler from '@/pages/api/profile/[userId]/avatar';
 
 const mockRes = () => {
     const res: any = {
-        status: vi.fn().mockReturnThis(),
+        statusCode: undefined,
+        status: vi.fn(function (this: any, code: number) {
+            this.statusCode = code;
+            return this;
+        }),
         json: vi.fn().mockReturnThis(),
         send: vi.fn().mockReturnThis(),
         setHeader: vi.fn().mockReturnThis(),

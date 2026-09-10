@@ -96,7 +96,7 @@ const postHandler = withApi(
             const target = await User.findOne({
                 _id: userId,
                 ...notDeleted,
-            }).select('name email notifyNewFile');
+            }).select('name email emailEncrypted notifyNewFile');
         if (!target) {
             return responseErrorEntryNotFound(res, 'User');
         }

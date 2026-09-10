@@ -12,8 +12,17 @@ import { UserIdParamSchema } from 'shared/src/schemas/api';
 
 // Restores a soft-deleted user: clears the flag and re-adds them to their groups.
 export default withApi(
-    { method: 'POST', guard: 'admin', query: UserIdParamSchema },
-    async (_req, res, { query }) => {
+    {
+        method: 'POST',
+        guard: 'admin',
+        query: UserIdParamSchema,
+        audit: {
+            action: 'user_restored',
+            targetType: 'user',
+            targetId: (_req, ctx) => (ctx.query as { userId: string }).userId,
+        },
+    },
+    async (req, res, { query }) => {
     try {
         const userId = query.userId;
 
@@ -63,6 +72,7 @@ export default withApi(
         }
 
         const restored = await User.findById(userId);
+
         res.status(200).json({
             success: true,
             data: { user: toPublicUser(restored) },

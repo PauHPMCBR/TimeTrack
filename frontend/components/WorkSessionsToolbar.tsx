@@ -12,6 +12,8 @@ import {
     ShieldCheck,
     User,
     Zap,
+    Pencil,
+    Clock,
     Lock,
 } from 'lucide-react';
 
@@ -118,15 +120,23 @@ export default function WorkSessionsToolbar({
                     <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
                     <span className="flex items-center gap-1.5">
                         <User size={12} />
-                        {t('admin.events.source.user')}
+                        {t('admin.events.source.userClick')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <Pencil size={12} />
+                        {t('admin.events.source.userManual')}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <ShieldCheck size={12} />
-                        {t('admin.events.source.admin')}
+                        {t('admin.events.source.adminManual')}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <Zap size={12} />
-                        {t('admin.events.source.automatic')}
+                        {t('admin.events.source.userAutomatic')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <Clock size={12} />
+                        {t('admin.events.legend.overtime')}
                     </span>
                     <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
                     <span className="flex items-center gap-1.5">

@@ -64,6 +64,9 @@ vi.mock('@/models', () => ({
         deleteOne: vi.fn(),
         findOne: vi.fn().mockResolvedValue(null),
     },
+    MonthlyApprovalEvent: {
+        create: vi.fn().mockResolvedValue({}),
+    },
     User: { find: vi.fn(), findById: vi.fn() },
     WorkSession: { find: vi.fn() },
     ElectiveVacation: { find: vi.fn() },
@@ -71,7 +74,7 @@ vi.mock('@/models', () => ({
     AppSettings: { findOne: vi.fn(), updateOne: vi.fn() },
 }));
 
-import { User, MonthlyApproval } from '@/models';
+import { User, MonthlyApproval, MonthlyApprovalEvent } from '@/models';
 import adminMonthlyApprovalsHandler from '@/pages/api/admin/monthly-approvals';
 import openMonthlyApprovalsHandler from '@/pages/api/admin/monthly-approvals/open';
 import revokeMonthlyApprovalHandler from '@/pages/api/admin/monthly-approvals/revoke';
@@ -277,6 +280,7 @@ describe('POST /api/admin/monthly-approvals/open', () => {
         expect(openMonthForUser).toHaveBeenCalledWith(
             'u2',
             { year: 2025, month: 7 },
+            'admin-123',
             expect.any(Date)
         );
     });
@@ -350,9 +354,13 @@ describe('POST /api/admin/monthly-approvals/revoke', () => {
         vi.resetModules();
     });
 
-    it('should delete the approval document', async () => {
-        vi.mocked(MonthlyApproval.deleteOne).mockResolvedValue({
-            deletedCount: 1,
+    it('should delete the approval document, logging a revoked event', async () => {
+        vi.mocked(MonthlyApproval.findOne).mockResolvedValue({
+            _id: 'ma1',
+            userId: 'u1',
+            year: 2025,
+            month: 7,
+            status: 'approved',
         } as any);
 
         const req = mockReq({
@@ -363,19 +371,26 @@ describe('POST /api/admin/monthly-approvals/revoke', () => {
 
         await revokeMonthlyApprovalHandler(req, res);
 
+        // The revocation lands in the append-only history with the acting
+        // admin as actor, before the live document is removed.
+        expect(MonthlyApprovalEvent.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                userId: 'u1',
+                year: 2025,
+                month: 7,
+                action: 'revoked',
+                actorId: 'admin-123',
+            })
+        );
         expect(MonthlyApproval.deleteOne).toHaveBeenCalledWith({
-            userId: 'u1',
-            year: 2025,
-            month: 7,
+            _id: 'ma1',
         });
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
     it('should return 404 when there is nothing to revoke', async () => {
-        vi.mocked(MonthlyApproval.deleteOne).mockResolvedValue({
-            deletedCount: 0,
-        } as any);
+        vi.mocked(MonthlyApproval.findOne).mockResolvedValue(null as any);
 
         const req = mockReq({
             method: 'POST',
@@ -391,5 +406,7 @@ describe('POST /api/admin/monthly-approvals/revoke', () => {
             error: 'EntryNotFound',
             details: { entry: 'MonthlyApproval' },
         });
+        expect(MonthlyApprovalEvent.create).not.toHaveBeenCalled();
+        expect(MonthlyApproval.deleteOne).not.toHaveBeenCalled();
     });
 });

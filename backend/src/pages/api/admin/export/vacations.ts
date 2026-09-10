@@ -28,7 +28,7 @@ export default withApi(
                 .sort({ startDate: 1 })
                 .lean(),
             userIds
-                ? User.find({ _id: { $in: userIds } }, 'name email dni').lean()
+                ? User.find({ _id: { $in: userIds } }, 'name email emailEncrypted dni dniEncrypted').lean()
                 : [],
             User.find(
                 {
@@ -36,7 +36,7 @@ export default withApi(
                     registered: true,
                     ...notDeleted,
                 },
-                'name email dni'
+                'name email emailEncrypted dni dniEncrypted'
             ).lean(),
         ])) as unknown as [
             Array<{

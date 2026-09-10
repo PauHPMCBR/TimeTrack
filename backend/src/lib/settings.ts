@@ -20,6 +20,8 @@ export interface AppSettingsValues {
     inconsistencyReminderEnabled: boolean;
     monthlyApprovalReminderDays: number;
     timezone?: string;
+    // Worker-facing privacy notice (RGPD arts. 13-14). Empty = not configured.
+    privacyNoticeText?: string;
 }
 
 const DEFAULTS: AppSettingsValues = {
@@ -77,6 +79,7 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
             settings.monthlyApprovalReminderDays ??
             DEFAULTS.monthlyApprovalReminderDays,
         timezone: settings.timezone ?? DEFAULTS.timezone,
+        privacyNoticeText: settings.privacyNoticeText ?? '',
     };
     cachedAt = Date.now();
 

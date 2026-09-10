@@ -52,9 +52,13 @@ vi.mock('@/models', () => ({
     Group: {
         updateMany: vi.fn(),
     },
+    AuditEvent: {
+        create: vi.fn().mockResolvedValue({}),
+    },
 }));
 
-import { User, Group } from '@/models';
+import { User, Group, AuditEvent } from '@/models';
+import { lookupHash } from '@/lib/crypto';
 import updateUserHandler from '@/pages/api/admin/users/[userId]';
 
 describe('PUT /api/admin/users/[userId]', () => {
@@ -166,7 +170,7 @@ describe('PUT /api/admin/users/[userId]', () => {
             },
         });
         expect(User.findOne).toHaveBeenCalledWith({
-            email: 'taken@example.com',
+            emailHash: lookupHash('taken@example.com'),
             _id: { $ne: 'user-1' },
             deleted: { $ne: true },
         });
@@ -217,7 +221,7 @@ describe('PUT /api/admin/users/[userId]', () => {
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(User.findOne).toHaveBeenCalledWith({
-            email: 'new@example.com',
+            emailHash: lookupHash('new@example.com'),
             _id: { $ne: 'user-1' },
             deleted: { $ne: true },
         });
@@ -460,6 +464,15 @@ describe('DELETE /api/admin/users/[userId] (soft delete)', () => {
         expect(Group.updateMany).toHaveBeenCalledWith(
             { members: 'user-1' },
             { $pull: { members: 'user-1' } }
+        );
+        // Soft-deleting a user is attributable in the audit log.
+        expect(AuditEvent.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                actorId: 'admin-123',
+                action: 'user_deleted',
+                targetType: 'user',
+                targetId: 'user-1',
+            })
         );
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({

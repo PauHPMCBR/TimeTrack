@@ -18,6 +18,8 @@ import type {
     MonthlyApprovalOpenResult,
     MonthlyApprovalRevokeRequest,
     MonthlyApprovalRow,
+    MonthlyApprovalEventRow,
+    AuditEventRow,
     MonthlyWorkRecordResponse,
     MyFilesQuery,
     RegisterRequest,
@@ -424,6 +426,48 @@ class ApiClient {
         return this.request(`/api/settings`);
     }
 
+    async getPublicPrivacyNotice(): Promise<
+        ApiResponse<{ privacyNoticeText: string }>
+    > {
+        return this.request(`/api/public/privacy-notice`);
+    }
+
+    async acknowledgePrivacyNotice(): Promise<
+        ApiResponse<{ acknowledgedAt: string }>
+    > {
+        const res = await this.request<{ acknowledgedAt: string }>(
+            `/api/me/privacy-acknowledgment`,
+            { method: 'POST' }
+        );
+        // The cached user predates the acknowledgment; drop it so a remounted
+        // PrivacyNoticeGate doesn't re-show the notice from stale data.
+        if (!res.error) {
+            this.currentUser = undefined;
+        }
+        return res;
+    }
+
+    async getAuditEvents(options?: {
+        limit?: number;
+        offset?: number;
+        action?: string;
+        actorId?: string;
+        from?: string;
+        to?: string;
+    }): Promise<
+        ApiResponse<{ events: AuditEventRow[]; total?: number; limit?: number; offset?: number }>
+    > {
+        const params = new URLSearchParams();
+        if (options?.limit !== undefined) params.set('limit', String(options.limit));
+        if (options?.offset !== undefined) params.set('offset', String(options.offset));
+        if (options?.action) params.set('action', options.action);
+        if (options?.actorId) params.set('actorId', options.actorId);
+        if (options?.from) params.set('from', options.from);
+        if (options?.to) params.set('to', options.to);
+        const qs = params.toString();
+        return this.request(`/api/admin/audit-events${qs ? `?${qs}` : ''}`);
+    }
+
     async updateSettings(
         params: AppSettingsRequest
     ): Promise<ApiResponse<{ settings: AppSettings }>> {
@@ -468,16 +512,33 @@ class ApiClient {
     async replaceDayWorkSessions(
         userId: string,
         date: string,
-        sessions: AdminWorkSessionInput[]
+        sessions: AdminWorkSessionInput[],
+        reason: string
     ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
         const body: AdminReplaceDayWorkSessionsRequest = {
             userId,
             date,
             sessions,
+            reason,
         };
         return this.request(`/api/admin/work-sessions`, {
             method: 'PUT',
             body: JSON.stringify(body),
+        });
+    }
+
+    async replaceMyDayWorkSessions(
+        date: string,
+        sessions: AdminWorkSessionInput[],
+        reason: string
+    ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+        return this.request(`/api/me/work-sessions`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                date,
+                sessions,
+                ...(reason ? { reason } : {}),
+            }),
         });
     }
 
@@ -648,6 +709,16 @@ class ApiClient {
             method: 'POST',
             body: JSON.stringify(input),
         });
+    }
+
+    async getMonthlyApprovalHistory(
+        userId: string,
+        year: number,
+        month: number
+    ): Promise<ApiResponse<{ events: MonthlyApprovalEventRow[] }>> {
+        return this.request(
+            `/api/monthly-approvals/history/${userId}?year=${year}&month=${month}`
+        );
     }
 
     async exportWorkSessions(

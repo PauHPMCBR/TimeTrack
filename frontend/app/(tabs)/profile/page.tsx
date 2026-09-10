@@ -15,6 +15,7 @@ import { THEME_KEY } from '@/lib/storage';
 import { TimetableEntry } from '@/lib/timetable';
 import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
 import TimetableList from '@/components/autoTimetable/TimetableList';
+import PrivacyNoticeCard from '@/components/PrivacyNoticeCard';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
     AVATAR_MAX_BYTES,
@@ -612,6 +613,8 @@ export default function ProfilePage() {
                     </Button>
                 </div>
             </Card>
+
+            <PrivacyNoticeCard />
 
             <Button
                 variant="danger"

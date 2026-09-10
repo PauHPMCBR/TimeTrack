@@ -97,7 +97,15 @@
         "saving": "Guardando...",
         "subtitle": "Crea una contraseña para activar tu cuenta.",
         "success": "¡Cuenta activada! Ahora puedes iniciar sesión.",
-        "welcome": "¡Bienvenido/a!"
+        "welcome": "¡Bienvenido/a!",
+        "privacyNoticeTitle": "Protección de datos",
+        "privacyNoticeAccept": "He leído y entiendo el aviso de protección de datos.",
+        "privacyNoticeRequired": "Debes aceptar el aviso de protección de datos para continuar."
+    },
+    "privacyNotice": {
+        "gateTitle": "Protección de datos",
+        "gateHint": "Para seguir usando la aplicación, debes confirmar que has leído este aviso. Puedes consultarlo siempre desde tu perfil.",
+        "acknowledge": "De acuerdo"
     },
     "checkin": {
         "btnIn": "Fichar entrada",
@@ -147,6 +155,7 @@
             "date": "Fecha",
             "formatted": "Horas (formateado)",
             "hours": "Horas (número)",
+            "overtime": "Horas extra",
             "label": "Exportar fichajes CSV",
             "status": "Estado",
             "confirmed": "Confirmado"
@@ -414,6 +423,10 @@
             "files": {
                 "title": "Archivos de empleados",
                 "desc": "Sube y gestiona archivos (nóminas...) para cada empleado."
+            },
+            "audit": {
+                "title": "Registro de actividad",
+                "desc": "Revisa inicios de sesión, exportaciones y cambios de administración."
             }
         },
         "stats": {
@@ -463,7 +476,13 @@
             "addIn": "Añadir entrada",
             "addOut": "Añadir salida",
             "hint": "El orden de entradas y salidas debe mantenerse. Los cambios se aplican con el botón de guardar.",
+            "hintSelf": "El orden de entradas y salidas debe mantenerse. La edición se guardará en tu registro como corrección propia, con la fecha y el motivo.",
+            "lastEdit": "Última edición",
             "noSessions": "Aún no hay ningún fichaje.",
+            "notes": "Notas",
+            "overtime": "Horas extra: estas horas no se comparan con las horas esperadas",
+            "reason": "Motivo de la corrección",
+            "reasonPlaceholder": "Ej.: Olvidé fichar la salida",
             "remove": "Eliminar fichaje",
             "removeLocked": "No se puede eliminar para mantener el orden entradas/salidas",
             "title": "Editar fichajes"
@@ -531,9 +550,14 @@
                 "sessions": "Fichajes"
             },
             "source": {
-                "admin": "Admin",
-                "automatic": "Automático",
-                "user": "Empleado"
+                "userClick": "Empleado",
+                "userAutomatic": "Automático",
+                "userManual": "Corrección propia",
+                "adminManual": "Admin"
+            },
+            "overtime": "horas extra",
+            "legend": {
+                "overtime": "Horas extra"
             },
             "title": "Fichajes"
         },
@@ -607,6 +631,33 @@
             "unsavedWarning": "Cambios sin guardar para el año {year}",
             "weekdays": "Días laborables",
             "weekends": "Fines de semana"
+        },
+        "audit": {
+            "title": "Registro de actividad",
+            "subtitle": "Historial de seguridad (solo lectura): quién ha hecho qué y cuándo.",
+            "filterAction": "Acción",
+            "filterAll": "Todas las acciones",
+            "filterUser": "Usuario",
+            "filterAllUsers": "Todos los usuarios",
+            "filterFrom": "Desde",
+            "filterTo": "Hasta",
+            "empty": "Todavía no hay eventos registrados.",
+            "action": {
+                "login_success": "Inicio de sesión",
+                "login_failed": "Inicio de sesión fallido",
+                "account_locked": "Cuenta bloqueada",
+                "login_blocked": "Intento con cuenta bloqueada",
+                "export_work_sessions": "Exportación de fichajes",
+                "user_created": "Usuario creado",
+                "user_updated": "Usuario actualizado",
+                "user_deleted": "Usuario eliminado",
+                "user_restored": "Usuario restaurado",
+                "settings_updated": "Configuración actualizada",
+                "file_downloaded": "Archivo descargado",
+                "file_updated": "Archivo actualizado",
+                "file_deleted": "Archivo eliminado",
+                "work_sessions_replaced": "Día de fichaje editado"
+            }
         }
     },
     "error": {
@@ -765,6 +816,15 @@
         "statusPending": "Pendiente",
         "revoke": "Revocar",
         "confirmRevoke": "¿Seguro que quieres revocar la confirmación de",
+        "history": "Historial",
+        "historyTitle": "Historial del mes",
+        "historyEmpty": "No hay eventos registrados para este mes.",
+        "eventActor": "Por",
+        "event": {
+            "opened": "abierto para confirmación",
+            "confirmed": "confirmado",
+            "revoked": "revocado"
+        },
         "filterState": "Estado",
         "filterAllStates": "Todos los estados",
         "filterAllEmployees": "Todas las personas",

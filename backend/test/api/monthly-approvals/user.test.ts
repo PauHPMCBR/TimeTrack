@@ -36,9 +36,12 @@ vi.mock('@/models', () => ({
         find: vi.fn(),
         findById: vi.fn(),
     },
+    MonthlyApprovalEvent: {
+        create: vi.fn().mockResolvedValue({}),
+    },
 }));
 
-import { MonthlyApproval } from '@/models';
+import { MonthlyApproval, MonthlyApprovalEvent } from '@/models';
 import userMonthlyApprovalsHandler from '@/pages/api/monthly-approvals/user/[userId]';
 import approveMonthlyRecordHandler from '@/pages/api/monthly-approvals/[approvalId]/approve';
 
@@ -123,6 +126,17 @@ describe('POST /api/monthly-approvals/[approvalId]/approve', () => {
         expect(pendingDoc.save).toHaveBeenCalled();
         expect(pendingDoc.status).toBe('approved');
         expect(pendingDoc.approvedAt).toBeInstanceOf(Date);
+        // The confirmation lands in the append-only history with the worker
+        // as actor (evidentiary chain: who confirmed, when).
+        expect(MonthlyApprovalEvent.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                userId: 'user-123',
+                year: 2025,
+                month: 7,
+                action: 'confirmed',
+                actorId: 'user-123',
+            })
+        );
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({ success: true })
@@ -151,6 +165,8 @@ describe('POST /api/monthly-approvals/[approvalId]/approve', () => {
                 details: { illegalAction: 'ModifyingFromAnotherUser' },
             })
         );
+        // No history event for a refused confirmation.
+        expect(MonthlyApprovalEvent.create).not.toHaveBeenCalled();
     });
 
     it('should refuse to approve twice', async () => {

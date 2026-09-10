@@ -12,6 +12,7 @@ const PUBLIC_USER_FIELDS = [
     'autoTimetable',
     'notifyNewFile',
     'trackingStartDate',
+    'privacyNoticeAcknowledgedAt',
 ] as const;
 
 /**

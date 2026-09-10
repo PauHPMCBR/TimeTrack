@@ -47,31 +47,18 @@ npm install
 
 ### 2. Environment configuration
 
-Copy the examples and fill in real values:
+Copy the examples and then edit each file with real values:
 
 ```bash
-cp .env.example .env          # docker-compose secrets (mongo users, JWT secret)
+cp .env.example .env                              # docker-compose / mongo seed
+cp backend/.env.example backend/.env              # backend API (git-ignored)
+cp frontend/.env.local.example frontend/.env.local  # frontend (git-ignored)
 ```
 
-Backend (`backend/.env`, git-ignored):
-
-```env
-MONGODB_URI=mongodb://alumne:<password>@localhost:27018/myapp?authSource=myapp
-JWT_SECRET=<openssl rand -base64 48>
-FRONTEND_URL=http://localhost:3000
-# Optional:
-# BLOCK_MINUTES=10
-# MAX_FAILED_LOGIN_ATTEMPTS=5
-```
-
-Frontend (`frontend/.env.local`, git-ignored):
-
-```env
-NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
-```
-
-> **Note:** `JWT_SECRET` is mandatory. The backend refuses to sign or verify
-> tokens without it.
+`backend/.env` requires at least `MONGODB_URI`, `JWT_SECRET`, `ENCRYPTION_KEY`,
+`HASH_KEY` and `FRONTEND_URL` — the example file documents each one and how to
+generate the secrets. `frontend/.env.local` only needs
+`NEXT_PUBLIC_BACKEND_URL` (defaults are sensible for local dev).
 
 ### 3. Run everything
 

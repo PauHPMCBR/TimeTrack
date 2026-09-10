@@ -154,7 +154,8 @@ export function buildWorkSessionRows(
                 user,
                 defaultExpectedHours
             );
-            const { totalHours, anomalies } = computeDayHours(userSessions);
+            const { totalHours, overtimeHours, anomalies } =
+                computeDayHours(userSessions);
             const anomalySet = new Set(anomalies);
 
             let status: WorkSessionRowStatus = 'anomaly';
@@ -169,15 +170,18 @@ export function buildWorkSessionRows(
             } else if (totalHours === 0) {
                 anomalySet.add('hours_short');
                 status = 'anomaly';
-            } else if (
-                isWithinBenevolence(totalHours, expectedHours, toleranceHours)
-            ) {
-                status = 'ok';
             } else {
-                anomalySet.add(
-                    totalHours < expectedHours ? 'hours_short' : 'hours_over'
-                );
-                status = 'anomaly';
+                // Overtime-flagged hours are declared beyond the expected
+                // band: only the regular part is compared to it.
+                const regularHours = totalHours - overtimeHours;
+                if (isWithinBenevolence(regularHours, expectedHours, toleranceHours)) {
+                    status = 'ok';
+                } else {
+                    anomalySet.add(
+                        regularHours < expectedHours ? 'hours_short' : 'hours_over'
+                    );
+                    status = 'anomaly';
+                }
             }
 
             rows.push({
@@ -185,6 +189,7 @@ export function buildWorkSessionRows(
                 userName: user.name,
                 date: key,
                 totalHours,
+                overtimeHours,
                 expectedHours,
                 sessions: userSessions.map((s) => ({
                     ...s,

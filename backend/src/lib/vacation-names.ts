@@ -45,7 +45,7 @@ export async function resolveVacationNames<
         _id: { $in: Array.from(neededIds) },
         deleted: { $ne: true },
     })
-        .select('name email')
+        .select('name email emailEncrypted')
         .lean()) as unknown as Array<{
         _id: unknown;
         name: string;

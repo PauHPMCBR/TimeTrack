@@ -9,7 +9,9 @@ import {
     requireSameGroupOrAdmin,
     requireSelfOrAdmin,
 } from '@/lib/auth';
+import { audit, clientIpOf } from '@/lib/audit';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import type { AuditAction } from 'shared/src/schemas/database';
 import {
     responseErrorDelete,
     responseErrorGet,
@@ -36,11 +38,30 @@ type Guard =
     | 'sameGroupOrAdmin'
     | 'inGroupOrAdmin';
 
+// Declarative audit for a route: every successful (2xx/3xx) request through
+// the wrapper writes one append-only audit event.
+export interface ApiAuditConfig {
+    action: AuditAction;
+    targetType?: string;
+    targetId?:
+        | string
+        | ((
+              req: AuthRequest,
+              ctx: { body: unknown; query: unknown; auditExtra: Record<string, unknown> }
+          ) => string | undefined);
+    metadata?: (req: AuthRequest, ctx: {
+        body: unknown;
+        query: unknown;
+        auditExtra: Record<string, unknown>;
+    }) => Record<string, unknown> | undefined;
+}
+
 interface ApiOptions<SBody extends z.ZodTypeAny, SQuery extends z.ZodTypeAny> {
     method: Method;
     guard?: Guard;
     body?: SBody;
     query?: SQuery;
+    audit?: ApiAuditConfig;
 }
 
 export type ApiHandler<
@@ -52,6 +73,7 @@ export type ApiHandler<
     ctx: {
         body: SBody extends z.ZodTypeAny ? z.infer<SBody> : undefined;
         query: SQuery extends z.ZodTypeAny ? z.infer<SQuery> : undefined;
+        auditExtra: Record<string, unknown>;
     }
 ) => unknown | Promise<unknown>;
 
@@ -124,8 +146,38 @@ export function withApi<
             const ctx = {
                 body: req.body as z.infer<SBody>,
                 query: req.query as z.infer<SQuery>,
+                auditExtra: {} as Record<string, unknown>,
             };
-            return await handler(req, res, ctx);
+            
+            const result = await handler(req, res, ctx);
+
+            const respondedStatus = (res as { statusCode?: number })
+                .statusCode;
+            if (
+                options.audit &&
+                (respondedStatus === undefined || respondedStatus < 400)
+            ) {
+                const cfg = options.audit;
+                const targetId =
+                    typeof cfg.targetId === 'function'
+                        ? cfg.targetId(req, ctx)
+                        : (ctx.auditExtra.targetId as string | undefined) ??
+                          cfg.targetId;
+                const metadata = {
+                    ...(cfg.metadata?.(req, ctx) ?? {}),
+                    ...ctx.auditExtra,
+                };
+                void audit({
+                    actorId: req.user?.userId,
+                    action: cfg.action,
+                    targetType: cfg.targetType,
+                    targetId,
+                    ip: clientIpOf(req),
+                    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+                });
+            }
+
+            return result;
         } catch (error) {
             console.error(
                 `${options.method} ${req.url ?? ''} handler error:`,

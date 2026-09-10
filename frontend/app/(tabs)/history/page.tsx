@@ -11,6 +11,7 @@ import Button from '@/components/ui/Button';
 import FitxatgesTable from '@/components/FitxatgesTable';
 import WorkSessionsToolbar from '@/components/WorkSessionsToolbar';
 import MonthlyConfirmationCard from '@/components/MonthlyConfirmationCard';
+import SessionEditorModal from '@/components/SessionEditorModal';
 import { usePersistedState } from '@/lib/usePersistedState';
 import {
     AdminReportPeriod,
@@ -55,6 +56,9 @@ export default function HistoryPage() {
     const [anomalyOnly, setAnomalyOnly] = usePersistedState<boolean>(
         HISTORY_ANOMALY_ONLY,
         false
+    );
+    const [editingRow, setEditingRow] = useState<AdminWorkSessionRow | null>(
+        null
     );
     const PAGE_SIZE = 200;
 
@@ -151,6 +155,7 @@ export default function HistoryPage() {
         const headers = [
             t('history.export.date'),
             t('history.export.hours'),
+            t('history.export.overtime'),
             t('history.export.status'),
             t('history.export.confirmed'),
         ];
@@ -164,6 +169,7 @@ export default function HistoryPage() {
             return [
                 r.date,
                 r.totalHours.toFixed(2),
+                (r.overtimeHours ?? 0).toFixed(2),
                 t(`admin.events.status.${r.status}`),
                 isConfirmed ? t('common.yes') : t('common.no'),
             ];
@@ -214,8 +220,17 @@ export default function HistoryPage() {
                 offset={offset}
                 pageSize={PAGE_SIZE}
                 onPageChange={setOffset}
+                onRowClick={(row) => setEditingRow(row)}
                 approvedMonths={approvedMonths}
             />
+
+            {editingRow && (
+                <SessionEditorModal
+                    row={editingRow}
+                    onClose={() => setEditingRow(null)}
+                    onSaved={loadRows}
+                />
+            )}
 
             <hr></hr>
 

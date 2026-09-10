@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api';
 import {
     MonthlyApprovalOpenResult,
     MonthlyApprovalRow,
+    MonthlyApprovalEventRow,
     WorkSessionAnomaly,
 } from '@/schemas/api';
 import { User } from '@/types';
@@ -24,13 +25,14 @@ import Card from '@/components/ui/Card';
 import Label from '@/components/ui/Label';
 import { Alert } from '@/components/ui/Alert';
 import AdminBackButton from '@/components/AdminBackButton';
+import Modal from '@/components/Modal';
 import {
     MIN_VALID_YEAR,
     MAX_VALID_YEAR,
     APPROVAL_PENDING,
     APPROVAL_APPROVED,
 } from 'shared/src/lib/constants';
-import { CheckCircle2, XCircle, Undo2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Undo2, History } from 'lucide-react';
 
 type NotifiedEntry = { userId: string; userName?: string };
 
@@ -52,6 +54,13 @@ export default function AdminMonthlyApprovalsPage() {
     const [loading, setLoading] = useState(true);
     const [opening, setOpening] = useState(false);
     const [revokingId, setRevokingId] = useState<string | null>(null);
+    const [historyRow, setHistoryRow] = useState<MonthlyApprovalRow | null>(
+        null
+    );
+    const [historyEvents, setHistoryEvents] = useState<
+        MonthlyApprovalEventRow[]
+    >([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [openResult, setOpenResult] = useState<MonthlyApprovalOpenResult | null>(
         null
@@ -172,6 +181,42 @@ export default function AdminMonthlyApprovalsPage() {
 
     const anomalyLabel = (a: WorkSessionAnomaly) =>
         t(`monthlyApprovals.anomaly.${a}`);
+
+    const formatDateTime = (value?: string | Date | null) =>
+        value
+            ? new Date(value).toLocaleString(localeTag(lang), {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+              })
+            : '—';
+
+    const openHistory = async (row: MonthlyApprovalRow) => {
+        setHistoryRow(row);
+        setHistoryEvents([]);
+        setHistoryLoading(true);
+        try {
+            const res = await apiClient.getMonthlyApprovalHistory(
+                row.userId,
+                row.year,
+                row.month
+            );
+            if (res.error || !res.data) {
+                setError(
+                    t(`error.${res.error}`) || res.error || t('error.GetError')
+                );
+            } else {
+                setHistoryEvents(res.data.events);
+            }
+        } catch (err) {
+            console.error('Failed to load approval history:', err);
+            setError(t('error.GetError'));
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     const filteredApprovals = useMemo(() => {
         return approvals
@@ -474,6 +519,16 @@ export default function AdminMonthlyApprovalsPage() {
                                                 )}
                                                 <Button
                                                     variant="secondary"
+                                                    onClick={() => openHistory(row)}
+                                                >
+                                                    <History
+                                                        size={14}
+                                                        className="mr-1.5 inline"
+                                                    />
+                                                    {t('monthlyApprovals.history')}
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
                                                     disabled={revokingId === row._id}
                                                     onClick={() => handleRevoke(row)}
                                                 >
@@ -492,6 +547,51 @@ export default function AdminMonthlyApprovalsPage() {
                     </div>
                 )}
             </Card>
+
+            <Modal
+                open={historyRow !== null}
+                title={t('monthlyApprovals.historyTitle')}
+                subtitle={
+                    historyRow
+                        ? `${historyRow.userName ?? ''} — ${formatPeriod(historyRow.year, historyRow.month)}`
+                        : undefined
+                }
+                onClose={() => setHistoryRow(null)}
+            >
+                {historyLoading ? (
+                    <p className="py-4 text-center text-sm text-zinc-500 animate-pulse">
+                        {t('common.loading')}
+                    </p>
+                ) : historyEvents.length === 0 ? (
+                    <p className="text-sm text-zinc-500">
+                        {t('monthlyApprovals.historyEmpty')}
+                    </p>
+                ) : (
+                    <ol className="space-y-2">
+                        {historyEvents.map((event) => (
+                            <li
+                                key={event._id}
+                                className="rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="font-medium capitalize">
+                                        {t(
+                                            `monthlyApprovals.event.${event.action}`
+                                        )}
+                                    </span>
+                                    <span className="text-xs text-zinc-500">
+                                        {formatDateTime(event.timestamp)}
+                                    </span>
+                                </div>
+                                <p className="mt-0.5 text-xs text-zinc-500">
+                                    {t('monthlyApprovals.eventActor')}:{' '}
+                                    {event.actorName ?? event.actorId}
+                                </p>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </Modal>
         </div>
     );
 }

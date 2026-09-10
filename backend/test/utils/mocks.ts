@@ -1,6 +1,16 @@
 import { vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 
+// Field-encryption keys for tests (real values come from the environment in
+// production; the backend fails fast without them). Deterministic hex keys
+// keep HMAC lookups comparable across test files.
+if (!process.env.ENCRYPTION_KEY) {
+    process.env.ENCRYPTION_KEY = 'ab'.repeat(32);
+}
+if (!process.env.HASH_KEY) {
+    process.env.HASH_KEY = 'cd'.repeat(32);
+}
+
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
 }));
@@ -15,8 +25,15 @@ export const mockReq = (overrides: any = {}): any => ({
 
 export const mockRes = (): any => {
     const res: any = {
-        status: vi.fn().mockReturnThis(),
+        // Next's res.status(code) sets statusCode; the withApi audit hook
+        // reads it, so the mock mirrors that behaviour.
+        statusCode: undefined,
+        status: vi.fn(function (this: any, code: number) {
+            this.statusCode = code;
+            return this;
+        }),
         json: vi.fn().mockReturnThis(),
+        send: vi.fn().mockReturnThis(),
         setHeader: vi.fn().mockReturnThis(),
         getHeader: vi.fn().mockReturnValue(undefined),
     };

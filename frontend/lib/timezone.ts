@@ -26,3 +26,21 @@ export function formatClockHM(utcMs: number | Date, locale?: string): string {
         timeZone: t,
     }).format(new Date(utcMs));
 }
+
+/** Format a stored UTC instant as "YYYY-MM-DDTHH:mm" wall time in the
+ * configured company zone (the format the day editor exchanges with the
+ * backend, which interprets naive timestamps in the company zone). */
+export function toZonedWallString(utcMs: number | Date): string {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: configuredTimezone(),
+        hourCycle: 'h23',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).formatToParts(new Date(utcMs));
+    const get = (type: string) =>
+        parts.find((p) => p.type === type)?.value ?? '';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}

@@ -33,6 +33,7 @@ vi.stubEnv('FRONTEND_URL', 'http://localhost:3000');
 import { User } from '@/models';
 import { sendPasswordReset } from '@/lib/mail';
 import forgotPasswordHandler from '@/pages/api/auth/forgot-password';
+import { lookupHash } from '@/lib/crypto';
 
 describe('POST /api/auth/forgot-password', () => {
     beforeEach(() => {
@@ -74,7 +75,7 @@ describe('POST /api/auth/forgot-password', () => {
         await forgotPasswordHandler(req, res);
 
         expect(User.findOne).toHaveBeenCalledWith({
-            email: 'test@example.com',
+            emailHash: lookupHash('test@example.com'),
             registered: true,
             deleted: { $ne: true },
         });

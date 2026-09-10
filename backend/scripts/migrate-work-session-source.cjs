@@ -1,7 +1,11 @@
 #!/usr/bin/env node
-// One-time migration: backfill the WorkSession `source` field for documents
-// created before the field existed. The field is non-optional; existing rows
-// without it are set to 'user' (the default for normal check-in/check-out).
+// One-time migration for the WorkSession `source` field:
+//   1. Backfills documents created before the field existed with 'userClick'
+//      (the default for normal check-in/check-out punches).
+//   2. Renames the pre-rename enum values to the current, more descriptive
+//      names:  user -> userClick, admin -> adminManual,
+//               automatic -> userAutomatic, manual -> userManual.
+// Idempotent: only documents matching the old values are touched.
 //
 // Usage (from the backend workspace):
 //
@@ -15,6 +19,14 @@ const dotenv = require('dotenv');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
+// legacy value -> current value
+const RENAMES = {
+    user: 'userClick',
+    admin: 'adminManual',
+    automatic: 'userAutomatic',
+    manual: 'userManual',
+};
+
 async function main() {
     const uri = process.env.MONGODB_URI;
     if (!uri) {
@@ -25,17 +37,34 @@ async function main() {
     }
 
     await mongoose.connect(uri);
+    const collection = mongoose.connection.collection('worksessions');
 
-    const result = await mongoose.connection
-        .collection('worksessions')
-        .updateMany(
-            { source: { $exists: false } },
-            { $set: { source: 'user' } }
+    let total = 0;
+    for (const [legacy, current] of Object.entries(RENAMES)) {
+        const result = await collection.updateMany(
+            { source: legacy },
+            { $set: { source: current } }
         );
+        if (result.modifiedCount > 0) {
+            console.log(
+                `Renamed ${result.modifiedCount} work session(s): source='${legacy}' -> '${current}'`
+            );
+        }
+        total += result.modifiedCount;
+    }
 
-    console.log(
-        `Backfilled ${result.modifiedCount} work session(s) to source='user'`
+    const backfill = await collection.updateMany(
+        { source: { $exists: false } },
+        { $set: { source: 'userClick' } }
     );
+    if (backfill.modifiedCount > 0) {
+        console.log(
+            `Backfilled ${backfill.modifiedCount} work session(s) to source='userClick'`
+        );
+    }
+    total += backfill.modifiedCount;
+
+    console.log(`Done. ${total} work session(s) migrated.`);
     await mongoose.disconnect();
 }
 

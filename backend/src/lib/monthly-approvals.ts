@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/mongodb';
 import {
     MonthlyApproval,
+    MonthlyApprovalEvent,
     User,
     AppSettings,
 } from '@/models';
@@ -12,6 +13,7 @@ import {
 import {
     ADMIN_ROLE,
     APPROVAL_APPROVED,
+    APPROVAL_EVENT_OPENED,
     APPROVAL_PENDING,
     MS_PER_DAY,
     VACATION_APPROVED,
@@ -165,20 +167,24 @@ export async function computeMonthAnomalies(
         const daySessions = sessions.filter(
             (s) => dateKey(new Date(s.timestamp)) === key
         );
-        const { totalHours, anomalies } = computeDayHours(daySessions);
+        const { totalHours, overtimeHours, anomalies } =
+            computeDayHours(daySessions);
         const dayAnomalies = new Set(anomalies);
         if (dayAnomalies.size === 0) {
-            if (totalHours === 0) {
+            // Overtime-flagged hours are declared beyond the expected band:
+            // only the regular part is compared to it.
+            const regularHours = totalHours - overtimeHours;
+            if (regularHours === 0) {
                 dayAnomalies.add('hours_short');
             } else if (
                 !isWithinBenevolence(
-                    totalHours,
+                    regularHours,
                     expectedHours,
                     settings.toleranceHours
                 )
             ) {
                 dayAnomalies.add(
-                    totalHours < expectedHours ? 'hours_short' : 'hours_over'
+                    regularHours < expectedHours ? 'hours_short' : 'hours_over'
                 );
             }
         }
@@ -259,7 +265,7 @@ export async function runMonthlyApprovalReminders(
     for (const doc of pending) {
         const user = (await User.findById(
             doc.userId,
-            'name email deleted'
+            'name email emailEncrypted deleted'
         )) as unknown as {
             name: string;
             email: string;
@@ -288,26 +294,42 @@ export async function runMonthlyApprovalReminders(
  * checked the anomalies gate. A failed email does not throw: the doc must
  * exist so the worker can confirm; the caller reports `emailSent` so the
  * admin knows the worker was not actually notified.
+ * `openedBy` is the acting admin's id — persisted on the doc and on the
+ * append-only event history so the action is attributable.
  */
 export async function openMonthForUser(
     userId: string,
     period: MonthPeriod,
+    openedBy: string,
     now: Date = new Date()
 ): Promise<{ doc: unknown; emailSent: boolean }> {
     await dbConnect();
     const doc = await MonthlyApproval.findOneAndUpdate(
         { userId, year: period.year, month: period.month },
         {
-            $set: { status: APPROVAL_PENDING, requestedAt: now },
+            $set: {
+                status: APPROVAL_PENDING,
+                requestedAt: now,
+                openedBy,
+            },
             $unset: { approvedAt: '', reminderSentAt: '' },
             $setOnInsert: { userId, year: period.year, month: period.month },
         },
         { upsert: true, new: true }
     ).lean();
 
+    await MonthlyApprovalEvent.create({
+        userId,
+        year: period.year,
+        month: period.month,
+        action: APPROVAL_EVENT_OPENED,
+        actorId: openedBy,
+        timestamp: now,
+    });
+
     const user = (await User.findById(
         userId,
-        'name email'
+        'name email emailEncrypted'
     )) as unknown as { name: string; email: string } | null;
     if (user?.email) {
         const frontendUrl = getFrontendUrl();

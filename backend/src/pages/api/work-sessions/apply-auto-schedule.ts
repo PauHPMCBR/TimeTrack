@@ -19,7 +19,7 @@ import {
 import {
     CHECK_IN,
     CHECK_OUT,
-    SOURCE_AUTOMATIC,
+    SOURCE_USER_AUTOMATIC,
     SESSION_ACTIVE,
     SESSION_REPLACED,
     SESSION_REASON_AUTO_TIMETABLE,
@@ -93,21 +93,24 @@ export default withApi(
                     userId: req.user!.userId,
                     type: CHECK_IN,
                     timestamp: dayTimestamp(requestedDate, entry.checkIn),
-                    source: SOURCE_AUTOMATIC,
+                    source: SOURCE_USER_AUTOMATIC,
                     version: nextVersion,
                     status: SESSION_ACTIVE,
                     notes: SESSION_REASON_AUTO_TIMETABLE,
                     createdAt: now,
+                    // Self-declaration: the worker applied their timetable.
+                    editedBy: req.user!.userId,
                 }),
                 new WorkSession({
                     userId: req.user!.userId,
                     type: CHECK_OUT,
                     timestamp: dayTimestamp(requestedDate, entry.checkOut),
-                    source: SOURCE_AUTOMATIC,
+                    source: SOURCE_USER_AUTOMATIC,
                     version: nextVersion,
                     status: SESSION_ACTIVE,
                     notes: SESSION_REASON_AUTO_TIMETABLE,
                     createdAt: now,
+                    editedBy: req.user!.userId,
                 }),
             ]);
 

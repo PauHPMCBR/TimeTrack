@@ -3,6 +3,8 @@ import {
     AutoScheduleEntrySchema,
     ElectiveVacationSchema,
     MonthlyApprovalSchema,
+    MonthlyApprovalEventSchema,
+    AuditEventSchema,
     UserRoleSchema,
     UserSchema,
     UserFileSchema,
@@ -313,6 +315,7 @@ export const AdminWorkSessionRowSchema = z.object({
     userName: z.string(),
     date: z.string(), // YYYY-MM-DD (local)
     totalHours: z.number().gte(0),
+    overtimeHours: z.number().gte(0),
     expectedHours: z.number().positive(),
     sessions: z.array(WorkSessionSchema.extend({ _id: z.string() })),
     status: WorkSessionRowStatusSchema,
@@ -382,8 +385,12 @@ export type AdminWorkSessionsQueryWithPagination = z.infer<
 >;
 
 export const AdminWorkSessionInputSchema = z.object({
+    // Original session id when the session already exists (lets the backend
+    // carry over its notes to the new version). Absent for added sessions.
+    _id: z.string().optional(),
     type: WorkSessionTypeSchema,
     timestamp: z.string().min(1, 'Timestamp is required'),
+    overtime: z.boolean().optional(),
 });
 export type AdminWorkSessionInput = z.infer<typeof AdminWorkSessionInputSchema>;
 
@@ -391,7 +398,7 @@ export const AdminReplaceDayWorkSessionsRequestSchema = z.object({
     userId: z.string().min(1, 'User ID is required'),
     date: z.string().min(1, 'Date is required'),
     sessions: z.array(AdminWorkSessionInputSchema),
-    // Audit note: why the day is being corrected. Stored on the new version.
+    // Why the day is being corrected. Stored as editReason on the new version.
     reason: z.string().max(500).optional(),
 });
 export type AdminReplaceDayWorkSessionsRequest = z.infer<
@@ -475,6 +482,33 @@ export const MonthlyApprovalRowSchema = MonthlyApprovalSchema.extend({
     userName: z.string().optional(),
 });
 export type MonthlyApprovalRow = z.infer<typeof MonthlyApprovalRowSchema>;
+
+export const MonthlyApprovalEventRowSchema = MonthlyApprovalEventSchema.extend({
+    _id: z.string(),
+    actorName: z.string().optional(),
+});
+export type MonthlyApprovalEventRow = z.infer<
+    typeof MonthlyApprovalEventRowSchema
+>;
+
+export const AuditEventRowSchema = AuditEventSchema.extend({
+    _id: z.string(),
+    actorName: z.string().optional(),
+});
+export type AuditEventRow = z.infer<typeof AuditEventRowSchema>;
+
+export const AdminAuditEventsQuerySchema = z.object({
+    action: z.string().optional(),
+    actorId: z.string().optional(),
+    from: z
+        .string()
+        .regex(DATE_KEY_REGEX, 'from must be YYYY-MM-DD')
+        .optional(),
+    to: z.string().regex(DATE_KEY_REGEX, 'to must be YYYY-MM-DD').optional(),
+    limit: z.coerce.number().int().min(1).max(1000).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+});
+export type AdminAuditEventsQuery = z.infer<typeof AdminAuditEventsQuerySchema>;
 
 // POST /api/admin/monthly-approvals/open — per-user outcome.
 export const MonthlyApprovalOpenResultSchema = z.object({

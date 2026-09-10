@@ -121,14 +121,14 @@ describe('GET /api/me/history', () => {
                     userId: 'user-123',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'user',
+                    source: 'userClick',
                 },
                 {
                     _id: 's2',
                     userId: 'user-123',
                     type: 'check_out',
                     timestamp: at(17),
-                    source: 'user',
+                    source: 'userClick',
                 },
             ]) as any
         );

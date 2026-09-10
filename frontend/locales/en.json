@@ -97,7 +97,15 @@
         "saving": "Saving...",
         "subtitle": "Create a password to activate your account.",
         "success": "Account activated! You can now log in.",
-        "welcome": "Welcome!"
+        "welcome": "Welcome!",
+        "privacyNoticeTitle": "Data protection",
+        "privacyNoticeAccept": "I have read and understand the data protection notice.",
+        "privacyNoticeRequired": "You must accept the data protection notice to continue."
+    },
+    "privacyNotice": {
+        "gateTitle": "Data protection",
+        "gateHint": "To keep using the app you must confirm that you have read this notice. You can always review it from your profile.",
+        "acknowledge": "OK"
     },
     "checkin": {
         "btnIn": "Check in",
@@ -147,6 +155,7 @@
             "date": "Date",
             "formatted": "Hours (formatted)",
             "hours": "Hours (number)",
+            "overtime": "Overtime hours",
             "label": "Export signing CSV",
             "status": "Status",
             "confirmed": "Confirmed"
@@ -414,6 +423,10 @@
             "files": {
                 "title": "Employee files",
                 "desc": "Upload and manage files (payslips...) for each employee."
+            },
+            "audit": {
+                "title": "Activity log",
+                "desc": "Review logins, exports and administrative changes."
             }
         },
         "stats": {
@@ -463,7 +476,13 @@
             "addIn": "Add check-in",
             "addOut": "Add check-out",
             "hint": "Check-in/check-out order must be kept. Changes are applied with the save button.",
+            "hintSelf": "Check-in/check-out order must be kept. The edit is saved to your record as your own correction, with the date and reason.",
+            "lastEdit": "Last edit",
             "noSessions": "No check-ins yet.",
+            "notes": "Notes",
+            "overtime": "Overtime: these hours are not compared against the expected hours",
+            "reason": "Reason for the correction",
+            "reasonPlaceholder": "E.g.: I forgot to check out",
             "remove": "Remove event",
             "removeLocked": "Cannot remove while keeping check-in/check-out order",
             "title": "Edit events"
@@ -531,9 +550,14 @@
                 "sessions": "Events"
             },
             "source": {
-                "admin": "Admin",
-                "automatic": "Automatic",
-                "user": "Employee"
+                "userClick": "Employee",
+                "userAutomatic": "Automatic",
+                "userManual": "Own correction",
+                "adminManual": "Admin"
+            },
+            "overtime": "overtime",
+            "legend": {
+                "overtime": "Overtime"
             },
             "title": "Events"
         },
@@ -607,6 +631,33 @@
             "unsavedWarning": "Unsaved changes for year {year}",
             "weekdays": "Weekdays",
             "weekends": "Weekends"
+        },
+        "audit": {
+            "title": "Activity log",
+            "subtitle": "Security history (read-only): who did what and when.",
+            "filterAction": "Action",
+            "filterAll": "All actions",
+            "filterUser": "User",
+            "filterAllUsers": "All users",
+            "filterFrom": "From",
+            "filterTo": "To",
+            "empty": "No events recorded yet.",
+            "action": {
+                "login_success": "Login",
+                "login_failed": "Failed login",
+                "account_locked": "Account locked",
+                "login_blocked": "Attempt on locked account",
+                "export_work_sessions": "Work-sessions export",
+                "user_created": "User created",
+                "user_updated": "User updated",
+                "user_deleted": "User deleted",
+                "user_restored": "User restored",
+                "settings_updated": "Settings updated",
+                "file_downloaded": "File downloaded",
+                "file_updated": "File updated",
+                "file_deleted": "File deleted",
+                "work_sessions_replaced": "Day edited"
+            }
         }
     },
     "error": {
@@ -765,6 +816,15 @@
         "statusPending": "Pending",
         "revoke": "Revoke",
         "confirmRevoke": "Revoke the confirmation of",
+        "history": "History",
+        "historyTitle": "Monthly history",
+        "historyEmpty": "No events recorded for this month.",
+        "eventActor": "By",
+        "event": {
+            "opened": "opened for confirmation",
+            "confirmed": "confirmed",
+            "revoked": "revoked"
+        },
         "filterState": "State",
         "filterAllStates": "All states",
         "filterAllEmployees": "All employees",

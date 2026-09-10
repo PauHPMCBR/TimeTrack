@@ -10,6 +10,7 @@ import {
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
 import { withApi } from '@/lib/api-handler';
+import { audit, clientIpOf } from '@/lib/audit';
 import { LoginRequestSchema } from 'shared/src/schemas/api';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 
@@ -36,6 +37,10 @@ export default withRateLimit(
                     // Spend the same time as a real bcrypt compare to avoid leaking
                     // whether the account exists.
                     await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+                    void audit({
+                        action: 'login_failed',
+                        ip: clientIpOf(req),
+                    });
                     return responseErrorInvalidCredentials(res);
                 }
 
@@ -60,6 +65,13 @@ export default withRateLimit(
                         } else {
                             const remainingMs = unblockAt.getTime() - Date.now();
                             const remainingSec = Math.ceil(remainingMs / 1000);
+                            void audit({
+                                actorId: user._id.toString(),
+                                action: 'login_blocked',
+                                targetType: 'user',
+                                targetId: user._id.toString(),
+                                ip: clientIpOf(req),
+                            });
                             return responseErrorAccountBlocked(
                                 res,
                                 unblockAt,
@@ -67,6 +79,13 @@ export default withRateLimit(
                             );
                         }
                     } else {
+                        void audit({
+                            actorId: user._id.toString(),
+                            action: 'login_blocked',
+                            targetType: 'user',
+                            targetId: user._id.toString(),
+                            ip: clientIpOf(req),
+                        });
                         return responseErrorAccountBlocked(res, null);
                     }
                 }
@@ -91,8 +110,22 @@ export default withRateLimit(
                             blocked: true,
                             blockedSince: new Date(),
                         });
+                        void audit({
+                            actorId: user._id.toString(),
+                            action: 'account_locked',
+                            targetType: 'user',
+                            targetId: user._id.toString(),
+                            ip: clientIpOf(req),
+                        });
                     }
 
+                    void audit({
+                        actorId: user._id.toString(),
+                        action: 'login_failed',
+                        targetType: 'user',
+                        targetId: user._id.toString(),
+                        ip: clientIpOf(req),
+                    });
                     return responseErrorInvalidCredentials(res);
                 }
 
@@ -112,6 +145,14 @@ export default withRateLimit(
                 // survives a browser restart (persistent 30d) or is session-only.
                 setAuthCookie(res, token, remember === true, {
                     secure: isHttpsRequest(req),
+                });
+
+                void audit({
+                    actorId: updatedUser!._id.toString(),
+                    action: 'login_success',
+                    targetType: 'user',
+                    targetId: updatedUser!._id.toString(),
+                    ip: clientIpOf(req),
                 });
 
                 res.status(200).json({

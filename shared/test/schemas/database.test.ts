@@ -213,12 +213,17 @@ describe('Database Schemas', () => {
             });
             expect(result.success).toBe(true);
             if (result.success) {
-                expect(result.data.source).toBe('user');
+                expect(result.data.source).toBe('userClick');
             }
         });
 
-        it('should accept user, admin and automatic sources', () => {
-            for (const source of ['user', 'admin', 'automatic']) {
+        it('should accept all work-session sources', () => {
+            for (const source of [
+                'userClick',
+                'userAutomatic',
+                'userManual',
+                'adminManual',
+            ]) {
                 const result = WorkSessionSchema.safeParse({
                     userId: 'user123',
                     type: 'check_out',

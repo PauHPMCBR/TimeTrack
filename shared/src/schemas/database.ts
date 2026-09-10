@@ -31,7 +31,15 @@ export const UserRoleSchema = z.enum(['employee', 'admin']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 export const UserSchema = z.object({
     name: z.string().min(1, 'Name is required'),
-    email: z.string().email('Invalid email format'),
+    // Decrypted views, hydrated by the backend read hooks; never persisted.
+    email: z.string(),
+    dni: z.string().min(1, 'DNI is required'),
+    // AES-256-GCM ciphertext at rest (backend/src/lib/crypto.ts).
+    emailEncrypted: z.string().default('').optional(),
+    dniEncrypted: z.string().default('').optional(),
+    // Deterministic HMAC lookups (find-by-email / uniqueness checks).
+    emailHash: z.string().default('').optional(),
+    dniHash: z.string().default('').optional(),
     password: z
         .string()
         .min(6, 'Password must be at least 6 characters')
@@ -40,7 +48,6 @@ export const UserSchema = z.object({
     registered: z.boolean().default(false),
     role: UserRoleSchema.default('employee'),
     groups: z.array(z.string()).default([]),
-    dni: z.string().min(1, 'DNI is required').max(20),
     expectedWorkHours: z
         .number()
         .positive()
@@ -65,6 +72,9 @@ export const UserSchema = z.object({
     checkInRequired: z.boolean().default(true),
     // When the user started time tracking (local date key "YYYY-MM-DD").
     trackingStartDate: z.date().default(() => new Date()),
+    // When the worker acknowledged the privacy notice in-app (RGPD arts.
+    // 13-14). Absent = not acknowledged yet.
+    privacyNoticeAcknowledgedAt: z.date().optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });
@@ -120,7 +130,16 @@ export const GroupSchema = z.object({
 
 export const WorkSessionTypeSchema = z.enum(['check_in', 'check_out']);
 export type WorkSessionType = z.infer<typeof WorkSessionTypeSchema>;
-export const WorkSessionSourceSchema = z.enum(['user', 'admin', 'automatic']);
+export const WorkSessionSourceSchema = z.enum([
+    // Live punch via the check-in/check-out button.
+    'userClick',
+    // Worker self-applied auto-timetable on a past day.
+    'userAutomatic',
+    // Worker self-edit of a past day in the day editor.
+    'userManual',
+    // Admin correction of a day.
+    'adminManual',
+]);
 // Day versioning: replacing a day's sessions never deletes the old ones — they
 // are flagged as 'replaced' and kept for audit (registro de jornada requires a
 // non-manipulable, traceable record; CT 101/2019).
@@ -137,12 +156,21 @@ export const WorkSessionSchema = z.object({
     userId: z.string(),
     type: WorkSessionTypeSchema,
     timestamp: z.date().default(() => new Date()),
-    source: WorkSessionSourceSchema.default('user'),
-    notes: z.string().max(1000).optional(),
+    source: WorkSessionSourceSchema.default('userClick'),
+    // Decrypted view of notesEncrypted, hydrated by the backend read hooks.
+    notes: z.string().optional(),
+    notesEncrypted: z.string().default('').optional(),
+    // Why this version was produced by a manual day edit (admin correction or
+    // worker self-edit). Decrypted view of editReasonEncrypted, hydrated by
+    // the backend read hooks. Absent on punches and auto-timetable sessions.
+    editReason: z.string().optional(),
+    editReasonEncrypted: z.string().default('').optional(),
+    overtime: z.boolean().default(false),
     // Version of the (user, day) sequence this document belongs to. Documents
     // created before versioning have no version field: treat them as v1.
     version: z.number().int().min(1).default(1),
     status: WorkSessionStatusSchema.default('active'),
+    editedBy: z.string().default('').optional(),
     // Set on superseded documents: which version replaced them, and when.
     replacedByVersion: z.number().int().min(1).optional(),
     replacedAt: z.date().optional(),
@@ -163,10 +191,13 @@ export const ElectiveVacationSchema = z.object({
     // Elective vacation days the request costs
     spentDays: z.number().int().gte(0).default(0),
     status: VacationStatusSchema.default('pending'),
-    reason: z.string().max(1000).optional(),
+    // Decrypted views (reasonEncrypted/notesEncrypted), never persisted.
+    reason: z.string().optional(),
+    reasonEncrypted: z.string().default('').optional(),
     approvedBy: z.string().optional(),
     approvedAt: z.date().optional(),
-    notes: z.string().max(1000).optional(),
+    notes: z.string().optional(),
+    notesEncrypted: z.string().default('').optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });
@@ -193,10 +224,68 @@ export const MonthlyApprovalSchema = z.object({
     status: MonthlyApprovalStatusSchema.default('pending'),
     // When the admin opened the month for approval.
     requestedAt: z.date().optional(),
+    // Admin who opened the month for approval (empty string = legacy doc).
+    openedBy: z.string().default('').optional(),
     // When the worker confirmed the month in the app.
     approvedAt: z.date().optional(),
     // Set once the (single) X-days reminder has been sent.
     reminderSentAt: z.date().optional(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+});
+
+export const MonthlyApprovalEventActionSchema = z.enum([
+    'opened',
+    'confirmed',
+    'revoked',
+]);
+export type MonthlyApprovalEventAction = z.infer<
+    typeof MonthlyApprovalEventActionSchema
+>;
+export const MonthlyApprovalEventSchema = z.object({
+    userId: z.string(),
+    year: z.number().int(),
+    month: z.number().int().min(1).max(12),
+    action: MonthlyApprovalEventActionSchema,
+    // Actor: the admin for opened/revoked, the worker themself for confirmed.
+    actorId: z.string(),
+    timestamp: z.date().default(() => new Date()),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+});
+
+// Append-only security/audit log (RGPD art. 32 accountability + LISOS
+// defence): who did what, from where, when. Insert-only by design — no
+// update/delete path may ever exist for these documents.
+export const AuditActionSchema = z.enum([
+    'login_success',
+    'login_failed',
+    'account_locked',
+    'login_blocked',
+    'export_work_sessions',
+    'user_created',
+    'user_updated',
+    'user_deleted',
+    'user_restored',
+    'settings_updated',
+    'file_downloaded',
+    'file_updated',
+    'file_deleted',
+    'work_sessions_replaced',
+]);
+export type AuditAction = z.infer<typeof AuditActionSchema>;
+export const AuditEventSchema = z.object({
+    // Actor: the authenticated user id, empty for unauthenticated events.
+    actorId: z.string().default(''),
+    action: AuditActionSchema,
+    // What the action touched (e.g. 'user', 'settings', 'file', 'work_session_day').
+    targetType: z.string().default('').optional(),
+    targetId: z.string().default('').optional(),
+    ip: z.string().default('').optional(),
+    // JSON-encoded context (e.g. exported row count) — a string keeps the
+    // schema storage-friendly; readers parse it on demand.
+    metadata: z.string().default('').optional(),
+    timestamp: z.date().default(() => new Date()),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

@@ -1,15 +1,11 @@
 import { withApi } from '@/lib/api-handler';
 import {
-    SOURCE_ADMIN,
-    SESSION_ACTIVE,
-    SESSION_REPLACED,
-    SESSION_REASON_ADMIN_CORRECTION,
+    SOURCE_ADMIN_MANUAL,
     VACATION_APPROVED,
     APPROVAL_APPROVED,
 } from 'shared/src/lib/constants';
 import {
     User,
-    WorkSession,
     MonthlyApproval,
 } from '@/models';
 import {
@@ -20,7 +16,7 @@ import {
     findGlobalTemplates,
 } from '@/repositories/vacation-repository';
 import { getAppSettings } from '@/lib/settings';
-import { runInTransaction } from '@/lib/transaction';
+import { replaceDaySessions } from '@/lib/replace-day';
 import {
     parsePagination,
     paginateRows,
@@ -31,7 +27,6 @@ import {
     ElectiveVacationRow,
     YearlyVacationRow,
 } from '@/lib/rows';
-import { isCoherentSequence } from 'shared/src/lib/work-hours';
 import {
     responseErrorEntryNotFound,
     responseErrorGet,
@@ -40,14 +35,13 @@ import {
     responseErrorMethodNotAllowed,
     responseErrorPut,
 } from '@/lib/response-error-generator';
+
 import {
     AdminWorkSessionsQueryWithPaginationSchema,
     AdminWorkSessionsQuery,
     AdminWorkSessionRow,
     AdminReplaceDayWorkSessionsRequestSchema,
 } from 'shared/src/schemas/api';
-import { withUserLock } from '@/lib/user-lock';
-import { isMonthApproved } from '@/lib/monthly-approvals';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import {
     buildWorkSessionRows,
@@ -59,8 +53,18 @@ const putHandler = withApi(
         method: 'PUT',
         guard: 'admin',
         body: AdminReplaceDayWorkSessionsRequestSchema,
+        audit: {
+            action: 'work_sessions_replaced',
+            targetType: 'work_session_day',
+            targetId: (_req, ctx) =>
+                `${(ctx.body as { userId: string }).userId}:${(ctx.body as { date: string }).date}`,
+            metadata: (req, ctx) => ({
+                count: (ctx.body as { sessions: unknown[] }).sessions.length,
+                source: 'adminManual',
+            }),
+        },
     },
-    async (_req, res, { body }) => {
+    async (req, res, { body }) => {
         try {
             const { userId, date, sessions, reason } = body;
 
@@ -69,123 +73,39 @@ const putHandler = withApi(
                 return responseErrorEntryNotFound(res, 'User');
             }
 
-            const dayStart = new Date(`${date}T00:00:00`);
-            const dayEnd = new Date(`${date}T23:59:59.999`);
-            if (isNaN(dayStart.getTime()) || isNaN(dayEnd.getTime())) {
-                return responseErrorIncorrectParameter(res, 'date', [
-                    'InvalidTimestamp',
-                ]);
-            }
-
-            // Hard lock: an approved month is the worker's confirmed record —
-            // it must be revoked before any edit (new approval cycle).
-            if (
-                await isMonthApproved(
-                    userId,
-                    dayStart.getFullYear(),
-                    dayStart.getMonth() + 1
-                )
-            ) {
-                return responseErrorIllegalAction(res, 'MonthApprovedLocked');
-            }
-
-            const parsed = sessions.map((s) => ({
-                type: s.type,
-                timestamp: new Date(s.timestamp),
-            }));
-
-            for (const p of parsed) {
-                if (
-                    isNaN(p.timestamp.getTime()) ||
-                    p.timestamp < dayStart ||
-                    p.timestamp > dayEnd
-                ) {
+            const result = await replaceDaySessions({
+                userId,
+                date,
+                sessions,
+                reason,
+                source: SOURCE_ADMIN_MANUAL,
+                editedBy: req.user!.userId,
+            });
+            if (!result.ok) {
+                if (result.code === 'MonthApprovedLocked') {
+                    return responseErrorIllegalAction(
+                        res,
+                        'MonthApprovedLocked'
+                    );
+                }
+                if (result.code === 'InvalidDate') {
+                    return responseErrorIncorrectParameter(res, 'date', [
+                        'InvalidTimestamp',
+                    ]);
+                }
+                if (result.code === 'OutOfDay') {
                     return responseErrorIncorrectParameter(res, 'timestamp', [
                         'OutOfDay',
                     ]);
                 }
-            }
-
-            parsed.sort(
-                (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-            );
-
-            for (let i = 1; i < parsed.length; i++) {
-                if (
-                    parsed[i].timestamp.getTime() <=
-                    parsed[i - 1].timestamp.getTime()
-                ) {
-                    return responseErrorIncorrectParameter(res, 'timestamp', [
-                        'NotInOrder',
-                    ]);
-                }
-            }
-
-            if (!isCoherentSequence(parsed)) {
-                return responseErrorIncorrectParameter(res, 'type', [
+                return responseErrorIncorrectParameter(res, result.field, [
                     'NotInOrder',
                 ]);
             }
 
-            // Versioning / audit trail: the day's current sessions are never
-            // deleted — they are flagged 'replaced' and the edited set is
-            // stored as the next version of that (user, day) sequence, so the
-            // record stays traceable and non-manipulable (CT 101/2019).
-            // Serialized per user (same lock as the user-facing flows) so two
-            // concurrent replacements can't compute the same next version.
-            const now = new Date();
-            const workSessions = await withUserLock(
-                userId,
-                () =>
-                    runInTransaction(async (session) => {
-                        const txOptions = session
-                            ? { session }
-                            : undefined;
-                        const active = (await findActiveInRange(
-                            dayStart,
-                            dayEnd,
-                            { userId, endInclusive: true, session: session ?? undefined }
-                        )) as unknown as (WorkSessionRow & {
-                            version?: number;
-                        })[];
-                        const nextVersion =
-                            active.reduce(
-                                (max, s) => Math.max(max, s.version ?? 1),
-                                0
-                            ) + 1;
-                        if (active.length > 0) {
-                            await WorkSession.updateMany(
-                                { _id: { $in: active.map((s) => s._id) } },
-                                {
-                                    $set: {
-                                        status: SESSION_REPLACED,
-                                        replacedByVersion: nextVersion,
-                                        replacedAt: now,
-                                        updatedAt: now,
-                                    },
-                                },
-                                txOptions
-                            );
-                        }
-                        const docs = parsed.map((p) => ({
-                            userId,
-                            type: p.type,
-                            timestamp: p.timestamp,
-                            source: SOURCE_ADMIN,
-                            version: nextVersion,
-                            status: SESSION_ACTIVE,
-                            notes: reason ?? SESSION_REASON_ADMIN_CORRECTION,
-                            createdAt: now,
-                        }));
-                        return session
-                            ? WorkSession.insertMany(docs, { session })
-                            : WorkSession.insertMany(docs);
-                    })
-            );
-
             res.status(200).json({
                 success: true,
-                data: { workSessions },
+                data: { workSessions: result.workSessions },
             });
         } catch (error) {
             console.error('Admin replace day work sessions error:', error);
@@ -232,14 +152,16 @@ const getHandler = withApi(
                         // the events report (they never show as non-working rows).
                         checkInRequired: { $ne: false },
                     },
-                    'name email dni expectedWorkHours workDays'
+                    'name email emailEncrypted dni dniEncrypted expectedWorkHours workDays'
                 )
                     .sort({ name: 1 })
                     .lean(),
                 findActiveInRange(periodStart, periodEnd, {
                     endInclusive: true,
                 })
-                    .select('userId type timestamp source')
+                    .select(
+                        'userId type timestamp source overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
+                    )
                     .sort({ timestamp: 1 })
                     .lean(),
                 findOverlapping(periodStart, periodEnd, {

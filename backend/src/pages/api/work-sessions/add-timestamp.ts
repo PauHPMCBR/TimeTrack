@@ -10,8 +10,8 @@ import { findActiveInRange } from '@/repositories/work-session-repository';
 import {
     CHECK_IN,
     CHECK_OUT,
-    SOURCE_AUTOMATIC,
-    SOURCE_USER,
+    SOURCE_USER_AUTOMATIC,
+    SOURCE_USER_CLICK,
     SESSION_ACTIVE,
     SESSION_REPLACED,
 } from 'shared/src/lib/constants';
@@ -58,7 +58,7 @@ function isProgrammed(
     now: Date
 ): boolean {
     return (
-        session.source === SOURCE_AUTOMATIC &&
+        session.source === SOURCE_USER_AUTOMATIC &&
         new Date(session.timestamp).getTime() > now.getTime()
     );
 }
@@ -103,7 +103,7 @@ export default withApi(
                     if (
                         last &&
                         last.type === CHECK_IN &&
-                        last.source === SOURCE_AUTOMATIC
+                        last.source === SOURCE_USER_AUTOMATIC
                     ) {
                         overridden.push(last);
                         effective.pop();
@@ -138,13 +138,14 @@ export default withApi(
                     userId: req.user!.userId,
                     type,
                     timestamp: now,
-                    source: SOURCE_USER,
+                    source: SOURCE_USER_CLICK,
                     notes,
                     // Join the day's current version (all active docs of a
                     // day share it); days never touched by a replacement
                     // (or legacy days) are version 1.
                     version: currentVersion,
                     status: SESSION_ACTIVE,
+                    editedBy: req.user!.userId,
                 });
 
                 await workSession.save();

@@ -51,7 +51,16 @@ const getHandler = withApi(
 
 // Soft delete: data stays in the DB, the user is just hidden and locked out.
 const deleteHandler = withApi(
-    { method: 'DELETE', guard: 'admin', query: UserIdParamSchema },
+    {
+        method: 'DELETE',
+        guard: 'admin',
+        query: UserIdParamSchema,
+        audit: {
+            action: 'user_deleted',
+            targetType: 'user',
+            targetId: (_req, ctx) => (ctx.query as { userId: string }).userId,
+        },
+    },
     async (req, res, { query }) => {
         try {
             const userId = query.userId;
@@ -106,6 +115,13 @@ const putHandler = withApi(
         guard: 'admin',
         query: UserIdParamSchema,
         body: UpdateUserRequestSchema,
+        audit: {
+            action: 'user_updated',
+            targetType: 'user',
+            targetId: (_req, ctx) => (ctx.query as { userId: string }).userId,
+            // Field names only — never the values (they carry PII).
+            metadata: (_req, ctx) => ({ fields: Object.keys(ctx.body as object) }),
+        },
     },
     async (req, res, { query, body }) => {
         try {

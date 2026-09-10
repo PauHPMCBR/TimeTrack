@@ -10,8 +10,17 @@ import { deleteDocument } from '@/lib/storage';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const deleteHandler = withApi(
-    { method: 'DELETE', guard: 'admin', query: FileIdParamSchema },
-    async (_req, res, { query }) => {
+    {
+        method: 'DELETE',
+        guard: 'admin',
+        query: FileIdParamSchema,
+        audit: {
+            action: 'file_deleted',
+            targetType: 'file',
+            targetId: (_req, ctx) => (ctx.query as { fileId: string }).fileId,
+        },
+    },
+    async (req, res, { query }) => {
         const file = await UserFile.findById(query.fileId);
         if (!file) {
             return responseErrorEntryNotFound(res, 'File');
@@ -33,8 +42,16 @@ const putHandler = withApi(
         guard: 'admin',
         query: FileIdParamSchema,
         body: FileUpdateRequestSchema,
+        audit: {
+            action: 'file_updated',
+            targetType: 'file',
+            targetId: (_req, ctx) => (ctx.query as { fileId: string }).fileId,
+            metadata: (_req, ctx) => ({
+                fields: Object.keys(ctx.body as object),
+            }),
+        },
     },
-    async (_req, res, { query, body }) => {
+    async (req, res, { query, body }) => {
         const { originalName, description } = body;
 
         const update: Record<string, unknown> = {

@@ -39,7 +39,7 @@ interface SkippedEntry {
 // revoke + re-open to retry notifying them).
 export default withApi(
     { method: 'POST', guard: 'admin', body: MonthlyApprovalOpenRequestSchema },
-    async (_req, res, { body }) => {
+    async (req, res, { body }) => {
         try {
             const { year, month, userIds, force = false } = body;
 
@@ -129,6 +129,7 @@ export default withApi(
             const { doc, emailSent } = (await openMonthForUser(
                 id,
                 { year, month },
+                req.user!.userId,
                 now
             )) as { doc: MonthlyApprovalRow; emailSent: boolean };
             const row = {

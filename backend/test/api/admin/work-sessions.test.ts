@@ -134,21 +134,21 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'user',
+                    source: 'userClick',
                 },
                 {
                     _id: 's2',
                     userId: 'u1',
                     type: 'check_out',
                     timestamp: at(17),
-                    source: 'user',
+                    source: 'userClick',
                 },
                 {
                     _id: 's3',
                     userId: 'u2',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'admin',
+                    source: 'adminManual',
                 },
             ]) as any
         );
@@ -185,10 +185,10 @@ describe('GET /api/admin/work-sessions', () => {
             anomalies: ['forgot_check_out'],
         });
         expect(rows[0].sessions.map((s: any) => s.source)).toEqual([
-            'user',
-            'user',
+            'userClick',
+            'userClick',
         ]);
-        expect(rows[1].sessions[0].source).toBe('admin');
+        expect(rows[1].sessions[0].source).toBe('adminManual');
         expect(payload.data.approvedMonths).toBeDefined();
         expect(MonthlyApproval.find).toHaveBeenCalledWith({
             status: 'approved',
@@ -205,14 +205,14 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'user',
+                    source: 'userClick',
                 },
                 {
                     _id: 's2',
                     userId: 'u1',
                     type: 'check_out',
                     timestamp: at(17),
-                    source: 'user',
+                    source: 'userClick',
                 },
             ]) as any
         );
@@ -633,16 +633,18 @@ describe('GET /api/admin/work-sessions', () => {
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_in',
-                        source: 'admin',
+                        source: 'adminManual',
                         version: 1,
                         status: 'active',
+                        editedBy: 'admin-123',
                     }),
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_out',
-                        source: 'admin',
+                        source: 'adminManual',
                         version: 1,
                         status: 'active',
+                        editedBy: 'admin-123',
                     }),
                 ])
             );
@@ -710,21 +712,21 @@ describe('GET /api/admin/work-sessions', () => {
                 undefined
             );
             // The new set becomes version 4, with the source marking the
-            // admin authorship and the reason stored in notes.
+            // admin authorship and the reason stored as editReason.
             expect(WorkSession.insertMany).toHaveBeenCalledWith(
                 expect.arrayContaining([
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_in',
-                        source: 'admin',
+                        source: 'adminManual',
                         version: 4,
                         status: 'active',
-                        notes: 'Worker requested correction',
+                        editReason: 'Worker requested correction',
                     }),
                     expect.objectContaining({
                         type: 'check_out',
                         version: 4,
-                        notes: 'Worker requested correction',
+                        editReason: 'Worker requested correction',
                     }),
                 ])
             );
@@ -754,7 +756,55 @@ describe('GET /api/admin/work-sessions', () => {
             expect(WorkSession.insertMany).toHaveBeenCalledWith(
                 expect.arrayContaining([
                     expect.objectContaining({
-                        notes: 'Admin day correction',
+                        editReason: 'Admin day correction',
+                    }),
+                ])
+            );
+        });
+
+        it('should carry over the original notes of kept sessions to the new version', async () => {
+            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
+            vi.mocked(WorkSession.find).mockResolvedValue([
+                {
+                    _id: 's1',
+                    version: 3,
+                    notes: 'Morning note',
+                    notesEncrypted: 'enc-note',
+                },
+                { _id: 's2', version: 3 },
+            ] as any);
+            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
+            vi.mocked(WorkSession.insertMany).mockResolvedValue([] as any);
+
+            const req = mockReq({
+                method: 'PUT',
+                body: {
+                    userId: 'u1',
+                    date: '2025-06-09',
+                    reason: 'Shifted schedule',
+                    sessions: [
+                        { _id: 's1', type: 'check_in', timestamp: at(8).toISOString() },
+                        { type: 'check_out', timestamp: at(16).toISOString() },
+                    ],
+                },
+            });
+            const res = mockRes();
+
+            await adminWorkSessionsHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(WorkSession.insertMany).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        type: 'check_in',
+                        notes: 'Morning note',
+                        notesEncrypted: 'enc-note',
+                        editReason: 'Shifted schedule',
+                    }),
+                    expect.objectContaining({
+                        type: 'check_out',
+                        notes: undefined,
+                        editReason: 'Shifted schedule',
                     }),
                 ])
             );

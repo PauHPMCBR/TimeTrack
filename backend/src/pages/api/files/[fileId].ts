@@ -19,8 +19,17 @@ function contentDisposition(filename: string): string {
 }
 
 export default withApi(
-    { method: 'GET', query: FileIdParamSchema },
-    async (req, res, { query }) => {
+    {
+        method: 'GET',
+        query: FileIdParamSchema,
+        audit: {
+            action: 'file_downloaded',
+            targetType: 'file',
+            targetId: (_req, ctx) => (ctx.query as { fileId: string }).fileId,
+            metadata: (_req, ctx) => ({ owner: ctx.auditExtra.owner }),
+        },
+    },
+    async (req, res, { query, auditExtra }) => {
         const file = await UserFile.findById(query.fileId);
         if (!file) {
             return responseErrorEntryNotFound(res, 'File');
@@ -33,6 +42,7 @@ export default withApi(
         if (!isOwner && !isAdmin) {
             return responseError(res, 403, 'NoAccessToUser');
         }
+        auditExtra.owner = file.userId?.toString?.() ?? '';
 
         let data: Buffer;
         try {
@@ -45,6 +55,7 @@ export default withApi(
         res.setHeader('Content-Disposition', contentDisposition(file.originalName));
         res.setHeader('Content-Length', String(data.length));
         res.setHeader('Cache-Control', 'private, no-store');
+
         res.status(200).send(data);
     }
 );

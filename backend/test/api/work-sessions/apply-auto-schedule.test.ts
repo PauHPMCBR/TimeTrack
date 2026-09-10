@@ -102,7 +102,7 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         expect(savedDocs[0]).toMatchObject({
             userId: 'user-123',
             type: 'check_in',
-            source: 'automatic',
+            source: 'userAutomatic',
             version: 1,
             status: 'active',
             notes: 'Automatic timetable applied',
@@ -111,19 +111,19 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         expect(savedDocs[1]).toMatchObject({
             userId: 'user-123',
             type: 'check_out',
-            source: 'automatic',
+            source: 'userAutomatic',
             timestamp: new Date(2026, 7, 27, 12, 30, 0),
         });
         expect(savedDocs[2]).toMatchObject({
             userId: 'user-123',
             type: 'check_in',
-            source: 'automatic',
+            source: 'userAutomatic',
             timestamp: new Date(2026, 7, 27, 14, 0, 0),
         });
         expect(savedDocs[3]).toMatchObject({
             userId: 'user-123',
             type: 'check_out',
-            source: 'automatic',
+            source: 'userAutomatic',
             timestamp: new Date(2026, 7, 27, 18, 0, 0),
         });
 
