@@ -101,6 +101,20 @@ export function readCompanyFromCompose(composePath) {
     backendEnv.CRON_SECRET !== undefined
       ? String(backendEnv.CRON_SECRET)
       : undefined;
+  // migrate-all.js connects to the company DB directly (like deploy-all does
+  // through the backend) and needs the same env the backend runs with.
+  const mongoUri =
+    backendEnv.MONGODB_URI !== undefined
+      ? String(backendEnv.MONGODB_URI)
+      : undefined;
+  const encryptionKey =
+    backendEnv.ENCRYPTION_KEY !== undefined
+      ? String(backendEnv.ENCRYPTION_KEY)
+      : undefined;
+  const hashKey =
+    backendEnv.HASH_KEY !== undefined
+      ? String(backendEnv.HASH_KEY)
+      : undefined;
   return {
     subdomain: String(meta.subdomain),
     name: meta.name,
@@ -108,6 +122,9 @@ export function readCompanyFromCompose(composePath) {
     faviconFile: meta.faviconFile,
     fileMaxBytes,
     cronSecret,
+    mongoUri,
+    encryptionKey,
+    hashKey,
   };
 }
 
