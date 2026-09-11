@@ -1,33 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LoadingState from '@/components/ui/LoadingState';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
 import { useDirty } from '@/lib/useDirty';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
-import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
 import { YearlyVacationDays } from '@/types';
 import { parseDateKey, toLocalDateKey } from '@/lib/datetime';
+import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
-import {
-    ChevronRight,
-    ChevronLeft,
-    X,
-    Copy,
-    TriangleAlert,
-} from 'lucide-react';
+import { X, Copy, TriangleAlert, CalendarOff } from 'lucide-react';
+import StepperNav from '@/components/ui/StepperNav';
+import EmptyState from '@/components/ui/EmptyState';
+import { defaultWeeklyExpectedHours } from 'shared/src/lib/defaults';
 
 export default function AdminObligatoryVacationsPage() {
     const { t } = useI18n();
 
-    const [year, setYear] = usePersistedState<number>(ADMIN_YEARLY_VACATIONS_YEAR, new Date().getFullYear());
-    const [vacationDays, setVacationDays] =
-        useState<YearlyVacationDays | null>(null);
+    const [year, setYear] = usePersistedState<number>(
+        ADMIN_YEARLY_VACATIONS_YEAR,
+        new Date().getFullYear()
+    );
+    const [vacationDays, setVacationDays] = useState<YearlyVacationDays | null>(
+        null
+    );
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function AdminObligatoryVacationsPage() {
         useState<number>(0);
     const [newDate, setNewDate] = useState<string>('');
     const [copying, setCopying] = useState(false);
-    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(defaultNonWorkingDays());
+    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]);
     const { dirty, markDirty, resetDirty } = useDirty();
 
     useUnsavedChanges(dirty);
@@ -89,7 +91,12 @@ export default function AdminObligatoryVacationsPage() {
     useEffect(() => {
         apiClient.getSettings().then((res) => {
             if (!res.error && res.data?.settings) {
-                setNonWorkingDays(res.data.settings.nonWorkingDays ?? defaultNonWorkingDays());
+                setNonWorkingDays(
+                    nonWorkingDaysOfWeek(
+                        res.data.settings.defaultWeeklyExpectedHours ??
+                            defaultWeeklyExpectedHours()
+                    )
+                );
             }
         });
     }, []);
@@ -283,27 +290,17 @@ export default function AdminObligatoryVacationsPage() {
 
                         {/* Year selector */}
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => handleYearChange(year - 1)}
-                                className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                                disabled={loading || saving}
+                            <StepperNav
+                                onPrev={() => handleYearChange(year - 1)}
+                                onNext={() => handleYearChange(year + 1)}
+                                prevDisabled={loading || saving}
+                                nextDisabled={loading || saving}
+                                centerClassName="min-w-[100px]"
                             >
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-
-                            <div className="min-w-[100px] text-center">
                                 <span className="text-lg font-semibold text-zinc-900 dark:text-white">
                                     {year}
                                 </span>
-                            </div>
-
-                            <button
-                                onClick={() => handleYearChange(year + 1)}
-                                className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                                disabled={loading || saving}
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
+                            </StepperNav>
                         </div>
                     </div>
                 </div>
@@ -334,9 +331,7 @@ export default function AdminObligatoryVacationsPage() {
                 )}
 
                 {loading ? (
-                    <div className="p-10 text-center animate-pulse text-zinc-500">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState />
                 ) : (
                     <div className="space-y-8">
                         {/* --- UNSAVED CHANGES WARNING --- */}
@@ -456,9 +451,10 @@ export default function AdminObligatoryVacationsPage() {
 
                             {/* Dates list */}
                             {obligatoryDays.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">
-                                    {t('admin.vacationsSetup.noDates')}
-                                </div>
+                                <EmptyState
+                                    icon={<CalendarOff size={24} />}
+                                    title={t('admin.vacationsSetup.noDates')}
+                                />
                             ) : (
                                 <div className="space-y-4">
                                     {Object.entries(datesByMonth()).map(

@@ -44,9 +44,6 @@ describe('GET /api/public/privacy-notice', () => {
     it('should return only the notice text without leaking other settings', async () => {
         vi.mocked(getAppSettings).mockResolvedValue({
             privacyNoticeText: 'Avis de privacitat...',
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            nonWorkingDays: [6, 0],
             timezone: 'Europe/Madrid',
         } as any);
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createMockAppSettings } from '../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -13,14 +14,7 @@ vi.mock('@/lib/mail', () => ({
 vi.mock('@/lib/settings', () => ({
     DEFAULT_TIMEZONE: 'Europe/Madrid',
     getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
-    getAppSettings: vi.fn().mockResolvedValue({
-        defaultExpectedHours: 8,
-        benevolenceHours: 1,
-        toleranceHours: 1,
-        endOfDayHour: 17,
-        nonWorkingDays: [6, 0],
-        monthlyApprovalReminderDays: 5,
-    }),
+    getAppSettings: vi.fn().mockResolvedValue(createMockAppSettings({ endOfDayHour: 17 })),
     invalidateAppSettingsCache: vi.fn(),
 }));
 

@@ -5,17 +5,13 @@
 // in AppSettings (shared/src/schemas/database.ts, backend settings, frontend
 // display fallback).
 export const DEFAULT_TIMEZONE = 'Europe/Madrid';
-export const DEFAULT_EXPECTED_WORK_HOURS = 8;
-export const DEFAULT_BENEVOLENCE_HOURS = 1;
-export const DEFAULT_END_OF_DAY_HOUR = 20;
-export const DEFAULT_NON_WORKING_DAYS: number[] = [6, 0];
-/**
- * Fresh defensive copy of the default non-working days. Use this whenever the
- * value will be stored in mutable state; never mutate DEFAULT_NON_WORKING_DAYS.
- */
-export function defaultNonWorkingDays(): number[] {
-    return [...DEFAULT_NON_WORKING_DAYS];
+export const DEFAULT_WEEKLY_EXPECTED_HOURS: number[] = [0, 8, 8, 8, 8, 8, 0];
+export function defaultWeeklyExpectedHours(): number[] {
+    return [...DEFAULT_WEEKLY_EXPECTED_HOURS];
 }
+export const DEFAULT_TOLERANCE_MINUTES = 60;
+export const DEFAULT_TIMETABLE_TOLERANCE_MINUTES = 10;
+export const DEFAULT_END_OF_DAY_HOUR = 20;
 export const DEFAULT_ELECTIVE_VACATION_DAYS = 22;
 export const DEFAULT_CHECK_IN_TIME = '09:00';
 export const DEFAULT_CHECK_OUT_TIME = '17:00';

@@ -38,12 +38,15 @@ vi.mock('@/models', () => ({
         updateMany: vi.fn().mockResolvedValue({}),
         insertMany: vi.fn().mockResolvedValue([]),
     },
+    WorkDaySource: {
+        updateOne: vi.fn().mockResolvedValue({ upsertedCount: 1 }),
+    },
     MonthlyApproval: {
         findOne: vi.fn().mockResolvedValue(null),
     },
 }));
 
-import { WorkSession, MonthlyApproval } from '@/models';
+import { WorkSession, WorkDaySource, MonthlyApproval } from '@/models';
 import selfEditHandler from '@/pages/api/me/work-sessions';
 
 const at = (h: number, m = 0, day = '2025-06-09') =>
@@ -85,7 +88,6 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 expect.objectContaining({
                     userId: 'user-123',
                     type: 'check_in',
-                    source: 'userManual',
                     editedBy: 'user-123',
                     overtime: false,
                     editReason: 'Forgot to check out',
@@ -95,10 +97,15 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 expect.objectContaining({
                     userId: 'user-123',
                     type: 'check_out',
-                    source: 'userManual',
                     editedBy: 'user-123',
                 }),
             ])
+        );
+        // The self-edit adopts the day source wholesale.
+        expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+            { userId: 'user-123', date: '2025-06-09' },
+            { $set: { source: 'userManual' } },
+            { upsert: true }
         );
     });
 

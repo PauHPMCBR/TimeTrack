@@ -12,6 +12,10 @@
         "no": "No",
         "noName": "No name",
         "optional": "(optional)",
+        "pagination": {
+            "next": "Next page",
+            "previous": "Previous page"
+        },
         "prev": "Prev",
         "save": "Save",
         "saving": "Saving...",
@@ -337,8 +341,6 @@
             "dni": "DNI",
             "dniPlaceholder": "e.g. 12345678A",
             "email": "Email address",
-            "expectedHours": "Expected daily hours",
-            "customNonWorkDays": "Custom non-work days",
             "trackingStartDate": "Time-tracking start date",
             "checkInRequired": "Require daily check-in",
             "checkInRequiredHelp": "When off, missing check-in/out days won't be flagged as anomalies.",
@@ -347,7 +349,14 @@
                 "label": "Role",
                 "admin": "Administrator",
                 "employee": "Employee"
-            }
+            },
+            "scheduleMode": "Expectation mode",
+            "scheduleModeHours": "Expected hours",
+            "scheduleModeHoursHelp": "Total worked hours are checked against the expected daily hours.",
+            "scheduleModeTimetable": "Day timetable",
+            "scheduleModeTimetableHelp": "Each check-in/out is checked against the day's expected timetable (tolerance configurable in company settings).",
+            "timetableLabel": "Expected timetable",
+            "timetableHelp": "Days without shifts are considered non-working days."
         },
         "groups": {
             "add": "New Department",
@@ -453,7 +462,6 @@
             "blocked": "Account blocked",
             "unblockHint": "To unblock, edit the user and reset their password.",
             "workingNow": "Working now",
-            "customNonWorkDays": "Custom non-work days",
             "registered": "Registered",
             "deletedTitle": "Deleted users",
             "deletedOn": "Deleted on {date}",
@@ -491,14 +499,10 @@
         },
         "settings": {
             "userDefaults": "Default settings for new users",
-            "toleranceHelp": "Tolerance margin around expected hours before flagging an anomaly.",
-            "toleranceLabel": "Tolerance (hours)",
-            "defaultHoursHelp": "Expected work hours per day by default for new employees.",
-            "defaultHoursLabel": "Daily expected hours",
+            "toleranceHelp": "Tolerance margin (minutes) around expected hours before flagging an anomaly.",
+            "toleranceLabel": "Tolerance for the expected-hours format",
             "endOfDayHelp": "End-of-day time to detect workers who haven't checked out.",
             "endOfDayLabel": "End of day time",
-            "nonWorkingDaysHelp": "Days of the week when no work is expected (won't flag an anomaly).",
-            "nonWorkingDaysLabel": "Non-working days",
             "reminderHelp": "Send an end-of-day email to users with an inconsistent check-in/out, with the link to apply the automatic timetable. With \"Each worker's choice\", each worker enables or disables the reminder in their profile.",
             "reminderLabel": "Inconsistent check-in/out email reminder",
             "reminderMode": {
@@ -516,7 +520,18 @@
             "privacyNoticeLabel": "Privacy notice",
             "privacyNoticeHelp": "Text of the privacy notice shown to workers (GDPR information obligation). Empty if not configured yet.",
             "consultationLabel": "Prior consultation of workers' representatives",
-            "consultationHelp": "Confirm that workers' representatives were consulted before establishing the time-registration system (art. 34.9 of the Workers' Statute)."
+            "consultationHelp": "Confirm that workers' representatives were consulted before establishing the time-registration system (art. 34.9 of the Workers' Statute).",
+            "defaultScheduleModeLabel": "Default expectation mode",
+            "scheduleModeHours": "Expected hours",
+            "scheduleModeTimetable": "Day timetable",
+            "defaultScheduleModeHelp": "Mode copied to new users on creation; can be changed per user from their profile.",
+            "defaultTimetableLabel": "Day timetable (default)",
+            "defaultTimetableHelp": "Expected timetable copied to new users and used as a template when enabling day-timetable mode.",
+            "timetableToleranceLabel": "Tolerance for the day-timetable format",
+            "timetableToleranceHelp": "Maximum deviation (minutes) of a check-in/out from the expected timetable before flagging an anomaly.",
+            "defaultWeeklyHoursLabel": "Expected hours per day (default)",
+            "defaultWeeklyHoursHelp": "Expected hours per weekday for new users. A day with 0h is considered non-working.",
+            "notificationsSection": "Notifications"
         },
         "export": {
             "button": "Export signing CSV",
@@ -554,7 +569,8 @@
                 "employee": "Employee",
                 "expected": "Expected",
                 "hours": "Hours",
-                "sessions": "Events"
+                "sessions": "Events",
+                "source": "Source"
             },
             "source": {
                 "userClick": "Employee",
@@ -841,7 +857,23 @@
             "forgot_check_out": "check-in without check-out",
             "forgot_check_in": "check-out without check-in",
             "hours_short": "fewer hours than expected",
-            "hours_over": "more hours than expected"
+            "hours_over": "more hours than expected",
+            "timetable_check_in_late": "check-in off schedule (late)",
+            "timetable_check_in_early": "check-in off schedule (early)",
+            "timetable_check_out_late": "check-out off schedule (late)",
+            "timetable_check_out_early": "check-out off schedule (early)",
+            "timetable_shift_count": "wrong number of shifts"
         }
+    },
+    "expectedTimetable": {
+        "edit": "Edit timetable",
+        "title": "Expected timetable",
+        "nonWorkingDay": "Non-working",
+        "invalidIntervals": "Each shift must start and end within the day and shifts must not overlap."
+    },
+    "weeklyHours": {
+        "label": "Expected hours per day",
+        "help": "Set the expected hours for each day of the week. A day with 0h is considered non-working.",
+        "nonWorkingDay": "Non-working"
     }
 }

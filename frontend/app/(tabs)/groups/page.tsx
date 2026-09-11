@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LoadingState from '@/components/ui/LoadingState';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
@@ -55,9 +56,7 @@ export default function UserGroupsPage() {
 
             <div className="grid gap-4">
                 {loading ? (
-                    <div className="p-8 text-center text-sm text-zinc-500 animate-pulse">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState className="p-8" />
                 ) : groups.length === 0 ? (
                     <EmptyState
                         icon={<Users size={24} />}

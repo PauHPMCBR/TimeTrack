@@ -4,6 +4,7 @@ import {
     GroupSchema,
     WorkSessionSchema,
     WorkSessionTypeSchema,
+    WorkDaySourceSchema,
     ElectiveVacationSchema,
     VacationStatusSchema,
     YearlyVacationDaysSchema,
@@ -11,6 +12,7 @@ import {
     WorkSessionReasonSchema,
     AppSettingsSchema,
     MonthlyApprovalSchema,
+    ValidWeekTimetableSchema,
 } from '../../src/schemas/database';
 
 describe('Database Schemas', () => {
@@ -40,36 +42,28 @@ describe('Database Schemas', () => {
                 expect(result.data.registered).toBe(false);
                 expect(result.data.role).toBe('employee');
                 expect(result.data.groups).toEqual([]);
-                expect(result.data.expectedWorkHours).toBe(8);
+                expect(result.data.weeklyExpectedHours).toEqual([
+                    0, 8, 8, 8, 8, 8, 0,
+                ]);
+                expect(result.data.scheduleMode).toBe('hours');
+                expect(result.data.timetable).toHaveLength(7);
             }
         });
 
-        it('should accept dni and expectedWorkHours', () => {
+        it('should accept weeklyExpectedHours', () => {
             const result = UserSchema.safeParse({
                 name: 'John Doe',
                 email: 'john@example.com',
                 registrationToken: 'token123',
                 dni: '12345678A',
-                expectedWorkHours: 7.5,
+                weeklyExpectedHours: [7.5, 7.5, 7.5, 7.5, 7.5, 0, 0],
             });
             expect(result.success).toBe(true);
             if (result.success) {
                 expect(result.data.dni).toBe('12345678A');
-                expect(result.data.expectedWorkHours).toBe(7.5);
-            }
-        });
-
-        it('should accept workDays', () => {
-            const result = UserSchema.safeParse({
-                name: 'John Doe',
-                email: 'john@example.com',
-                registrationToken: 'token123',
-                dni: '12345678A',
-                workDays: [1, 2, 3, 4, 5],
-            });
-            expect(result.success).toBe(true);
-            if (result.success) {
-                expect(result.data.workDays).toEqual([1, 2, 3, 4, 5]);
+                expect(result.data.weeklyExpectedHours).toEqual([
+                    7.5, 7.5, 7.5, 7.5, 7.5, 0, 0,
+                ]);
             }
         });
 
@@ -82,13 +76,13 @@ describe('Database Schemas', () => {
             expect(result.success).toBe(false);
         });
 
-        it('should reject non-positive expectedWorkHours', () => {
+        it('should reject a weeklyExpectedHours array of the wrong length', () => {
             const result = UserSchema.safeParse({
                 name: 'John Doe',
                 email: 'john@example.com',
                 registrationToken: 'token123',
                 dni: '12345678A',
-                expectedWorkHours: 0,
+                weeklyExpectedHours: [8, 8, 8],
             });
             expect(result.success).toBe(false);
         });
@@ -107,8 +101,7 @@ describe('Database Schemas', () => {
     describe('AppSettingsSchema', () => {
         it('should validate correct settings', () => {
             const result = AppSettingsSchema.safeParse({
-                defaultExpectedHours: 8,
-                benevolenceHours: 1,
+                defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
                 endOfDayHour: 17,
             });
             expect(result.success).toBe(true);
@@ -118,33 +111,41 @@ describe('Database Schemas', () => {
             const result = AppSettingsSchema.safeParse({});
             expect(result.success).toBe(true);
             if (result.success) {
-                expect(result.data.defaultExpectedHours).toBe(8);
-                expect(result.data.benevolenceHours).toBe(1);
+                expect(result.data.defaultWeeklyExpectedHours).toEqual([
+                    0, 8, 8, 8, 8, 8, 0,
+                ]);
+                expect(result.data.toleranceMinutes).toBe(60);
                 expect(result.data.endOfDayHour).toBe(20);
-                expect(result.data.nonWorkingDays).toEqual([6, 0]);
+                expect(result.data.defaultScheduleMode).toBe('hours');
+                expect(result.data.defaultTimetable).toHaveLength(7);
+                expect(result.data.timetableToleranceMinutes).toBe(10);
             }
         });
 
-        it('should accept nonWorkingDays and toleranceHours', () => {
+        it('should accept defaultWeeklyExpectedHours and toleranceMinutes', () => {
             const result = AppSettingsSchema.safeParse({
-                nonWorkingDays: [5, 6],
-                toleranceHours: 2,
+                defaultWeeklyExpectedHours: [0, 9, 9, 9, 9, 9, 0],
+                toleranceMinutes: 120,
             });
             expect(result.success).toBe(true);
             if (result.success) {
-                expect(result.data.nonWorkingDays).toEqual([5, 6]);
-                expect(result.data.toleranceHours).toBe(2);
+                expect(result.data.defaultWeeklyExpectedHours).toEqual([
+                    0, 9, 9, 9, 9, 9, 0,
+                ]);
+                expect(result.data.toleranceMinutes).toBe(120);
             }
         });
 
-        it('should reject an invalid nonWorkingDays value', () => {
-            const result = AppSettingsSchema.safeParse({ nonWorkingDays: [7] });
+        it('should reject a defaultWeeklyExpectedHours array of the wrong length', () => {
+            const result = AppSettingsSchema.safeParse({
+                defaultWeeklyExpectedHours: [8, 8, 8],
+            });
             expect(result.success).toBe(false);
         });
 
-        it('should reject negative benevolence', () => {
+        it('should reject negative toleranceMinutes', () => {
             const result = AppSettingsSchema.safeParse({
-                benevolenceHours: -1,
+                toleranceMinutes: -1,
             });
             expect(result.success).toBe(false);
         });
@@ -205,11 +206,10 @@ describe('Database Schemas', () => {
             expect(result.success).toBe(true);
         });
 
-        it('should default source to user', () => {
-            const result = WorkSessionSchema.safeParse({
+        it('should default the day source to userClick', () => {
+            const result = WorkDaySourceSchema.safeParse({
                 userId: 'user123',
-                type: 'check_in',
-                timestamp: new Date(),
+                date: '2025-06-09',
             });
             expect(result.success).toBe(true);
             if (result.success) {
@@ -217,17 +217,16 @@ describe('Database Schemas', () => {
             }
         });
 
-        it('should accept all work-session sources', () => {
+        it('should accept all day sources', () => {
             for (const source of [
                 'userClick',
                 'userAutomatic',
                 'userManual',
                 'adminManual',
             ]) {
-                const result = WorkSessionSchema.safeParse({
+                const result = WorkDaySourceSchema.safeParse({
                     userId: 'user123',
-                    type: 'check_out',
-                    timestamp: new Date(),
+                    date: '2025-06-09',
                     source,
                 });
                 expect(result.success).toBe(true);
@@ -237,12 +236,19 @@ describe('Database Schemas', () => {
             }
         });
 
-        it('should reject an invalid source', () => {
-            const result = WorkSessionSchema.safeParse({
+        it('should reject an invalid day source', () => {
+            const result = WorkDaySourceSchema.safeParse({
                 userId: 'user123',
-                type: 'check_in',
-                timestamp: new Date(),
+                date: '2025-06-09',
                 source: 'system',
+            });
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject an invalid day key', () => {
+            const result = WorkDaySourceSchema.safeParse({
+                userId: 'user123',
+                date: '2025-6-9',
             });
             expect(result.success).toBe(false);
         });
@@ -433,6 +439,73 @@ describe('Database Schemas', () => {
                 catalanText: 'Treballo des de casa',
             });
             expect(result.success).toBe(true);
+        });
+    });
+
+    describe('ValidWeekTimetableSchema', () => {
+        it('should accept chronologically valid intervals', () => {
+            const result = ValidWeekTimetableSchema.safeParse([
+                [{ checkIn: '09:00', checkOut: '13:00' }, { checkIn: '14:00', checkOut: '18:00' }],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            ]);
+            expect(result.success).toBe(true);
+        });
+
+        it('should reject an interval that ends before it starts', () => {
+            const result = ValidWeekTimetableSchema.safeParse([
+                [{ checkIn: '18:00', checkOut: '09:00' }],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            ]);
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject a zero-length interval', () => {
+            const result = ValidWeekTimetableSchema.safeParse([
+                [{ checkIn: '09:00', checkOut: '09:00' }],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            ]);
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject overlapping intervals', () => {
+            const result = ValidWeekTimetableSchema.safeParse([
+                [{ checkIn: '09:00', checkOut: '14:00' }, { checkIn: '13:00', checkOut: '18:00' }],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            ]);
+            expect(result.success).toBe(false);
+        });
+
+        it('should reject unsorted intervals', () => {
+            const result = ValidWeekTimetableSchema.safeParse([
+                [{ checkIn: '14:00', checkOut: '18:00' }, { checkIn: '09:00', checkOut: '13:00' }],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            ]);
+            expect(result.success).toBe(false);
         });
     });
 });

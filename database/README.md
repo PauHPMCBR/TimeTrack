@@ -1,201 +1,45 @@
-# MongoDB Docker Container
-Docker con MongoDB para desarrollo
+# Database
 
-## Características
-- MongoDB 6.0 en contenedor Docker
-- Inicialización automática de base de datos y usuarios
-- Persistencia de datos con volúmenes Docker
-- Health checks para verificar estado del servicio
+Local MongoDB for development: MongoDB 6.0 in a `mongodb` container, host port
+**27018** → container 27017 (bound to localhost only). `mongo-init.js` runs
+automatically on first start: it creates the app user (`alumne`) and, with
+`SEED_DEMO=1` + `DEMO_PASSWORD_HASH`, the demo data (see the root `.env.example`).
 
-
-## Inicio Rápido
-### 0. Prerrequisitos
-- Docker
-- Docker Compose
-- MongoDB Compass (opcional, para gestión visual)
-
-### 1. Ejecutar el contenedor
 ```
-# Construir y levantar los servicios
-docker-compose up --build
-
-# Ejecutar en segundo plano
-docker-compose up -d --build
-
-# Ver logs en tiempo real
-docker-compose logs -f
+database/
+├── docker-compose.yml   MongoDB service (init script mounted read-only)
+├── mongo-init.js        App user, collections + indexes, optional demo seed
+├── package.json         npm scripts for the migrations
+└── migrations/          Numbered migration scripts (see "Migrations")
 ```
 
-### 2. Verificar estado
-```
-# Ver estado de los contenedores
-docker-compose ps
+## Run / reset
 
-# Ver logs específicos de MongoDB
-docker-compose logs mongodb
+From the repo root (requires `MONGO_ROOT_PASSWORD` / `MONGO_APP_PASSWORD` in `.env`):
 
-# Ver logs del seed
-docker-compose logs seed
+```bash
+npm run db:up      # start and wait until healthy
+npm run db:down
+docker compose -f database/docker-compose.yml down -v   # reset (deletes data)
 ```
 
-## Configuración
-### 1. Archivos de configuración
-- `docker-compose.yml` Configuración de servicios Docker
-- `mongo-init.js` Script de inicialización de MongoDB
-- `Dockerfile` Configuración del contenedor seed
+## Connect
 
-### 2. Variables de entorno
-```
-MONGO_ROOT_USER: root
-MONGO_ROOT_PASSWORD: <MONGO_ROOT_PASSWORD>
-MONGODB_URI: mongodb://alumne:<MONGO_APP_PASSWORD>@mongodb:27017/myapp?authSource=myapp
-```
-### 3. Puertos
-- 27018 → Puerto del host (acceso desde tu máquina)
-- 27017 → Puerto del contenedor (comunicación interna)
-
-## Estructura de la base de datos
-### 1. Bases de datos creadas
-- admin - Base de datos de administración
-- myapp - Base de datos de la aplicación
-
-### 2. Usuarios creados
-| Usuario | Contraseña             | Base de datos | Rol       |
-| ------: | ---------------------- | ------------- | --------- |
-|    root | `<MONGO_ROOT_PASSWORD>` | admin         | root      |
-|  alumne | `<MONGO_APP_PASSWORD>` | myapp         | readWrite |
-
-### 3. Colecciones
-- users - Usuarios de la aplicación
-
-## Conexión a la base de datos
-### 1. Desde MongoDB Compass
 ```
 mongodb://alumne:<MONGO_APP_PASSWORD>@localhost:27018/myapp?authSource=myapp
 ```
-### 2. Desde Node.js (fuera de Docker)
-En el fichero _.env_
-```
-const MONGODB_URI = 'mongodb://alumne:<MONGO_APP_PASSWORD>@localhost:27018/myapp?authSource=myapp';
-```
-## Gestión y Mantenimiento
-Eliminar base de datos COMPLETAMENTE (reset total)
-bash
-### Parar contenedores y ELIMINAR volúmenes (esto borra todos los datos)
-```
-docker-compose down -v
-```
 
-### Limpiar recursos Docker no utilizados
-```
-docker system prune -f
-docker volume prune -f
-```
+For an interactive shell:
+`docker exec -it mongodb mongosh -u alumne -p <MONGO_APP_PASSWORD> --authenticationDatabase myapp`
 
-### Iniciar de nuevo (base de datos limpia)
-```
-docker-compose up --build
-Resetear solo los datos (mantener contenedores)
-```
+## Migrations
 
-### Conectar y eliminar la base de datos
-```
-docker exec -it mongodb mongosh -u root -p <MONGO_ROOT_PASSWORD> --authenticationDatabase admin --eval "
-use myapp;
-db.dropDatabase();
-print('Base de datos eliminada');
-"
-```
+`migrations/` holds self-contained, numbered Node scripts (one-time data
+transformations between schema versions; each file's header says what it does).
+They read `MONGODB_URI` from the environment (falling back to `backend/.env`)
+and operate on the database named in that URI — run each once per company
+database, in order:
 
-### Reiniciar para re-ejecutar inicialización
-```
-docker-compose restart
-Comandos útiles de diagnóstico
-```
-
-### Ver volúmenes existentes
-```
-docker volume ls
-```
-
-### Ver uso de recursos
-```
-docker stats
-```
-
-### Ver redes Docker
-```
-docker network ls
-```
-
-### Inspeccionar contenedor
-```
-docker inspect mongodb
-```
-
-## Solución de Problemas
-### 1. Error: "Authentication failed"
-Verifica que las credenciales en la cadena de conexión coincidan con mongo-init.js
-
-Asegúrate de incluir authSource=myapp para el usuario alumne
-
-### 2. Error: "Connection refused"
-Verifica que el contenedor esté ejecutándose: docker-compose ps
-
-Comprueba que el puerto 27018 esté disponible
-
-Revisa logs: `docker-compose logs mongodb`
-
-### 3. Error: "Port already in use"
-```
-# Ver qué proceso usa el puerto
-netstat -ano | findstr :27018
-
-# O cambiar puerto en docker-compose.yml
-ports:
-  - "27019:27017"  # Cambiar puerto host
-```
-
-### Los datos no persisten
-Asegúrate de no usar `docker-compose down -v` (elimina volúmenes)
-
-Verifica que el volumen esté montado: `docker volume inspect database_mongodb_data`
-
-Reconstruir contenedores sin perder datos
-```
-docker-compose down
-docker-compose up --build
-```
-## Comandos MongoDB útiles
-### Conectar via terminal
-```
-# Como root
-docker exec -it mongodb mongosh -u root -p <MONGO_ROOT_PASSWORD> --authenticationDatabase admin
-
-# Como usuario de aplicación
-docker exec -it mongodb mongosh -u alumne -p <MONGO_APP_PASSWORD> --authenticationDatabase myapp
-```
-### Consultas comunes
-```
-// Ver bases de datos
-db.adminCommand('listDatabases');
-
-// Ver colecciones
-db.getCollectionNames();
-
-// Ver usuarios
-db.getUsers();
-
-// Consultar usuarios de aplicación
-db.users.find().pretty();
-```
-
-## Estructura de archivos
-```
-database/
-├── docker-compose.yml
-├── Dockerfile
-├── mongo-init.js
-├── package.json
-└── README.md
+```bash
+node database/migrations/001-…cjs     # or: npm run migrate:<name> -w database
 ```

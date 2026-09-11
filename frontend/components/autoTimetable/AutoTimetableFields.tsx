@@ -11,9 +11,11 @@ import {
 export default function AutoTimetableFields({
     timetable,
     onChange,
+    allowEmpty = false,
 }: {
     timetable: TimetableEntry[];
     onChange: (next: TimetableEntry[]) => void;
+    allowEmpty?: boolean;
 }) {
     const { t } = useI18n();
 
@@ -38,7 +40,7 @@ export default function AutoTimetableFields({
 
     const removeInterval = (index: number) => {
         onChange(
-            timetable.length <= 1
+            !allowEmpty && timetable.length <= 1
                 ? timetable
                 : timetable.filter((_, i) => i !== index)
         );
@@ -57,7 +59,7 @@ export default function AutoTimetableFields({
                         </label>
                         <input
                             type="time"
-                            value={entry.checkIn}
+                            value={entry.checkIn ?? ''}
                             onChange={(e) =>
                                 updateEntry(index, 'checkIn', e.target.value)
                             }
@@ -70,7 +72,7 @@ export default function AutoTimetableFields({
                         </label>
                         <input
                             type="time"
-                            value={entry.checkOut}
+                            value={entry.checkOut ?? ''}
                             onChange={(e) =>
                                 updateEntry(index, 'checkOut', e.target.value)
                             }
@@ -80,7 +82,7 @@ export default function AutoTimetableFields({
                     <Button
                         variant="ghost"
                         size="sm"
-                        disabled={timetable.length <= 1}
+                        disabled={!allowEmpty && timetable.length <= 1}
                         onClick={() => removeInterval(index)}
                     >
                         {t('checkin.autoRemoveInterval')}

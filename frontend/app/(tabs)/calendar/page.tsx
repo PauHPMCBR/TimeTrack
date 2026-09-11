@@ -10,13 +10,17 @@ import {
 import { TeamVacation } from '@/types';
 import { useRouter } from 'next/navigation';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
-import { defaultNonWorkingDays } from 'shared/src/lib/defaults';
+import {
+    nonWorkingDaysOfWeek,
+    resolveNonWorkingDays,
+} from 'shared/src/lib/user-overrides';
 import { localeTag } from '@/lib/datetime';
 import { Calendar } from '@/components/calendar/Calendar';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { CALENDAR_ALL_USERS, CALENDAR_MONTH } from '@/lib/storage';
+import { defaultWeeklyExpectedHours } from 'shared/src/index';
 
 export default function CalendarPage() {
     const router = useRouter();
@@ -44,7 +48,7 @@ export default function CalendarPage() {
     const [workSessions, setWorkSessions] =
         useState<MonthlyWorkRecordResponse | null>(null);
     const [teamVacations, setTeamVacations] = useState<TeamVacation[]>([]);
-    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(defaultNonWorkingDays());
+    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]);
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [allUsers, setAllUsers] = usePersistedState<boolean>(
@@ -145,17 +149,16 @@ export default function CalendarPage() {
                     setUsersMap(map);
                 }
 
-                // Non-working days: prefer the user's own override, else the company default.
-                const allDays = [0, 1, 2, 3, 4, 5, 6];
-                if (user.workDays && user.workDays.length > 0) {
-                    setNonWorkingDays(
-                        allDays.filter((d) => !user.workDays!.includes(d))
-                    );
-                } else if (!settingsRes.error && settingsRes.data?.settings) {
-                    setNonWorkingDays(
-                        settingsRes.data.settings.nonWorkingDays ?? defaultNonWorkingDays()
-                    );
-                }
+                setNonWorkingDays(
+                    resolveNonWorkingDays(
+                        user,
+                        nonWorkingDaysOfWeek(
+                            settingsRes.data?.settings
+                                .defaultWeeklyExpectedHours ?? 
+                                defaultWeeklyExpectedHours()
+                        )
+                    )
+                );
             } catch (error) {
                 console.error('Failed to fetch calendar data:', error);
                 setErrorMsg(t('error.GetError'));

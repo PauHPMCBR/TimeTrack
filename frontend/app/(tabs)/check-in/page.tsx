@@ -6,8 +6,8 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { WorkSessionRequest } from '@/schemas/api';
 import { WorkSession, WorksessionReason, User } from '@/types';
-import { toLocalDateKey, formatHM } from '@/lib/datetime';
-import { configuredTimezone } from '@/lib/timezone';
+import { toLocalDateKey, formatHM, localeTag } from '@/lib/datetime';
+import { formatClockHM } from '@/lib/timezone';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
@@ -21,6 +21,7 @@ import {
     DEFAULT_CHECK_OUT_TIME,
 } from 'shared/src/lib/defaults';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/Modal';
 import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
@@ -266,11 +267,7 @@ export default function CheckInPage() {
     const currentReasons = getCurrentReasons();
 
     if (loading) {
-        return (
-            <div className="p-5 animate-pulse text-zinc-500">
-                {t('common.loading')}
-            </div>
-        );
+        return <LoadingState className="p-5" />;
     }
 
     return (
@@ -338,7 +335,9 @@ export default function CheckInPage() {
                                 <button
                                     key={reason._id}
                                     type="button"
-                                    onClick={() => setNotes(getReasonText(reason))}
+                                    onClick={() =>
+                                        setNotes(getReasonText(reason))
+                                    }
                                     className="p-3 rounded-lg border text-sm text-center transition-colors border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                                 >
                                     {getReasonText(reason)}
@@ -451,12 +450,12 @@ export default function CheckInPage() {
                                                 )}
                                             </div>
                                         </div>
-                                         <div className="text-sm text-zinc-500">
-                                             {new Intl.DateTimeFormat(
-                                                 lang,
-                                                 { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: configuredTimezone() }
-                                             ).format(new Date(session.timestamp))}
-                                         </div>
+                                        <div className="text-sm text-zinc-500">
+                                            {formatClockHM(
+                                                session.timestamp,
+                                                localeTag(lang)
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}

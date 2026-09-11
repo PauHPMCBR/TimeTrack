@@ -9,16 +9,18 @@ import type { UpdateUserRequest } from '@/schemas/api';
 import { localeTag, toLocalDateKey } from '@/lib/datetime';
 import Modal from '@/components/Modal';
 import Button from '@/components/ui/Button';
-import HoursMinutesInput from '@/components/ui/HoursMinutesInput';
 import Label from '@/components/ui/Label';
 import TextField from '@/components/ui/TextField';
 import RoleSelector from '@/components/ui/RoleSelector';
-import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
+import WeeklyHoursEditor from '@/components/weeklyHours/WeeklyHoursEditor';
+import OptionPicker from '@/components/ui/OptionPicker';
 import { ADMIN_ROLE, EMPLOYEE_ROLE } from 'shared/src/lib/constants';
-import {
-    DEFAULT_EXPECTED_WORK_HOURS,
-    defaultNonWorkingDays,
-} from 'shared/src/lib/defaults';
+import { defaultWeeklyExpectedHours } from 'shared/src/lib/defaults';
+import { resolveWeeklyExpectedHours } from 'shared/src/lib/user-overrides';
+import { defaultTimetable } from 'shared/src/schemas/database';
+import type { WeekTimetable } from '@/schemas/database';
+import ExpectedTimetableField from '@/components/timetable/ExpectedTimetableField';
+import { normalizeWeekTimetable } from '@/lib/timetable';
 import { COPIED_LINK_FEEDBACK_MS } from '@/lib/constants';
 import {
     Check,
@@ -49,8 +51,9 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         email: '',
         role: EMPLOYEE_ROLE,
         dni: '',
-        expectedWorkHours: DEFAULT_EXPECTED_WORK_HOURS,
-        workDays: undefined,
+        weeklyExpectedHours: defaultWeeklyExpectedHours(),
+        scheduleMode: 'hours',
+        timetable: defaultTimetable(),
         checkInRequired: true,
     });
     const [saving, setSaving] = useState(false);
@@ -62,16 +65,12 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         null
     );
     const [copied, setCopied] = useState(false);
-    const [customNonWorkDays, setCustomNonWorkDays] = useState(false);
-    const [nonWorkDays, setNonWorkDays] = useState<number[]>([]);
     const [startDate, setStartDate] = useState('');
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
-
-    const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
     useEffect(() => {
         if (!open || !user) return;
@@ -80,18 +79,14 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
             email: user.email,
             role: user.role,
             dni: user.dni ?? '',
-            expectedWorkHours:
-                user.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS,
-            workDays: user.workDays,
+            weeklyExpectedHours: resolveWeeklyExpectedHours(
+                user,
+                defaultWeeklyExpectedHours()
+            ),
+            scheduleMode: user.scheduleMode ?? 'hours',
+            timetable: normalizeWeekTimetable(user.timetable),
             checkInRequired: user.checkInRequired !== false,
         });
-        const hasCustom = !!user.workDays && user.workDays.length > 0;
-        setCustomNonWorkDays(hasCustom);
-        setNonWorkDays(
-            hasCustom
-                ? ALL_DAYS.filter((d) => !user.workDays!.includes(d))
-                : defaultNonWorkingDays()
-        );
         setStartDate(
             user.trackingStartDate
                 ? toLocalDateKey(user.trackingStartDate)
@@ -128,35 +123,25 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         markDirty();
     };
 
-    const toggleNonWorkDay = (jsDay: number) => {
-        const next = nonWorkDays.includes(jsDay)
-            ? nonWorkDays.filter((d) => d !== jsDay)
-            : [...nonWorkDays, jsDay].sort((a, b) => a - b);
-        setNonWorkDays(next);
-        setFormData((prev) => ({
-            ...prev,
-            workDays: ALL_DAYS.filter((d) => !next.includes(d)),
-        }));
-        markDirty();
-    };
-
-    const handleCustomNonWorkDaysChange = (checked: boolean) => {
-        setCustomNonWorkDays(checked);
-        if (checked) {
-            const start =
-                nonWorkDays.length > 0
-                    ? nonWorkDays
-                    : defaultNonWorkingDays();
-            setNonWorkDays(start);
-            setFormData((prev) => ({
-                ...prev,
-                workDays: ALL_DAYS.filter((d) => !start.includes(d)),
-            }));
-        } else {
-            setNonWorkDays([]);
-            setFormData((prev) => ({ ...prev, workDays: undefined }));
+    const handleScheduleModeChange = (mode: 'hours' | 'timetable') => {
+        if (mode === formData.scheduleMode) return;
+        update({ scheduleMode: mode });
+        if (mode === 'timetable') {
+            apiClient.getSettings().then((res) => {
+                if (!res.error && res.data?.settings.defaultTimetable) {
+                    setFormData((prev) =>
+                        prev.scheduleMode === 'timetable'
+                            ? {
+                                  ...prev,
+                                  timetable: normalizeWeekTimetable(
+                                      res.data!.settings.defaultTimetable
+                                  ),
+                              }
+                            : prev
+                    );
+                }
+            });
         }
-        markDirty();
     };
 
     const requestClose = () => {
@@ -308,6 +293,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     return (
         <Modal
             open={open}
+            size="xl"
             title={t('admin.usersEdit.title')}
             onClose={requestClose}
             footer={
@@ -433,38 +419,64 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                     </div>
 
                     <div>
-                        <Label>{t('admin.form.expectedHours')}</Label>
-                        <HoursMinutesInput
-                            value={formData.expectedWorkHours ?? DEFAULT_EXPECTED_WORK_HOURS}
-                            minHours={1}
-                            onChange={(v) => update({ expectedWorkHours: v })}
+                        <Label className="mb-2">
+                            {t('admin.form.scheduleMode')}
+                        </Label>
+                        <OptionPicker<'hours' | 'timetable'>
+                            options={[
+                                {
+                                    value: 'hours',
+                                    label: t('admin.form.scheduleModeHours'),
+                                },
+                                {
+                                    value: 'timetable',
+                                    label: t(
+                                        'admin.form.scheduleModeTimetable'
+                                    ),
+                                },
+                            ]}
+                            value={formData.scheduleMode ?? 'hours'}
+                            onChange={handleScheduleModeChange}
                         />
+                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            {t(
+                                formData.scheduleMode === 'timetable'
+                                    ? 'admin.form.scheduleModeTimetableHelp'
+                                    : 'admin.form.scheduleModeHoursHelp'
+                            )}
+                        </p>
                     </div>
 
-                    <div>
-                        <label className="mb-1.5 flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                            <input
-                                type="checkbox"
-                                checked={customNonWorkDays}
-                                onChange={(e) =>
-                                    handleCustomNonWorkDaysChange(
-                                        e.target.checked
-                                    )
+                    {formData.scheduleMode === 'timetable' ? (
+                        <ExpectedTimetableField
+                            timetable={
+                                formData.timetable ?? defaultTimetable()
+                            }
+                            locale={localeTag(lang)}
+                            label={t('admin.form.timetableLabel')}
+                            help={t('admin.form.timetableHelp')}
+                            onChange={(next: WeekTimetable) =>
+                                update({ timetable: next })
+                            }
+                        />
+                    ) : (
+                        <div>
+                            <Label>{t('weeklyHours.label')}</Label>
+                            <p className="mb-2 mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                {t('weeklyHours.help')}
+                            </p>
+                            <WeeklyHoursEditor
+                                hours={
+                                    formData.weeklyExpectedHours ??
+                                    defaultWeeklyExpectedHours()
                                 }
-                                className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            {t('admin.form.customNonWorkDays')}
-                        </label>
-
-                        {customNonWorkDays && (
-                            <WeekDaysSelector
-                                className="mt-2"
-                                selected={nonWorkDays}
-                                onToggle={toggleNonWorkDay}
                                 locale={localeTag(lang)}
+                                onChange={(next) =>
+                                    update({ weeklyExpectedHours: next })
+                                }
                             />
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     <div>
                         <label className="mb-1.5 flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">

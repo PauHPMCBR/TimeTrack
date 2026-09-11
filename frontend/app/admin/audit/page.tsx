@@ -7,12 +7,13 @@ import { AuditEventRow } from '@/schemas/api';
 import { User } from '@/types';
 import { localeTag } from '@/lib/datetime';
 import { AUDIT_ACTIONS } from 'shared/src/lib/constants';
-import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Label from '@/components/ui/Label';
 import { Alert } from '@/components/ui/Alert';
 import AdminBackButton from '@/components/AdminBackButton';
-import { ChevronLeft, ChevronRight, ScrollText } from 'lucide-react';
+import Pagination from '@/components/ui/Pagination';
+import LoadingState from '@/components/ui/LoadingState';
+import { ScrollText } from 'lucide-react';
 
 const PAGE_SIZE = 50;
 
@@ -128,7 +129,9 @@ export default function AdminAuditPage() {
                         <select
                             value={actionFilter}
                             onChange={(e) =>
-                                changeFilter(() => setActionFilter(e.target.value))
+                                changeFilter(() =>
+                                    setActionFilter(e.target.value)
+                                )
                             }
                             className={selectClass}
                         >
@@ -149,7 +152,9 @@ export default function AdminAuditPage() {
                         <select
                             value={userFilter}
                             onChange={(e) =>
-                                changeFilter(() => setUserFilter(e.target.value))
+                                changeFilter(() =>
+                                    setUserFilter(e.target.value)
+                                )
                             }
                             className={selectClass}
                         >
@@ -171,7 +176,9 @@ export default function AdminAuditPage() {
                             type="date"
                             value={fromFilter}
                             onChange={(e) =>
-                                changeFilter(() => setFromFilter(e.target.value))
+                                changeFilter(() =>
+                                    setFromFilter(e.target.value)
+                                )
                             }
                             className={dateInputClass}
                         />
@@ -192,9 +199,7 @@ export default function AdminAuditPage() {
                 </div>
 
                 {loading ? (
-                    <div className="p-6 text-center animate-pulse text-zinc-500">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState className="p-6" />
                 ) : events.length === 0 ? (
                     <p className="text-sm text-zinc-500">
                         {t('admin.audit.empty')}
@@ -219,9 +224,7 @@ export default function AdminAuditPage() {
                                         {event.targetId
                                             ? ` · ${event.targetId}`
                                             : ''}
-                                        {event.ip
-                                            ? ` · ${event.ip}`
-                                            : ''}
+                                        {event.ip ? ` · ${event.ip}` : ''}
                                     </span>
                                 </div>
                                 <span className="shrink-0 text-xs text-zinc-500">
@@ -232,32 +235,14 @@ export default function AdminAuditPage() {
                     </ul>
                 )}
 
-                {total > PAGE_SIZE && (
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                            {offset + 1}–
-                            {Math.min(offset + PAGE_SIZE, total)} / {total}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="secondary"
-                                onClick={() =>
-                                    setOffset(Math.max(0, offset - PAGE_SIZE))
-                                }
-                                disabled={offset === 0}
-                            >
-                                <ChevronLeft size={14} />
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setOffset(offset + PAGE_SIZE)}
-                                disabled={offset + PAGE_SIZE >= total}
-                            >
-                                <ChevronRight size={14} />
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <div className="mt-4">
+                    <Pagination
+                        offset={offset}
+                        pageSize={PAGE_SIZE}
+                        total={total}
+                        onPageChange={setOffset}
+                    />
+                </div>
             </Card>
         </div>
     );

@@ -10,7 +10,7 @@ import {
     MS_PER_DAY,
     REFRESH_TOKEN_HEADER,
 } from 'shared/src/lib/constants';
-import type { UserRole } from 'shared/src/schemas/database';
+import type { UserRole, WeekTimetable } from 'shared/src/schemas/database';
 
 export { REFRESH_TOKEN_HEADER };
 
@@ -67,14 +67,8 @@ export function clearAuthCookie(res: NextApiResponse): void {
     ]);
 }
 
-// Read the JWT from the Authorization header (legacy) or the httpOnly cookie.
-export function extractToken(
-    req: NextApiRequest
-): { token: string; persist: boolean } | null {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        return { token: authHeader.split(' ')[1], persist: false };
-    }
+// Read the JWT from the httpOnly cookie.
+export function extractToken(req: NextApiRequest): { token: string; persist: boolean } | null {
     const cookieHeader = req.headers.cookie;
     if (cookieHeader) {
         for (const part of cookieHeader.split(';')) {
@@ -106,8 +100,9 @@ export interface AuthUserDoc {
     role: UserRole;
     deleted?: boolean;
     groups?: Types.ObjectId[];
-    // Present on the full document fetched by authenticateToken.
-    workDays?: number[];
+    weeklyExpectedHours?: number[];
+    scheduleMode?: 'hours' | 'timetable';
+    timetable?: WeekTimetable;
 }
 
 export interface AuthRequest extends NextApiRequest {

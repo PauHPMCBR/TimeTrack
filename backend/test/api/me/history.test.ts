@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockReq, mockRes } from '../../utils/mocks';
+import { mockReq, mockRes, createMockAppSettings } from '../../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -35,13 +35,7 @@ vi.mock('@/lib/validation', () => ({
 vi.mock('@/lib/settings', () => ({
     DEFAULT_TIMEZONE: 'Europe/Madrid',
     getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
-    getAppSettings: vi.fn().mockResolvedValue({
-        defaultExpectedHours: 8,
-        benevolenceHours: 1,
-        toleranceHours: 1,
-        endOfDayHour: 17,
-        nonWorkingDays: [6, 0],
-    }),
+    getAppSettings: vi.fn().mockResolvedValue(createMockAppSettings({ endOfDayHour: 17 })),
 }));
 
 const queryChain = (result: unknown) => ({
@@ -59,12 +53,15 @@ const user = {
     name: 'Anna',
     email: 'anna@example.com',
     dni: '1',
-    expectedWorkHours: 8,
+    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
 };
 
 vi.mock('@/models', () => ({
     User: { findById: vi.fn() },
     WorkSession: { find: vi.fn() },
+    WorkDaySource: {
+        find: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
+    },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
     MonthlyApproval: {
@@ -76,6 +73,7 @@ vi.mock('@/models', () => ({
 import {
     User,
     WorkSession,
+    WorkDaySource,
     ElectiveVacation,
     YearlyVacationDays,
     MonthlyApproval,
@@ -121,13 +119,21 @@ describe('GET /api/me/history', () => {
                     userId: 'user-123',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'userClick',
                 },
                 {
                     _id: 's2',
                     userId: 'user-123',
                     type: 'check_out',
                     timestamp: at(17),
+                },
+            ]) as any
+        );
+        vi.mocked(WorkDaySource.find).mockReturnValue(
+            simpleChain([
+                {
+                    _id: 'd1',
+                    userId: 'user-123',
+                    date: '2025-06-09',
                     source: 'userClick',
                 },
             ]) as any
@@ -159,6 +165,7 @@ describe('GET /api/me/history', () => {
             totalHours: 8,
             anomalies: [],
             expectedHours: 8,
+            source: 'userClick',
         });
         expect(payload.data.approvedMonths).toBeDefined();
         expect(MonthlyApproval.find).toHaveBeenCalledWith({

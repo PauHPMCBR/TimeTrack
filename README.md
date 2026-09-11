@@ -70,9 +70,10 @@ npm run dev
 ```
 
 Set `MONGO_ROOT_PASSWORD` and `MONGO_APP_PASSWORD` in `.env` first (see
-`.env.example`). Optionally set `SEED_DEMO=1` to create demo groups/reasons and
-an unregistered admin account — the init script prints a registration link you
-can open to set the admin's password.
+`.env.example`). Optionally set `SEED_DEMO=1` and `DEMO_PASSWORD_HASH` (bcrypt
+hash, e.g. `cd backend && node -e "console.log(require('bcryptjs').hashSync('YOUR_PASSWORD', 12))"`)
+to seed demo employees/groups/vacations with a registered admin account — the
+init script prints the demo logins.
 
 Or run the pieces individually:
 

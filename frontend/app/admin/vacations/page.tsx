@@ -6,13 +6,16 @@ import { apiClient } from '@/lib/api';
 import { ElectiveVacation, User } from '@/types';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import AdminBackButton from '../../../components/AdminBackButton';
 import Avatar from '@/components/Avatar';
 import VacationMonthsTable from '@/components/VacationMonthsTable';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
 import { localeTag } from '@/lib/datetime';
-import { ChevronRight, ChevronLeft, Check, X, Download } from 'lucide-react';
+import { Check, X, Download, CalendarOff } from 'lucide-react';
+import StepperNav from '@/components/ui/StepperNav';
+import EmptyState from '@/components/ui/EmptyState';
 import {
     VACATION_APPROVED,
     VACATION_CANCELLED,
@@ -32,9 +35,7 @@ type GroupedRequest = {
 
 // Requests are stored as intervals with their spent days computed by the
 // backend, so each document maps to exactly one display group.
-const groupRequests = (
-    rawRequests: ElectiveVacation[]
-): GroupedRequest[] =>
+const groupRequests = (rawRequests: ElectiveVacation[]): GroupedRequest[] =>
     [...rawRequests]
         .sort((a, b) => {
             if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
@@ -60,9 +61,15 @@ export default function AdminVacationsPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [year, setYear] = usePersistedState<number>(ADMIN_VACATIONS_YEAR, new Date().getFullYear());
+    const [year, setYear] = usePersistedState<number>(
+        ADMIN_VACATIONS_YEAR,
+        new Date().getFullYear()
+    );
     const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
-    const [filterUserId, setFilterUserId] = usePersistedState<string>(ADMIN_VACATIONS_USER, 'all');
+    const [filterUserId, setFilterUserId] = usePersistedState<string>(
+        ADMIN_VACATIONS_USER,
+        'all'
+    );
     const [processingIds, setProcessingIds] = useState<string[]>([]);
     const fetchSeq = useRef(0);
 
@@ -200,22 +207,25 @@ export default function AdminVacationsPage() {
 
     // Elective days the pending requests would spend once approved.
     const pendingSpentDays = useMemo(
-        () =>
-            pendingGroups.reduce((sum, g) => sum + (g.daysCount ?? 0), 0),
+        () => pendingGroups.reduce((sum, g) => sum + (g.daysCount ?? 0), 0),
         [pendingGroups]
     );
 
     const stats = useMemo(
         () => ({
             total: filteredRequests.length,
-            pending: filteredRequests.filter((r) => r.status === VACATION_PENDING)
-                .length,
-            approved: filteredRequests.filter((r) => r.status === VACATION_APPROVED)
-                .length,
-            rejected: filteredRequests.filter((r) => r.status === VACATION_REJECTED)
-                .length,
-            cancelled: filteredRequests.filter((r) => r.status === VACATION_CANCELLED)
-                .length,
+            pending: filteredRequests.filter(
+                (r) => r.status === VACATION_PENDING
+            ).length,
+            approved: filteredRequests.filter(
+                (r) => r.status === VACATION_APPROVED
+            ).length,
+            rejected: filteredRequests.filter(
+                (r) => r.status === VACATION_REJECTED
+            ).length,
+            cancelled: filteredRequests.filter(
+                (r) => r.status === VACATION_CANCELLED
+            ).length,
             obligatoryDays: obligatoryDays.length,
         }),
         [filteredRequests, obligatoryDays]
@@ -267,27 +277,17 @@ export default function AdminVacationsPage() {
                                 ))}
                             </select>
 
-                            <button
-                                onClick={() => handleYearChange(year - 1)}
-                                className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                                disabled={loading}
+                            <StepperNav
+                                onPrev={() => handleYearChange(year - 1)}
+                                onNext={() => handleYearChange(year + 1)}
+                                prevDisabled={loading}
+                                nextDisabled={loading}
+                                centerClassName="min-w-[100px]"
                             >
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-
-                            <div className="min-w-[100px] text-center">
                                 <span className="text-lg font-semibold text-zinc-900 dark:text-white">
                                     {year}
                                 </span>
-                            </div>
-
-                            <button
-                                onClick={() => handleYearChange(year + 1)}
-                                className="rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                                disabled={loading}
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
+                            </StepperNav>
 
                             <button
                                 onClick={handleExportVacations}
@@ -361,9 +361,7 @@ export default function AdminVacationsPage() {
                 )}
 
                 {loading ? (
-                    <div className="p-10 text-center animate-pulse text-zinc-500">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState />
                 ) : (
                     <div className="space-y-10">
                         {/* --- PENDING (AGRUPAT) --- */}
@@ -379,9 +377,10 @@ export default function AdminVacationsPage() {
                             </h2>
 
                             {pendingGroups.length === 0 ? (
-                                <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">
-                                    {t('admin.vacations.empty')}
-                                </div>
+                                <EmptyState
+                                    icon={<CalendarOff size={24} />}
+                                    title={t('admin.vacations.empty')}
+                                />
                             ) : (
                                 <div className="grid gap-4">
                                     {pendingGroups.map((group, idx) => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockReq, mockRes } from '../../utils/mocks';
+import { mockReq, mockRes, createMockAppSettings } from '../../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -41,13 +41,7 @@ vi.mock('@/lib/validation', () => ({
 vi.mock('@/lib/settings', () => ({
     DEFAULT_TIMEZONE: 'Europe/Madrid',
     getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
-    getAppSettings: vi.fn().mockResolvedValue({
-        defaultExpectedHours: 8,
-        benevolenceHours: 1,
-        toleranceHours: 1,
-        endOfDayHour: 17,
-        nonWorkingDays: [6, 0],
-    }),
+    getAppSettings: vi.fn().mockResolvedValue(createMockAppSettings({ endOfDayHour: 17 })),
 }));
 
 const queryChain = (result: unknown) => ({
@@ -63,6 +57,10 @@ const simpleChain = (result: unknown) => ({
 vi.mock('@/models', () => ({
     User: { find: vi.fn(), findById: vi.fn() },
     WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
+    WorkDaySource: {
+        find: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
+        updateOne: vi.fn().mockResolvedValue({ upsertedCount: 1 }),
+    },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
     MonthlyApproval: {
@@ -74,6 +72,7 @@ vi.mock('@/models', () => ({
 import {
     User,
     WorkSession,
+    WorkDaySource,
     ElectiveVacation,
     YearlyVacationDays,
     MonthlyApproval,
@@ -91,14 +90,14 @@ const users = [
         name: 'Anna',
         email: 'anna@example.com',
         dni: '1',
-        expectedWorkHours: 8,
+        weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     },
     {
         _id: 'u2',
         name: 'Berta',
         email: 'berta@example.com',
         dni: '2',
-        expectedWorkHours: 8,
+        weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     },
 ];
 
@@ -134,20 +133,33 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'userClick',
                 },
                 {
                     _id: 's2',
                     userId: 'u1',
                     type: 'check_out',
                     timestamp: at(17),
-                    source: 'userClick',
                 },
                 {
                     _id: 's3',
                     userId: 'u2',
                     type: 'check_in',
                     timestamp: at(9),
+                },
+            ]) as any
+        );
+        vi.mocked(WorkDaySource.find).mockReturnValue(
+            simpleChain([
+                {
+                    _id: 'd1',
+                    userId: 'u1',
+                    date: '2025-06-09',
+                    source: 'userClick',
+                },
+                {
+                    _id: 'd2',
+                    userId: 'u2',
+                    date: '2025-06-09',
                     source: 'adminManual',
                 },
             ]) as any
@@ -177,18 +189,15 @@ describe('GET /api/admin/work-sessions', () => {
             status: 'ok',
             totalHours: 8,
             anomalies: [],
+            source: 'userClick',
         });
         expect(rows[1]).toMatchObject({
             userName: 'Berta',
             status: 'anomaly',
             totalHours: 0,
             anomalies: ['forgot_check_out'],
+            source: 'adminManual',
         });
-        expect(rows[0].sessions.map((s: any) => s.source)).toEqual([
-            'userClick',
-            'userClick',
-        ]);
-        expect(rows[1].sessions[0].source).toBe('adminManual');
         expect(payload.data.approvedMonths).toBeDefined();
         expect(MonthlyApproval.find).toHaveBeenCalledWith({
             status: 'approved',
@@ -205,14 +214,12 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     type: 'check_in',
                     timestamp: at(9),
-                    source: 'userClick',
                 },
                 {
                     _id: 's2',
                     userId: 'u1',
                     type: 'check_out',
                     timestamp: at(17),
-                    source: 'userClick',
                 },
             ]) as any
         );
@@ -374,8 +381,7 @@ describe('GET /api/admin/work-sessions', () => {
                     name: 'Anna',
                     email: 'anna@example.com',
                     dni: '1',
-                    expectedWorkHours: 8,
-                    workDays: [5, 6],
+                    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
                 },
             ]) as any
         );
@@ -633,7 +639,6 @@ describe('GET /api/admin/work-sessions', () => {
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_in',
-                        source: 'adminManual',
                         version: 1,
                         status: 'active',
                         editedBy: 'admin-123',
@@ -641,12 +646,17 @@ describe('GET /api/admin/work-sessions', () => {
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_out',
-                        source: 'adminManual',
                         version: 1,
                         status: 'active',
                         editedBy: 'admin-123',
                     }),
                 ])
+            );
+            // The corrected day adopts the admin-edit source wholesale.
+            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+                { userId: 'u1', date: '2025-06-09' },
+                { $set: { source: 'adminManual' } },
+                { upsert: true }
             );
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -711,14 +721,13 @@ describe('GET /api/admin/work-sessions', () => {
                 }),
                 undefined
             );
-            // The new set becomes version 4, with the source marking the
-            // admin authorship and the reason stored as editReason.
+            // The new set becomes version 4, with the reason stored as
+            // editReason and the day source marking the admin authorship.
             expect(WorkSession.insertMany).toHaveBeenCalledWith(
                 expect.arrayContaining([
                     expect.objectContaining({
                         userId: 'u1',
                         type: 'check_in',
-                        source: 'adminManual',
                         version: 4,
                         status: 'active',
                         editReason: 'Worker requested correction',
@@ -729,6 +738,11 @@ describe('GET /api/admin/work-sessions', () => {
                         editReason: 'Worker requested correction',
                     }),
                 ])
+            );
+            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+                { userId: 'u1', date: '2025-06-09' },
+                { $set: { source: 'adminManual' } },
+                { upsert: true }
             );
         });
 

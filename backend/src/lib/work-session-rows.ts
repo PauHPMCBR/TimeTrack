@@ -4,12 +4,17 @@ import {
 } from 'shared/src/schemas/api';
 import {
     computeDayHours,
-    isWithinBenevolence,
+    isWithinTolerance,
 } from 'shared/src/lib/work-hours';
 import {
-    resolveExpectedWorkHours,
-    resolveWorkDays,
+    computeTimetableAnomalies,
+    dayTimetable,
+    impliedHours,
+} from 'shared/src/lib/expected-timetable';
+import {
+    resolveDayExpectedHours,
 } from 'shared/src/lib/user-overrides';
+import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
 import {
     UserRow,
     WorkSessionRow,
@@ -17,6 +22,7 @@ import {
     YearlyVacationRow,
 } from '@/lib/rows';
 import { dateKey } from '@/lib/date-key';
+import type { WorkDaySourceRow } from '@/repositories/work-day-source-repository';
 
 /**
  * Expand a `period` + date/yeear/month selector into the local calendar days
@@ -73,12 +79,18 @@ export interface WorkSessionRowsContext {
     approvedVacations: ElectiveVacationRow[];
     /** Company-wide obligatory days for the relevant years. */
     yearlyTemplates: YearlyVacationRow[];
-    /** Company-wide default non-working week days (overridden per-user by workDays). */
-    defaultNonWorkingDays: number[];
-    /** Company-wide default expected work hours (overridden per-user). */
-    defaultExpectedHours: number;
-    /** Tolerance (hours) for the benevolence/ok check. */
-    toleranceHours: number;
+    /** Company-wide per-weekday expected hours (0h = non-working). */
+    defaultWeeklyExpectedHours: number[];
+    toleranceMinutes: number;
+    timetableToleranceMinutes: number;
+    /** Day-level sources keyed by `${userId}:${YYYY-MM-DD}`. */
+    daySources?: Map<string, WorkDaySourceRow>;
+}
+
+export function daySourceMap(
+    rows: WorkDaySourceRow[]
+): Map<string, WorkDaySourceRow> {
+    return new Map(rows.map((row) => [`${row.userId}:${row.date}`, row]));
 }
 
 /**
@@ -96,9 +108,10 @@ export function buildWorkSessionRows(
         sessions,
         approvedVacations,
         yearlyTemplates,
-        defaultNonWorkingDays,
-        defaultExpectedHours,
-        toleranceHours,
+        defaultWeeklyExpectedHours,
+        toleranceMinutes,
+        timetableToleranceMinutes,
+        daySources,
     } = ctx;
 
     const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
@@ -145,18 +158,29 @@ export function buildWorkSessionRows(
             const onVacation =
                 vacationByUserDay.has(`${user._id}:${key}`) ||
                 obligatoryDaySet.has(key);
+            const isTimetableMode = user.scheduleMode === 'timetable';
+            const weekTimetable: WeekTimetable =
+                user.timetable ?? defaultTimetable();
+            const intervals = dayTimetable(weekTimetable, dow);
+            const expectedHours = isTimetableMode
+                ? impliedHours(intervals)
+                : resolveDayExpectedHours(user, dow, defaultWeeklyExpectedHours);
+            const isNonWorkingDay = isTimetableMode
+                ? intervals.length === 0
+                : expectedHours === 0;
 
-            // A user's non-working week days: their own override, else company-wide.
-            const nonWorkingDays = resolveWorkDays(user, defaultNonWorkingDays);
-            const isNonWorkingDay = nonWorkingDays.includes(dow);
-
-            const expectedHours = resolveExpectedWorkHours(
-                user,
-                defaultExpectedHours
-            );
             const { totalHours, overtimeHours, anomalies } =
                 computeDayHours(userSessions);
             const anomalySet = new Set(anomalies);
+            if (isTimetableMode && intervals.length > 0) {
+                for (const anomaly of computeTimetableAnomalies(
+                    userSessions,
+                    intervals,
+                    timetableToleranceMinutes
+                )) {
+                    anomalySet.add(anomaly);
+                }
+            }
 
             let status: WorkSessionRowStatus = 'anomaly';
             if (onVacation) {
@@ -167,6 +191,8 @@ export function buildWorkSessionRows(
                 anomalySet.clear();
             } else if (anomalySet.size > 0) {
                 status = 'anomaly';
+            } else if (isTimetableMode) {
+                status = 'ok';
             } else if (totalHours === 0) {
                 anomalySet.add('hours_short');
                 status = 'anomaly';
@@ -174,7 +200,13 @@ export function buildWorkSessionRows(
                 // Overtime-flagged hours are declared beyond the expected
                 // band: only the regular part is compared to it.
                 const regularHours = totalHours - overtimeHours;
-                if (isWithinBenevolence(regularHours, expectedHours, toleranceHours)) {
+                if (
+                    isWithinTolerance(
+                        regularHours,
+                        expectedHours,
+                        toleranceMinutes
+                    )
+                ) {
                     status = 'ok';
                 } else {
                     anomalySet.add(
@@ -191,6 +223,16 @@ export function buildWorkSessionRows(
                 totalHours,
                 overtimeHours,
                 expectedHours,
+                ...(isTimetableMode && intervals.length > 0
+                    ? { timetable: intervals }
+                    : {}),
+                ...(daySources?.has(`${user._id.toString()}:${key}`)
+                    ? {
+                          source: daySources.get(
+                              `${user._id.toString()}:${key}`
+                          )!.source,
+                      }
+                    : {}),
                 sessions: userSessions.map((s) => ({
                     ...s,
                     _id: s._id.toString(),

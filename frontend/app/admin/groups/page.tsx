@@ -6,6 +6,7 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { Group, User } from '@/types';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import Button from '@/components/ui/Button';
 import GroupModal from '../../../components/GroupModal';
 import AdminBackButton from '../../../components/AdminBackButton';
@@ -116,9 +117,7 @@ export default function GroupsListPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
                 {loading ? (
-                    <div className="col-span-2 p-8 text-center text-sm text-zinc-500 animate-pulse">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState className="col-span-2 p-8" />
                 ) : groups.length === 0 ? (
                     <div className="col-span-2 rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
                         {t('admin.groups.empty')}

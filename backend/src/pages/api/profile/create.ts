@@ -55,7 +55,11 @@ export default withApi(
                 checkInRequired: (role || EMPLOYEE_ROLE) !== ADMIN_ROLE,
                 groups: [],
                 dni,
-                expectedWorkHours: settings.defaultExpectedHours,
+                weeklyExpectedHours: [...settings.defaultWeeklyExpectedHours],
+                scheduleMode: settings.defaultScheduleMode,
+                timetable: settings.defaultTimetable.map((day) =>
+                    day.map((entry) => ({ ...entry }))
+                ),
             });
 
             const frontendUrl = getFrontendUrl();
@@ -81,7 +85,6 @@ export default withApi(
                         role: newUser.role,
                         registered: newUser.registered,
                         dni: newUser.dni,
-                        expectedWorkHours: newUser.expectedWorkHours,
                     },
                     registrationLink,
                     registrationToken,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import LoadingState from '@/components/ui/LoadingState';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import type { FileRow, FileSortField, FileSortOrder } from '@/schemas/api';
@@ -9,9 +10,7 @@ import { Alert } from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import AdminBackButton from '../../../components/AdminBackButton';
-import FileList, {
-    formatBytes,
-} from '@/components/files/FileList';
+import FileList, { formatBytes } from '@/components/files/FileList';
 import FileSortControls, {
     selectClass,
 } from '@/components/files/FileSortControls';
@@ -201,16 +200,17 @@ export default function AdminFilesPage() {
 
                 {error && (
                     <div className="mb-6">
-                        <Alert variant="destructive" onClose={() => setError(null)}>
+                        <Alert
+                            variant="destructive"
+                            onClose={() => setError(null)}
+                        >
                             {error}
                         </Alert>
                     </div>
                 )}
 
                 {loading ? (
-                    <div className="p-10 text-center animate-pulse text-zinc-500">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState />
                 ) : files.length === 0 ? (
                     <EmptyState
                         icon={<FolderOpen size={28} />}

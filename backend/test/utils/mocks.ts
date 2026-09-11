@@ -1,5 +1,8 @@
 import { vi } from 'vitest';
 import jwt from 'jsonwebtoken';
+import { defaultTimetable } from 'shared/src/schemas/database';
+import { defaultWeeklyExpectedHours } from 'shared/src/lib/defaults';
+import type { AppSettingsValues } from '@/lib/settings';
 
 // Field-encryption keys for tests (real values come from the environment in
 // production; the backend fails fast without them). Deterministic hex keys
@@ -40,6 +43,20 @@ export const mockRes = (): any => {
     return res;
 };
 
+export const createMockAppSettings = (
+    overrides: Partial<AppSettingsValues> = {}
+): AppSettingsValues => ({
+    defaultWeeklyExpectedHours: defaultWeeklyExpectedHours(),
+    toleranceMinutes: 60,
+    defaultScheduleMode: 'hours',
+    defaultTimetable: defaultTimetable(),
+    timetableToleranceMinutes: 10,
+    endOfDayHour: 20,
+    inconsistencyReminderMode: 'forced',
+    monthlyApprovalReminderDays: 5,
+    ...overrides,
+});
+
 export const createMockUser = (overrides: any = {}) => ({
     _id: 'user-id-123',
     email: 'test@example.com',
@@ -61,6 +78,6 @@ export const createMockToken = (payload: Record<string, unknown> = {}) => {
     );
 };
 
-export const createAuthHeader = (payload: any = {}) => {
-    return `Bearer ${createMockToken(payload)}`;
+export const createAuthCookie = (payload: Record<string, unknown> = {}) => {
+    return `auth_token=${createMockToken(payload)}`;
 };

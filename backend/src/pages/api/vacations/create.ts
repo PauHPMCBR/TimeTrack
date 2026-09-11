@@ -17,6 +17,7 @@ import {
 import { getAppSettings, getConfiguredTimezone } from '@/lib/settings';
 import {
     countSpentVacationDays,
+    nonWorkingDaysOfWeek,
     resolveNonWorkingDays,
 } from 'shared/src/lib/vacation-days';
 
@@ -58,7 +59,7 @@ export default withApi(
         const settings = await getAppSettings();
         const nonWorkingDays = resolveNonWorkingDays(
             req.dbUser,
-            settings.nonWorkingDays
+            nonWorkingDaysOfWeek(settings.defaultWeeklyExpectedHours)
         );
         const spentDays = countSpentVacationDays(
             start,

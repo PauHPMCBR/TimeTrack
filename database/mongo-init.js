@@ -24,6 +24,7 @@ print('myapp database created');
 db.createCollection('users');
 db.createCollection('groups');
 db.createCollection('worksessions');
+db.createCollection('workdaysources');
 db.createCollection('electivevacations');
 db.createCollection('yearlyvacationdays');
 db.createCollection('worksessionreasons');
@@ -39,6 +40,8 @@ db.users.createIndex({ email: 1, registered: 1 });
 db.users.createIndex({ registrationToken: 1 });
 db.worksessions.createIndex({ userId: 1, timestamp: -1 });
 db.worksessions.createIndex({ timestamp: -1 });
+// One day-source record per (user, local day key).
+db.workdaysources.createIndex({ userId: 1, date: 1 }, { unique: true });
 db.electivevacations.createIndex({ userId: 1, startDate: 1 });
 db.electivevacations.createIndex({ userId: 1, status: 1, startDate: 1, endDate: 1 });
 db.electivevacations.createIndex({ startDate: 1 });
@@ -129,7 +132,8 @@ if (process.env.SEED_DEMO === '1') {
   print('Demo groups created');
 
   // --- Employees (registered, can log in with the demo password) ---------------
-  const employee = (id, name, email, dni, expectedWorkHours, groupIds) => ({
+  const weekly = (perWorkingDay) => [0, perWorkingDay, perWorkingDay, perWorkingDay, perWorkingDay, perWorkingDay, 0];
+  const employee = (id, name, email, dni, weeklyExpectedHours, groupIds) => ({
     _id: id, name, email,
     password: DEMO_PASSWORD_HASH,
     registrationToken: '',
@@ -137,7 +141,7 @@ if (process.env.SEED_DEMO === '1') {
     role: 'employee',
     groups: groupIds.map((g) => g.toString()),
     dni,
-    expectedWorkHours,
+    weeklyExpectedHours,
     failedLoginAttempts: 0,
     blocked: false,
     createdAt: now,
@@ -145,30 +149,37 @@ if (process.env.SEED_DEMO === '1') {
   });
 
   db.users.insertMany([
-    employee(ids.anna, 'Anna Torres', 'anna@demo.com', '11111111A', 8, [groups.dev]),
-    employee(ids.berta, 'Berta Puig', 'berta@demo.com', '22222222B', 8, [groups.design]),
-    employee(ids.carles, 'Carles Vila', 'carles@demo.com', '33333333C', 7.5, [groups.dev]),
-    employee(ids.diana, 'Diana Roca', 'diana@demo.com', '44444444D', 8, [groups.marketing]),
-    employee(ids.marc, 'Marc Soler', 'marc@demo.com', '55555555E', 6, [groups.design]),
-    employee(ids.elena, 'Elena Grau', 'elena@demo.com', '66666666F', 8, [groups.dev])
+    employee(ids.anna, 'Anna Torres', 'anna@demo.com', '11111111A', weekly(8), [groups.dev]),
+    employee(ids.berta, 'Berta Puig', 'berta@demo.com', '22222222B', weekly(8), [groups.design]),
+    employee(ids.carles, 'Carles Vila', 'carles@demo.com', '33333333C', weekly(7.5), [groups.dev]),
+    employee(ids.diana, 'Diana Roca', 'diana@demo.com', '44444444D', weekly(8), [groups.marketing]),
+    employee(ids.marc, 'Marc Soler', 'marc@demo.com', '55555555E', weekly(6), [groups.design]),
+    employee(ids.elena, 'Elena Grau', 'elena@demo.com', '66666666F', weekly(8), [groups.dev])
   ]);
   print('Demo employees created (password: value of DEMO_PASSWORD_HASH)');
 
   // --- Work sessions (mix of every status the admin view can show) --------------
   const sessions = [];
-  const addSession = (userId, type, offset, hour, minute = 0) => {
-    sessions.push({ userId: userId.toString(), type, source: 'user', timestamp: dayAt(offset, hour, minute), createdAt: now, updatedAt: now });
+  const workDays = new Map();
+  const dayKey = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // Source is now a per-(user, day) attribute (workdaysources): live punches
+  // mark the whole day userClick; a corrected day adopts the editing source.
+  const addSession = (userId, type, offset, hour, minute = 0, source = 'userClick') => {
+    const key = `${userId.toString()}:${dayKey(dayAt(offset, hour, minute))}`;
+    sessions.push({ userId: userId.toString(), type, timestamp: dayAt(offset, hour, minute), createdAt: now, updatedAt: now });
+    if (!workDays.has(key)) workDays.set(key, source);
   };
-  const session = (userId, offset, startHour, endHour, startMinute = 0, endMinute = 0) => {
-    addSession(userId, 'check_in', offset, startHour, startMinute);
-    addSession(userId, 'check_out', offset, endHour, endMinute);
+  const session = (userId, offset, startHour, endHour, startMinute = 0, endMinute = 0, source = 'userClick') => {
+    addSession(userId, 'check_in', offset, startHour, startMinute, source);
+    addSession(userId, 'check_out', offset, endHour, endMinute, source);
   };
 
-  // Anna (8h): mostly ok, forgot_check_out, hours_over, hours_short, a lunch-break day
+  // Anna (8h): mostly ok, forgot_check_out, hours_over (admin-corrected day), hours_short, a lunch-break day
   session(ids.anna, w0, 9, 17);
   session(ids.anna, w1, 9, 17);
   addSession(ids.anna, 'check_in', w2, 9);            // forgot_check_out
-  session(ids.anna, w3, 9, 19, 0, 30);               // hours_over (10.5h)
+  session(ids.anna, w3, 9, 19, 0, 30, 'adminManual'); // hours_over (10.5h)
   addSession(ids.anna, 'check_in', w4, 9);            // lunch-break day (8h total):
   addSession(ids.anna, 'check_out', w4, 13);          //   9→13 (4h)
   addSession(ids.anna, 'check_in', w4, 14);           //   14→18 (4h)
@@ -213,6 +224,20 @@ if (process.env.SEED_DEMO === '1') {
 
   db.worksessions.insertMany(sessions);
   print(`Work sessions created (${sessions.length} events)`);
+
+  db.workdaysources.insertMany(
+    [...workDays.entries()].map(([key, source]) => {
+      const separator = key.indexOf(':');
+      return {
+        userId: key.slice(0, separator),
+        date: key.slice(separator + 1),
+        source,
+        createdAt: now,
+        updatedAt: now
+      };
+    })
+  );
+  print(`Work day sources created (${workDays.size} days)`);
 
   // --- Company obligatory holidays (current + previous year templates) ---------
   const seedYear = now.getFullYear();
@@ -325,8 +350,6 @@ if (process.env.SEED_DEMO === '1') {
 
   // Global company settings
   db.appsettings.insertOne({
-    defaultExpectedHours: 8,
-    benevolenceHours: 1,
     endOfDayHour: 20,
     createdAt: now,
     updatedAt: now
@@ -353,7 +376,7 @@ if (process.env.SEED_DEMO === '1') {
     role: 'admin',
     groups: [],
     dni: '00000000A',
-    expectedWorkHours: 8,
+    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     failedLoginAttempts: 0,
     blocked: false,
     createdAt: now,

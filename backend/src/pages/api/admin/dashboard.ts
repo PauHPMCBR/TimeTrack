@@ -11,12 +11,17 @@ import {
 } from '@/repositories/work-session-repository';
 import { notDeleted } from '@/repositories/user-repository';
 import { getAppSettings } from '@/lib/settings';
-import { computeDayHours } from 'shared/src/lib/work-hours';
+import { computeDayHours, isWithinTolerance } from 'shared/src/lib/work-hours';
+import {
+    computeTimetableAnomalies,
+    dayTimetable,
+    impliedHours,
+} from 'shared/src/lib/expected-timetable';
+import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
 import { dateKey } from '@/lib/date-key';
 import { startOfDay } from '@/lib/date-range';
 import {
-    resolveExpectedWorkHours,
-    resolveWorkDays,
+    resolveWeeklyExpectedHours,
 } from 'shared/src/lib/user-overrides';
 import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
 import { responseErrorGet } from '@/lib/response-error-generator';
@@ -27,7 +32,7 @@ export default withApi(
         try {
             const users = (await User.find(
                 notDeleted,
-                'name email emailEncrypted dni dniEncrypted role registered blocked groups expectedWorkHours workDays avatar blockedSince trackingStartDate checkInRequired'
+                'name email emailEncrypted dni dniEncrypted role registered blocked groups weeklyExpectedHours scheduleMode timetable avatar blockedSince trackingStartDate checkInRequired'
             )
                 .sort({ name: 1 })
                 .lean()) as unknown as UserRow[];
@@ -92,32 +97,52 @@ export default withApi(
 
         let anomalyCount = 0;
         for (const user of activeUsers) {
-            const nonWorkingDays = resolveWorkDays(
-                user,
-                settings.nonWorkingDays
-            );
+            const isTimetableMode = user.scheduleMode === 'timetable';
+            const weekTimetable: WeekTimetable =
+                user.timetable ?? defaultTimetable();
+            const weeklyHours = isTimetableMode
+                ? null
+                : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);
             for (let i = 0; i < 7; i++) {
                 const day = new Date(monday);
                 day.setDate(monday.getDate() + i);
-                if (nonWorkingDays.includes(day.getDay())) continue;
+                const dow = day.getDay();
+                const intervals = dayTimetable(weekTimetable, dow);
+                const expectedHours = isTimetableMode
+                    ? impliedHours(intervals)
+                    : (weeklyHours?.[dow] ?? 0);
+                const isNonWorkingDay = isTimetableMode
+                    ? intervals.length === 0
+                    : expectedHours === 0;
+                if (isNonWorkingDay) continue;
                 const userSessions =
                     sessionsByUserDay.get(`${user._id}:${dateKey(day)}`) ?? [];
-                const expectedHours = resolveExpectedWorkHours(
-                    user,
-                    settings.defaultExpectedHours
-                );
-                const { totalHours, anomalies } = computeDayHours(userSessions);
+                const { totalHours, overtimeHours, anomalies } =
+                    computeDayHours(userSessions);
                 const anomalySet = new Set(anomalies);
-                if (totalHours === 0) anomalySet.add('hours_short');
-                else if (!(
-                    totalHours >= expectedHours - settings.toleranceHours &&
-                    totalHours <= expectedHours + settings.toleranceHours
-                )) {
-                    anomalySet.add(
-                        totalHours < expectedHours
-                            ? 'hours_short'
-                            : 'hours_over'
-                    );
+                if (isTimetableMode) {
+                    for (const anomaly of computeTimetableAnomalies(
+                        userSessions,
+                        intervals,
+                        settings.timetableToleranceMinutes
+                    )) {
+                        anomalySet.add(anomaly);
+                    }
+                } else {
+                    const regularHours = totalHours - overtimeHours;
+                    if (regularHours === 0) {
+                        anomalySet.add('hours_short');
+                    } else if (!isWithinTolerance(
+                        regularHours,
+                        expectedHours,
+                        settings.toleranceMinutes
+                    )) {
+                        anomalySet.add(
+                            regularHours < expectedHours
+                                ? 'hours_short'
+                                : 'hours_over'
+                        );
+                    }
                 }
                 if (anomalySet.size > 0) anomalyCount++;
             }
@@ -136,8 +161,6 @@ export default withApi(
                     blocked: u.blocked,
                     blockedSince: u.blockedSince,
                     groups: u.groups,
-                    expectedWorkHours: u.expectedWorkHours,
-                    workDays: u.workDays,
                     avatar: u.avatar,
                     trackingStartDate: u.trackingStartDate,
                     checkInRequired: u.checkInRequired,

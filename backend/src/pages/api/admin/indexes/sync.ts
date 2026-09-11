@@ -16,7 +16,7 @@ import {
 // model definitions. Mongoose disables autoIndex in production (NODE_ENV=production),
 // so new/changed indexes must be applied explicitly. Run once after deploying:
 //
-//   curl -X POST -H "Authorization: Bearer <admin-token>" \
+//   curl -X POST --cookie "auth_token=<admin-token>" \
 //     http://localhost:3001/api/admin/indexes/sync
 //
 // scripts/deploy-all.js also calls this automatically after recreating each

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockReq, mockRes } from '../../utils/mocks';
 
+process.env.COMPANY_LANGUAGE = 'en';
+
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
 }));
@@ -55,10 +57,13 @@ vi.mock('@/models', () => {
         User: { findById: vi.fn() },
         WorkSession,
         MonthlyApproval: { findOne: vi.fn().mockResolvedValue(null) },
+        WorkDaySource: {
+            updateOne: vi.fn().mockResolvedValue({ upsertedCount: 1 }),
+        },
     };
 });
 
-import { User } from '@/models';
+import { User, WorkDaySource } from '@/models';
 import applyAutoScheduleHandler from '@/pages/api/work-sessions/apply-auto-schedule';
 
 function mockUser(user: any) {
@@ -102,7 +107,6 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         expect(savedDocs[0]).toMatchObject({
             userId: 'user-123',
             type: 'check_in',
-            source: 'userAutomatic',
             version: 1,
             status: 'active',
             notes: 'Automatic timetable applied',
@@ -111,21 +115,24 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         expect(savedDocs[1]).toMatchObject({
             userId: 'user-123',
             type: 'check_out',
-            source: 'userAutomatic',
             timestamp: new Date(2026, 7, 27, 12, 30, 0),
         });
         expect(savedDocs[2]).toMatchObject({
             userId: 'user-123',
             type: 'check_in',
-            source: 'userAutomatic',
             timestamp: new Date(2026, 7, 27, 14, 0, 0),
         });
         expect(savedDocs[3]).toMatchObject({
             userId: 'user-123',
             type: 'check_out',
-            source: 'userAutomatic',
             timestamp: new Date(2026, 7, 27, 18, 0, 0),
         });
+        // The self-applied timetable becomes the day source.
+        expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+            { userId: 'user-123', date: '2026-08-27' },
+            { $set: { source: 'userAutomatic' } },
+            { upsert: true }
+        );
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(

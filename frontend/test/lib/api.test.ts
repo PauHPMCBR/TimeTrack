@@ -491,7 +491,7 @@ describe('apiClient', () => {
     describe('getUserVacations', () => {
         it('should fetch user vacations', async () => {
             const mockResponse = {
-                data: { year: 2024, selectedElectiveDays: [] },
+                data: { year: 2024, obligatoryDays: [], electiveDaysTotalCount: 0 },
             };
             mockFetchSuccess(mockResponse);
 

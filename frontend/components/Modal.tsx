@@ -3,6 +3,14 @@
 import { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
+export type ModalSize = 'md' | 'lg' | 'xl';
+
+const MAX_WIDTH: Record<ModalSize, string> = {
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-2xl',
+};
+
 export default function Modal({
     open,
     title,
@@ -10,6 +18,7 @@ export default function Modal({
     children,
     footer,
     onClose,
+    size = 'md',
 }: {
     open: boolean;
     title: string;
@@ -17,6 +26,7 @@ export default function Modal({
     children: ReactNode;
     footer?: ReactNode;
     onClose: () => void;
+    size?: ModalSize;
 }) {
     if (!open || typeof document === 'undefined') return null;
 
@@ -37,7 +47,9 @@ export default function Modal({
             />
 
             {/* content – constrained between header (h-12) and bottom nav (h-16) */}
-            <div className="relative z-10 flex w-full max-w-md flex-col mx-4 my-auto max-h-full rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+            <div
+                className={`relative z-10 flex ${MAX_WIDTH[size]} w-full flex-col mx-4 my-auto max-h-full rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden`}
+            >
                 <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
                     <div>
                         <h3 className="text-lg font-semibold">{title}</h3>

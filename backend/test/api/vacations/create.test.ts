@@ -33,7 +33,9 @@ vi.mock('@/lib/validation', () => ({
 }));
 
 vi.mock('@/lib/settings', () => ({
-    getAppSettings: vi.fn().mockResolvedValue({ nonWorkingDays: [6, 0] }),
+    getAppSettings: vi.fn().mockResolvedValue({
+        defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+    }),
     // Day bounds resolve through the company timezone; use the runner's own
     // timezone so the "local midnight" dates in the bodies align with keys.
     getConfiguredTimezone: vi

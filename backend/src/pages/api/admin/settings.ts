@@ -27,11 +27,12 @@ const putHandler = withApi({
     },
 }, async (_req, res, { body }) => {
         const {
-                defaultExpectedHours,
-                benevolenceHours,
-                toleranceHours,
+                defaultWeeklyExpectedHours,
+                toleranceMinutes,
+                defaultScheduleMode,
+                defaultTimetable,
+                timetableToleranceMinutes,
                 endOfDayHour,
-                nonWorkingDays,
                 inconsistencyReminderMode,
                 monthlyApprovalReminderDays,
                 timezone,
@@ -40,15 +41,19 @@ const putHandler = withApi({
             } = body;
 
             const update: Record<string, unknown> = { updatedAt: new Date() };
-            if (defaultExpectedHours !== undefined)
-                update.defaultExpectedHours = defaultExpectedHours;
-            if (benevolenceHours !== undefined)
-                update.benevolenceHours = benevolenceHours;
-            if (toleranceHours !== undefined)
-                update.toleranceHours = toleranceHours;
+            if (defaultWeeklyExpectedHours !== undefined)
+                update.defaultWeeklyExpectedHours = [...defaultWeeklyExpectedHours];
+            if (toleranceMinutes !== undefined)
+                update.toleranceMinutes = toleranceMinutes;
+            if (defaultScheduleMode !== undefined)
+                update.defaultScheduleMode = defaultScheduleMode;
+            if (defaultTimetable !== undefined)
+                update.defaultTimetable = defaultTimetable.map((day) =>
+                    day.map((entry) => ({ ...entry }))
+                );
+            if (timetableToleranceMinutes !== undefined)
+                update.timetableToleranceMinutes = timetableToleranceMinutes;
             if (endOfDayHour !== undefined) update.endOfDayHour = endOfDayHour;
-            if (nonWorkingDays !== undefined)
-                update.nonWorkingDays = nonWorkingDays;
             if (inconsistencyReminderMode !== undefined)
                 update.inconsistencyReminderMode = inconsistencyReminderMode;
             if (monthlyApprovalReminderDays !== undefined)

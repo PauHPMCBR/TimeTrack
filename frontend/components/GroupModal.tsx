@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LoadingState from '@/components/ui/LoadingState';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
@@ -138,11 +139,13 @@ export default function GroupModal({ open, group, onClose, onSaved }: Props) {
             )}
 
             {loading ? (
-                <div className="p-10 text-center animate-pulse text-zinc-500">
-                    {t('common.loading')}
-                </div>
+                <LoadingState />
             ) : (
-                <form id="group-form" onSubmit={handleSubmit} className="space-y-4">
+                <form
+                    id="group-form"
+                    onSubmit={handleSubmit}
+                    className="space-y-4"
+                >
                     <TextField
                         label={t('admin.groups.name')}
                         type="text"

@@ -624,16 +624,16 @@
       }
     },
     "securitySchemes": {
-      "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "auth_token"
       }
     }
   },
   "security": [
     {
-      "BearerAuth": []
+      "CookieAuth": []
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockReq, mockRes, createAuthHeader } from '../utils/mocks';
+import { mockReq, mockRes, createAuthCookie } from '../utils/mocks';
 import jwt from 'jsonwebtoken';
 
 vi.mock('@/lib/mongodb', () => ({
@@ -48,7 +48,7 @@ describe('requireInGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'admin-1',
                     role: 'admin',
                 }),
@@ -76,7 +76,7 @@ describe('requireInGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'demoted-1',
                     role: 'admin', // stale JWT role
                 }),
@@ -106,7 +106,7 @@ describe('requireInGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -132,7 +132,7 @@ describe('requireInGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-3',
                     role: 'employee',
                 }),
@@ -160,7 +160,7 @@ describe('requireInGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -200,7 +200,7 @@ describe('requireSameGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -224,7 +224,7 @@ describe('requireSameGroupOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -254,7 +254,7 @@ describe('requireSelfOrAdmin', () => {
     it('allows users to access their own data without a DB lookup', async () => {
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -277,7 +277,7 @@ describe('requireSelfOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'admin-1',
                     role: 'admin',
                 }),
@@ -301,7 +301,7 @@ describe('requireSelfOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -327,7 +327,7 @@ describe('requireSelfOrAdmin', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'demoted-1',
                     role: 'admin', // stale JWT role
                 }),
@@ -360,7 +360,7 @@ describe('requireRole', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'user-1',
                     role: 'employee',
                 }),
@@ -381,7 +381,7 @@ describe('requireRole', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'demoted-1',
                     role: 'admin',
                 }),
@@ -403,7 +403,7 @@ describe('requireRole', () => {
 
         const req: any = mockReq({
             headers: {
-                authorization: createAuthHeader({
+                cookie: createAuthCookie({
                     userId: 'ghost-1',
                     role: 'admin',
                 }),
@@ -440,7 +440,7 @@ describe('authenticateToken sliding expiration', () => {
         );
 
         const req: any = mockReq({
-            headers: { authorization: `Bearer ${nearExpiry}` },
+            headers: { cookie: `auth_token=${nearExpiry}` },
         });
         const res = mockRes();
 
@@ -464,7 +464,7 @@ describe('authenticateToken sliding expiration', () => {
         );
 
         const req: any = mockReq({
-            headers: { authorization: `Bearer ${fresh}` },
+            headers: { cookie: `auth_token=${fresh}` },
         });
         const res = mockRes();
 
@@ -488,7 +488,7 @@ describe('authenticateToken sliding expiration', () => {
         );
 
         const req: any = mockReq({
-            headers: { authorization: `Bearer ${capped}` },
+            headers: { cookie: `auth_token=${capped}` },
         });
         const res = mockRes();
 
@@ -518,7 +518,7 @@ describe('authenticateToken sliding expiration', () => {
         );
 
         const req: any = mockReq({
-            headers: { authorization: `Bearer ${nearExpiry}` },
+            headers: { cookie: `auth_token=${nearExpiry}` },
         });
         const res = mockRes();
 
@@ -545,7 +545,7 @@ describe('authenticateToken sliding expiration', () => {
         );
 
         const req: any = mockReq({
-            headers: { authorization: `Bearer ${fresh}` },
+            headers: { cookie: `auth_token=${fresh}` },
         });
         const res = mockRes();
 
@@ -567,7 +567,7 @@ describe('authenticateToken sliding expiration', () => {
         );
 
         const req: any = mockReq({
-            headers: { authorization: `Bearer ${fresh}` },
+            headers: { cookie: `auth_token=${fresh}` },
         });
         const res = mockRes();
 

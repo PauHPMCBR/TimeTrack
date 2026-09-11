@@ -5,19 +5,37 @@ import {
 } from '../../src/lib/vacation-days';
 
 describe('resolveNonWorkingDays', () => {
-    it('returns the complement when the user overrides their working days', () => {
-        expect(resolveNonWorkingDays({ workDays: [1, 2, 3, 4, 5] }, [0, 6])).toEqual(
-            [0, 6]
-        );
-        expect(resolveNonWorkingDays({ workDays: [2, 3, 4] }, [0, 6])).toEqual([
-            0, 1, 5, 6,
-        ]);
+    it('derives the 0h weekdays when the user has weekly expected hours', () => {
+        expect(
+            resolveNonWorkingDays(
+                { weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0] },
+                [0, 6]
+            )
+        ).toEqual([0, 6]);
+        expect(
+            resolveNonWorkingDays(
+                { weeklyExpectedHours: [8, 0, 0, 8, 8, 8, 8] },
+                [0, 6]
+            )
+        ).toEqual([1, 2]);
     });
 
     it('falls back to the company-wide non-working days', () => {
         expect(resolveNonWorkingDays(undefined, [0, 6])).toEqual([0, 6]);
         expect(resolveNonWorkingDays({}, [6, 0])).toEqual([6, 0]);
-        expect(resolveNonWorkingDays({ workDays: [] }, [0, 6])).toEqual([0, 6]);
+        expect(resolveNonWorkingDays({ weeklyExpectedHours: [] }, [0, 6])).toEqual([0, 6]);
+    });
+
+    it('derives the weekdays without intervals in timetable mode', () => {
+        expect(
+            resolveNonWorkingDays(
+                {
+                    scheduleMode: 'timetable',
+                    timetable: [[], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], []],
+                },
+                [0, 6]
+            )
+        ).toEqual([0, 6]);
     });
 });
 

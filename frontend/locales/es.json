@@ -12,6 +12,10 @@
         "no": "No",
         "noName": "Sin nombre",
         "optional": "(opcional)",
+        "pagination": {
+            "next": "Página siguiente",
+            "previous": "Página anterior"
+        },
         "prev": "Ant",
         "save": "Guardar",
         "saving": "Guardando...",
@@ -337,8 +341,6 @@
             "dni": "DNI",
             "dniPlaceholder": "Ej: 12345678A",
             "email": "Correo electrónico",
-            "expectedHours": "Horas diarias esperadas",
-            "customNonWorkDays": "Días no laborables personalizados",
             "trackingStartDate": "Inicio del registro de jornada",
             "checkInRequired": "Requerir fichaje diario",
             "checkInRequiredHelp": "Cuando está desactivado, los días sin fichaje no se marcarán como anomalías.",
@@ -347,7 +349,14 @@
                 "label": "Rol",
                 "admin": "Administrador",
                 "employee": "Empleado"
-            }
+            },
+            "scheduleMode": "Modo de expectativa",
+            "scheduleModeHours": "Horas esperadas",
+            "scheduleModeHoursHelp": "Se comprueban las horas totales trabajadas respecto a las horas diarias esperadas.",
+            "scheduleModeTimetable": "Horario por días",
+            "scheduleModeTimetableHelp": "Se comprueba cada fichaje contra el horario esperado del día (tolerancia configurable en la configuración de la empresa).",
+            "timetableLabel": "Horario esperado",
+            "timetableHelp": "Los días sin turnos se consideran no laborables."
         },
         "groups": {
             "add": "Nuevo Departamento",
@@ -453,7 +462,6 @@
             "blocked": "Cuenta bloqueada",
             "unblockHint": "Para desbloquear, edita el usuario y restablece su contraseña.",
             "workingNow": "Trabajando ahora",
-            "customNonWorkDays": "Días no laborables personalizados",
             "registered": "Registrado",
             "deletedTitle": "Usuarios eliminados",
             "deletedOn": "Eliminado el {date}",
@@ -491,14 +499,10 @@
         },
         "settings": {
             "userDefaults": "Configuración por defecto para nuevos usuarios",
-            "toleranceHelp": "Margen de tolerancia respecto a las horas esperadas antes de marcar una anomalía.",
-            "toleranceLabel": "Tolerancia (horas)",
-            "defaultHoursHelp": "Horas de trabajo esperadas por día por defecto para los nuevos empleados.",
-            "defaultHoursLabel": "Horas diarias esperadas",
+            "toleranceHelp": "Margen de tolerancia (minutos) respecto a las horas esperadas antes de marcar una anomalía.",
+            "toleranceLabel": "Tolerancia para el formato horas esperadas",
             "endOfDayHelp": "Hora límite del día para detectar trabajadores sin salir.",
             "endOfDayLabel": "Hora de fin de día",
-            "nonWorkingDaysHelp": "Días de la semana en los que no se espera trabajo (no se marcará anomalía).",
-            "nonWorkingDaysLabel": "Días no laborables",
             "reminderHelp": "Envía un correo al final del día a los usuarios con un fichaje inconsistente, con el enlace para aplicar el horario automático. En «La elección de cada persona trabajadora», cada persona activa o desactiva el recordatorio en su perfil.",
             "reminderLabel": "Recordatorio de fichaje inconsistente por correo",
             "reminderMode": {
@@ -516,7 +520,18 @@
             "privacyNoticeLabel": "Aviso de privacidad",
             "privacyNoticeHelp": "Texto del aviso de privacidad que se muestra a los trabajadores (obligación informativa RGPD). Vacío si aún no se ha configurado.",
             "consultationLabel": "Consulta previa a la representación de los trabajadores",
-            "consultationHelp": "Confirma que se ha consultado a la representación de los trabajadores antes de implantar el sistema de registro de jornada (art. 34.9 del Estatuto de los Trabajadores)."
+            "consultationHelp": "Confirma que se ha consultado a la representación de los trabajadores antes de implantar el sistema de registro de jornada (art. 34.9 del Estatuto de los Trabajadores).",
+            "defaultScheduleModeLabel": "Modo de expectativa por defecto",
+            "scheduleModeHours": "Horas esperadas",
+            "scheduleModeTimetable": "Horario por días",
+            "defaultScheduleModeHelp": "Modo copiado a los nuevos usuarios al crearse; se puede cambiar por usuario desde su ficha.",
+            "defaultTimetableLabel": "Horario por días (por defecto)",
+            "defaultTimetableHelp": "Horario esperado copiado a los nuevos usuarios y usado como plantilla al activar el modo horario por días.",
+            "timetableToleranceLabel": "Tolerancia para el formato horario",
+            "timetableToleranceHelp": "Desviación máxima (minutos) de una entrada/salida respecto al horario esperado antes de marcar una anomalía.",
+            "defaultWeeklyHoursLabel": "Horas esperadas por día (por defecto)",
+            "defaultWeeklyHoursHelp": "Horas esperadas de cada día para los nuevos usuarios. Un día con 0 h se considera no laborable.",
+            "notificationsSection": "Notificaciones"
         },
         "export": {
             "button": "Exportar fichajes CSV",
@@ -554,7 +569,8 @@
                 "employee": "Empleado",
                 "expected": "Esperadas",
                 "hours": "Horas",
-                "sessions": "Fichajes"
+                "sessions": "Fichajes",
+                "source": "Origen"
             },
             "source": {
                 "userClick": "Empleado",
@@ -841,7 +857,23 @@
             "forgot_check_out": "entrada sin salida",
             "forgot_check_in": "salida sin entrada",
             "hours_short": "horas de menos",
-            "hours_over": "horas de más"
+            "hours_over": "horas de más",
+            "timetable_check_in_late": "entrada fuera de horario (tarde)",
+            "timetable_check_in_early": "entrada fuera de horario (antes)",
+            "timetable_check_out_late": "salida fuera de horario (tarde)",
+            "timetable_check_out_early": "salida fuera de horario (antes)",
+            "timetable_shift_count": "número de turnos incorrecto"
         }
+    },
+    "expectedTimetable": {
+        "edit": "Edita el horario",
+        "title": "Horario esperado",
+        "nonWorkingDay": "No laborable",
+        "invalidIntervals": "Cada turno debe empezar y terminar dentro del día y no pueden solaparse."
+    },
+    "weeklyHours": {
+        "label": "Horas esperadas por día",
+        "help": "Establece las horas esperadas de cada día de la semana. Un día con 0 h se considera no laborable.",
+        "nonWorkingDay": "No laborable"
     }
 }

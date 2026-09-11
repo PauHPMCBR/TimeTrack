@@ -21,8 +21,14 @@ import {
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
 import {
     computeDayHours,
-    isWithinBenevolence,
+    isWithinTolerance,
 } from 'shared/src/lib/work-hours';
+import {
+    computeTimetableAnomalies,
+    dayTimetable,
+    impliedHours,
+} from 'shared/src/lib/expected-timetable';
+import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
 import { dateKey } from '@/lib/date-key';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
 import {
@@ -31,7 +37,7 @@ import {
     sendMonthlyApprovalRequest,
 } from '@/lib/mail';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { resolveExpectedWorkHours, resolveWorkDays } from 'shared/src/lib/user-overrides';
+import { resolveWeeklyExpectedHours } from 'shared/src/lib/user-overrides';
 import { monthRange, daysInMonth } from 'shared/src/lib/date-ranges';
 
 export interface MonthPeriod {
@@ -91,12 +97,13 @@ export async function computeMonthAnomalies(
 ): Promise<WorkSessionAnomaly[]> {
     await dbConnect();
     const [user, settings] = (await Promise.all([
-        User.findById(userId, 'expectedWorkHours workDays trackingStartDate checkInRequired').lean(),
+        User.findById(userId, 'weeklyExpectedHours scheduleMode timetable trackingStartDate checkInRequired').lean(),
         getAppSettings(),
     ])) as unknown as [
         {
-            expectedWorkHours?: number;
-            workDays?: number[];
+            weeklyExpectedHours?: number[];
+            scheduleMode?: 'hours' | 'timetable';
+            timetable?: WeekTimetable;
             trackingStartDate?: Date | null;
             checkInRequired?: boolean;
         } | null,
@@ -105,11 +112,11 @@ export async function computeMonthAnomalies(
     if (!user) return [];
     if (user.checkInRequired === false) return [];
 
-    const expectedHours = resolveExpectedWorkHours(
-        user,
-        settings.defaultExpectedHours
-    );
-    const nonWorkingDays = resolveWorkDays(user, settings.nonWorkingDays);
+    const isTimetableMode = user.scheduleMode === 'timetable';
+    const weekTimetable: WeekTimetable = user.timetable ?? defaultTimetable();
+    const weeklyHours = isTimetableMode
+        ? null
+        : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);
 
     const { start, end } = monthRange(year, month);
     const nDaysInMonth = daysInMonth(year, month);
@@ -161,7 +168,15 @@ export async function computeMonthAnomalies(
         const dayDate = new Date(year, month - 1, day);
         const key = dateKey(dayDate);
         if (trackingStart && dayDate < trackingStart) continue;
-        if (nonWorkingDays.includes(dayDate.getDay())) continue;
+        const dow = dayDate.getDay();
+        const intervals = dayTimetable(weekTimetable, dow);
+        const expectedHours = isTimetableMode
+            ? impliedHours(intervals)
+            : (weeklyHours?.[dow] ?? 0);
+        const isNonWorkingDay = isTimetableMode
+            ? intervals.length === 0
+            : expectedHours === 0;
+        if (isNonWorkingDay) continue;
         if (vacationSet.has(key) || obligatorySet.has(key)) continue;
 
         const daySessions = sessions.filter(
@@ -170,17 +185,25 @@ export async function computeMonthAnomalies(
         const { totalHours, overtimeHours, anomalies } =
             computeDayHours(daySessions);
         const dayAnomalies = new Set(anomalies);
-        if (dayAnomalies.size === 0) {
+        if (isTimetableMode) {
+            for (const anomaly of computeTimetableAnomalies(
+                daySessions,
+                intervals,
+                settings.timetableToleranceMinutes
+            )) {
+                dayAnomalies.add(anomaly);
+            }
+        } else if (dayAnomalies.size === 0) {
             // Overtime-flagged hours are declared beyond the expected band:
             // only the regular part is compared to it.
             const regularHours = totalHours - overtimeHours;
             if (regularHours === 0) {
                 dayAnomalies.add('hours_short');
             } else if (
-                !isWithinBenevolence(
+                !isWithinTolerance(
                     regularHours,
                     expectedHours,
-                    settings.toleranceHours
+                    settings.toleranceMinutes
                 )
             ) {
                 dayAnomalies.add(

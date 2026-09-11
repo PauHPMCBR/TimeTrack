@@ -126,8 +126,15 @@ const putHandler = withApi(
     async (req, res, { query, body }) => {
         try {
             const userId = query.userId;
-            const { name, email, role, dni, expectedWorkHours, workDays } =
-                body;
+            const {
+                name,
+                email,
+                role,
+                dni,
+                weeklyExpectedHours,
+                scheduleMode,
+                timetable,
+            } = body;
 
             // NOTE: unlike GET/DELETE, PUT intentionally does not reject
             // deleted users here (pre-existing behavior).
@@ -165,9 +172,13 @@ const putHandler = withApi(
                 user.role = role;
             }
             if (dni !== undefined) user.dni = dni;
-            if (expectedWorkHours !== undefined)
-                user.expectedWorkHours = expectedWorkHours;
-            if (workDays !== undefined) user.workDays = workDays;
+            if (weeklyExpectedHours !== undefined)
+                user.weeklyExpectedHours = [...weeklyExpectedHours];
+            if (scheduleMode !== undefined) user.scheduleMode = scheduleMode;
+            if (timetable !== undefined)
+                user.timetable = timetable.map((day) =>
+                    day.map((entry) => ({ ...entry }))
+                );
             if ('checkInRequired' in body && body.checkInRequired !== undefined)
                 user.checkInRequired = body.checkInRequired;
             // trackingStartDate accepts "YYYY-MM-DD" (local day, stored as local

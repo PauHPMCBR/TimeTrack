@@ -15,7 +15,8 @@ import {
     VACATION_PENDING,
     VACATION_REJECTED,
 } from 'shared/src/lib/constants';
-import { DEFAULT_NON_WORKING_DAYS } from 'shared/src/lib/defaults';
+import { DEFAULT_WEEKLY_EXPECTED_HOURS } from 'shared/src/lib/defaults';
+import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
 import { dayIsWithinInterval } from 'shared/src/lib/vacation-days';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -59,7 +60,7 @@ export function Calendar({
     workSessions,
     teamVacations = [],
     usersMap,
-    nonWorkingDays = DEFAULT_NON_WORKING_DAYS,
+    nonWorkingDays = nonWorkingDaysOfWeek(DEFAULT_WEEKLY_EXPECTED_HOURS),
     loading = false,
     showWorkSessions = true,
     showVacations = true,

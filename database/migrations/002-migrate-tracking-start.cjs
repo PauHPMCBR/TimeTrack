@@ -1,21 +1,15 @@
 #!/usr/bin/env node
-// Migration: backfill the User `trackingStartDate` field for existing users.
-// For users who already have work sessions, the tracking start is the
-// timestamp of their first ever check-in (or earliest work session if no
-// check-in counter is available). Users with no work sessions fall back to
-// their createdAt (account creation). The field is non-nullable going forward.
+// 002 — Backfill user trackingStartDate: their first work session's date, or
+// the account's createdAt when they have none.
 //
-// Usage (from the backend workspace):
-//
-//   cd backend && npm run migrate:tracking-start
-//
-// It reads MONGODB_URI from the environment, falling back to backend/.env.
+// Run from the repo root: node database/migrations/002-migrate-tracking-start.cjs
+// (MONGODB_URI from the environment, falling back to backend/.env)
 
 const path = require('node:path');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', 'backend', '.env') });
 
 const WORK_SESSION_COL = 'worksessions';
 const USER_COL = 'users';

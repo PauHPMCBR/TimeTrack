@@ -1,5 +1,6 @@
 import { WorkSession } from '@/models';
 import { findActiveInRange } from '@/repositories/work-session-repository';
+import { upsertWorkDaySource } from '@/repositories/work-day-source-repository';
 import { runInTransaction } from '@/lib/transaction';
 import { withUserLock } from '@/lib/user-lock';
 import { isMonthApproved } from '@/lib/monthly-approvals';
@@ -166,6 +167,8 @@ export async function replaceDaySessions(
                 : WorkSession.insertMany(docs);
         })
     );
+
+    await upsertWorkDaySource(userId, date, source);
 
     return { ok: true, workSessions };
 }

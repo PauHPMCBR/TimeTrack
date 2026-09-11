@@ -8,6 +8,11 @@ import { withUserLock } from '@/lib/user-lock';
 import { todayRange } from '@/lib/date-range';
 import { findActiveInRange } from '@/repositories/work-session-repository';
 import {
+    findWorkDaySource,
+    upsertWorkDaySource,
+} from '@/repositories/work-day-source-repository';
+import { dateKey } from '@/lib/date-key';
+import {
     CHECK_IN,
     CHECK_OUT,
     SOURCE_USER_AUTOMATIC,
@@ -52,15 +57,14 @@ function verifyInOut(
 // A future-dated session written by the automatic timetable is "programmed",
 // not real yet. Manual punches must be able to override it: otherwise a
 // programmed check-out later today always sorts last and the in/out guard
-// would allow unlimited consecutive check-ins.
+// would allow unlimited consecutive check-ins. Only days whose source is the
+// self-applied auto timetable carry such programmed sessions.
 function isProgrammed(
-    session: InstanceType<typeof WorkSession>,
+    daySourceIsAutomatic: boolean,
+    timestamp: Date,
     now: Date
 ): boolean {
-    return (
-        session.source === SOURCE_USER_AUTOMATIC &&
-        new Date(session.timestamp).getTime() > now.getTime()
-    );
+    return daySourceIsAutomatic && timestamp.getTime() > now.getTime();
 }
 
 type CheckInOutResult =
@@ -85,6 +89,12 @@ export default withApi(
             async () => {
                 const todaySessions = await getTodaySessions(req.user!.userId);
                 const now = new Date();
+                const daySource = await findWorkDaySource(
+                    req.user!.userId,
+                    dateKey(now)
+                );
+                const daySourceIsAutomatic =
+                    daySource?.source === SOURCE_USER_AUTOMATIC;
 
                 // Manual punch vs programmed automatic sessions: scheduled
                 // future check-outs/check-ins of the auto timetable are
@@ -93,18 +103,19 @@ export default withApi(
                 // interval being lived through), since the punch redefines
                 // when work actually started.
                 const overridden = todaySessions.filter((s) =>
-                    isProgrammed(s, now)
+                    isProgrammed(daySourceIsAutomatic, new Date(s.timestamp), now)
                 );
                 const effective = todaySessions.filter(
-                    (s) => !isProgrammed(s, now)
+                    (s) =>
+                        !isProgrammed(
+                            daySourceIsAutomatic,
+                            new Date(s.timestamp),
+                            now
+                        )
                 );
                 if (type === CHECK_IN) {
                     const last = effective[effective.length - 1];
-                    if (
-                        last &&
-                        last.type === CHECK_IN &&
-                        last.source === SOURCE_USER_AUTOMATIC
-                    ) {
+                    if (last && last.type === CHECK_IN && daySourceIsAutomatic) {
                         overridden.push(last);
                         effective.pop();
                     }
@@ -138,7 +149,6 @@ export default withApi(
                     userId: req.user!.userId,
                     type,
                     timestamp: now,
-                    source: SOURCE_USER_CLICK,
                     notes,
                     // Join the day's current version (all active docs of a
                     // day share it); days never touched by a replacement
@@ -149,6 +159,12 @@ export default withApi(
                 });
 
                 await workSession.save();
+                // Live punches set the day source for the whole day.
+                await upsertWorkDaySource(
+                    req.user!.userId,
+                    dateKey(now),
+                    SOURCE_USER_CLICK
+                );
 
                 let hoursWorked = null;
                 if (type === CHECK_OUT) {

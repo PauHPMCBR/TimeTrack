@@ -8,11 +8,14 @@ vi.mock('@/lib/settings', () => ({
     DEFAULT_TIMEZONE: 'Europe/Madrid',
     getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
     getAppSettings: vi.fn().mockResolvedValue({
-        defaultExpectedHours: 8,
-        benevolenceHours: 1,
+        defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+        toleranceMinutes: 60,
+        defaultScheduleMode: 'hours',
+        defaultTimetable: [[], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], [{ checkIn: '09:00', checkOut: '17:00' }], []],
+        timetableToleranceMinutes: 10,
         endOfDayHour: 20,
-        nonWorkingDays: [6, 0],
         inconsistencyReminderMode: 'forced',
+        monthlyApprovalReminderDays: 5,
     }),
 }));
 
@@ -36,6 +39,7 @@ import { User, WorkSession } from '@/models';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { getAppSettings } from '@/lib/settings';
 import { runDailyInconsistencyReminder } from '@/lib/reminders';
+import { createMockAppSettings } from '../utils/mocks';
 
 const DATE = '2026-08-27';
 
@@ -43,7 +47,7 @@ const openCheckInUser = {
     _id: 'u1',
     email: 'u1@example.com',
     name: 'User One',
-    expectedWorkHours: 8,
+    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     lastInconsistencyReminder: undefined,
 };
 
@@ -51,7 +55,7 @@ const coherentUser = {
     _id: 'u2',
     email: 'u2@example.com',
     name: 'User Two',
-    expectedWorkHours: 8,
+    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     lastInconsistencyReminder: undefined,
 };
 
@@ -154,15 +158,13 @@ describe('runDailyInconsistencyReminder', () => {
     });
 
     it('is a no-op when the company mode is disabled', async () => {
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            toleranceHours: 1,
+        vi.mocked(getAppSettings).mockResolvedValue(createMockAppSettings({
+            defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+            toleranceMinutes: 60,
             endOfDayHour: 20,
-            nonWorkingDays: [6, 0],
             inconsistencyReminderMode: 'disabled',
             monthlyApprovalReminderDays: 5,
-        });
+        }));
 
         const summary = await runDailyInconsistencyReminder(DATE);
 
@@ -175,15 +177,13 @@ describe('runDailyInconsistencyReminder', () => {
     });
 
     it('skips users who opted out in user_choice mode', async () => {
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            toleranceHours: 1,
+        vi.mocked(getAppSettings).mockResolvedValue(createMockAppSettings({
+            defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+            toleranceMinutes: 60,
             endOfDayHour: 20,
-            nonWorkingDays: [6, 0],
             inconsistencyReminderMode: 'user_choice',
             monthlyApprovalReminderDays: 5,
-        });
+        }));
         mockUsers([{ ...openCheckInUser, notifyInconsistency: false }]);
         vi.mocked(WorkSession.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
@@ -198,15 +198,13 @@ describe('runDailyInconsistencyReminder', () => {
     });
 
     it('emails opted-in users in user_choice mode', async () => {
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            toleranceHours: 1,
+        vi.mocked(getAppSettings).mockResolvedValue(createMockAppSettings({
+            defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+            toleranceMinutes: 60,
             endOfDayHour: 20,
-            nonWorkingDays: [6, 0],
             inconsistencyReminderMode: 'user_choice',
             monthlyApprovalReminderDays: 5,
-        });
+        }));
         mockUsers([{ ...openCheckInUser, notifyInconsistency: true }]);
         vi.mocked(WorkSession.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
@@ -221,15 +219,13 @@ describe('runDailyInconsistencyReminder', () => {
     });
 
     it('emails everyone in forced mode regardless of preference', async () => {
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            toleranceHours: 1,
+        vi.mocked(getAppSettings).mockResolvedValue(createMockAppSettings({
+            defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+            toleranceMinutes: 60,
             endOfDayHour: 20,
-            nonWorkingDays: [6, 0],
             inconsistencyReminderMode: 'forced',
             monthlyApprovalReminderDays: 5,
-        });
+        }));
         mockUsers([{ ...openCheckInUser, notifyInconsistency: false }]);
         vi.mocked(WorkSession.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({

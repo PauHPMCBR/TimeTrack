@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import LoadingState from '@/components/ui/LoadingState';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import type {
@@ -101,9 +102,7 @@ export default function MyFilesPage() {
             )}
 
             {loading ? (
-                <div className="p-10 text-center animate-pulse text-zinc-500">
-                    {t('common.loading')}
-                </div>
+                <LoadingState />
             ) : files.length === 0 ? (
                 <EmptyState
                     icon={<FolderOpen size={28} />}

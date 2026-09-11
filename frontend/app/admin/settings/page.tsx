@@ -7,31 +7,39 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
 import { useDirty } from '@/lib/useDirty';
 import { localeTag } from '@/lib/datetime';
 import { initConfiguredTimezone } from '@/lib/timezone';
+import { normalizeWeekTimetable } from '@/lib/timetable';
 import Button from '@/components/ui/Button';
+import WeeklyHoursEditor from '@/components/weeklyHours/WeeklyHoursEditor';
 import HoursMinutesInput from '@/components/ui/HoursMinutesInput';
-import Label from '@/components/ui/Label';
-import WeekDaysSelector from '@/components/ui/WeekDaysSelector';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
+import ExpectedTimetableField from '@/components/timetable/ExpectedTimetableField';
+import OptionPicker from '@/components/ui/OptionPicker';
 import AdminBackButton from '../../../components/AdminBackButton';
 import {
-    DEFAULT_BENEVOLENCE_HOURS,
+    defaultWeeklyExpectedHours,
     DEFAULT_END_OF_DAY_HOUR,
-    DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-    defaultNonWorkingDays,
+    DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
+    DEFAULT_TOLERANCE_MINUTES,
     DEFAULT_TIMEZONE,
 } from 'shared/src/lib/defaults';
 import {
+    defaultTimetable,
     InconsistencyReminderMode,
     InconsistencyReminderModeSchema,
+    ScheduleMode,
+    WeekTimetable,
 } from 'shared/src/schemas/database';
 import { Check } from 'lucide-react';
 
 type FormState = {
-    defaultExpectedHours: number;
-    toleranceHours: number;
+    defaultWeeklyExpectedHours: number[];
+    toleranceMinutes: number;
+    defaultScheduleMode: ScheduleMode;
+    defaultTimetable: WeekTimetable;
+    timetableToleranceMinutes: number;
     endOfDayHour: number;
-    nonWorkingDays: number[];
     inconsistencyReminderMode: InconsistencyReminderMode;
     monthlyApprovalReminderDays: number;
     timezone: string;
@@ -65,10 +73,12 @@ export default function AdminSettingsPage() {
     const { t, lang } = useI18n();
 
     const [formData, setFormData] = useState<FormState>({
-        defaultExpectedHours: DEFAULT_EXPECTED_WORK_HOURS,
-        toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
+        defaultWeeklyExpectedHours: defaultWeeklyExpectedHours(),
+        toleranceMinutes: DEFAULT_TOLERANCE_MINUTES,
+        defaultScheduleMode: 'hours',
+        defaultTimetable: defaultTimetable(),
+        timetableToleranceMinutes: DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
         endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
-        nonWorkingDays: defaultNonWorkingDays(),
         inconsistencyReminderMode: 'forced',
         monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
         timezone: DEFAULT_TIMEZONE,
@@ -103,14 +113,23 @@ export default function AdminSettingsPage() {
                 } else if (res.data?.settings) {
                     const s = res.data.settings;
                     setFormData({
-                        defaultExpectedHours: s.defaultExpectedHours,
-                        toleranceHours:
-                            s.toleranceHours ??
-                            s.benevolenceHours ??
-                            DEFAULT_BENEVOLENCE_HOURS,
+                        defaultWeeklyExpectedHours: Array.isArray(
+                            s.defaultWeeklyExpectedHours
+                        )
+                            ? s.defaultWeeklyExpectedHours.map((h) =>
+                                  typeof h === 'number' && h > 0 ? h : 0
+                              )
+                            : defaultWeeklyExpectedHours(),
+                        toleranceMinutes:
+                            s.toleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES,
+                        defaultScheduleMode: s.defaultScheduleMode ?? 'hours',
+                        defaultTimetable: normalizeWeekTimetable(
+                            s.defaultTimetable
+                        ),
+                        timetableToleranceMinutes:
+                            s.timetableToleranceMinutes ??
+                            DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
                         endOfDayHour: s.endOfDayHour,
-                        nonWorkingDays:
-                            s.nonWorkingDays ?? defaultNonWorkingDays(),
                         inconsistencyReminderMode:
                             InconsistencyReminderModeSchema.catch(
                                 'forced'
@@ -136,14 +155,6 @@ export default function AdminSettingsPage() {
         fetchSettings();
     }, [t]);
 
-    const toggleDay = (jsDay: number) => {
-        updateForm({
-            nonWorkingDays: formData.nonWorkingDays.includes(jsDay)
-                ? formData.nonWorkingDays.filter((d) => d !== jsDay)
-                : [...formData.nonWorkingDays, jsDay].sort((a, b) => a - b),
-        });
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
@@ -153,12 +164,13 @@ export default function AdminSettingsPage() {
 
         try {
             const response = await apiClient.updateSettings({
-                defaultExpectedHours: formData.defaultExpectedHours,
-                toleranceHours: formData.toleranceHours,
+                defaultWeeklyExpectedHours: formData.defaultWeeklyExpectedHours,
+                toleranceMinutes: formData.toleranceMinutes,
+                defaultScheduleMode: formData.defaultScheduleMode,
+                defaultTimetable: formData.defaultTimetable,
+                timetableToleranceMinutes: formData.timetableToleranceMinutes,
                 endOfDayHour: formData.endOfDayHour,
-                nonWorkingDays: formData.nonWorkingDays,
-                inconsistencyReminderMode:
-                    formData.inconsistencyReminderMode,
+                inconsistencyReminderMode: formData.inconsistencyReminderMode,
                 monthlyApprovalReminderDays:
                     formData.monthlyApprovalReminderDays,
                 timezone: formData.timezone,
@@ -215,9 +227,7 @@ export default function AdminSettingsPage() {
             </div>
 
             {loading ? (
-                <div className="p-10 text-center animate-pulse text-zinc-500">
-                    {t('common.loading')}
-                </div>
+                <LoadingState />
             ) : (
                 <Card className="p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -244,62 +254,147 @@ export default function AdminSettingsPage() {
                             </div>
                         )}
 
-                        
                         <div className="space-y-6">
                             <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                                 <label className="mb-1.5 block text-l font-medium text-zinc-900 dark:text-zinc-100">
-                                        {t('admin.settings.userDefaults')}
+                                    {t('admin.settings.userDefaults')}
                                 </label>
-                                <div>
+
+                                <div className="w-full">
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                        {t('admin.settings.defaultHoursLabel')}
+                                        {t(
+                                            'admin.settings.defaultScheduleModeLabel'
+                                        )}
                                     </label>
-                                    <HoursMinutesInput
-                                        value={formData.defaultExpectedHours}
-                                        minHours={0.5}
-                                        onChange={(v) =>
-                                            updateForm({ defaultExpectedHours: v })
+                                    <OptionPicker<ScheduleMode>
+                                        options={[
+                                            {
+                                                value: 'hours',
+                                                label: t(
+                                                    'admin.settings.scheduleModeHours'
+                                                ),
+                                            },
+                                            {
+                                                value: 'timetable',
+                                                label: t(
+                                                    'admin.settings.scheduleModeTimetable'
+                                                ),
+                                            },
+                                        ]}
+                                        value={formData.defaultScheduleMode}
+                                        onChange={(mode) =>
+                                            updateForm({
+                                                defaultScheduleMode: mode,
+                                            })
                                         }
                                     />
                                     <p className="mt-1.5 text-xs text-zinc-500">
-                                        {t('admin.settings.defaultHoursHelp')}
+                                        {t(
+                                            'admin.settings.defaultScheduleModeHelp'
+                                        )}
                                     </p>
                                 </div>
 
-                                <div>
-                                    <Label className="mb-2">
-                                        {t('admin.settings.nonWorkingDaysLabel')}
-                                    </Label>
-                                    <WeekDaysSelector
-                                        selected={formData.nonWorkingDays}
-                                        onToggle={toggleDay}
+                                <div className="w-full">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {t(
+                                            'admin.settings.defaultWeeklyHoursLabel'
+                                        )}
+                                    </label>
+                                    <p className="mb-2 text-xs text-zinc-500">
+                                        {t(
+                                            'admin.settings.defaultWeeklyHoursHelp'
+                                        )}
+                                    </p>
+                                    <WeeklyHoursEditor
+                                        hours={
+                                            formData.defaultWeeklyExpectedHours
+                                        }
                                         locale={localeTag(lang)}
-                                    />
-                                    <p className="mt-1.5 text-xs text-zinc-500">
-                                        {t('admin.settings.nonWorkingDaysHelp')}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                        {t('admin.settings.toleranceLabel')}
-                                    </label>
-                                    <HoursMinutesInput
-                                        value={formData.toleranceHours}
-                                        minHours={0}
-                                        onChange={(v) =>
-                                            updateForm({ toleranceHours: v })
+                                        onChange={(next) =>
+                                            updateForm({
+                                                defaultWeeklyExpectedHours:
+                                                    next,
+                                            })
                                         }
                                     />
-                                    <p className="mt-1.5 text-xs text-zinc-500">
-                                        {t('admin.settings.toleranceHelp')}
-                                    </p>
+                                </div>
+
+                                <ExpectedTimetableField
+                                    timetable={formData.defaultTimetable}
+                                    locale={localeTag(lang)}
+                                    label={t(
+                                        'admin.settings.defaultTimetableLabel'
+                                    )}
+                                    help={t(
+                                        'admin.settings.defaultTimetableHelp'
+                                    )}
+                                    onChange={(next) =>
+                                        updateForm({
+                                            defaultTimetable: next,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <div className="w-full space-y-4">
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                            {t('admin.settings.toleranceLabel')}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step={5}
+                                            value={formData.toleranceMinutes}
+                                            onChange={(e) =>
+                                                updateForm({
+                                                    toleranceMinutes: Number(
+                                                        e.target.value
+                                                    ),
+                                                })
+                                            }
+                                            className="w-28 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                        />
+                                        <p className="mt-1.5 text-xs text-zinc-500">
+                                            {t('admin.settings.toleranceHelp')}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                            {t(
+                                                'admin.settings.timetableToleranceLabel'
+                                            )}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            value={
+                                                formData.timetableToleranceMinutes
+                                            }
+                                            onChange={(e) =>
+                                                updateForm({
+                                                    timetableToleranceMinutes:
+                                                        Number(e.target.value),
+                                                })
+                                            }
+                                            className="w-28 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                        />
+                                        <p className="mt-1.5 text-xs text-zinc-500">
+                                            {t(
+                                                'admin.settings.timetableToleranceHelp'
+                                            )}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <label className="mb-1.5 block text-l font-medium text-zinc-900 dark:text-zinc-100">
+                                    {t('admin.settings.notificationsSection')}
+                                </label>
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                         {t('admin.settings.endOfDayLabel')}
@@ -317,60 +412,36 @@ export default function AdminSettingsPage() {
                                         {t('admin.settings.endOfDayHelp')}
                                     </p>
                                 </div>
-                            </div>
 
-                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                        {t('admin.settings.approvalReminderDaysLabel')}
+                                        {t(
+                                            'admin.settings.approvalReminderDaysLabel'
+                                        )}
                                     </label>
                                     <input
                                         type="number"
                                         min={1}
                                         max={60}
-                                        value={formData.monthlyApprovalReminderDays}
+                                        value={
+                                            formData.monthlyApprovalReminderDays
+                                        }
                                         onChange={(e) =>
                                             updateForm({
-                                                monthlyApprovalReminderDays: Number(
-                                                    e.target.value
-                                                ),
+                                                monthlyApprovalReminderDays:
+                                                    Number(e.target.value),
                                             })
                                         }
                                         className="w-28 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
                                     />
                                     <p className="mt-1.5 text-xs text-zinc-500">
-                                        {t('admin.settings.approvalReminderDaysHelp')}
+                                        {t(
+                                            'admin.settings.approvalReminderDaysHelp'
+                                        )}
                                     </p>
                                 </div>
-                            </div>
 
-                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <div className="flex-1">
-                                    <label htmlFor="timezone" className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                        {t('admin.settings.timezoneLabel')}
-                                    </label>
-                                    <select
-                                        id="timezone"
-                                        value={formData.timezone}
-                                        onChange={(e) =>
-                                            updateForm({ timezone: e.target.value })
-                                        }
-                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                                    >
-                                        {COMMON_TIMEZONES.map((z) => (
-                                            <option key={z} value={z}>
-                                                {z}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <p className="mt-1.5 text-xs text-zinc-500">
-                                        {t('admin.settings.timezoneHelp')}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <div className="flex-1">
+                                <div className="w-full">
                                     <label
                                         htmlFor="inconsistency-reminder-mode"
                                         className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100"
@@ -379,7 +450,9 @@ export default function AdminSettingsPage() {
                                     </label>
                                     <select
                                         id="inconsistency-reminder-mode"
-                                        value={formData.inconsistencyReminderMode}
+                                        value={
+                                            formData.inconsistencyReminderMode
+                                        }
                                         onChange={(e) =>
                                             updateForm({
                                                 inconsistencyReminderMode:
@@ -400,6 +473,36 @@ export default function AdminSettingsPage() {
                                     </select>
                                     <p className="mt-1 text-xs text-zinc-500">
                                         {t('admin.settings.reminderHelp')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <div className="flex-1">
+                                    <label
+                                        htmlFor="timezone"
+                                        className="mb-1.5 block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    >
+                                        {t('admin.settings.timezoneLabel')}
+                                    </label>
+                                    <select
+                                        id="timezone"
+                                        value={formData.timezone}
+                                        onChange={(e) =>
+                                            updateForm({
+                                                timezone: e.target.value,
+                                            })
+                                        }
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                                    >
+                                        {COMMON_TIMEZONES.map((z) => (
+                                            <option key={z} value={z}>
+                                                {z}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1.5 text-xs text-zinc-500">
+                                        {t('admin.settings.timezoneHelp')}
                                     </p>
                                 </div>
                             </div>
@@ -432,7 +535,9 @@ export default function AdminSettingsPage() {
                                     id="worker-consultation"
                                     type="checkbox"
                                     className="mt-0.5 h-4 w-4 accent-indigo-600"
-                                    checked={formData.workerConsultationAcknowledged}
+                                    checked={
+                                        formData.workerConsultationAcknowledged
+                                    }
                                     onChange={(e) =>
                                         updateForm({
                                             workerConsultationAcknowledged:

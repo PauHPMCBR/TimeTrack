@@ -2,25 +2,26 @@
 
 import { useI18n } from '@/app/i18n';
 import { toLocalDateKey } from '@/lib/datetime';
+import StepperNav from '@/components/ui/StepperNav';
+import { sourceIconOf, statusDotClass } from '@/lib/workDayVisuals';
+import type { SourceKind } from '@/schemas/database';
 import {
     ADMIN_REPORT_PERIODS,
     AdminReportPeriod,
 } from 'shared/src/lib/constants';
-import {
-    ChevronRight,
-    ChevronLeft,
-    ShieldCheck,
-    User,
-    Zap,
-    Pencil,
-    Clock,
-    Lock,
-} from 'lucide-react';
+import { Clock, Lock } from 'lucide-react';
 
 type Period = AdminReportPeriod;
 
 // Exclude the year period: it loads too many rows to be practical.
 const PERIODS: Period[] = ADMIN_REPORT_PERIODS.filter((p) => p !== 'year');
+
+const LEGEND_SOURCES: SourceKind[] = [
+    'userClick',
+    'userManual',
+    'adminManual',
+    'userAutomatic',
+];
 
 interface WorkSessionsToolbarProps {
     period: Period;
@@ -80,60 +81,56 @@ export default function WorkSessionsToolbar({
                     className="order-2 shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white sm:order-3"
                 />
 
-                <div className="order-3 flex w-full min-w-0 items-center gap-1.5 sm:order-2 sm:w-auto sm:min-w-0 sm:flex-1">
-                    <button
-                        onClick={() => onShift(-1)}
-                        className="shrink-0 rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                <div className="order-3 flex w-full min-w-0 items-center sm:order-2 sm:w-auto sm:flex-1">
+                    <StepperNav
+                        onPrev={() => onShift(-1)}
+                        onNext={() => onShift(1)}
+                        className="w-full sm:w-auto sm:flex-1"
                     >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <div className="min-w-0 flex-1 px-1 text-center text-sm font-semibold text-zinc-900 dark:text-white">
                         {periodLabel}
-                    </div>
-                    <button
-                        onClick={() => onShift(1)}
-                        className="shrink-0 rounded-lg border border-zinc-300 bg-white p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
+                    </StepperNav>
                 </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-600 dark:text-zinc-300">
                     <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>
+                        <span
+                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('ok')}`}
+                        ></span>
                         {t('admin.events.status.ok')}
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                        <span
+                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('anomaly')}`}
+                        ></span>
                         {t('admin.events.status.anomaly')}
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                        <span
+                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('vacation')}`}
+                        ></span>
                         {t('admin.events.status.vacation')}
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-zinc-400"></span>
+                        <span
+                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('nonWorkingDay')}`}
+                        ></span>
                         {t('admin.events.status.nonWorkingDay')}
                     </span>
                     <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
-                    <span className="flex items-center gap-1.5">
-                        <User size={12} />
-                        {t('admin.events.source.userClick')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Pencil size={12} />
-                        {t('admin.events.source.userManual')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <ShieldCheck size={12} />
-                        {t('admin.events.source.adminManual')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Zap size={12} />
-                        {t('admin.events.source.userAutomatic')}
-                    </span>
+                    {LEGEND_SOURCES.map((source) => {
+                        const Icon = sourceIconOf(source);
+                        return (
+                            <span
+                                key={source}
+                                className="flex items-center gap-1.5"
+                            >
+                                <Icon size={12} />
+                                {t(`admin.events.source.${source}`)}
+                            </span>
+                        );
+                    })}
                     <span className="flex items-center gap-1.5">
                         <Clock size={12} />
                         {t('admin.events.legend.overtime')}

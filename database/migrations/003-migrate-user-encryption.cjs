@@ -1,24 +1,18 @@
 #!/usr/bin/env node
-// One-time migration: encrypts legacy plaintext user data at rest and
-// backfills the deterministic lookup hashes.
+// 003 — Encrypt plaintext user data at rest (AES-256-GCM) and backfill the
+// deterministic lookup hashes: email/dni on users, notes on work sessions,
+// reason/notes on vacations. Idempotent (values with the "enc:v1:" prefix are
+// skipped); requires the backend's ENCRYPTION_KEY / HASH_KEY.
 //
-//   - User.email, User.dni   -> AES-256-GCM (enc:v1:...), sets emailHash/dniHash
-//   - WorkSession.notes, ElectiveVacation.reason/.notes -> AES-256-GCM
-//
-// Idempotent: values already carrying the "enc:v1:" prefix are skipped, so it
-// is safe to re-run (e.g. after restoring an old backup). Requires the same
-// ENCRYPTION_KEY / HASH_KEY the backend uses — it refuses to run without them.
-//
-// Usage (from the backend workspace):
-//
-//   cd backend && npm run migrate:user-encryption
+// Run from the repo root: node database/migrations/003-migrate-user-encryption.cjs
+// (MONGODB_URI from the environment, falling back to backend/.env)
 
 const path = require('node:path');
 const nodeCrypto = require('node:crypto');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', 'backend', '.env') });
 
 const ENC_PREFIX = 'enc:v1:';
 

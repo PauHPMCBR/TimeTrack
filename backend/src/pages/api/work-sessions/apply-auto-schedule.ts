@@ -12,28 +12,39 @@ import { withUserLock } from '@/lib/user-lock';
 import { dateKey } from '@/lib/date-key';
 import { dayRange, dayTimestamp } from '@/lib/date-range';
 import { isMonthApproved } from '@/lib/monthly-approvals';
+import { getCompanyLanguage } from '@/lib/mail';
+import type { EmailLanguage } from '@/lib/mail/types';
 import {
     getAutoTimetable,
     AutoScheduleEntry,
 } from '@/lib/auto-schedule';
+import { upsertWorkDaySource } from '@/repositories/work-day-source-repository';
 import {
     CHECK_IN,
     CHECK_OUT,
     SOURCE_USER_AUTOMATIC,
     SESSION_ACTIVE,
     SESSION_REPLACED,
-    SESSION_REASON_AUTO_TIMETABLE,
 } from 'shared/src/lib/constants';
 
 interface AutoScheduleUser {
     autoTimetable?: AutoScheduleEntry[];
 }
+const AUTO_TIMETABLE_NOTES: Record<EmailLanguage, string> = {
+    ca: 'Horari automàtic aplicat',
+    en: 'Automatic timetable applied',
+    es: 'Horario automático aplicado',
+};
+
+function autoTimetableNote(): string {
+    return AUTO_TIMETABLE_NOTES[getCompanyLanguage()];
+}
 
 // Fills a day's timestamps with the user's configured automatic timetable
 // (one check-in/check-out per interval), superseding any existing sessions for
-// that day (the previous set is flagged 'replaced', never deleted). Sessions
-// get source "automatic" so manual edits are never overwritten by the reminder
-// again.
+// that day (the previous set is flagged 'replaced', never deleted). The day
+// source becomes "userAutomatic" so manual edits are never overwritten by the
+// reminder again.
 export default withApi(
     { method: 'POST', body: ApplyAutoScheduleRequestSchema },
     async (req, res, { body }) => {
@@ -93,10 +104,9 @@ export default withApi(
                     userId: req.user!.userId,
                     type: CHECK_IN,
                     timestamp: dayTimestamp(requestedDate, entry.checkIn),
-                    source: SOURCE_USER_AUTOMATIC,
                     version: nextVersion,
                     status: SESSION_ACTIVE,
-                    notes: SESSION_REASON_AUTO_TIMETABLE,
+                    notes: autoTimetableNote(),
                     createdAt: now,
                     // Self-declaration: the worker applied their timetable.
                     editedBy: req.user!.userId,
@@ -105,16 +115,21 @@ export default withApi(
                     userId: req.user!.userId,
                     type: CHECK_OUT,
                     timestamp: dayTimestamp(requestedDate, entry.checkOut),
-                    source: SOURCE_USER_AUTOMATIC,
                     version: nextVersion,
                     status: SESSION_ACTIVE,
-                    notes: SESSION_REASON_AUTO_TIMETABLE,
+                    notes: autoTimetableNote(),
                     createdAt: now,
                     editedBy: req.user!.userId,
                 }),
             ]);
 
             await Promise.all(sessions.map((s) => s.save()));
+
+            await upsertWorkDaySource(
+                req.user!.userId,
+                requestedDate,
+                SOURCE_USER_AUTOMATIC
+            );
 
             return {
                 workSessions: sessions,

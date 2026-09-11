@@ -2,6 +2,10 @@ import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
 import { findActiveInRange } from '@/repositories/work-session-repository';
 import { computeDayHours, DaySessionLike } from 'shared/src/lib/work-hours';
+import {
+    computeTimetableAnomalies,
+    dayTimetable,
+} from 'shared/src/lib/expected-timetable';
 import { getAppSettings } from '@/lib/settings';
 import { dateKey } from '@/lib/date-key';
 import { dayRange } from '@/lib/date-range';
@@ -15,15 +19,24 @@ import {
 } from '@/lib/auto-schedule';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
-import { DEFAULT_BENEVOLENCE_HOURS } from 'shared/src/lib/defaults';
+import {
+    DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
+    DEFAULT_TOLERANCE_MINUTES,
+} from 'shared/src/lib/defaults';
+import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { resolveExpectedWorkHours } from 'shared/src/lib/user-overrides';
+import {
+    nonWorkingDaysOfWeek,
+    resolveDayExpectedHours,
+} from 'shared/src/lib/user-overrides';
 
 interface ReminderUser {
     _id: string;
     email: string;
     name: string;
-    expectedWorkHours?: number;
+    weeklyExpectedHours?: number[];
+    scheduleMode?: 'hours' | 'timetable';
+    timetable?: WeekTimetable;
     autoTimetable?: AutoScheduleEntry[];
     lastInconsistencyReminder?: string;
     checkInRequired?: boolean;
@@ -78,7 +91,7 @@ export async function runDailyInconsistencyReminder(
 
     const users = (await User.find(
         { registered: true, deleted: { $ne: true } },
-        'name email emailEncrypted expectedWorkHours autoTimetable lastInconsistencyReminder checkInRequired notifyInconsistency'
+        'name email emailEncrypted weeklyExpectedHours scheduleMode timetable autoTimetable lastInconsistencyReminder checkInRequired notifyInconsistency'
     ).lean()) as unknown as ReminderUser[];
     const sentTo: string[] = [];
 
@@ -102,18 +115,37 @@ export async function runDailyInconsistencyReminder(
             countOpenUntil: end,
         });
         const anomalies = [...result.anomalies];
-
-        const expected = resolveExpectedWorkHours(
-            user,
-            settings.defaultExpectedHours
-        );
-        const benevolence = settings.benevolenceHours ?? DEFAULT_BENEVOLENCE_HOURS;
-        // Overtime-flagged hours are declared beyond the expected band.
-        const regularHours = result.totalHours - result.overtimeHours;
-        if (regularHours < expected - benevolence) {
-            anomalies.push('hours_short');
-        } else if (regularHours > expected + benevolence) {
-            anomalies.push('hours_over');
+        const dayStart = new Date(start);
+        const isTimetableMode = user.scheduleMode === 'timetable';
+        const weekTimetable: WeekTimetable = user.timetable ?? defaultTimetable();
+        const intervals = dayTimetable(weekTimetable, dayStart.getDay());
+        const expected = isTimetableMode
+            ? intervals.length
+            : resolveDayExpectedHours(
+                  user,
+                  dayStart.getDay(),
+                  settings.defaultWeeklyExpectedHours
+              );
+        if (expected === 0) continue;
+        if (isTimetableMode) {
+            anomalies.push(
+                ...computeTimetableAnomalies(
+                    sessions,
+                    intervals,
+                    settings.timetableToleranceMinutes ??
+                        DEFAULT_TIMETABLE_TOLERANCE_MINUTES
+                )
+            );
+        } else {
+            const tolerance =
+                (settings.toleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES) /
+                60;
+            const regularHours = result.totalHours - result.overtimeHours;
+            if (regularHours < expected - tolerance) {
+                anomalies.push('hours_short');
+            } else if (regularHours > expected + tolerance) {
+                anomalies.push('hours_over');
+            }
         }
 
         if (anomalies.length === 0) continue;
@@ -191,7 +223,7 @@ export function scheduleDailyReminder(): void {
 
             // Nothing to do on non-working days; mark them done so we don't
             // retry all day.
-            if (settings.nonWorkingDays.includes(now.getDay())) {
+            if (nonWorkingDaysOfWeek(settings.defaultWeeklyExpectedHours).includes(now.getDay())) {
                 lastRunDay = todayKey;
                 return;
             }

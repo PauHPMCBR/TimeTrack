@@ -1,6 +1,6 @@
 import { VacationEvent, WorkSessionEvent } from '@/types/calendar';
 import { CHECK_IN } from 'shared/src/lib/constants';
-import { configuredTimezone } from '@/lib/timezone';
+import { formatClockHM } from '@/lib/timezone';
 import { Clock } from 'lucide-react';
 
 interface CalendarTooltipProps {
@@ -11,16 +11,6 @@ interface CalendarTooltipProps {
     locale: string;
     t: (key: string) => string;
     isModal?: boolean;
-}
-
-function formatTime(utcMs: number | Date, locale: string): string {
-    const tz = configuredTimezone();
-    return new Intl.DateTimeFormat(locale, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: tz,
-    }).format(new Date(utcMs));
 }
 
 export function getVacationClass(type: VacationEvent['type']): string {
@@ -79,7 +69,10 @@ export function CalendarTooltip({
                                 >
                                     <div className="font-medium flex items-center gap-1.5">
                                         {event.type === 'team-pending' && (
-                                            <Clock size={12} className="shrink-0" />
+                                            <Clock
+                                                size={12}
+                                                className="shrink-0"
+                                            />
                                         )}
                                         {event.label}
                                     </div>
@@ -102,7 +95,7 @@ export function CalendarTooltip({
                                                 </div>
                                             )}
                                             {event.elective.approvedByName ||
-                                                event.elective.approvedBy ? (
+                                            event.elective.approvedBy ? (
                                                 <div className="text-xs">
                                                     <span className="font-medium">
                                                         {t(
@@ -110,8 +103,10 @@ export function CalendarTooltip({
                                                         )}
                                                         :
                                                     </span>{' '}
-                                                    {event.elective.approvedByName ||
-                                                        event.elective.approvedBy}
+                                                    {event.elective
+                                                        .approvedByName ||
+                                                        event.elective
+                                                            .approvedBy}
                                                 </div>
                                             ) : null}
                                         </div>
@@ -159,10 +154,8 @@ export function CalendarTooltip({
                                                           )}
                                                 </div>
                                                 <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                    {formatTime(
-                                                        new Date(
-                                                            session.timestamp
-                                                        ),
+                                                    {formatClockHM(
+                                                        session.timestamp,
                                                         locale
                                                     )}
                                                 </div>

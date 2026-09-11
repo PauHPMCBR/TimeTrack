@@ -22,6 +22,7 @@ import {
 } from '@/lib/storage';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import Label from '@/components/ui/Label';
 import { Alert } from '@/components/ui/Alert';
 import AdminBackButton from '@/components/AdminBackButton';
@@ -46,9 +47,16 @@ export default function AdminMonthlyApprovalsPage() {
 
     const now = new Date();
     const defaultMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-    const defaultYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-    const [year, setYear] = usePersistedState<number>(ADMIN_APPROVALS_YEAR, defaultYear);
-    const [month, setMonth] = usePersistedState<number>(ADMIN_APPROVALS_MONTH, defaultMonth);
+    const defaultYear =
+        now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const [year, setYear] = usePersistedState<number>(
+        ADMIN_APPROVALS_YEAR,
+        defaultYear
+    );
+    const [month, setMonth] = usePersistedState<number>(
+        ADMIN_APPROVALS_MONTH,
+        defaultMonth
+    );
     const [approvals, setApprovals] = useState<MonthlyApprovalRow[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,9 +70,8 @@ export default function AdminMonthlyApprovalsPage() {
     >([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [openResult, setOpenResult] = useState<MonthlyApprovalOpenResult | null>(
-        null
-    );
+    const [openResult, setOpenResult] =
+        useState<MonthlyApprovalOpenResult | null>(null);
     const [filterUserId, setFilterUserId] = usePersistedState<string>(
         ADMIN_APPROVALS_USER,
         'all'
@@ -88,7 +95,7 @@ export default function AdminMonthlyApprovalsPage() {
                 const err =
                     res.status === 'rejected'
                         ? null
-                        : res.value.error ?? null;
+                        : (res.value.error ?? null);
                 setError(t(`error.${err}`) || err || t('error.GetError'));
             } else {
                 setApprovals(res.value.data?.approvals ?? []);
@@ -167,7 +174,9 @@ export default function AdminMonthlyApprovalsPage() {
                 month: row.month,
             });
             if (res.error) {
-                setError(t(`error.${res.error}`) || res.error || t('error.PostError'));
+                setError(
+                    t(`error.${res.error}`) || res.error || t('error.PostError')
+                );
             } else {
                 setApprovals((prev) => prev.filter((a) => a._id !== row._id));
             }
@@ -237,17 +246,29 @@ export default function AdminMonthlyApprovalsPage() {
             if (a.month !== b.month) return b.month - a.month;
             if (a.status !== b.status)
                 return a.status === APPROVAL_PENDING ? -1 : 1;
-            return (a.userName ?? a.userId).localeCompare(b.userName ?? b.userId);
+            return (a.userName ?? a.userId).localeCompare(
+                b.userName ?? b.userId
+            );
         });
 
-        const groups: { key: string; year: number; month: number; rows: MonthlyApprovalRow[] }[] = [];
+        const groups: {
+            key: string;
+            year: number;
+            month: number;
+            rows: MonthlyApprovalRow[];
+        }[] = [];
         for (const row of sorted) {
             const key = `${row.year}-${row.month}`;
             const last = groups[groups.length - 1];
             if (last && last.key === key) {
                 last.rows.push(row);
             } else {
-                groups.push({ key, year: row.year, month: row.month, rows: [row] });
+                groups.push({
+                    key,
+                    year: row.year,
+                    month: row.month,
+                    rows: [row],
+                });
             }
         }
         return groups;
@@ -277,7 +298,9 @@ export default function AdminMonthlyApprovalsPage() {
                 </p>
                 <div className="flex flex-wrap items-end gap-3">
                     <div>
-                        <Label className="mb-1.5">{t('monthlyApprovals.month')}</Label>
+                        <Label className="mb-1.5">
+                            {t('monthlyApprovals.month')}
+                        </Label>
                         <select
                             value={month}
                             onChange={(e) => {
@@ -296,7 +319,9 @@ export default function AdminMonthlyApprovalsPage() {
                         </select>
                     </div>
                     <div>
-                        <Label className="mb-1.5">{t('monthlyApprovals.year')}</Label>
+                        <Label className="mb-1.5">
+                            {t('monthlyApprovals.year')}
+                        </Label>
                         <input
                             type="number"
                             min={MIN_VALID_YEAR}
@@ -352,7 +377,9 @@ export default function AdminMonthlyApprovalsPage() {
                         {openResult.notified.length > 0 && (
                             <Alert variant="success">
                                 <span className="font-semibold">
-                                    {t('monthlyApprovals.notifiedTitle').replace(
+                                    {t(
+                                        'monthlyApprovals.notifiedTitle'
+                                    ).replace(
                                         '{count}',
                                         String(openResult.notified.length)
                                     )}{' '}
@@ -363,7 +390,9 @@ export default function AdminMonthlyApprovalsPage() {
                         {openResult.emailFailed.length > 0 && (
                             <Alert variant="destructive">
                                 <span className="font-semibold">
-                                    {t('monthlyApprovals.emailFailedTitle').replace(
+                                    {t(
+                                        'monthlyApprovals.emailFailedTitle'
+                                    ).replace(
                                         '{count}',
                                         String(openResult.emailFailed.length)
                                     )}{' '}
@@ -400,7 +429,9 @@ export default function AdminMonthlyApprovalsPage() {
                         {openResult.notTracking.length > 0 && (
                             <Alert variant="default">
                                 <span className="font-semibold">
-                                    {t('monthlyApprovals.notTrackingTitle')}{' '}
+                                    {t(
+                                        'monthlyApprovals.notTrackingTitle'
+                                    )}{' '}
                                 </span>
                                 {namesOf(openResult.notTracking)}
                             </Alert>
@@ -421,7 +452,9 @@ export default function AdminMonthlyApprovalsPage() {
                             </Label>
                             <select
                                 value={filterUserId}
-                                onChange={(e) => setFilterUserId(e.target.value)}
+                                onChange={(e) =>
+                                    setFilterUserId(e.target.value)
+                                }
                                 className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
                             >
                                 <option value="all">
@@ -440,7 +473,9 @@ export default function AdminMonthlyApprovalsPage() {
                             </Label>
                             <select
                                 value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
+                                onChange={(e) =>
+                                    setFilterStatus(e.target.value)
+                                }
                                 className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
                             >
                                 <option value="all">
@@ -458,9 +493,7 @@ export default function AdminMonthlyApprovalsPage() {
                 </div>
 
                 {loading ? (
-                    <div className="p-6 text-center animate-pulse text-zinc-500">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState className="p-6" />
                 ) : approvals.length === 0 ? (
                     <p className="text-sm text-zinc-500">
                         {t('monthlyApprovals.empty')}
@@ -493,14 +526,24 @@ export default function AdminMonthlyApprovalsPage() {
                                                     </span>
                                                 </p>
                                                 <p className="mt-0.5 text-xs text-zinc-500">
-                                                    {t('monthlyApprovals.requestedAt')}:{' '}
-                                                    {formatDate(row.requestedAt)}
+                                                    {t(
+                                                        'monthlyApprovals.requestedAt'
+                                                    )}
+                                                    :{' '}
+                                                    {formatDate(
+                                                        row.requestedAt
+                                                    )}
                                                     {row.status ===
                                                         'approved' && (
                                                         <>
                                                             {' · '}
-                                                            {t('monthlyApprovals.approvedAt')}:{' '}
-                                                            {formatDate(row.approvedAt)}
+                                                            {t(
+                                                                'monthlyApprovals.approvedAt'
+                                                            )}
+                                                            :{' '}
+                                                            {formatDate(
+                                                                row.approvedAt
+                                                            )}
                                                         </>
                                                     )}
                                                 </p>
@@ -508,35 +551,51 @@ export default function AdminMonthlyApprovalsPage() {
                                             <div className="flex items-center gap-3">
                                                 {row.status === 'approved' ? (
                                                     <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
-                                                        <CheckCircle2 size={16} />
-                                                        {t('monthlyApprovals.statusApproved')}
+                                                        <CheckCircle2
+                                                            size={16}
+                                                        />
+                                                        {t(
+                                                            'monthlyApprovals.statusApproved'
+                                                        )}
                                                     </span>
                                                 ) : (
                                                     <span className="flex items-center gap-1.5 text-sm font-medium text-amber-600 dark:text-amber-400">
                                                         <XCircle size={16} />
-                                                        {t('monthlyApprovals.statusPending')}
+                                                        {t(
+                                                            'monthlyApprovals.statusPending'
+                                                        )}
                                                     </span>
                                                 )}
                                                 <Button
                                                     variant="secondary"
-                                                    onClick={() => openHistory(row)}
+                                                    onClick={() =>
+                                                        openHistory(row)
+                                                    }
                                                 >
                                                     <History
                                                         size={14}
                                                         className="mr-1.5 inline"
                                                     />
-                                                    {t('monthlyApprovals.history')}
+                                                    {t(
+                                                        'monthlyApprovals.history'
+                                                    )}
                                                 </Button>
                                                 <Button
                                                     variant="secondary"
-                                                    disabled={revokingId === row._id}
-                                                    onClick={() => handleRevoke(row)}
+                                                    disabled={
+                                                        revokingId === row._id
+                                                    }
+                                                    onClick={() =>
+                                                        handleRevoke(row)
+                                                    }
                                                 >
                                                     <Undo2
                                                         size={14}
                                                         className="mr-1.5 inline"
                                                     />
-                                                    {t('monthlyApprovals.revoke')}
+                                                    {t(
+                                                        'monthlyApprovals.revoke'
+                                                    )}
                                                 </Button>
                                             </div>
                                         </div>
@@ -559,9 +618,7 @@ export default function AdminMonthlyApprovalsPage() {
                 onClose={() => setHistoryRow(null)}
             >
                 {historyLoading ? (
-                    <p className="py-4 text-center text-sm text-zinc-500 animate-pulse">
-                        {t('common.loading')}
-                    </p>
+                    <LoadingState className="p-6" />
                 ) : historyEvents.length === 0 ? (
                     <p className="text-sm text-zinc-500">
                         {t('monthlyApprovals.historyEmpty')}

@@ -39,3 +39,32 @@ export function weekDayShortLabels(locale: string): string[] {
         return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d);
     });
 }
+
+export function formatPeriodLabel(
+    cursor: Date,
+    period: 'day' | 'week' | 'month' | 'year',
+    locale: string
+): string {
+    if (period === 'month') {
+        const label = cursor.toLocaleDateString(locale, {
+            month: 'long',
+            year: 'numeric',
+        });
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+    if (period === 'year') return String(cursor.getFullYear());
+    const start = cursor.toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+    if (period === 'day') return start;
+    const end = new Date(cursor);
+    end.setDate(end.getDate() + 6);
+    const endLabel = end.toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+    return `${start} — ${endLabel}`;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockReq, mockRes } from '../../utils/mocks';
+import { mockReq, mockRes, createMockAppSettings } from '../../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -76,15 +76,8 @@ describe('/api/admin/settings', () => {
     });
 
     it('should return settings on GET', async () => {
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            endOfDayHour: 17,
-            toleranceHours: 1,
-            nonWorkingDays: [6, 0],
-            inconsistencyReminderMode: 'forced',
-            monthlyApprovalReminderDays: 5,
-        });
+        const settings = createMockAppSettings({ endOfDayHour: 17 });
+        vi.mocked(getAppSettings).mockResolvedValue(settings);
 
         const req = mockReq({ method: 'GET' });
         const res = mockRes();
@@ -94,31 +87,15 @@ describe('/api/admin/settings', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: {
-                settings: {
-                    defaultExpectedHours: 8,
-                    benevolenceHours: 1,
-                    endOfDayHour: 17,
-                    toleranceHours: 1,
-                    nonWorkingDays: [6, 0],
-                    inconsistencyReminderMode: 'forced',
-                    monthlyApprovalReminderDays: 5,
-                },
-            },
+            data: { settings },
         });
     });
 
     it('should update the inconsistency reminder mode on PUT', async () => {
         vi.mocked(AppSettings.findOne).mockResolvedValue({ _id: 'settings-1' });
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            endOfDayHour: 20,
-            toleranceHours: 1,
-            nonWorkingDays: [6, 0],
-            inconsistencyReminderMode: 'disabled',
-            monthlyApprovalReminderDays: 5,
-        });
+        vi.mocked(getAppSettings).mockResolvedValue(
+            createMockAppSettings({ inconsistencyReminderMode: 'disabled' })
+        );
 
         const req = mockReq({
             method: 'PUT',
@@ -140,21 +117,17 @@ describe('/api/admin/settings', () => {
 
     it('should update existing settings on PUT', async () => {
         vi.mocked(AppSettings.findOne).mockResolvedValue({ _id: 'settings-1' });
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 9,
-            benevolenceHours: 2,
-            endOfDayHour: 18,
-            toleranceHours: 1,
-            nonWorkingDays: [6, 0],
-            inconsistencyReminderMode: 'forced',
-            monthlyApprovalReminderDays: 5,
-        });
+        vi.mocked(getAppSettings).mockResolvedValue(
+            createMockAppSettings({
+                defaultWeeklyExpectedHours: [0, 9, 9, 9, 9, 9, 0],
+                endOfDayHour: 18,
+            })
+        );
 
         const req = mockReq({
             method: 'PUT',
             body: {
-                defaultExpectedHours: 9,
-                benevolenceHours: 2,
+                defaultWeeklyExpectedHours: [0, 9, 9, 9, 9, 9, 0],
                 endOfDayHour: 18,
             },
         });
@@ -166,8 +139,7 @@ describe('/api/admin/settings', () => {
         expect(AppSettings.findByIdAndUpdate).toHaveBeenCalledWith(
             'settings-1',
             expect.objectContaining({
-                defaultExpectedHours: 9,
-                benevolenceHours: 2,
+                defaultWeeklyExpectedHours: [0, 9, 9, 9, 9, 9, 0],
                 endOfDayHour: 18,
             }),
             { new: true }
@@ -175,41 +147,28 @@ describe('/api/admin/settings', () => {
         expect(res.json).toHaveBeenCalledWith({
             success: true,
             data: {
-                settings: {
-                    defaultExpectedHours: 9,
-                    benevolenceHours: 2,
+                settings: createMockAppSettings({
+                    defaultWeeklyExpectedHours: [0, 9, 9, 9, 9, 9, 0],
                     endOfDayHour: 18,
-                    toleranceHours: 1,
-                    nonWorkingDays: [6, 0],
-                    inconsistencyReminderMode: 'forced',
-                    monthlyApprovalReminderDays: 5,
-                },
+                }),
             },
         });
     });
 
     it('should create settings when none exist on PUT', async () => {
         vi.mocked(AppSettings.findOne).mockResolvedValue(null);
-        vi.mocked(getAppSettings).mockResolvedValue({
-            defaultExpectedHours: 8,
-            benevolenceHours: 1,
-            endOfDayHour: 17,
-            toleranceHours: 1,
-            nonWorkingDays: [6, 0],
-            inconsistencyReminderMode: 'forced',
-            monthlyApprovalReminderDays: 5,
-        });
+        vi.mocked(getAppSettings).mockResolvedValue(createMockAppSettings());
 
         const req = mockReq({
             method: 'PUT',
-            body: { defaultExpectedHours: 8 },
+            body: { defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0] },
         });
         const res = mockRes();
 
         await settingsHandler(req, res);
 
         expect(AppSettings.create).toHaveBeenCalledWith(
-            expect.objectContaining({ defaultExpectedHours: 8 })
+            expect.objectContaining({ defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0] })
         );
         expect(res.status).toHaveBeenCalledWith(200);
     });

@@ -4,30 +4,20 @@ import { Fragment } from 'react';
 import { useI18n } from '@/app/i18n';
 import { AdminWorkSessionRow } from '@/types';
 import { formatHM, localeTag } from '@/lib/datetime';
-import { configuredTimezone } from '@/lib/timezone';
+import { formatClockHM } from '@/lib/timezone';
+import type { TimetableEntry } from '@/lib/timetable';
+import TimetableList from '@/components/autoTimetable/TimetableList';
+import {
+    statusRowClass,
+    statusIconOf,
+    sourceIconOf,
+} from '@/lib/workDayVisuals';
 import Card from '@/components/ui/Card';
-import {
-    CHECK_IN,
-    MS_PER_HOUR,
-    SOURCE_ADMIN_MANUAL,
-    SOURCE_USER_AUTOMATIC,
-    SOURCE_USER_CLICK,
-    SOURCE_USER_MANUAL,
-} from 'shared/src/lib/constants';
-import {
-    ChevronLeft,
-    ChevronRight,
-    ShieldCheck,
-    User,
-    Zap,
-    Pencil,
-    Clock,
-    CheckCircle2,
-    AlertTriangle,
-    Palmtree,
-    Ban,
-    Lock,
-} from 'lucide-react';
+import Pagination from '@/components/ui/Pagination';
+import LoadingState from '@/components/ui/LoadingState';
+import EmptyState from '@/components/ui/EmptyState';
+import { CHECK_IN, MS_PER_HOUR } from 'shared/src/lib/constants';
+import { Lock, Clock, CalendarX, CheckCircle2 } from 'lucide-react';
 
 interface FitxatgesTableProps {
     rows: AdminWorkSessionRow[];
@@ -41,6 +31,10 @@ interface FitxatgesTableProps {
     showEmployee?: boolean;
     approvedMonths?: Set<string>;
 }
+
+type WorkedInterval = TimetableEntry & { overtime: boolean };
+
+const MISSING_TIME = '—';
 
 export default function FitxatgesTable({
     rows,
@@ -61,13 +55,7 @@ export default function FitxatgesTable({
         ? rows.filter((r) => r.status === 'anomaly')
         : rows;
 
-    const fmtTime = (ts: Date | string) =>
-        new Intl.DateTimeFormat(locale, {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: configuredTimezone(),
-        }).format(new Date(ts));
+    const fmtTime = (ts: Date | string) => formatClockHM(ts, locale);
 
     const dateLabelOf = (row: AdminWorkSessionRow) =>
         new Date(`${row.date}T00:00:00`).toLocaleDateString(locale, {
@@ -79,105 +67,142 @@ export default function FitxatgesTable({
     const isConfirmedRow = (row: AdminWorkSessionRow) =>
         approvedMonths?.has(`${row.userId}:${row.date.slice(0, 7)}`) ?? false;
 
-    const rowClass = (row: AdminWorkSessionRow) => {
-        if (row.status === 'vacation')
-            return 'border-l-4 border-l-blue-500 bg-blue-100/90 dark:bg-blue-900/40';
-        if (row.status === 'ok')
-            return 'border-l-4 border-l-green-500 bg-green-100/90 dark:bg-green-900/40';
-        if (row.status === 'nonWorkingDay')
-            return 'border-l-4 border-l-zinc-300 bg-zinc-100/80 dark:bg-zinc-800/60 dark:border-l-zinc-600';
-        return 'border-l-4 border-l-red-500 bg-red-100/90 dark:bg-red-900/40';
+    const rowClass = (row: AdminWorkSessionRow) => statusRowClass(row.status);
+
+    const renderStatusIcon = (status: AdminWorkSessionRow['status']) => {
+        const { Icon, className } = statusIconOf(status);
+        return <Icon className={className} />;
     };
 
-    const statusIcon = (status: AdminWorkSessionRow['status']) => {
-        if (status === 'ok')
-            return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
-        if (status === 'anomaly')
-            return <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />;
-        if (status === 'vacation')
-            return <Palmtree className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
-        return <Ban className="h-4 w-4 text-zinc-400" />;
-    };
+    const totalHoursLabel = (row: AdminWorkSessionRow) =>
+        row.totalHours > 0
+            ? formatHM(row.totalHours * MS_PER_HOUR, t)
+            : MISSING_TIME;
 
-    // Session chips shared by the desktop table and the mobile cards.
-    const renderSessionChips = (row: AdminWorkSessionRow) => {
-        if (row.sessions.length === 0) {
-            return <span className="text-zinc-400">—</span>;
+    // Pair the day's punches into worked intervals and render them with the
+    // same "start – end" chips the timetable setup uses. An interval is
+    // overtime when either end is flagged; a missing side renders as "—".
+    const workedIntervals = (row: AdminWorkSessionRow): WorkedInterval[] => {
+        const intervals: WorkedInterval[] = [];
+        let open: { checkIn: string; overtime: boolean } | null = null;
+        const sorted = [...row.sessions].sort(
+            (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+        );
+        for (const s of sorted) {
+            const time = fmtTime(s.timestamp);
+            if (s.type === CHECK_IN) {
+                if (open) {
+                    intervals.push({
+                        checkIn: open.checkIn,
+                        checkOut: MISSING_TIME,
+                        overtime: open.overtime,
+                    });
+                }
+                open = { checkIn: time, overtime: s.overtime === true };
+            } else if (open) {
+                intervals.push({
+                    checkIn: open.checkIn,
+                    checkOut: time,
+                    overtime: open.overtime || s.overtime === true,
+                });
+                open = null;
+            } else {
+                intervals.push({
+                    checkIn: MISSING_TIME,
+                    checkOut: time,
+                    overtime: s.overtime === true,
+                });
+            }
         }
-        return row.sessions.map((s, idx) => {
-            const source = s.source ?? SOURCE_USER_CLICK;
-            const SourceIcon =
-                source === SOURCE_ADMIN_MANUAL
-                    ? ShieldCheck
-                    : source === SOURCE_USER_AUTOMATIC
-                      ? Zap
-                      : source === SOURCE_USER_MANUAL
-                        ? Pencil
-                        : User;
-            const label = s.overtime
-                ? `${t(`admin.events.source.${source}`)} · ${t('admin.events.overtime')}`
-                : t(`admin.events.source.${source}`);
-            return (
-                <span key={s._id} className="flex items-center gap-1">
-                    {idx > 0 && <span className="text-zinc-400">→</span>}
-                    <span
-                        title={label}
-                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm font-medium text-white ${
-                            s.type === CHECK_IN
-                                ? s.overtime
-                                    ? 'bg-amber-500'
-                                    : 'bg-green-500'
-                                : s.overtime
-                                  ? 'bg-amber-600'
-                                  : 'bg-red-500'
-                        }`}
-                    >
-                        <SourceIcon size={14} />
-                        {fmtTime(s.timestamp)}
-                        {s.overtime && <Clock size={12} />}
-                    </span>
-                </span>
-            );
-        });
+        if (open) {
+            intervals.push({
+                checkIn: open.checkIn,
+                checkOut: MISSING_TIME,
+                overtime: open.overtime,
+            });
+        }
+        return intervals;
+    };
+
+    const renderWorkedIntervals = (row: AdminWorkSessionRow) => {
+        if (row.sessions.length === 0) {
+            return <span className="text-zinc-400">{MISSING_TIME}</span>;
+        }
+        return (
+            <TimetableList
+                timetable={workedIntervals(row)}
+                entryClassName={(entry) =>
+                    entry.overtime
+                        ? 'bg-amber-600 text-white'
+                        : 'bg-green-500 text-white'
+                }
+                entryTitle={(entry) =>
+                    entry.overtime ? t('admin.events.overtime') : undefined
+                }
+                entryIcon={(entry) =>
+                    entry.overtime ? <Clock size={12} /> : null
+                }
+            />
+        );
+    };
+
+    const renderExpected = (row: AdminWorkSessionRow) =>
+        row.timetable ? (
+            <TimetableList timetable={row.timetable} />
+        ) : (
+            <span className="whitespace-nowrap">
+                {row.expectedHours} {t('time.h')}
+            </span>
+        );
+
+    const renderDaySource = (row: AdminWorkSessionRow) => {
+        if (!row.source) return <span className="text-zinc-400">—</span>;
+        const Icon = sourceIconOf(row.source);
+        const label = t(`admin.events.source.${row.source}`);
+        return (
+            <span
+                title={label}
+                className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400"
+            >
+                <Icon size={14} />
+                {label}
+            </span>
+        );
     };
 
     // Loading / empty states showing only filtered count
-    if (!loading && anomalyOnly && filteredRows.length === 0) {
-        return (
-            <Card className="p-10 text-center text-sm text-zinc-500">
-                {t('admin.events.noAnomalies')}
-            </Card>
-        );
-    }
-
     if (loading) {
-        return (
-            <div className="p-10 text-center animate-pulse text-zinc-500">
-                {t('common.loading')}
-            </div>
-        );
-    }
-
-    if (filteredRows.length === 0 && !anomalyOnly) {
-        return (
-            <Card className="p-10 text-center text-sm text-zinc-500">
-                {t('admin.events.noData')}
-            </Card>
-        );
+        return <LoadingState />;
     }
 
     if (filteredRows.length === 0) {
-        return null;
+        if (anomalyOnly) {
+            return (
+                <EmptyState
+                    icon={<CheckCircle2 size={24} />}
+                    title={t('admin.events.noAnomalies')}
+                />
+            );
+        }
+        return (
+            <EmptyState
+                icon={<CalendarX size={24} />}
+                title={t('admin.events.noData')}
+            />
+        );
     }
 
-    const colSpan = showEmployee ? 6 : 5;
+    const colSpan = showEmployee ? 7 : 6;
 
     return (
         <>
-            {/* Desktop: full table (≥640px) */}
+            {/* Desktop: full table (≥640px). The Expected column sizes itself
+                to the widest timetable in the period; chip lists wrap inside. */}
             <Card className="hidden overflow-hidden sm:block">
                 <div className="overflow-x-auto">
-                    <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
+                    <table className="w-full table-auto border-separate border-spacing-0 text-left text-sm">
                         <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
                             <tr className="text-xs uppercase tracking-wider text-zinc-500">
                                 <th className="w-[36px] px-3 py-3"></th>
@@ -185,95 +210,96 @@ export default function FitxatgesTable({
                                     {t('admin.events.table.date')}
                                 </th>
                                 {showEmployee && (
-                                    <th className="w-[150px] px-3 py-3 font-semibold">
+                                    <th className="w-[150px] whitespace-nowrap px-3 py-3 font-semibold">
                                         {t('admin.events.table.employee')}
                                     </th>
                                 )}
-                                <th className="px-3 py-3 font-semibold">
-                                    {t('admin.events.table.sessions')}
+                                <th className="whitespace-nowrap px-3 py-3 font-semibold">
+                                    {t('admin.events.table.expected')}
                                 </th>
                                 <th className="w-[70px] whitespace-nowrap px-3 py-3 text-right font-semibold">
                                     {t('admin.events.table.hours')}
                                 </th>
-                                <th className="w-[96px] whitespace-nowrap px-3 py-3 text-right font-semibold">
-                                    {t('admin.events.table.expected')}
+                                <th className="whitespace-nowrap px-3 py-3 font-semibold">
+                                    {t('admin.events.table.sessions')}
+                                </th>
+                                <th className="whitespace-nowrap px-3 py-3 font-semibold">
+                                    {t('admin.events.table.source')}
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredRows.map((row, i) => {
-                                 const dateLabel = dateLabelOf(row);
-                                 const newDay =
-                                     i > 0 &&
-                                     filteredRows[i - 1].date !== row.date;
-                                 const monthKey = row.date.slice(0, 7);
-                                 const userMonthKey = `${row.userId}:${monthKey}`;
-                                 const isConfirmed =
-                                     approvedMonths?.has(
-                                         userMonthKey
-                                     ) ?? false;
+                                const dateLabel = dateLabelOf(row);
+                                const newDay =
+                                    i > 0 &&
+                                    filteredRows[i - 1].date !== row.date;
+                                const isConfirmed = isConfirmedRow(row);
 
-                                 return (
-                                     <Fragment
-                                         key={`${row.date}:${row.userId}`}
-                                     >
-                                         {newDay && (
-                                             <tr aria-hidden="true">
-                                                 <td
-                                                     colSpan={colSpan}
-                                                     className="border-y-2 border-zinc-300 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 py-0.5"
-                                                 ></td>
-                                             </tr>
-                                         )}
-                                         <tr
-                                             className={`${rowClass(row)} ${isConfirmed ? 'border-r-2 border-r-zinc-300 dark:border-r-zinc-600 cursor-not-allowed opacity-75' : 'cursor-pointer'} border-b border-zinc-100 transition-colors last:border-b-0 hover:brightness-[0.97] dark:border-zinc-800 dark:hover:brightness-[1.2]`}
-                                             onClick={() =>
-                                                 !isConfirmed && onRowClick?.(row)
-                                             }
-                                             title={isConfirmed ? t('admin.events.monthConfirmed') : undefined}
-                                         >
-                                             <td
-                                                 className="whitespace-nowrap px-3 py-3"
-                                                 title={t(
-                                                     `admin.events.status.${row.status}`
-                                                 )}
-                                             >
-                                                 {statusIcon(row.status)}
-                                             </td>
-                                             <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-zinc-900 dark:text-white">
-                                                 {dateLabel}
-                                                 {isConfirmed && (
-                                                     <span
-                                                         title={t(
-                                                             'admin.events.status.confirmed'
-                                                         )}
-                                                         className="inline-block ml-1"
-                                                     >
-                                                         <Lock size={14} className="text-zinc-400 dark:text-zinc-500" />
-                                                     </span>
-                                                 )}
-                                             </td>
+                                return (
+                                    <Fragment key={`${row.date}:${row.userId}`}>
+                                        {newDay && (
+                                            <tr aria-hidden="true">
+                                                <td
+                                                    colSpan={colSpan}
+                                                    className="border-y-2 border-zinc-300 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 py-0.5"
+                                                ></td>
+                                            </tr>
+                                        )}
+                                        <tr
+                                            className={`${rowClass(row)} ${isConfirmed ? 'border-r-2 border-r-zinc-300 dark:border-r-zinc-600 cursor-not-allowed opacity-75' : 'cursor-pointer'} border-b border-zinc-100 transition-colors last:border-b-0 hover:brightness-[0.97] dark:border-zinc-800 dark:hover:brightness-[1.2]`}
+                                            onClick={() =>
+                                                !isConfirmed &&
+                                                onRowClick?.(row)
+                                            }
+                                            title={
+                                                isConfirmed
+                                                    ? t(
+                                                          'admin.events.monthConfirmed'
+                                                      )
+                                                    : undefined
+                                            }
+                                        >
+                                            <td
+                                                className="whitespace-nowrap px-3 py-3"
+                                                title={t(
+                                                    `admin.events.status.${row.status}`
+                                                )}
+                                            >
+                                                {renderStatusIcon(row.status)}
+                                            </td>
+                                            <td className="whitespace-nowrap px-3 py-3 text-xs font-medium text-zinc-900 dark:text-white">
+                                                {dateLabel}
+                                                {isConfirmed && (
+                                                    <span
+                                                        title={t(
+                                                            'admin.events.status.confirmed'
+                                                        )}
+                                                        className="inline-block ml-1"
+                                                    >
+                                                        <Lock
+                                                            size={14}
+                                                            className="text-zinc-400 dark:text-zinc-500"
+                                                        />
+                                                    </span>
+                                                )}
+                                            </td>
                                             {showEmployee && (
-                                                <td className="truncate px-3 py-3 font-medium text-zinc-900 dark:text-white">
+                                                <td className="whitespace-nowrap px-3 py-3 font-medium text-zinc-900 dark:text-white">
                                                     {row.userName}
                                                 </td>
                                             )}
-                                            <td className="px-3 py-3">
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    {renderSessionChips(row)}
-                                                </div>
+                                            <td className="px-3 py-3 text-zinc-500">
+                                                {renderExpected(row)}
                                             </td>
                                             <td className="whitespace-nowrap px-3 py-3 text-right font-medium text-zinc-900 dark:text-white">
-                                                {row.totalHours > 0
-                                                    ? formatHM(
-                                                          row.totalHours *
-                                                              MS_PER_HOUR,
-                                                          t
-                                                      )
-                                                    : '—'}
+                                                {totalHoursLabel(row)}
                                             </td>
-                                            <td className="whitespace-nowrap px-3 py-3 text-right text-zinc-500">
-                                                {row.expectedHours} {t('time.h')}
+                                            <td className="px-3 py-3">
+                                                {renderWorkedIntervals(row)}
+                                            </td>
+                                            <td className="whitespace-nowrap px-3 py-3">
+                                                {renderDaySource(row)}
                                             </td>
                                         </tr>
                                     </Fragment>
@@ -312,7 +338,7 @@ export default function FitxatgesTable({
                         >
                             <div className="flex items-center justify-between gap-2">
                                 <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                                    {statusIcon(row.status)}
+                                    {renderStatusIcon(row.status)}
                                     <span className="truncate">
                                         {dateLabelOf(row)}
                                     </span>
@@ -324,12 +350,7 @@ export default function FitxatgesTable({
                                     )}
                                 </span>
                                 <span className="shrink-0 text-sm font-medium text-zinc-900 dark:text-white">
-                                    {row.totalHours > 0
-                                        ? formatHM(
-                                              row.totalHours * MS_PER_HOUR,
-                                              t
-                                          )
-                                        : '—'}
+                                    {totalHoursLabel(row)}
                                 </span>
                             </div>
 
@@ -339,59 +360,46 @@ export default function FitxatgesTable({
                                 </div>
                             )}
 
-                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                {renderSessionChips(row)}
+                            <div className="mt-2">
+                                {renderWorkedIntervals(row)}
                             </div>
 
-                            <div className="mt-2 flex items-center justify-between gap-2 border-t border-zinc-900/10 pt-2 text-xs dark:border-white/10">
-                                <span className="text-zinc-600 dark:text-zinc-300">
-                                    {t('admin.events.table.hours')}:{' '}
-                                    <span className="font-semibold text-zinc-900 dark:text-white">
-                                        {row.totalHours > 0
-                                            ? formatHM(
-                                                  row.totalHours * MS_PER_HOUR,
-                                                  t
-                                              )
-                                            : '—'}
+                            <div className="mt-2 space-y-1.5 border-t border-zinc-900/10 pt-2 text-xs dark:border-white/10">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-zinc-600 dark:text-zinc-300">
+                                        {t('admin.events.table.hours')}
                                     </span>
-                                </span>
-                                <span className="text-zinc-500 dark:text-zinc-400">
-                                    {t('admin.events.table.expected')}:{' '}
-                                    {row.expectedHours} {t('time.h')}
-                                </span>
+                                    <span className="font-semibold text-zinc-900 dark:text-white">
+                                        {totalHoursLabel(row)}
+                                    </span>
+                                </div>
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="shrink-0 text-zinc-600 dark:text-zinc-300">
+                                        {t('admin.events.table.expected')}
+                                    </span>
+                                    <div className="text-right text-zinc-500 dark:text-zinc-400">
+                                        {renderExpected(row)}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-zinc-600 dark:text-zinc-300">
+                                        {t('admin.events.table.source')}
+                                    </span>
+                                    {renderDaySource(row)}
+                                </div>
                             </div>
                         </button>
                     );
                 })}
             </Card>
 
-            {!anomalyOnly && total > pageSize && (
-                <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {offset + 1}–{Math.min(offset + pageSize, total)} /{' '}
-                        {total}
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() =>
-                                onPageChange(Math.max(0, offset - pageSize))
-                            }
-                            disabled={offset === 0}
-                            className="rounded-lg border border-zinc-300 bg-white p-2.5 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                            aria-label={t('admin.events.pagination.previous')}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button
-                            onClick={() => onPageChange(offset + pageSize)}
-                            disabled={offset + pageSize >= total}
-                            className="rounded-lg border border-zinc-300 bg-white p-2.5 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                            aria-label={t('admin.events.pagination.next')}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </button>
-                    </div>
-                </div>
+            {!anomalyOnly && (
+                <Pagination
+                    offset={offset}
+                    pageSize={pageSize}
+                    total={total}
+                    onPageChange={onPageChange}
+                />
             )}
         </>
     );

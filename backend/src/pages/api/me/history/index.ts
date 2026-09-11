@@ -28,11 +28,16 @@ import { responseErrorGet } from '@/lib/response-error-generator';
 import {
     buildWorkSessionRows,
     computeDaysForPeriod,
+    daySourceMap,
 } from '@/lib/work-session-rows';
 import {
     parsePagination,
     paginateRows,
 } from '@/lib/pagination';
+import { dateKey } from '@/lib/date-key';
+import {
+    findWorkDaySources,
+} from '@/repositories/work-day-source-repository';
 
 // Personal work-session report: the same rows (status, expected hours,
 // anomalies) shown in the admin fitxatges view, but restricted to the
@@ -66,16 +71,16 @@ export default withApi(
         const yearSet = new Set<number>();
         days.forEach((d) => yearSet.add(d.getFullYear()));
 
-        const [user, sessions, approvedVacations, yearlyTemplates, settings] =
+        const [user, sessions, approvedVacations, yearlyTemplates, settings, daySources] =
             (await Promise.all([
-                User.findById(userId, 'name email emailEncrypted dni dniEncrypted expectedWorkHours workDays')
+                User.findById(userId, 'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable')
                     .lean(),
                 findActiveInRange(periodStart, periodEnd, {
                     userId,
                     endInclusive: true,
                 })
                     .select(
-                        'userId type timestamp source overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
+                        'userId type timestamp overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
                     )
                     .sort({ timestamp: 1 })
                     .lean(),
@@ -85,12 +90,17 @@ export default withApi(
                 }).lean(),
                 findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
+                findWorkDaySources(
+                    days.map((d) => dateKey(d)),
+                    [userId]
+                ),
             ])) as unknown as [
                 UserRow | null,
                 WorkSessionRow[],
                 ElectiveVacationRow[],
                 YearlyVacationRow[],
                 Awaited<ReturnType<typeof getAppSettings>>,
+                Awaited<ReturnType<typeof findWorkDaySources>>,
             ];
 
         if (!user) {
@@ -103,9 +113,10 @@ export default withApi(
             sessions,
             approvedVacations,
             yearlyTemplates,
-            defaultNonWorkingDays: settings.nonWorkingDays,
-            defaultExpectedHours: settings.defaultExpectedHours,
-            toleranceHours: settings.toleranceHours,
+            defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
+            toleranceMinutes: settings.toleranceMinutes,
+            timetableToleranceMinutes: settings.timetableToleranceMinutes,
+            daySources: daySourceMap(daySources),
         });
 
         rows.sort((a, b) => a.date.localeCompare(b.date) || a.userName.localeCompare(b.userName));

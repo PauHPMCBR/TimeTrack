@@ -15,6 +15,7 @@ import {
     CalendarOff,
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import VacationMonthsTable from '@/components/VacationMonthsTable';
@@ -24,7 +25,14 @@ import {
     VACATION_PENDING,
     VACATION_REJECTED,
 } from 'shared/src/lib/constants';
-import { DEFAULT_ELECTIVE_VACATION_DAYS, defaultNonWorkingDays } from 'shared/src/lib/defaults';
+import {
+    DEFAULT_ELECTIVE_VACATION_DAYS,
+    defaultWeeklyExpectedHours,
+} from 'shared/src/lib/defaults';
+import {
+    nonWorkingDaysOfWeek,
+    resolveNonWorkingDays,
+} from 'shared/src/lib/user-overrides';
 import { countSpentVacationDays } from 'shared/src/lib/vacation-days';
 
 export default function MyVacationsPage() {
@@ -49,9 +57,7 @@ export default function MyVacationsPage() {
     const [vacationsToCancel, setVacationsToCancel] = useState<string[]>([]);
     const [isCancelling, setIsCancelling] = useState(false);
 
-    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>(
-        defaultNonWorkingDays()
-    );
+    const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]);
     const [companyTimezone, setCompanyTimezone] = useState<string | undefined>(
         undefined
     );
@@ -68,22 +74,22 @@ export default function MyVacationsPage() {
                     setStats(res.data.yearlyVacationDays || null);
                 }
 
-                // Non-working days: prefer the user's own override, else the
-                // company setting (same rule as the calendar page).
                 const settingsRes = await apiClient.getSettings();
-                if (user.workDays && user.workDays.length > 0) {
-                    const allDays = [0, 1, 2, 3, 4, 5, 6];
-                    setNonWorkingDays(
-                        allDays.filter((d) => !user.workDays!.includes(d))
-                    );
-                } else if (!settingsRes.error && settingsRes.data?.settings) {
-                    setNonWorkingDays(
-                        settingsRes.data.settings.nonWorkingDays ??
-                            defaultNonWorkingDays()
-                    );
-                }
+                setNonWorkingDays(
+                    resolveNonWorkingDays(
+                        user,
+                        nonWorkingDaysOfWeek(
+                            settingsRes.data?.settings
+                                .defaultWeeklyExpectedHours ??
+                                defaultWeeklyExpectedHours()
+                        )
+                    )
+                );
                 // Same company timezone the backend resolves day bounds with.
-                if (!settingsRes.error && settingsRes.data?.settings?.timezone) {
+                if (
+                    !settingsRes.error &&
+                    settingsRes.data?.settings?.timezone
+                ) {
                     setCompanyTimezone(settingsRes.data.settings.timezone);
                 }
             }
@@ -251,7 +257,8 @@ export default function MyVacationsPage() {
         }
     };
 
-    const totalDays = stats?.electiveDaysTotalCount || DEFAULT_ELECTIVE_VACATION_DAYS;
+    const totalDays =
+        stats?.electiveDaysTotalCount || DEFAULT_ELECTIVE_VACATION_DAYS;
     // Spent days are computed per request by the backend; pending requests
     // count too (they may still be approved).
     const usedDays = vacations
@@ -274,12 +281,7 @@ export default function MyVacationsPage() {
         return `${s} - ${e}`;
     };
 
-    if (loading)
-        return (
-            <div className="p-10 text-center animate-pulse text-zinc-500">
-                {t('common.loading')}
-            </div>
-        );
+    if (loading) return <LoadingState />;
 
     return (
         <div className="space-y-6">
@@ -407,9 +409,7 @@ export default function MyVacationsPage() {
                                     required
                                     min={date || undefined}
                                     value={endDate}
-                                    onChange={(e) =>
-                                        setEndDate(e.target.value)
-                                    }
+                                    onChange={(e) => setEndDate(e.target.value)}
                                     className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white transition-all"
                                 />
                             </div>
@@ -440,13 +440,9 @@ export default function MyVacationsPage() {
                                 <CalendarDays className="w-4 h-4 mt-0.5 shrink-0" />
                                 <div>
                                     {requestPreview.crossYear ? (
-                                        <p>
-                                            {t('error.vacationCrossYear')}
-                                        </p>
+                                        <p>{t('error.vacationCrossYear')}</p>
                                     ) : requestPreview.cost === 0 ? (
-                                        <p>
-                                            {t('error.vacationZeroDays')}
-                                        </p>
+                                        <p>{t('error.vacationZeroDays')}</p>
                                     ) : (
                                         <p>
                                             {t('vacations.previewCost').replace(
@@ -551,7 +547,8 @@ export default function MyVacationsPage() {
                                     <div className="flex items-center gap-3">
                                         <span
                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                                group.status === VACATION_APPROVED
+                                                group.status ===
+                                                VACATION_APPROVED
                                                     ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30'
                                                     : group.status ===
                                                         VACATION_REJECTED

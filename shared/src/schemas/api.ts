@@ -6,10 +6,13 @@ import {
     MonthlyApprovalEventSchema,
     AuditEventSchema,
     InconsistencyReminderModeSchema,
+    ScheduleModeSchema,
     UserRoleSchema,
     UserSchema,
     UserFileSchema,
+    ValidWeekTimetableSchema,
     WorkSessionSchema,
+    SourceKindSchema,
     WorkSessionTypeSchema,
     YearlyVacationDaysSchema,
 } from './database';
@@ -68,8 +71,11 @@ export const UpdateUserRequestSchema = z
         email: z.string().email('Invalid email format').optional(),
         role: UserRoleSchema.optional(),
         dni: z.string().max(20).optional(),
-        expectedWorkHours: z.number().positive().optional(),
-        workDays: z.array(z.number().int().min(0).max(6)).optional(),
+        weeklyExpectedHours: z
+            .array(z.number().min(0))
+            .length(7)
+            .optional(),        scheduleMode: ScheduleModeSchema.optional(),
+        timetable: ValidWeekTimetableSchema.optional(),
         // The day the user started time tracking (local "YYYY-MM-DD").
         trackingStartDate: z
             .string()
@@ -97,11 +103,15 @@ export type CopyYearlyVacationRequest = z.infer<
 
 export const AppSettingsRequestSchema = z
     .object({
-        defaultExpectedHours: z.number().positive().optional(),
-        benevolenceHours: z.number().gte(0).optional(),
-        toleranceHours: z.number().gte(0).optional(),
+        defaultWeeklyExpectedHours: z
+            .array(z.number().min(0))
+            .length(7)
+            .optional(),
+        toleranceMinutes: z.number().int().gte(0).optional(),
+        defaultScheduleMode: ScheduleModeSchema.optional(),
+        defaultTimetable: ValidWeekTimetableSchema.optional(),
+        timetableToleranceMinutes: z.number().int().gte(0).optional(),
         endOfDayHour: z.number().min(0).max(24).optional(),
-        nonWorkingDays: z.array(z.number().int().min(0).max(6)).optional(),
         inconsistencyReminderMode:
             InconsistencyReminderModeSchema.optional(),
         monthlyApprovalReminderDays: z.number().int().min(1).max(60).optional(),
@@ -304,6 +314,11 @@ export const WorkSessionAnomalySchema = z.enum([
     'forgot_check_in',
     'hours_short',
     'hours_over',
+    'timetable_check_in_late',
+    'timetable_check_in_early',
+    'timetable_check_out_late',
+    'timetable_check_out_early',
+    'timetable_shift_count',
 ]);
 export type WorkSessionAnomaly = z.infer<typeof WorkSessionAnomalySchema>;
 
@@ -321,7 +336,8 @@ export const AdminWorkSessionRowSchema = z.object({
     date: z.string(), // YYYY-MM-DD (local)
     totalHours: z.number().gte(0),
     overtimeHours: z.number().gte(0),
-    expectedHours: z.number().positive(),
+    expectedHours: z.number().gte(0),    timetable: z.array(AutoScheduleEntrySchema).optional(),
+    source: SourceKindSchema.optional(),
     sessions: z.array(WorkSessionSchema.extend({ _id: z.string() })),
     status: WorkSessionRowStatusSchema,
     anomalies: z.array(WorkSessionAnomalySchema),

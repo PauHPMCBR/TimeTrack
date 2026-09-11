@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { AdminWorkSessionRow } from '@/types';
-import { localeTag, toLocalDateKey } from '@/lib/datetime';
+import { localeTag, toLocalDateKey, formatPeriodLabel } from '@/lib/datetime';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import { Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -121,30 +121,8 @@ export default function HistoryPage() {
         setCursor(next);
     };
 
-    const periodLabel = () => {
-        if (period === 'month') {
-            const label = cursor.toLocaleDateString(locale, {
-                month: 'long',
-                year: 'numeric',
-            });
-            return label.charAt(0).toUpperCase() + label.slice(1);
-        }
-        if (period === 'year') return String(cursor.getFullYear());
-        const start = cursor.toLocaleDateString(locale, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        });
-        if (period === 'day') return start;
-        const end = new Date(cursor);
-        end.setDate(end.getDate() + 6);
-        const endLabel = end.toLocaleDateString(locale, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        });
-        return `${start} — ${endLabel}`;
-    };
+    const periodLabel = () =>
+        formatPeriodLabel(cursor, period, locale);
 
     const changePeriod = (p: Period) => {
         setOffset(0);

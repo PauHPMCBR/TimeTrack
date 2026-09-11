@@ -2,7 +2,10 @@ import { dateKeyInTz } from './day-key';
 
 // Override resolution moved to user-overrides.ts; re-exported here so
 // existing imports keep working.
-export { resolveNonWorkingDays } from './user-overrides';
+export {
+    nonWorkingDaysOfWeek,
+    resolveNonWorkingDays,
+} from './user-overrides';
 
 /**
  * Elective vacation day accounting, shared by the backend (request

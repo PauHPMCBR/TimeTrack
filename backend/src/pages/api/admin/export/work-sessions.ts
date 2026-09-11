@@ -3,10 +3,14 @@ import { toCsv } from 'shared/src/lib/csv';
 import { SOURCE_USER_CLICK, APPROVAL_APPROVED } from 'shared/src/lib/constants';
 import { WorkSession, User, MonthlyApproval } from '@/models';
 import { notReplaced } from '@/repositories/work-session-repository';
+import {
+    findWorkDaySources,
+} from '@/repositories/work-day-source-repository';
 import { notDeleted } from '@/repositories/user-repository';
 import { responseErrorGet, responseErrorIncorrectParameter } from '@/lib/response-error-generator';
 import { UserRow, WorkSessionRow } from '@/lib/rows';
 import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
+import { dateKey } from '@/lib/date-key';
 
 
 export default withApi(
@@ -72,7 +76,7 @@ export default withApi(
                 'name email emailEncrypted dni dniEncrypted'
             ).lean(),
             WorkSession.find(filter)
-                .select('userId timestamp type source notes notesEncrypted overtime')
+                .select('userId timestamp type notes notesEncrypted overtime')
                 .sort({ timestamp: 1 })
                 .lean(),
             MonthlyApproval.find({
@@ -81,7 +85,20 @@ export default withApi(
             })
                 .select('userId year month')
                 .lean(),
-        ])) as unknown as [UserRow[], WorkSessionRow[], { userId: string; year: number; month: number }[]];
+        ])) as unknown as [
+            UserRow[],
+            WorkSessionRow[],
+            { userId: string; year: number; month: number }[],
+        ];
+        const daySourceRows = await findWorkDaySources(
+            Array.from(
+                new Set(sessions.map((s) => dateKey(s.timestamp)))
+            ),
+            userIds
+        );
+        const daySourceMap = new Map(
+            daySourceRows.map((row) => [`${row.userId}:${row.date}`, row.source])
+        );
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
         // Drops rows of deleted or unknown users.
         const allowedUserIds = new Set(userMap.keys());
@@ -120,7 +137,9 @@ export default withApi(
                 userMap.get(s.userId.toString())?.email ?? '',
                 new Date(s.timestamp).toISOString(),
                 s.type,
-                s.source ?? SOURCE_USER_CLICK,
+                daySourceMap.get(
+                    `${s.userId.toString()}:${dateKey(s.timestamp)}`
+                ) ?? SOURCE_USER_CLICK,
                 s.notes ?? '',
                 s.overtime ? 'Yes' : 'No',
                 isConfirmed,

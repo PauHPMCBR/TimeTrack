@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api';
 import { Group, GroupMember } from '@/types';
 import { Users, ChevronLeft, Mail } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import Avatar from '@/components/Avatar';
 
 type GroupDetail = Omit<Group, 'members'> & { members: GroupMember[] };
@@ -43,11 +44,7 @@ export default function GroupDetailPage() {
     }, [groupId]);
 
     if (loading) {
-        return (
-            <div className="p-8 text-center text-sm text-zinc-500 animate-pulse">
-                {t('common.loading')}
-            </div>
-        );
+        return <LoadingState className="p-8" />;
     }
 
     if (!group) {
@@ -58,9 +55,7 @@ export default function GroupDetailPage() {
         );
     }
 
-    const members = (group.members ?? []).filter(
-        (m): m is GroupMember => !!m
-    );
+    const members = (group.members ?? []).filter((m): m is GroupMember => !!m);
 
     return (
         <div className="space-y-6">
@@ -108,14 +103,10 @@ export default function GroupDetailPage() {
                                 <Avatar
                                     userId={member._id}
                                     version={member.avatar ?? null}
-                                    alt={
-                                        member.name || t('common.noName')
-                                    }
-                                    fallback={(
-                                        member.name ||
+                                    alt={member.name || t('common.noName')}
+                                    fallback={(member.name ||
                                         member.email ||
-                                        'U'
-                                    )[0].toUpperCase()}
+                                        'U')[0].toUpperCase()}
                                     className="h-10 w-10 rounded-full object-cover"
                                     fallbackClassName="h-10 w-10 rounded-full bg-zinc-100 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                                 />

@@ -54,6 +54,16 @@ const COPY: Record<EmailLanguage, Copy> = {
                 'Anomalia: sortida sense entrada (has oblidat fer el check-in).',
             hours_short: 'Anomalia: has treballat menys hores de les previstes.',
             hours_over: 'Anomalia: has treballat més hores de les previstes.',
+            timetable_check_in_late:
+                "Anomalia: has entrat més tard de l'horari previst.",
+            timetable_check_in_early:
+                "Anomalia: has entrat més d'hora que l'horari previst.",
+            timetable_check_out_late:
+                "Anomalia: has sortit més tard de l'horari previst.",
+            timetable_check_out_early:
+                "Anomalia: has sortit més d'hora que l'horari previst.",
+            timetable_shift_count:
+                "Anomalia: el nombre de torns no coincideix amb l'horari previst.",
         },
     },
     en: {
@@ -76,6 +86,16 @@ const COPY: Record<EmailLanguage, Copy> = {
                 'Anomaly: check-out with no check-in (forgot to check in).',
             hours_short: 'Anomaly: you worked fewer hours than expected.',
             hours_over: 'Anomaly: you worked more hours than expected.',
+            timetable_check_in_late:
+                'Anomaly: you checked in later than the expected timetable.',
+            timetable_check_in_early:
+                'Anomaly: you checked in earlier than the expected timetable.',
+            timetable_check_out_late:
+                'Anomaly: you checked out later than the expected timetable.',
+            timetable_check_out_early:
+                'Anomaly: you checked out earlier than the expected timetable.',
+            timetable_shift_count:
+                'Anomaly: the number of shifts does not match the expected timetable.',
         },
     },
     es: {
@@ -98,6 +118,16 @@ const COPY: Record<EmailLanguage, Copy> = {
                 'Anomalía: salida sin entrada (olvidaste hacer el check-in).',
             hours_short: 'Anomalía: has trabajado menos horas de las previstas.',
             hours_over: 'Anomalía: has trabajado más horas de las previstas.',
+            timetable_check_in_late:
+                'Anomalía: has entrado más tarde de lo previsto en el horario.',
+            timetable_check_in_early:
+                'Anomalía: has entrado antes de lo previsto en el horario.',
+            timetable_check_out_late:
+                'Anomalía: has salido más tarde de lo previsto en el horario.',
+            timetable_check_out_early:
+                'Anomalía: has salido antes de lo previsto en el horario.',
+            timetable_shift_count:
+                'Anomalía: el número de turnos no coincide con el horario previsto.',
         },
     },
 };

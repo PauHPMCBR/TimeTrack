@@ -7,6 +7,7 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { AdminDashboardResponse } from '@/types';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import {
     UserPlus,
     Users,
@@ -224,8 +225,8 @@ export default function AdminDashboard() {
             </div>
 
             {loading ? (
-                <Card className="p-10 text-center animate-pulse text-zinc-500">
-                    {t('common.loading')}
+                <Card>
+                    <LoadingState />
                 </Card>
             ) : (
                 <div className="space-y-8">
@@ -250,9 +251,11 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    {sections.slice(2).map((section) =>
-                        renderSection(section.title, section.items)
-                    )}
+                    {sections
+                        .slice(2)
+                        .map((section) =>
+                            renderSection(section.title, section.items)
+                        )}
                 </div>
             )}
         </div>

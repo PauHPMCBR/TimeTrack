@@ -17,6 +17,10 @@ import {
 } from '@/repositories/vacation-repository';
 import { getAppSettings } from '@/lib/settings';
 import { replaceDaySessions } from '@/lib/replace-day';
+import { dateKey } from '@/lib/date-key';
+import {
+    findWorkDaySources,
+} from '@/repositories/work-day-source-repository';
 import {
     parsePagination,
     paginateRows,
@@ -46,6 +50,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import {
     buildWorkSessionRows,
     computeDaysForPeriod,
+    daySourceMap,
 } from '@/lib/work-session-rows';
 
 const putHandler = withApi(
@@ -141,7 +146,7 @@ const getHandler = withApi(
         const yearSet = new Set<number>();
         days.forEach((d) => yearSet.add(d.getFullYear()));
 
-            const [users, sessions, approvedVacations, yearlyTemplates, settings] =
+            const [users, sessions, approvedVacations, yearlyTemplates, settings, daySources] =
             (await Promise.all([
                 User.find(
                     {
@@ -152,7 +157,7 @@ const getHandler = withApi(
                         // the events report (they never show as non-working rows).
                         checkInRequired: { $ne: false },
                     },
-                    'name email emailEncrypted dni dniEncrypted expectedWorkHours workDays'
+                    'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable'
                 )
                     .sort({ name: 1 })
                     .lean(),
@@ -160,7 +165,7 @@ const getHandler = withApi(
                     endInclusive: true,
                 })
                     .select(
-                        'userId type timestamp source overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
+                        'userId type timestamp overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
                     )
                     .sort({ timestamp: 1 })
                     .lean(),
@@ -169,12 +174,16 @@ const getHandler = withApi(
                 }).lean(),
                 findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
+                findWorkDaySources(
+                    days.map((d) => dateKey(d))
+                ),
             ])) as unknown as [
                 UserRow[],
                 WorkSessionRow[],
                 ElectiveVacationRow[],
                 YearlyVacationRow[],
                 Awaited<ReturnType<typeof getAppSettings>>,
+                Awaited<ReturnType<typeof findWorkDaySources>>,
             ];
 
         const rows: AdminWorkSessionRow[] = buildWorkSessionRows({
@@ -183,9 +192,10 @@ const getHandler = withApi(
             sessions,
             approvedVacations,
             yearlyTemplates,
-            defaultNonWorkingDays: settings.nonWorkingDays,
-            defaultExpectedHours: settings.defaultExpectedHours,
-            toleranceHours: settings.toleranceHours,
+            defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
+            toleranceMinutes: settings.toleranceMinutes,
+            timetableToleranceMinutes: settings.timetableToleranceMinutes,
+            daySources: daySourceMap(daySources),
         });
 
         rows.sort(

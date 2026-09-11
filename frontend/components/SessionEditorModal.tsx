@@ -91,9 +91,12 @@ export default function SessionEditorModal({
     const [error, setError] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
 
-    const lastEditSession = row.sessions.find(
-        (s) => s.source === 'userManual' || s.source === 'adminManual'
-    );
+    const lastEditSession =
+        row.source === 'userManual' || row.source === 'adminManual'
+            ? [...row.sessions]
+                  .reverse()
+                  .find((s) => s.editReason || s.notes)
+            : undefined;
     // Days edited before editReason existed stored the reason in `notes`.
     const lastEditReason = lastEditSession?.editReason ?? lastEditSession?.notes;
     const lastEditDate = lastEditSession?.createdAt;

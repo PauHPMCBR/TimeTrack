@@ -12,6 +12,10 @@
         "no": "No",
         "noName": "Sense nom",
         "optional": "(opcional)",
+        "pagination": {
+            "next": "Pàgina següent",
+            "previous": "Pàgina anterior"
+        },
         "prev": "Ant",
         "save": "Desar",
         "saving": "Guardant...",
@@ -337,8 +341,6 @@
             "dni": "DNI",
             "dniPlaceholder": "Ex: 12345678A",
             "email": "Correu electrònic",
-            "expectedHours": "Hores diàries esperades",
-            "customNonWorkDays": "Dies no laborables personalitzats",
             "trackingStartDate": "Inici de registre de jornada",
             "checkInRequired": "Requerir fitxatge diari",
             "checkInRequiredHelp": "Quan està desactivat, el sistema no marcarà com a anomalia els dies sense fitxatge.",
@@ -347,7 +349,14 @@
                 "label": "Rol",
                 "admin": "Administrador",
                 "employee": "Empleat"
-            }
+            },
+            "scheduleMode": "Mode d'expectativa",
+            "scheduleModeHours": "Hores esperades",
+            "scheduleModeHoursHelp": "Es comproven les hores totals treballades respecte a les hores diàries esperades.",
+            "scheduleModeTimetable": "Horari per dies",
+            "scheduleModeTimetableHelp": "Es comprova cada fitxatge contra l'horari esperat del dia (tolerància configurable a la configuració de l'empresa).",
+            "timetableLabel": "Horari esperat",
+            "timetableHelp": "Els dies sense torns es consideren no laborables."
         },
         "groups": {
             "add": "Nou Departament",
@@ -453,7 +462,6 @@
             "blocked": "Compte bloquejat",
             "unblockHint": "Per desbloquejar, edita l'usuari i restableix-ne la contrasenya.",
             "workingNow": "Treballant ara",
-            "customNonWorkDays": "Dies no laborables personalitzats",
             "registered": "Registrat",
             "deletedTitle": "Usuaris eliminats",
             "deletedOn": "Eliminat el {date}",
@@ -491,14 +499,10 @@
         },
         "settings": {
             "userDefaults": "Configuració per defecte per a usuaris nous",
-            "toleranceHelp": "Marge de tolerància respecte a les hores esperades abans de marcar una anomalia.",
-            "toleranceLabel": "Tolerància (hores)",
-            "defaultHoursHelp": "Hores de treball esperades per dia per defecte per als nous empleats.",
-            "defaultHoursLabel": "Hores diàries esperades",
+            "toleranceHelp": "Marge de tolerància (minuts) respecte a les hores esperades abans de marcar una anomalia.",
+            "toleranceLabel": "Tolerància pel format hores esperades",
             "endOfDayHelp": "Hora límit del dia per detectar treballadors sense sortir.",
             "endOfDayLabel": "Hora de fi de dia",
-            "nonWorkingDaysHelp": "Dies de la setmana en què no s'espera treball (no es marcarà cap anomalia).",
-            "nonWorkingDaysLabel": "Dies no laborables",
             "reminderHelp": "Envia un correu a final de dia als usuaris amb el fitxatge inconsistent, amb l'enllaç per aplicar l'horari automàtic. En «L'elecció de cada persona treballadora», cada persona activa o desactiva el recordatori al seu perfil.",
             "reminderLabel": "Recordatori de fitxatge inconsistent per correu",
             "reminderMode": {
@@ -516,7 +520,18 @@
             "privacyNoticeLabel": "Avís de privadesa",
             "privacyNoticeHelp": "Text de l'avís de privadesa que es mostra a les persones treballadores (obligació informativa RGPD). Buit si encara no s'ha configurat.",
             "consultationLabel": "Consulta prèvia a la representació dels treballadors",
-            "consultationHelp": "Confirma que s'ha consultat la representació de les persones treballadores abans d'implantar el sistema de registre de jornada (art. 34.9 de l'Estatut dels Treballadors)."
+            "consultationHelp": "Confirma que s'ha consultat la representació de les persones treballadores abans d'implantar el sistema de registre de jornada (art. 34.9 de l'Estatut dels Treballadors).",
+            "defaultScheduleModeLabel": "Mode d'expectativa per defecte",
+            "scheduleModeHours": "Hores esperades",
+            "scheduleModeTimetable": "Horari per dies",
+            "defaultScheduleModeHelp": "Mode copiat als usuaris nous en crear-se; es pot canviar per usuari des de la seva fitxa.",
+            "defaultTimetableLabel": "Horari per dies (per defecte)",
+            "defaultTimetableHelp": "Horari esperat copiat als usuaris nous i usat com a plantilla en activar el mode horari per dies.",
+            "timetableToleranceLabel": "Tolerància pel format horari",
+            "timetableToleranceHelp": "Desviació màxima (minuts) d'una entrada/sortida respecte a l'horari esperat abans de marcar una anomalia.",
+            "defaultWeeklyHoursLabel": "Hores esperades per dia (per defecte)",
+            "defaultWeeklyHoursHelp": "Hores esperades de cada dia per als usuaris nous. Un dia amb 0 h es considera no laborable.",
+            "notificationsSection": "Notificacions"
         },
         "export": {
             "button": "Exporta fitxatges CSV",
@@ -554,7 +569,8 @@
                 "employee": "Empleat",
                 "expected": "Esperades",
                 "hours": "Hores",
-                "sessions": "Fitxatges"
+                "sessions": "Fitxatges",
+                "source": "Origen"
             },
             "source": {
                 "userClick": "Empleat",
@@ -841,7 +857,23 @@
             "forgot_check_out": "entrada sense sortida",
             "forgot_check_in": "sortida sense entrada",
             "hours_short": "hores de menys",
-            "hours_over": "hores de més"
+            "hours_over": "hores de més",
+            "timetable_check_in_late": "entrada fora d'hora (tard)",
+            "timetable_check_in_early": "entrada fora d'hora (d'hora)",
+            "timetable_check_out_late": "sortida fora d'hora (tard)",
+            "timetable_check_out_early": "sortida fora d'hora (d'hora)",
+            "timetable_shift_count": "nombre de torns incorrecte"
         }
+    },
+    "expectedTimetable": {
+        "edit": "Edita l'horari",
+        "title": "Horari esperat",
+        "nonWorkingDay": "No laborable",
+        "invalidIntervals": "Cada torn ha de començar i acabar dins del dia i no es poden solapar."
+    },
+    "weeklyHours": {
+        "label": "Hores esperades per dia",
+        "help": "Estableix les hores esperades de cada dia de la setmana. Un dia amb 0 h es considera no laborable.",
+        "nonWorkingDay": "No laborable"
     }
 }

@@ -6,11 +6,7 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { WorkSession, User } from '@/types';
 import { formatHM, toLocalDateKey } from '@/lib/datetime';
-import {
-    applyTheme,
-    DEFAULT_THEME_FLAVOR,
-    ThemeFlavor,
-} from '@/lib/theme';
+import { applyTheme, DEFAULT_THEME_FLAVOR, ThemeFlavor } from '@/lib/theme';
 import { THEME_KEY } from '@/lib/storage';
 import { TimetableEntry } from '@/lib/timetable';
 import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
@@ -25,9 +21,17 @@ import {
 } from 'shared/src/lib/constants';
 import type { InconsistencyReminderMode } from 'shared/src/schemas/database';
 import { usePathname, useRouter } from 'next/navigation';
-import { Users, ChevronRight, Camera, LogOut, FolderOpen, BookOpen } from 'lucide-react';
+import {
+    Users,
+    ChevronRight,
+    Camera,
+    LogOut,
+    FolderOpen,
+    BookOpen,
+} from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
 import Avatar from '@/components/Avatar';
 import PasswordField from '@/components/ui/PasswordField';
 import { GUIDE_URL } from '@/lib/brand';
@@ -207,8 +211,7 @@ export default function ProfilePage() {
                     const settingsRes = await apiClient.getPublicSettings();
                     if (!cancelled && settingsRes.data?.settings) {
                         setReminderMode(
-                            settingsRes.data.settings
-                                .inconsistencyReminderMode
+                            settingsRes.data.settings.inconsistencyReminderMode
                         );
                     }
 
@@ -237,8 +240,7 @@ export default function ProfilePage() {
 
     useEffect(() => {
         const saved = localStorage.getItem(THEME_KEY) || DEFAULT_THEME_FLAVOR;
-        // Only Latte (light) and Frappé (dark) are exposed now; map any legacy
-        // value (macchiato/mocha/"dark"/...) to the dark flavor.
+        // Only Latte (light) and Frappé (dark) are exposed.
         const savedTheme: ThemeFlavor =
             saved === DEFAULT_THEME_FLAVOR || saved === 'light'
                 ? DEFAULT_THEME_FLAVOR
@@ -258,7 +260,9 @@ export default function ProfilePage() {
         setUser((prev) => (prev ? { ...prev, notifyNewFile: next } : prev));
         const res = await apiClient.updateMyProfile({ notifyNewFile: next });
         if (res.error) {
-            setUser((prev) => (prev ? { ...prev, notifyNewFile: !next } : prev));
+            setUser((prev) =>
+                prev ? { ...prev, notifyNewFile: !next } : prev
+            );
         }
     };
 
@@ -280,9 +284,7 @@ export default function ProfilePage() {
     const saveAutoSchedule = async (next: TimetableEntry[]) => {
         const res = await apiClient.updateMyProfile({ autoTimetable: next });
         if (res.data) {
-            setUser((prev) =>
-                prev ? { ...prev, autoTimetable: next } : prev
-            );
+            setUser((prev) => (prev ? { ...prev, autoTimetable: next } : prev));
             return true;
         }
         return false;
@@ -369,12 +371,7 @@ export default function ProfilePage() {
         return formatHM(ms, t);
     }, [isCheckedIn, sortedSessions, t, now]);
 
-    if (loading)
-        return (
-            <div className="p-10 text-center text-zinc-500 animate-pulse">
-                {t('common.loading')}
-            </div>
-        );
+    if (loading) return <LoadingState />;
     if (!user)
         return (
             <div className="p-10 text-center text-red-500">
@@ -546,10 +543,7 @@ export default function ProfilePage() {
                         {t('profile.password.title')}
                     </div>
 
-                    <form
-                        onSubmit={handlePasswordChange}
-                        className="space-y-3"
-                    >
+                    <form onSubmit={handlePasswordChange} className="space-y-3">
                         <PasswordField
                             placeholder={t('profile.password.current')}
                             autoComplete="current-password"

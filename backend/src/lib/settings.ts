@@ -1,26 +1,30 @@
 import dbConnect from '@/lib/mongodb';
 import { AppSettings } from '@/models';
 import {
-    DEFAULT_BENEVOLENCE_HOURS,
+    defaultWeeklyExpectedHours,
     DEFAULT_END_OF_DAY_HOUR,
-    DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-    DEFAULT_NON_WORKING_DAYS,
+    DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
     DEFAULT_TIMEZONE,
+    DEFAULT_TOLERANCE_MINUTES,
 } from 'shared/src/lib/defaults';
 import {
+    defaultTimetable,
     InconsistencyReminderMode,
     InconsistencyReminderModeSchema,
+    ScheduleMode,
+    WeekTimetable,
 } from 'shared/src/schemas/database';
 
 export { DEFAULT_TIMEZONE };
 
 export interface AppSettingsValues {
-    defaultExpectedHours: number;
-    benevolenceHours: number;
-    toleranceHours: number;
+    defaultWeeklyExpectedHours: number[];
+    toleranceMinutes: number;
+    defaultScheduleMode: ScheduleMode;
+    defaultTimetable: WeekTimetable;
+    timetableToleranceMinutes: number;
     endOfDayHour: number;
-    nonWorkingDays: number[];
     inconsistencyReminderMode: InconsistencyReminderMode;
     monthlyApprovalReminderDays: number;
     timezone?: string;
@@ -29,11 +33,12 @@ export interface AppSettingsValues {
 }
 
 const DEFAULTS: AppSettingsValues = {
-    defaultExpectedHours: DEFAULT_EXPECTED_WORK_HOURS,
-    benevolenceHours: DEFAULT_BENEVOLENCE_HOURS,
-    toleranceHours: DEFAULT_BENEVOLENCE_HOURS,
+    defaultWeeklyExpectedHours: defaultWeeklyExpectedHours(),
+    toleranceMinutes: DEFAULT_TOLERANCE_MINUTES,
+    defaultScheduleMode: 'hours',
+    defaultTimetable: defaultTimetable(),
+    timetableToleranceMinutes: DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
     endOfDayHour: DEFAULT_END_OF_DAY_HOUR,
-    nonWorkingDays: DEFAULT_NON_WORKING_DAYS,
     inconsistencyReminderMode: 'forced',
     monthlyApprovalReminderDays: DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
     timezone: DEFAULT_TIMEZONE,
@@ -62,20 +67,24 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
     }
 
     cachedSettings = {
-        defaultExpectedHours:
-            settings.defaultExpectedHours ?? DEFAULTS.defaultExpectedHours,
-        benevolenceHours:
-            settings.benevolenceHours ?? DEFAULTS.benevolenceHours,
-        toleranceHours:
-            settings.toleranceHours ??
-            settings.benevolenceHours ??
-            DEFAULTS.toleranceHours,
+        defaultWeeklyExpectedHours: Array.isArray(
+            settings.defaultWeeklyExpectedHours
+        )
+            ? [...settings.defaultWeeklyExpectedHours]
+            : DEFAULTS.defaultWeeklyExpectedHours,
+        toleranceMinutes:
+            settings.toleranceMinutes ?? DEFAULTS.toleranceMinutes,
+        defaultScheduleMode:
+            settings.defaultScheduleMode ?? DEFAULTS.defaultScheduleMode,
+        defaultTimetable: Array.isArray(settings.defaultTimetable)
+            ? (settings.defaultTimetable as WeekTimetable).map((day) =>
+                  day.map((entry) => ({ ...entry }))
+              )
+            : DEFAULTS.defaultTimetable,
+        timetableToleranceMinutes:
+            settings.timetableToleranceMinutes ??
+            DEFAULTS.timetableToleranceMinutes,
         endOfDayHour: settings.endOfDayHour ?? DEFAULTS.endOfDayHour,
-        nonWorkingDays:
-            Array.isArray(settings.nonWorkingDays) &&
-            settings.nonWorkingDays.length > 0
-                ? settings.nonWorkingDays
-                : DEFAULTS.nonWorkingDays,
         inconsistencyReminderMode:
             InconsistencyReminderModeSchema.catch('forced').parse(
                 settings.inconsistencyReminderMode

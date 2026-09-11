@@ -57,10 +57,14 @@ vi.mock('@/models', () => {
     class User {
         static updateOne = vi.fn().mockResolvedValue({});
     }
-    return { WorkSession, User };
+    class WorkDaySource {
+        static findOne = vi.fn().mockResolvedValue(null);
+        static updateOne = vi.fn().mockResolvedValue({});
+    }
+    return { WorkSession, User, WorkDaySource };
 });
 
-import { WorkSession } from '@/models';
+import { WorkSession, WorkDaySource } from '@/models';
 import addTimestampHandler from '@/pages/api/work-sessions/add-timestamp';
 
 describe('POST /api/work-sessions/add-timestamp', () => {
@@ -280,10 +284,15 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         expect(constructed[0]).toMatchObject({
             userId: 'user-123',
             type: 'check_out',
-            source: 'userClick',
             version: 3,
             status: 'active',
         });
+        // The live punch sets the whole day's source.
+        expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+            { userId: 'user-123', date: expect.any(String) },
+            { $set: { source: 'userClick' } },
+            { upsert: true }
+        );
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
@@ -329,6 +338,14 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         const past = (msAgo: number) => new Date(Date.now() - msAgo);
         const future = (msAhead: number) => new Date(Date.now() + msAhead);
         const HOUR = 3_600_000;
+
+        // The day's source is the self-applied auto timetable, so its
+        // still-future sessions are "programmed" and punchable.
+        beforeEach(() => {
+            (WorkDaySource.findOne as any).mockResolvedValue({
+                source: 'userAutomatic',
+            });
+        });
 
         it('should override the programmed auto check-in/out when checking in manually after auto-apply', async () => {
             const req = mockReq({
@@ -376,10 +393,15 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             expect(constructed).toHaveLength(1);
             expect(constructed[0]).toMatchObject({
                 type: 'check_in',
-                source: 'userClick',
                 version: 2,
                 status: 'active',
             });
+            // The manual punch overrides the auto-timetable day source.
+            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+                { userId: 'user-123', date: expect.any(String) },
+                { $set: { source: 'userClick' } },
+                { upsert: true }
+            );
         });
 
         it('should keep the open automatic check-in and only drop the future check-out when checking out manually', async () => {

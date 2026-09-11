@@ -44,7 +44,6 @@ export type IncorrectParameter =
     | 'avatar'
     | 'file'
     | 'dni'
-    | 'expectedWorkHours'
     | 'fromYear'
     | 'toYear'
     | 'timestamp'

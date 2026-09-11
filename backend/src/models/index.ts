@@ -12,6 +12,7 @@ import {
     MonthlyApprovalEventSchema,
     AuditEventSchema,
     UserFileSchema,
+    WorkDaySourceSchema,
 } from 'shared/src/schemas/database';
 import { extendZod, zodSchema } from '@zodyac/zod-mongoose';
 import { z } from 'zod';
@@ -200,6 +201,9 @@ zUserFileSchema.index({ userId: 1, uploadedAt: -1 });
 // Covered index for the storage-quota aggregate (sum of size across all docs).
 zUserFileSchema.index({ size: 1 });
 
+const zWorkDaySourceSchema = zodSchema(WorkDaySourceSchema);
+zWorkDaySourceSchema.index({ userId: 1, date: 1 }, { unique: true });
+
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);
 export const WorkSessionReason =
     mongoose.models.WorkSessionReason ||
@@ -229,3 +233,6 @@ export const AuditEvent =
     mongoose.model('AuditEvent', zAuditEventSchema);
 export const UserFile =
     mongoose.models.UserFile || mongoose.model('UserFile', zUserFileSchema);
+export const WorkDaySource =
+    mongoose.models.WorkDaySource ||
+    mongoose.model('WorkDaySource', zWorkDaySourceSchema);

@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import {
-    DEFAULT_BENEVOLENCE_HOURS,
     DEFAULT_CHECK_IN_TIME,
     DEFAULT_CHECK_OUT_TIME,
     DEFAULT_END_OF_DAY_HOUR,
-    DEFAULT_EXPECTED_WORK_HOURS,
     DEFAULT_MONTHLY_APPROVAL_REMINDER_DAYS,
-    DEFAULT_NON_WORKING_DAYS,
+    DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
     DEFAULT_TIMEZONE,
+    DEFAULT_TOLERANCE_MINUTES,
+    DEFAULT_WEEKLY_EXPECTED_HOURS,
 } from '../lib/defaults';
+import { isValidDayTimetable } from '../lib/timetable-validation';
 
 // Automatic timetable: a list of check-in/check-out intervals (clock times
 // "HH:MM"). A day can have more than one interval (e.g. split shifts). Every
@@ -26,6 +27,35 @@ export type AutoScheduleEntry = z.infer<typeof AutoScheduleEntrySchema>;
 export const DEFAULT_AUTO_TIMETABLE: AutoScheduleEntry[] = [
     { checkIn: DEFAULT_CHECK_IN_TIME, checkOut: DEFAULT_CHECK_OUT_TIME },
 ];
+export const WeekTimetableSchema = z
+    .array(z.array(AutoScheduleEntrySchema))
+    .length(7);
+export type WeekTimetable = z.infer<typeof WeekTimetableSchema>;
+export type ScheduleMode = 'hours' | 'timetable';
+export const ScheduleModeSchema = z.enum(['hours', 'timetable']);
+
+export const ValidWeekTimetableSchema = WeekTimetableSchema.refine(
+    (week) => week.every(isValidDayTimetable),
+    'Invalid timetable intervals'
+);
+
+const DEFAULT_TIMETABLE_ENTRY: AutoScheduleEntry[] = [
+    { checkIn: DEFAULT_CHECK_IN_TIME, checkOut: DEFAULT_CHECK_OUT_TIME },
+];
+
+export const DEFAULT_TIMETABLE: WeekTimetable = [
+    [],
+    DEFAULT_TIMETABLE_ENTRY,
+    DEFAULT_TIMETABLE_ENTRY,
+    DEFAULT_TIMETABLE_ENTRY,
+    DEFAULT_TIMETABLE_ENTRY,
+    DEFAULT_TIMETABLE_ENTRY,
+    [],
+];
+
+export function defaultTimetable(): WeekTimetable {
+    return DEFAULT_TIMETABLE.map((day) => day.map((entry) => ({ ...entry })));
+}
 
 export const UserRoleSchema = z.enum(['employee', 'admin']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
@@ -56,11 +86,12 @@ export const UserSchema = z.object({
     registered: z.boolean().default(false),
     role: UserRoleSchema.default('employee'),
     groups: z.array(z.string()).default([]),
-    expectedWorkHours: z
-        .number()
-        .positive()
-        .default(DEFAULT_EXPECTED_WORK_HOURS),
-    workDays: z.array(z.number().int().min(0).max(6)).optional(),
+    weeklyExpectedHours: z
+        .array(z.number().min(0))
+        .length(7)
+        .default(DEFAULT_WEEKLY_EXPECTED_HOURS),
+    scheduleMode: ScheduleModeSchema.default('hours'),
+    timetable: WeekTimetableSchema.default(DEFAULT_TIMETABLE),
     avatar: z.string().optional(),
     failedLoginAttempts: z.number().int().gte(0).default(0),
     blocked: z.boolean().default(false),
@@ -92,16 +123,23 @@ export const UserSchema = z.object({
 
 // Company-wide configuration. Stored as a single document (no _id filter).
 export const AppSettingsSchema = z.object({
-    defaultExpectedHours: z
+    defaultWeeklyExpectedHours: z
+        .array(z.number().min(0))
+        .length(7)
+        .default(DEFAULT_WEEKLY_EXPECTED_HOURS),
+    toleranceMinutes: z
         .number()
-        .positive()
-        .default(DEFAULT_EXPECTED_WORK_HOURS),
-    benevolenceHours: z.number().gte(0).default(DEFAULT_BENEVOLENCE_HOURS),
-    toleranceHours: z.number().gte(0).optional(),
+        .int()
+        .gte(0)
+        .default(DEFAULT_TOLERANCE_MINUTES),
+    defaultScheduleMode: ScheduleModeSchema.default('hours'),
+    defaultTimetable: WeekTimetableSchema.default(DEFAULT_TIMETABLE),
+    timetableToleranceMinutes: z
+        .number()
+        .int()
+        .gte(0)
+        .default(DEFAULT_TIMETABLE_TOLERANCE_MINUTES),
     endOfDayHour: z.number().min(0).max(24).default(DEFAULT_END_OF_DAY_HOUR),
-    nonWorkingDays: z
-        .array(z.number().int().min(0).max(6))
-        .default(DEFAULT_NON_WORKING_DAYS),
     inconsistencyReminderMode: InconsistencyReminderModeSchema.default(
         'forced'
     ),
@@ -143,7 +181,9 @@ export const GroupSchema = z.object({
 
 export const WorkSessionTypeSchema = z.enum(['check_in', 'check_out']);
 export type WorkSessionType = z.infer<typeof WorkSessionTypeSchema>;
-export const WorkSessionSourceSchema = z.enum([
+// How a (user, day) record was produced — one source per day, shared by all
+// the day's sessions (later writes to the day override it wholesale).
+export const SourceKindSchema = z.enum([
     // Live punch via the check-in/check-out button.
     'userClick',
     // Worker self-applied auto-timetable on a past day.
@@ -153,11 +193,20 @@ export const WorkSessionSourceSchema = z.enum([
     // Admin correction of a day.
     'adminManual',
 ]);
+export type SourceKind = z.infer<typeof SourceKindSchema>;
 // Day versioning: replacing a day's sessions never deletes the old ones — they
 // are flagged as 'replaced' and kept for audit (registro de jornada requires a
 // non-manipulable, traceable record; CT 101/2019).
 export const WorkSessionStatusSchema = z.enum(['active', 'replaced']);
 export type WorkSessionStatus = z.infer<typeof WorkSessionStatusSchema>;
+// Per-(user, day) record. Days are derived from sessions, so this document
+// only carries day-level metadata; `date` is the local "YYYY-MM-DD" key.
+export const WorkDaySourceSchema = z.object({
+    userId: z.string(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
+    source: SourceKindSchema.default('userClick'),
+});
+export type WorkDaySource = z.infer<typeof WorkDaySourceSchema>;
 export const WorkSessionReasonSchema = z.object({
     type: WorkSessionTypeSchema,
     reasonId: z.string(),
@@ -169,7 +218,6 @@ export const WorkSessionSchema = z.object({
     userId: z.string(),
     type: WorkSessionTypeSchema,
     timestamp: z.date().default(() => new Date()),
-    source: WorkSessionSourceSchema.default('userClick'),
     // Decrypted view of notesEncrypted, hydrated by the backend read hooks.
     notes: z.string().optional(),
     notesEncrypted: z.string().default('').optional(),
@@ -238,7 +286,7 @@ export const MonthlyApprovalSchema = z.object({
     // When the admin opened the month for approval.
     requestedAt: z.date().optional(),
     // Admin who opened the month for approval (empty string = legacy doc).
-    openedBy: z.string().default('').optional(),
+    openedBy: z.string().default(''),
     // When the worker confirmed the month in the app.
     approvedAt: z.date().optional(),
     // Set once the (single) X-days reminder has been sent.

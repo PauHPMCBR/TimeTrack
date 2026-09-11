@@ -1,4 +1,11 @@
 {
   "name": "mongodb-seed",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "migrate:registration-token": "node migrations/001-migrate-registration-token.cjs",
+    "migrate:tracking-start": "node migrations/002-migrate-tracking-start.cjs",
+    "migrate:user-encryption": "node migrations/003-migrate-user-encryption.cjs",
+    "migrate:vacation-intervals": "node migrations/004-migrate-vacation-intervals.cjs",
+    "migrate:work-day-sources": "node migrations/005-migrate-work-day-sources.cjs"
+  }
 }

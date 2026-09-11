@@ -6,6 +6,8 @@ import { apiClient } from '@/lib/api';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import { User, DeletedUserRow } from '@/types';
 import Card from '@/components/ui/Card';
+import LoadingState from '@/components/ui/LoadingState';
+import EmptyState from '@/components/ui/EmptyState';
 import Button from '@/components/ui/Button';
 import {
     UserPlus,
@@ -13,7 +15,6 @@ import {
     Pencil,
     Timer,
     Users,
-    TriangleAlert,
     ChevronDown,
 } from 'lucide-react';
 import AdminBackButton from '../../../components/AdminBackButton';
@@ -208,15 +209,14 @@ export default function UsersListPage() {
 
             <Card className="overflow-hidden">
                 {loading ? (
-                    <div className="p-8 text-center text-sm text-zinc-500 animate-pulse">
-                        {t('common.loading')}
-                    </div>
+                    <LoadingState className="p-8" />
                 ) : (
                     <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {users.length === 0 && (
-                            <div className="p-8 text-center text-sm text-zinc-500">
-                                {t('admin.users.notFound')}
-                            </div>
+                            <EmptyState
+                                icon={<Users size={24} />}
+                                title={t('admin.users.notFound')}
+                            />
                         )}
                         {users.map((user) => (
                             <li
@@ -234,8 +234,7 @@ export default function UsersListPage() {
                                         userId={user._id}
                                         version={user.avatar ?? null}
                                         alt={
-                                            user.name ||
-                                            t('admin.users.noName')
+                                            user.name || t('admin.users.noName')
                                         }
                                         fallback={
                                             user.name
@@ -251,17 +250,6 @@ export default function UsersListPage() {
                                         <div className="font-medium text-zinc-900 dark:text-white">
                                             {user.name ||
                                                 t('admin.users.noName')}
-                                            {user.workDays &&
-                                                user.workDays.length > 0 && (
-                                                    <span className="ml-2 inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                                                        <TriangleAlert
-                                                            size={12}
-                                                        />
-                                                        {t(
-                                                            'admin.users.customNonWorkDays'
-                                                        )}
-                                                    </span>
-                                                )}
                                             {user.role === ADMIN_ROLE && (
                                                 <span className="ml-2 inline-flex items-center rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                                                     {t('tabs.admin')}
@@ -346,9 +334,9 @@ export default function UsersListPage() {
                                             userId={user._id}
                                             version={user.avatar ?? null}
                                             alt={user.name}
-                                            fallback={(
-                                                user.name || '?'
-                                            ).charAt(0).toUpperCase()}
+                                            fallback={(user.name || '?')
+                                                .charAt(0)
+                                                .toUpperCase()}
                                             className="h-10 w-10 rounded-full object-cover grayscale"
                                             fallbackClassName="h-10 w-10 rounded-full bg-zinc-100 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                                         />

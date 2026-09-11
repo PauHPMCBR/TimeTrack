@@ -1,7 +1,7 @@
 import {
     UserRoleSchema,
     VacationStatusSchema,
-    WorkSessionSourceSchema,
+    SourceKindSchema,
     WorkSessionStatusSchema,
     WorkSessionTypeSchema,
     MonthlyApprovalStatusSchema,
@@ -14,7 +14,7 @@ import {
 // and UI code.
 export const USER_ROLES = UserRoleSchema.enum;
 export const WORK_SESSION_TYPES = WorkSessionTypeSchema.enum;
-export const WORK_SESSION_SOURCES = WorkSessionSourceSchema.enum;
+export const WORK_DAY_SOURCES = SourceKindSchema.enum;
 export const WORK_SESSION_STATUSES = WorkSessionStatusSchema.enum;
 export const VACATION_STATUSES = VacationStatusSchema.enum;
 
@@ -24,10 +24,10 @@ export const ADMIN_ROLE = USER_ROLES.admin;
 export const CHECK_IN = WORK_SESSION_TYPES.check_in;
 export const CHECK_OUT = WORK_SESSION_TYPES.check_out;
 
-export const SOURCE_USER_CLICK = WORK_SESSION_SOURCES.userClick;
-export const SOURCE_USER_AUTOMATIC = WORK_SESSION_SOURCES.userAutomatic;
-export const SOURCE_USER_MANUAL = WORK_SESSION_SOURCES.userManual;
-export const SOURCE_ADMIN_MANUAL = WORK_SESSION_SOURCES.adminManual;
+export const SOURCE_USER_CLICK = WORK_DAY_SOURCES.userClick;
+export const SOURCE_USER_AUTOMATIC = WORK_DAY_SOURCES.userAutomatic;
+export const SOURCE_USER_MANUAL = WORK_DAY_SOURCES.userManual;
+export const SOURCE_ADMIN_MANUAL = WORK_DAY_SOURCES.adminManual;
 
 export const SESSION_ACTIVE = WORK_SESSION_STATUSES.active;
 export const SESSION_REPLACED = WORK_SESSION_STATUSES.replaced;
@@ -53,7 +53,6 @@ export const AUDIT_ACTIONS = AuditActionSchema.enum;
 // Audit "why" recorded in `editReason` on documents created by the replacement
 // flows (kept as fixed, non-localized strings: they are part of the record).
 export const SESSION_REASON_ADMIN_CORRECTION = 'Admin day correction';
-export const SESSION_REASON_AUTO_TIMETABLE = 'Automatic timetable applied';
 export const SESSION_REASON_MANUAL_CORRECTION = 'Worker day correction';
 
 // Admin report periods, shared by the query schemas and the admin UI.

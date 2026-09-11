@@ -103,14 +103,14 @@ export function countCompletedSessions(sessions: DaySessionLike[]): number {
     return completed;
 }
 
-/** Returns true when workedHours is within expectedHours ± benevolenceHours. */
-export function isWithinBenevolence(
+export function isWithinTolerance(
     workedHours: number,
     expectedHours: number,
-    benevolenceHours: number
+    toleranceMinutes: number
 ): boolean {
-    const min = expectedHours - benevolenceHours;
-    const max = expectedHours + benevolenceHours;
+    const tolerance = Math.max(0, toleranceMinutes) / 60;
+    const min = expectedHours - tolerance;
+    const max = expectedHours + tolerance;
     return workedHours >= min && workedHours <= max;
 }
 

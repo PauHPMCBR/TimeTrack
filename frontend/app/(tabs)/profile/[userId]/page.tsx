@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoadingState from '@/components/ui/LoadingState';
 import { useParams, useRouter } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
@@ -37,12 +38,7 @@ export default function OtherUserProfilePage() {
         loadUser();
     }, [userId]);
 
-    if (loading)
-        return (
-            <div className="p-10 text-center text-zinc-500 animate-pulse">
-                {t('common.loading')}
-            </div>
-        );
+    if (loading) return <LoadingState />;
     if (!user)
         return (
             <div className="p-10 text-center text-red-500">

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockReq, mockRes } from '../../utils/mocks';
+import { mockReq, mockRes, createMockAppSettings } from '../../utils/mocks';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -38,11 +38,7 @@ vi.mock('@/lib/validation', () => ({
 vi.mock('@/lib/settings', () => ({
     DEFAULT_TIMEZONE: 'Europe/Madrid',
     getConfiguredTimezone: vi.fn().mockReturnValue('Europe/Madrid'),
-    getAppSettings: vi.fn().mockResolvedValue({
-        defaultExpectedHours: 8,
-        benevolenceHours: 1,
-        endOfDayHour: 17,
-    }),
+    getAppSettings: vi.fn().mockResolvedValue(createMockAppSettings({ endOfDayHour: 17 })),
 }));
 
 vi.mock('@/lib/mail', () => ({
@@ -117,7 +113,6 @@ describe('POST /api/profile/create', () => {
             role: 'employee',
             registered: false,
             dni: '12345678A',
-            expectedWorkHours: 8,
         };
 
         vi.mocked(User.create as any).mockResolvedValue(mockNewUser);
@@ -145,8 +140,7 @@ describe('POST /api/profile/create', () => {
                         name: 'New User',
                         email: 'new@example.com',
                         dni: '12345678A',
-                        expectedWorkHours: 8,
-                    }),
+                                }),
                     registrationLink: expect.any(String),
                     registrationToken: expect.any(String),
                 }),
@@ -174,7 +168,6 @@ describe('POST /api/profile/create', () => {
             role: 'employee',
             registered: false,
             dni: '12345678A',
-            expectedWorkHours: 8,
         };
 
         vi.mocked(User.create as any).mockResolvedValue(mockNewUser);
@@ -196,8 +189,7 @@ describe('POST /api/profile/create', () => {
             expect.objectContaining({
                 role: 'employee',
                 dni: '12345678A',
-                expectedWorkHours: 8,
-            })
+                })
         );
     });
 

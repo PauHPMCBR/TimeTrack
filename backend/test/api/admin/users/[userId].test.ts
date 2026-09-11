@@ -243,7 +243,7 @@ describe('PUT /api/admin/users/[userId]', () => {
                 name: 'Updated Name',
                 email: 'new@example.com',
                 dni: '12345678A',
-                expectedWorkHours: 7.5,
+                weeklyExpectedHours: [7.5, 7.5, 7.5, 7.5, 7.5, 0, 0],
             },
         });
         const res = mockRes();
@@ -253,7 +253,7 @@ describe('PUT /api/admin/users/[userId]', () => {
         expect(existingUser.name).toBe('Updated Name');
         expect(existingUser.email).toBe('new@example.com');
         expect(existingUser.dni).toBe('12345678A');
-        expect(existingUser.expectedWorkHours).toBe(7.5);
+        expect(existingUser.weeklyExpectedHours).toEqual([7.5, 7.5, 7.5, 7.5, 7.5, 0, 0]);
         expect(existingUser.save).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
@@ -262,7 +262,7 @@ describe('PUT /api/admin/users/[userId]', () => {
                 data: expect.objectContaining({
                     user: expect.objectContaining({
                         name: 'Updated Name',
-                        expectedWorkHours: 7.5,
+                        weeklyExpectedHours: [7.5, 7.5, 7.5, 7.5, 7.5, 0, 0],
                     }),
                 }),
             })

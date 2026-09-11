@@ -42,6 +42,9 @@ vi.mock('@/models', () => ({
     WorkSession: {
         find: vi.fn(),
     },
+    WorkDaySource: {
+        find: vi.fn(),
+    },
     MonthlyApproval: {
         find: vi.fn(),
     },
@@ -50,7 +53,13 @@ vi.mock('@/models', () => ({
     },
 }));
 
-import { User, WorkSession, MonthlyApproval, AuditEvent } from '@/models';
+import {
+    User,
+    WorkSession,
+    WorkDaySource,
+    MonthlyApproval,
+    AuditEvent,
+} from '@/models';
 import exportHandler from '@/pages/api/admin/export/work-sessions';
 
 const mockExportRes = () => {
@@ -152,6 +161,25 @@ describe('GET /api/admin/export/work-sessions', () => {
             select: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(mockApprovals),
             }),
+        } as any);
+        // Day-level sources: the CSV Source column now comes from them.
+        vi.mocked(WorkDaySource.find).mockReturnValue({
+            lean: vi
+                .fn()
+                .mockResolvedValue([
+                    {
+                        _id: 'd1',
+                        userId: 'user-1',
+                        date: '2024-01-14',
+                        source: 'adminManual',
+                    },
+                    {
+                        _id: 'd2',
+                        userId: 'user-2',
+                        date: '2024-01-15',
+                        source: 'userClick',
+                    },
+                ]),
         } as any);
 
         const req = mockReq({

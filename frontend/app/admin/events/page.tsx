@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { AdminWorkSessionRow, User } from '@/types';
-import { localeTag, toLocalDateKey } from '@/lib/datetime';
+import { localeTag, toLocalDateKey, formatPeriodLabel } from '@/lib/datetime';
 import { Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SessionEditorModal from '@/components/SessionEditorModal';
@@ -154,30 +154,8 @@ function AdminEventsInner() {
         setCursor(next);
     };
 
-    const periodLabel = () => {
-        if (period === 'month') {
-            const label = cursor.toLocaleDateString(locale, {
-                month: 'long',
-                year: 'numeric',
-            });
-            return label.charAt(0).toUpperCase() + label.slice(1);
-        }
-        if (period === 'year') return String(cursor.getFullYear());
-        const start = cursor.toLocaleDateString(locale, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        });
-        if (period === 'day') return start;
-        const end = new Date(cursor);
-        end.setDate(end.getDate() + 6);
-        const endLabel = end.toLocaleDateString(locale, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        });
-        return `${start} — ${endLabel}`;
-    };
+    const periodLabel = () =>
+        formatPeriodLabel(cursor, period, locale);
 
     const changePeriod = (p: Period) => {
         setOffset(0);
