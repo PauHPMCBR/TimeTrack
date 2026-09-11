@@ -1,6 +1,7 @@
 {
     "name": "timetrack",
     "private": true,
+    "type": "module",
     "packageManager": "npm@11.6.2",
     "workspaces": [
         "shared",
@@ -18,7 +19,8 @@
         "test:run": "turbo run test:run",
         "typecheck": "turbo run typecheck",
         "build:company": "node scripts/build-company.js",
-        "deploy:all": "node scripts/deploy-all.js"
+        "deploy:all": "node scripts/deploy-all.js",
+        "migrate:all": "node scripts/migrate-all.js"
     },
     "devDependencies": {
         "turbo": "^2.10.12"
