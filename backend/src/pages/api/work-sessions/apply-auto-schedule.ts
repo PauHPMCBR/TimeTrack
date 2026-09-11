@@ -18,6 +18,7 @@ import {
     getAutoTimetable,
     AutoScheduleEntry,
 } from '@/lib/auto-schedule';
+import { isValidDayTimetable } from 'shared/src/lib/timetable-validation';
 import { upsertWorkDaySource } from '@/repositories/work-day-source-repository';
 import {
     CHECK_IN,
@@ -73,6 +74,11 @@ export default withApi(
         }
 
         const timetable = getAutoTimetable(user);
+        // The stored timetable may be legacy/garbled: never write a set that
+        // would not form a coherent ascending check-in/check-out sequence.
+        if (!isValidDayTimetable(timetable)) {
+            return responseErrorIllegalAction(res, 'InvalidTimetable');
+        }
         const { start, end } = dayRange(requestedDate);
 
         const result = await withUserLock(req.user!.userId, async () => {

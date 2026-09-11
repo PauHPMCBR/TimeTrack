@@ -10,6 +10,9 @@ services:
       MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD in .env}
       SEED_DEMO: ${SEED_DEMO:-0}
       DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:-}
+      # Demo data is seeded encrypted; the backend keys must match backend/.env.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      HASH_KEY: ${HASH_KEY:-}
     ports:
       - "127.0.0.1:27018:27017"
     volumes:

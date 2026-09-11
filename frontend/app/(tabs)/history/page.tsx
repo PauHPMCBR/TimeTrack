@@ -53,6 +53,8 @@ export default function HistoryPage() {
     const [approvedMonths, setApprovedMonths] = useState<Set<string>>(
         new Set()
     );
+    const [timetableToleranceMinutes, setTimetableToleranceMinutes] =
+        useState(0);
     const [anomalyOnly, setAnomalyOnly] = usePersistedState<boolean>(
         HISTORY_ANOMALY_ONLY,
         false
@@ -102,6 +104,9 @@ export default function HistoryPage() {
             setTotal(res.data.total ?? res.data.rows.length);
             setApprovedMonths(
                 new Set(res.data.approvedMonths ?? [])
+            );
+            setTimetableToleranceMinutes(
+                res.data.timetableToleranceMinutes ?? 0
             );
         }
         setLoading(false);
@@ -200,6 +205,7 @@ export default function HistoryPage() {
                 onPageChange={setOffset}
                 onRowClick={(row) => setEditingRow(row)}
                 approvedMonths={approvedMonths}
+                timetableToleranceMinutes={timetableToleranceMinutes}
             />
 
             {editingRow && (

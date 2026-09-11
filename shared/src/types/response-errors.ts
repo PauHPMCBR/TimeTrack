@@ -102,7 +102,7 @@ export type IllegalAction =
     | 'ModifyingFromAnotherUser'
     | 'NoVacationConfig'
     | 'FutureDate'
-    // Monthly record confirmation
+    | 'InvalidTimetable'
     | 'MonthNotPast'
     | 'MonthStillHasAnomalies'
     | 'MonthAlreadyApproved'

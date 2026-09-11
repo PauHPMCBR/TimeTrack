@@ -581,6 +581,7 @@ export const WorkSessionsResponseSchema = z.object({
         limit: z.number().int().optional(),
         offset: z.number().int().optional(),
         approvedMonths: z.array(z.string()).optional(),
+        timetableToleranceMinutes: z.number().int().gte(0).optional(),
     }),
 });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
+import type { ReactNode } from 'react';
 import { useI18n } from '@/app/i18n';
 import { AdminWorkSessionRow } from '@/types';
 import { formatHM, localeTag } from '@/lib/datetime';
@@ -12,12 +13,17 @@ import {
     statusIconOf,
     sourceIconOf,
 } from '@/lib/workDayVisuals';
+import {
+    computePairDeviations,
+    timeToMinutes,
+    type TimetablePair,
+} from 'shared/src/lib/expected-timetable';
 import Card from '@/components/ui/Card';
 import Pagination from '@/components/ui/Pagination';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';
 import { CHECK_IN, MS_PER_HOUR } from 'shared/src/lib/constants';
-import { Lock, Clock, CalendarX, CheckCircle2 } from 'lucide-react';
+import { Lock, Clock, CalendarX, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface FitxatgesTableProps {
     rows: AdminWorkSessionRow[];
@@ -30,11 +36,32 @@ interface FitxatgesTableProps {
     onRowClick?: (row: AdminWorkSessionRow) => void;
     showEmployee?: boolean;
     approvedMonths?: Set<string>;
+    timetableToleranceMinutes?: number;
 }
 
-type WorkedInterval = TimetableEntry & { overtime: boolean };
+type IntervalTone = 'ok' | 'overtime' | 'problem';
+
+type WorkedInterval = TimetableEntry & {
+    overtime: boolean;
+    problem: boolean;
+};
 
 const MISSING_TIME = '—';
+
+const intervalToneVisuals: Record<
+    IntervalTone,
+    { className: string; icon: ReactNode }
+> = {
+    ok: { className: 'bg-green-500 text-white', icon: null },
+    overtime: {
+        className: 'bg-purple-500 text-white',
+        icon: <Clock size={12} />,
+    },
+    problem: {
+        className: 'bg-red-500 text-white',
+        icon: <AlertTriangle size={12} />,
+    },
+};
 
 export default function FitxatgesTable({
     rows,
@@ -47,6 +74,7 @@ export default function FitxatgesTable({
     onRowClick,
     showEmployee = false,
     approvedMonths,
+    timetableToleranceMinutes = 0,
 }: FitxatgesTableProps) {
     const { t, lang } = useI18n();
     const locale = localeTag(lang);
@@ -79,11 +107,12 @@ export default function FitxatgesTable({
             ? formatHM(row.totalHours * MS_PER_HOUR, t)
             : MISSING_TIME;
 
-    // Pair the day's punches into worked intervals and render them with the
-    // same "start – end" chips the timetable setup uses. An interval is
-    // overtime when either end is flagged; a missing side renders as "—".
     const workedIntervals = (row: AdminWorkSessionRow): WorkedInterval[] => {
-        const intervals: WorkedInterval[] = [];
+        const intervals: Array<{
+            checkIn: string;
+            checkOut: string;
+            overtime: boolean;
+        }> = [];
         let open: { checkIn: string; overtime: boolean } | null = null;
         const sorted = [...row.sessions].sort(
             (a, b) =>
@@ -123,7 +152,54 @@ export default function FitxatgesTable({
                 overtime: open.overtime,
             });
         }
-        return intervals;
+
+        const closedIndexes: number[] = [];
+        const closedPairs: TimetablePair[] = [];
+        intervals.forEach((interval, idx) => {
+            if (
+                interval.checkIn !== MISSING_TIME &&
+                interval.checkOut !== MISSING_TIME
+            ) {
+                closedIndexes.push(idx);
+                closedPairs.push({
+                    checkIn: timeToMinutes(interval.checkIn),
+                    checkOut: timeToMinutes(interval.checkOut),
+                });
+            }
+        });
+        const expected = row.timetable;
+        const deviations =
+            expected && expected.length > 0
+                ? computePairDeviations(
+                      closedPairs,
+                      expected,
+                      timetableToleranceMinutes
+                  )
+                : [];
+
+        return intervals.map((interval, i) => {
+            const unclosed =
+                interval.checkIn === MISSING_TIME ||
+                interval.checkOut === MISSING_TIME;
+            const closedOrder = closedIndexes.indexOf(i);
+            const deviates =
+                !!expected &&
+                (i >= expected.length ||
+                    (closedOrder >= 0 &&
+                        closedOrder < expected.length &&
+                        Object.values(deviations[closedOrder] ?? {}).some(
+                            Boolean
+                        )));
+            return {
+                ...interval,
+                problem: unclosed || !!deviates,
+            };
+        });
+    };
+
+    const intervalTone = (entry: WorkedInterval): IntervalTone => {
+        if (entry.problem) return 'problem';
+        return entry.overtime ? 'overtime' : 'ok';
     };
 
     const renderWorkedIntervals = (row: AdminWorkSessionRow) => {
@@ -134,15 +210,17 @@ export default function FitxatgesTable({
             <TimetableList
                 timetable={workedIntervals(row)}
                 entryClassName={(entry) =>
-                    entry.overtime
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-green-500 text-white'
+                    intervalToneVisuals[intervalTone(entry)].className
                 }
                 entryTitle={(entry) =>
-                    entry.overtime ? t('admin.events.overtime') : undefined
+                    entry.problem
+                        ? t('admin.events.intervalProblem')
+                        : entry.overtime
+                          ? t('admin.events.overtime')
+                          : undefined
                 }
                 entryIcon={(entry) =>
-                    entry.overtime ? <Clock size={12} /> : null
+                    intervalToneVisuals[intervalTone(entry)].icon
                 }
             />
         );

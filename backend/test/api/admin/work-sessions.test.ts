@@ -571,8 +571,7 @@ describe('GET /api/admin/work-sessions', () => {
             });
         });
 
-        it('should reject equal timestamps', async () => {
-            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
+        it('should reject equal timestamps', async () => {            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
 
             const req = mockReq({
                 method: 'PUT',

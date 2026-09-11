@@ -65,6 +65,8 @@ function AdminEventsInner() {
     const [approvedMonths, setApprovedMonths] = useState<Set<string>>(
         new Set()
     );
+    const [timetableToleranceMinutes, setTimetableToleranceMinutes] =
+        useState(0);
     const PAGE_SIZE = 200;
     const [offset, setOffset] = useState(0);
     const [total, setTotal] = useState(0);
@@ -135,6 +137,9 @@ function AdminEventsInner() {
             setTotal(res.data.total ?? res.data.rows.length);
             setApprovedMonths(
                 new Set(res.data.approvedMonths ?? [])
+            );
+            setTimetableToleranceMinutes(
+                res.data.timetableToleranceMinutes ?? 0
             );
         }
         setLoading(false);
@@ -260,6 +265,7 @@ function AdminEventsInner() {
                     onRowClick={(row) => setEditingRow(row)}
                     showEmployee
                     approvedMonths={approvedMonths}
+                    timetableToleranceMinutes={timetableToleranceMinutes}
                 />
 
                 {editingRow && (

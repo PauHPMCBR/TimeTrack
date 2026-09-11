@@ -240,8 +240,8 @@ const getHandler = withApi(
             success: true,
             data:
                 limit !== undefined
-                    ? { rows: pageRows, total, limit, offset, approvedMonths: Array.from(approvedMonths) }
-                    : { rows: pageRows, approvedMonths: Array.from(approvedMonths) },
+                    ? { rows: pageRows, total, limit, offset, approvedMonths: Array.from(approvedMonths), timetableToleranceMinutes: settings.timetableToleranceMinutes }
+                    : { rows: pageRows, approvedMonths: Array.from(approvedMonths), timetableToleranceMinutes: settings.timetableToleranceMinutes },
         });
         } catch (error) {
             console.error('Admin work sessions error:', error);

@@ -558,5 +558,57 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             expect(constructed).toHaveLength(1);
             expect(constructed[0]).toMatchObject({ type: 'check_in' });
         });
+
+        it('overrides future sessions of a non-automatic day too (planned-ahead correction)', async () => {
+            const req = mockReq({
+                method: 'POST',
+                body: { type: 'check_out', notes: null },
+            });
+            const res = mockRes();
+
+            // The day was admin-corrected with a planned future check-out;
+            // a real punch must still override it.
+            (WorkDaySource.findOne as any).mockResolvedValue({
+                source: 'adminManual',
+            });
+            mockStaticFind.mockReturnValue({
+                sort: vi.fn().mockResolvedValue([
+                    {
+                        _id: 'manual-in',
+                        type: 'check_in',
+                        timestamp: past(2 * HOUR),
+                        source: 'adminManual',
+                        version: 3,
+                        status: 'active',
+                    },
+                    {
+                        _id: 'manual-out',
+                        type: 'check_out',
+                        timestamp: future(6 * HOUR),
+                        source: 'adminManual',
+                        version: 3,
+                        status: 'active',
+                    },
+                ]),
+            } as any);
+
+            await addTimestampHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(WorkSession.updateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['manual-out'] } },
+                expect.anything()
+            );
+            expect(constructed).toHaveLength(1);
+            expect(constructed[0]).toMatchObject({
+                type: 'check_out',
+                status: 'active',
+            });
+            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
+                { userId: 'user-123', date: expect.any(String) },
+                { $set: { source: 'userClick' } },
+                { upsert: true }
+            );
+        });
     });
 });

@@ -418,6 +418,8 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                         </Button>
                     </div>
 
+                    <hr/>
+
                     <div>
                         <Label className="mb-2">
                             {t('admin.form.scheduleMode')}
@@ -509,6 +511,8 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                         />
                     </div>
+
+                    <hr/>
 
                     <div>
                         <Label className="mb-2">

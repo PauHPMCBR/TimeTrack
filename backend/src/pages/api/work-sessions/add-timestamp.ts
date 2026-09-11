@@ -54,17 +54,12 @@ function verifyInOut(
     return null;
 }
 
-// A future-dated session written by the automatic timetable is "programmed",
-// not real yet. Manual punches must be able to override it: otherwise a
-// programmed check-out later today always sorts last and the in/out guard
-// would allow unlimited consecutive check-ins. Only days whose source is the
-// self-applied auto timetable carry such programmed sessions.
-function isProgrammed(
-    daySourceIsAutomatic: boolean,
-    timestamp: Date,
-    now: Date
-): boolean {
-    return daySourceIsAutomatic && timestamp.getTime() > now.getTime();
+// A future-dated session is "programmed", not real yet — the self-applied
+// auto timetable, or a day correction that planned ahead. Manual punches must
+// be able to override them: otherwise a programmed future check-out always
+// sorts last and the in/out guard would allow unlimited consecutive check-ins.
+function isProgrammed(timestamp: Date, now: Date): boolean {
+    return timestamp.getTime() > now.getTime();
 }
 
 type CheckInOutResult =
@@ -96,22 +91,17 @@ export default withApi(
                 const daySourceIsAutomatic =
                     daySource?.source === SOURCE_USER_AUTOMATIC;
 
-                // Manual punch vs programmed automatic sessions: scheduled
-                // future check-outs/check-ins of the auto timetable are
-                // superseded by any real punch. A manual check-in also
+                // Manual punch vs programmed sessions: any future-dated
+                // session (auto timetable or a planned-ahead correction) is
+                // superseded by a real punch. A manual check-in also
                 // supersedes the open automatic check-in (the start of the
                 // interval being lived through), since the punch redefines
                 // when work actually started.
                 const overridden = todaySessions.filter((s) =>
-                    isProgrammed(daySourceIsAutomatic, new Date(s.timestamp), now)
+                    isProgrammed(new Date(s.timestamp), now)
                 );
                 const effective = todaySessions.filter(
-                    (s) =>
-                        !isProgrammed(
-                            daySourceIsAutomatic,
-                            new Date(s.timestamp),
-                            now
-                        )
+                    (s) => !isProgrammed(new Date(s.timestamp), now)
                 );
                 if (type === CHECK_IN) {
                     const last = effective[effective.length - 1];

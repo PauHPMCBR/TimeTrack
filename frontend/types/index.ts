@@ -61,4 +61,5 @@ export type AdminWorkSessionsResponse = {
     limit?: number;
     offset?: number;
     approvedMonths?: string[];
+    timetableToleranceMinutes?: number;
 };

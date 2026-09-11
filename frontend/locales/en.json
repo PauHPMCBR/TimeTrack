@@ -579,6 +579,7 @@
                 "adminManual": "Admin"
             },
             "overtime": "overtime",
+            "intervalProblem": "Problem with this interval",
             "legend": {
                 "overtime": "Overtime"
             },
@@ -697,7 +698,8 @@
             "AlreadyObligatoryVacation": "This day is already a mandatory holiday",
             "DuplicateVacationRequest": "Duplicate vacation request",
             "ModifyingFromAnotherUser": "You cannot modify another user's request",
-            "NoVacationConfig": "The vacation calendar has not been configured yet"
+            "NoVacationConfig": "The vacation calendar has not been configured yet",
+            "InvalidTimetable": "The stored timetable is invalid"
         },
         "IncorrectParameter": {
             "email": "email",

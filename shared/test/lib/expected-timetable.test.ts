@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     computeTimetableAnomalies,
+    computePairDeviations,
     dayTimetable,
     impliedHours,
     timetableWorkingDays,
@@ -127,5 +128,57 @@ describe('computeTimetableAnomalies', () => {
 
     it('reports nothing on empty intervals', () => {
         expect(computeTimetableAnomalies([s('check_in', 9)], [], 10)).toEqual([]);
+    });
+});
+
+describe('computePairDeviations', () => {
+    it('reports no deviation within tolerance', () => {
+        expect(
+            computePairDeviations(
+                [{ checkIn: 9 * 60 + 10, checkOut: 17 * 60 - 10 }],
+                [entry('09:00', '17:00')],
+                10
+            )
+        ).toEqual([
+            { checkInLate: false, checkInEarly: false, checkOutLate: false, checkOutEarly: false },
+        ]);
+    });
+
+    it('reports the exact sides that deviate', () => {
+        const deviations = computePairDeviations(
+            [
+                { checkIn: 9 * 60 + 20, checkOut: 16 * 60 },
+                { checkIn: 14 * 60 - 20, checkOut: 18 * 60 + 20 },
+            ],
+            [entry('09:00', '13:00'), entry('14:00', '18:00')],
+            10
+        );
+        expect(deviations[0]).toEqual({
+            checkInLate: true,
+            checkInEarly: false,
+            checkOutLate: true,
+            checkOutEarly: false,
+        });
+        expect(deviations[1]).toEqual({
+            checkInEarly: true,
+            checkInLate: false,
+            checkOutLate: true,
+            checkOutEarly: false,
+        });
+    });
+
+    it('reports no deviation for pairs beyond the expected intervals', () => {
+        expect(
+            computePairDeviations(
+                [{ checkIn: 9 * 60, checkOut: 17 * 60 }, { checkIn: 18 * 60, checkOut: 20 * 60 }],
+                [entry('09:00', '17:00')],
+                10
+            )[1]
+        ).toEqual({
+            checkInLate: false,
+            checkInEarly: false,
+            checkOutLate: false,
+            checkOutEarly: false,
+        });
     });
 });

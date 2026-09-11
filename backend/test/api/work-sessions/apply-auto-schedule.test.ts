@@ -247,4 +247,26 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         });
         expect(savedDocs).toHaveLength(0);
     });
+
+    it('rejects an invalid stored timetable', async () => {
+        mockUser({
+            autoTimetable: [{ checkIn: '12:00', checkOut: '09:00' }],
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: { date: '2026-08-27' },
+        });
+        const res = mockRes();
+
+        await applyAutoScheduleHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            success: false,
+            error: 'IllegalAction',
+            details: { illegalAction: 'InvalidTimetable' },
+        });
+        expect(savedDocs).toHaveLength(0);
+    });
 });

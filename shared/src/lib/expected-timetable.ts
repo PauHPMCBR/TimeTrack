@@ -35,6 +35,51 @@ function clockMinutes(timestamp: Date | string): number {
     const date = new Date(timestamp);
     return date.getHours() * 60 + date.getMinutes();
 }
+
+export interface TimetablePair {
+    checkIn: number;
+    checkOut: number;
+}
+
+export interface TimetablePairDeviation {
+    checkInLate: boolean;
+    checkInEarly: boolean;
+    checkOutLate: boolean;
+    checkOutEarly: boolean;
+}
+
+/**
+ * Compare each worked pair against the expected interval at the same index.
+ * Returns one deviation per pair (pairs beyond the expected intervals get all
+ * flags false; the caller decides how to treat the extra count).
+ */
+export function computePairDeviations(
+    pairs: TimetablePair[],
+    intervals: AutoScheduleEntry[],
+    toleranceMinutes: number
+): TimetablePairDeviation[] {
+    const tolerance = Math.max(0, toleranceMinutes);
+    return pairs.map((pair, i) => {
+        const interval = intervals[i];
+        if (!interval) {
+            return {
+                checkInLate: false,
+                checkInEarly: false,
+                checkOutLate: false,
+                checkOutEarly: false,
+            };
+        }
+        const checkInDelta = pair.checkIn - timeToMinutes(interval.checkIn);
+        const checkOutDelta = pair.checkOut - timeToMinutes(interval.checkOut);
+        return {
+            checkInLate: checkInDelta > tolerance,
+            checkInEarly: -checkInDelta > tolerance,
+            checkOutLate: checkOutDelta > tolerance,
+            checkOutEarly: -checkOutDelta > tolerance,
+        };
+    });
+}
+
 export function computeTimetableAnomalies(
     sessions: DaySessionLike[],
     intervals: AutoScheduleEntry[],
@@ -45,7 +90,7 @@ export function computeTimetableAnomalies(
         (a, b) =>
             new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
-    const pairs: Array<{ checkIn: number; checkOut: number }> = [];
+    const pairs: TimetablePair[] = [];
     let pendingCheckIn: number | null = null;
     for (const session of sorted) {
         if (session.type === CHECK_IN) {
@@ -59,25 +104,15 @@ export function computeTimetableAnomalies(
         }
     }
 
-    const tolerance = Math.max(0, toleranceMinutes);
-    const paired = Math.min(pairs.length, intervals.length);
-    for (let i = 0; i < paired; i++) {
-        const interval = intervals[i];
-        const pair = pairs[i];
-        const checkInDelta =
-            pair.checkIn - timeToMinutes(interval.checkIn);
-        if (checkInDelta > tolerance) {
-            anomalies.push('timetable_check_in_late');
-        } else if (-checkInDelta > tolerance) {
-            anomalies.push('timetable_check_in_early');
-        }
-        const checkOutDelta =
-            pair.checkOut - timeToMinutes(interval.checkOut);
-        if (checkOutDelta > tolerance) {
-            anomalies.push('timetable_check_out_late');
-        } else if (-checkOutDelta > tolerance) {
-            anomalies.push('timetable_check_out_early');
-        }
+    for (const deviation of computePairDeviations(
+        pairs,
+        intervals,
+        toleranceMinutes
+    )) {
+        if (deviation.checkInLate) anomalies.push('timetable_check_in_late');
+        if (deviation.checkInEarly) anomalies.push('timetable_check_in_early');
+        if (deviation.checkOutLate) anomalies.push('timetable_check_out_late');
+        if (deviation.checkOutEarly) anomalies.push('timetable_check_out_early');
     }
     if (pairs.length !== intervals.length) {
         anomalies.push('timetable_shift_count');
