@@ -75,6 +75,11 @@ export default function ExpectedTimetableModal({
                 </div>
             }
         >
+            {error && (
+                <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {error}
+                </div>
+            )}
             <ExpectedTimetableEditor
                 timetable={draft}
                 locale={locale}
@@ -83,11 +88,6 @@ export default function ExpectedTimetableModal({
                     markDirty();
                 }}
             />
-            {error && (
-                <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                    {error}
-                </div>
-            )}
         </Modal>
     );
 }
