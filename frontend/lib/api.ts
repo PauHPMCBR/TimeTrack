@@ -357,13 +357,19 @@ class ApiClient {
 
         let cached = this.avatarCache.get(key);
         if (!cached) {
-            cached = this.fetchAvatarBlob(endpoint);
+            cached = this.fetchAvatarBlob(endpoint).then((result) => {
+                if (result.transient) this.avatarCache.delete(key);
+                return result.blob;
+            });
             this.avatarCache.set(key, cached);
         }
         return cached;
     }
 
-    private async fetchAvatarBlob(endpoint: string): Promise<Blob | null> {
+    private async fetchAvatarBlob(endpoint: string): Promise<{
+        blob: Blob | null;
+        transient: boolean;
+    }> {
         const controller = new AbortController();
         let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
         try {
@@ -378,10 +384,10 @@ class ApiClient {
             });
             clearTimeout(timeoutId);
             timeoutId = undefined;
-            if (!response.ok) return null;
-            return await response.blob();
+            if (!response.ok) return { blob: null, transient: false };
+            return { blob: await response.blob(), transient: false };
         } catch {
-            return null;
+            return { blob: null, transient: true };
         } finally {
             if (timeoutId !== undefined) {
                 clearTimeout(timeoutId);

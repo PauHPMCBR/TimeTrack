@@ -12,14 +12,14 @@ import { APP_NAME, APP_ICON_URL, APP_ICON_TOOLBAR_URL } from '@/lib/brand';
 
 export default function HeaderBar() {
     const { t } = useI18n();
-    const [email, setEmail] = useState<string | null>();
+    const [email, setEmail] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [open, setOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         const storedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
-        setEmail(storedEmail || 'Sense Sessió');
+        setEmail(storedEmail);
     }, []);
 
     useEffect(() => {
@@ -32,10 +32,7 @@ export default function HeaderBar() {
         router.push('/');
     };
 
-    const initial =
-        email && email !== 'Sense Sessió'
-            ? email.trim()[0]?.toUpperCase()
-            : 'U';
+    const initial = email ? email.trim()[0]?.toUpperCase() : 'U';
 
     return (
         <div className="relative w-full flex items-center justify-between px-2 sm:px-3">
@@ -75,10 +72,10 @@ export default function HeaderBar() {
                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden flex flex-col z-50">
                         <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800">
                             <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold">
-                                Usuari
+                                {t('header.user')}
                             </p>
                             <p className="text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                                {email}
+                                {email ?? t('header.noSession')}
                             </p>
                         </div>
 

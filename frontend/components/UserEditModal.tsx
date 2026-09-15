@@ -16,7 +16,7 @@ import WeeklyHoursEditor from '@/components/weeklyHours/WeeklyHoursEditor';
 import OptionPicker from '@/components/ui/OptionPicker';
 import { ADMIN_ROLE, EMPLOYEE_ROLE } from 'shared/src/lib/constants';
 import { defaultWeeklyExpectedHours } from 'shared/src/lib/defaults';
-import { resolveWeeklyExpectedHours } from 'shared/src/lib/user-overrides';
+import { isScheduleSourceComplete } from 'shared/src/lib/user-overrides';
 import { defaultTimetable } from 'shared/src/schemas/database';
 import type { WeekTimetable } from '@/schemas/database';
 import ExpectedTimetableField from '@/components/timetable/ExpectedTimetableField';
@@ -51,10 +51,6 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         email: '',
         role: EMPLOYEE_ROLE,
         dni: '',
-        weeklyExpectedHours: defaultWeeklyExpectedHours(),
-        scheduleMode: 'hours',
-        timetable: defaultTimetable(),
-        checkInRequired: true,
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -70,6 +66,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const [deleting, setDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [sourceError, setSourceError] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
 
     useEffect(() => {
@@ -79,18 +76,23 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
             email: user.email,
             role: user.role,
             dni: user.dni ?? '',
-            weeklyExpectedHours: resolveWeeklyExpectedHours(
-                user,
-                defaultWeeklyExpectedHours()
-            ),
-            scheduleMode: user.scheduleMode ?? 'hours',
-            timetable: normalizeWeekTimetable(user.timetable),
-            checkInRequired: user.checkInRequired !== false,
+            weeklyExpectedHours: user.weeklyExpectedHours,
+            scheduleMode: user.scheduleMode,
+            timetable:
+                Array.isArray(user.timetable) && user.timetable.length === 7
+                    ? normalizeWeekTimetable(user.timetable)
+                    : undefined,
+            checkInRequired: user.checkInRequired,
         });
         setStartDate(
             user.trackingStartDate
                 ? toLocalDateKey(user.trackingStartDate)
                 : ''
+        );
+        setSourceError(
+            isScheduleSourceComplete(user)
+                ? null
+                : t('admin.usersEdit.incompleteSource')
         );
         resetDirty();
         setError(null);
@@ -126,7 +128,10 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const handleScheduleModeChange = (mode: 'hours' | 'timetable') => {
         if (mode === formData.scheduleMode) return;
         update({ scheduleMode: mode });
-        if (mode === 'timetable') {
+        if (
+            mode === 'timetable' &&
+            !formData.timetable?.some((d) => d.length)
+        ) {
             apiClient.getSettings().then((res) => {
                 if (!res.error && res.data?.settings.defaultTimetable) {
                     setFormData((prev) =>
@@ -152,6 +157,10 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
+        if (sourceError) {
+            setError(sourceError);
+            return;
+        }
 
         setSaving(true);
         setError(null);
@@ -301,7 +310,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                     <Button
                         type="submit"
                         form="user-edit-form"
-                        disabled={saving}
+                        disabled={saving || !!sourceError}
                         variant="primary"
                         className="w-full"
                     >
@@ -316,6 +325,12 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                 </div>
             ) : (
                 <form id="user-edit-form" onSubmit={handleSubmit} className="space-y-4">
+                    {sourceError && (
+                        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                            {sourceError}
+                        </div>
+                    )}
+
                     {error && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                             {error}

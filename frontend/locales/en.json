@@ -50,7 +50,9 @@
     },
     "header": {
         "logOff": "Log Off",
-        "switchAccount": "Switch account"
+        "switchAccount": "Switch account",
+        "noSession": "No session",
+        "user": "User"
     },
     "activity": {
         "checkIn": "Check-in",
@@ -480,7 +482,8 @@
             "invalidatePasswordDesc": "The employee will have to recover their password using the forgot-password procedure.",
             "delete": "Delete user",
             "deleteWarning": "Before deleting, export all their data (fitxatges and vacations). Data is not erased from the database and the user can be restored, but they immediately lose access to the app.",
-            "deleteConfirm": "Are you sure you want to delete this user? They will immediately lose access to the app."
+            "deleteConfirm": "Are you sure you want to delete this user? They will immediately lose access to the app.",
+            "incompleteSource": "This user's data is incomplete or corrupt; editing is disabled for safety."
         },
         "sessionEditor": {
             "addIn": "Add check-in",

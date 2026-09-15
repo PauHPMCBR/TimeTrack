@@ -50,7 +50,9 @@
     },
     "header": {
         "logOff": "Cierra la sesión",
-        "switchAccount": "Cambia de cuenta"
+        "switchAccount": "Cambia de cuenta",
+        "noSession": "Sin sesión",
+        "user": "Usuario"
     },
     "activity": {
         "checkIn": "Fichaje de entrada",
@@ -480,7 +482,8 @@
             "invalidatePasswordDesc": "El empleado deberá recuperar la contraseña con el procedimiento de contraseña olvidada.",
             "delete": "Eliminar usuario",
             "deleteWarning": "Antes de eliminar, exporta todos sus datos (fichajes y vacaciones). Los datos no se borran de la base de datos y el usuario se puede restaurar, pero perderá inmediatamente el acceso a la aplicación.",
-            "deleteConfirm": "¿Seguro que quieres eliminar este usuario? Perderá inmediatamente el acceso a la aplicación."
+            "deleteConfirm": "¿Seguro que quieres eliminar este usuario? Perderá inmediatamente el acceso a la aplicación.",
+            "incompleteSource": "Los datos de este usuario están incompletos o corruptos; no se pueden editar de forma segura."
         },
         "sessionEditor": {
             "addIn": "Añadir entrada",

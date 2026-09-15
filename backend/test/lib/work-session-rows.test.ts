@@ -21,6 +21,7 @@ const makeUser = (overrides: Record<string, unknown> = {}) =>
         dni: '12345678A',
         scheduleMode: 'hours',
         timetable: defaultTimetable(),
+        weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
         checkInRequired: true,
         ...overrides,
     }) as unknown as UserRow;

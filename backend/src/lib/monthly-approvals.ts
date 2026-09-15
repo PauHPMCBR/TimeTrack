@@ -37,7 +37,10 @@ import {
     sendMonthlyApprovalRequest,
 } from '@/lib/mail';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { resolveWeeklyExpectedHours } from 'shared/src/lib/user-overrides';
+import {
+    resolveWeeklyExpectedHours,
+    resolveWeekTimetable,
+} from 'shared/src/lib/user-overrides';
 import { monthRange, daysInMonth } from 'shared/src/lib/date-ranges';
 
 export interface MonthPeriod {
@@ -113,7 +116,7 @@ export async function computeMonthAnomalies(
     if (user.checkInRequired === false) return [];
 
     const isTimetableMode = user.scheduleMode === 'timetable';
-    const weekTimetable: WeekTimetable = user.timetable ?? defaultTimetable();
+    const weekTimetable = resolveWeekTimetable(user, defaultTimetable());
     const weeklyHours = isTimetableMode
         ? null
         : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);

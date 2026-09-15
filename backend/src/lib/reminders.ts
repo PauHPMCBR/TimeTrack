@@ -28,6 +28,7 @@ import { getFrontendUrl } from '@/lib/frontend-url';
 import {
     nonWorkingDaysOfWeek,
     resolveDayExpectedHours,
+    resolveWeekTimetable,
 } from 'shared/src/lib/user-overrides';
 
 interface ReminderUser {
@@ -117,7 +118,7 @@ export async function runDailyInconsistencyReminder(
         const anomalies = [...result.anomalies];
         const dayStart = new Date(start);
         const isTimetableMode = user.scheduleMode === 'timetable';
-        const weekTimetable: WeekTimetable = user.timetable ?? defaultTimetable();
+        const weekTimetable = resolveWeekTimetable(user, defaultTimetable());
         const intervals = dayTimetable(weekTimetable, dayStart.getDay());
         const expected = isTimetableMode
             ? intervals.length

@@ -230,6 +230,20 @@ describe('apiClient', () => {
                 .mockRejectedValue(new Error('Network error')) as any;
             expect(await apiClient.getAvatarBlob('user-1', 'v1')).toBeNull();
         });
+
+        it('should evict the cache on a transient failure so the next call retries', async () => {
+            global.fetch = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('Network error'))
+                .mockResolvedValueOnce({
+                    ok: true,
+                    blob: () => Promise.resolve(new Blob(['image'])),
+                }) as any;
+
+            expect(await apiClient.getAvatarBlob('user-retry', 'v1')).toBeNull();
+            expect(await apiClient.getAvatarBlob('user-retry', 'v1')).not.toBeNull();
+            expect(fetch).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('getGroupInfo', () => {

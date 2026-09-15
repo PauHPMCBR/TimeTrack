@@ -20,10 +20,22 @@ describe('resolveNonWorkingDays', () => {
         ).toEqual([1, 2]);
     });
 
-    it('falls back to the company-wide non-working days', () => {
+    it('falls back to the company-wide non-working days only without a user', () => {
         expect(resolveNonWorkingDays(undefined, [0, 6])).toEqual([0, 6]);
-        expect(resolveNonWorkingDays({}, [6, 0])).toEqual([6, 0]);
-        expect(resolveNonWorkingDays({ weeklyExpectedHours: [] }, [0, 6])).toEqual([0, 6]);
+        expect(resolveNonWorkingDays(null, [6, 0])).toEqual([6, 0]);
+    });
+
+    it('throws on a user with missing or invalid weeklyExpectedHours instead of falling back', () => {
+        expect(() => resolveNonWorkingDays({}, [0, 6])).toThrow();
+        expect(() =>
+            resolveNonWorkingDays({ weeklyExpectedHours: [] }, [0, 6])
+        ).toThrow();
+        expect(() =>
+            resolveNonWorkingDays(
+                { weeklyExpectedHours: [0, -2, 8, 8, 8, 8, 0] },
+                [0, 6]
+            )
+        ).toThrow();
     });
 
     it('derives the weekdays without intervals in timetable mode', () => {
@@ -36,6 +48,12 @@ describe('resolveNonWorkingDays', () => {
                 [0, 6]
             )
         ).toEqual([0, 6]);
+    });
+
+    it('throws when a timetable-mode user has no valid stored timetable', () => {
+        expect(() =>
+            resolveNonWorkingDays({ scheduleMode: 'timetable' }, [0, 6])
+        ).toThrow();
     });
 });
 

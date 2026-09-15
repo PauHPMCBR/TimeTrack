@@ -13,8 +13,9 @@ import {
 } from 'shared/src/lib/expected-timetable';
 import {
     resolveDayExpectedHours,
+    resolveWeekTimetable,
 } from 'shared/src/lib/user-overrides';
-import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
+import { defaultTimetable } from 'shared/src/schemas/database';
 import {
     UserRow,
     WorkSessionRow,
@@ -159,8 +160,10 @@ export function buildWorkSessionRows(
                 vacationByUserDay.has(`${user._id}:${key}`) ||
                 obligatoryDaySet.has(key);
             const isTimetableMode = user.scheduleMode === 'timetable';
-            const weekTimetable: WeekTimetable =
-                user.timetable ?? defaultTimetable();
+            const weekTimetable = resolveWeekTimetable(
+                user,
+                defaultTimetable()
+            );
             const intervals = dayTimetable(weekTimetable, dow);
             const expectedHours = isTimetableMode
                 ? impliedHours(intervals)

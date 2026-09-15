@@ -22,7 +22,11 @@ export async function runInTransaction<T>(
     let session: mongoose.ClientSession | null = null;
     try {
         session = await mongoose.startSession();
-    } catch {
+    } catch (error) {
+        console.error(
+            'runInTransaction: could not start a MongoDB session; running without a transaction (writes are not atomic)',
+            error
+        );
         return fn(null);
     }
 
@@ -37,8 +41,11 @@ export async function runInTransaction<T>(
             // transactions. If we get an "IllegalOperation" error (transaction numbers
             // only on replica sets), fall back to running without a session.
             const mongoErr = err as any;
-            if (mongoErr?.codeName === 'IllegalOperation' || 
+            if (mongoErr?.codeName === 'IllegalOperation' ||
                 mongoErr?.code === 20) {
+                console.error(
+                    'runInTransaction: MongoDB does not support transactions (standalone instance?); running without a transaction (writes are not atomic)'
+                );
                 result = await fn(null);
             } else {
                 throw err;

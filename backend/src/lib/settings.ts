@@ -66,6 +66,27 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
         settings = await AppSettings.create(DEFAULTS);
     }
 
+    const reminderMode = InconsistencyReminderModeSchema.safeParse(
+        settings.inconsistencyReminderMode
+    );
+    if (!reminderMode.success && settings.inconsistencyReminderMode !== undefined) {
+        throw new Error(
+            'getAppSettings: stored inconsistencyReminderMode is invalid; refusing to use fallback defaults'
+        );
+    }
+
+    for (const field of [
+        'defaultWeeklyExpectedHours',
+        'defaultTimetable',
+    ] as const) {
+        const value = settings[field];
+        if (value !== undefined && !Array.isArray(value)) {
+            throw new Error(
+                `getAppSettings: stored ${field} is not an array; refusing to use fallback defaults`
+            );
+        }
+    }
+
     cachedSettings = {
         defaultWeeklyExpectedHours: Array.isArray(
             settings.defaultWeeklyExpectedHours
@@ -85,10 +106,9 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
             settings.timetableToleranceMinutes ??
             DEFAULTS.timetableToleranceMinutes,
         endOfDayHour: settings.endOfDayHour ?? DEFAULTS.endOfDayHour,
-        inconsistencyReminderMode:
-            InconsistencyReminderModeSchema.catch('forced').parse(
-                settings.inconsistencyReminderMode
-            ),
+        inconsistencyReminderMode: reminderMode.success
+            ? reminderMode.data
+            : DEFAULTS.inconsistencyReminderMode,
         monthlyApprovalReminderDays:
             settings.monthlyApprovalReminderDays ??
             DEFAULTS.monthlyApprovalReminderDays,

@@ -50,7 +50,9 @@
     },
     "header": {
         "logOff": "Tanca la sessió",
-        "switchAccount": "Canvia de compte"
+        "switchAccount": "Canvia de compte",
+        "noSession": "Sense sessió",
+        "user": "Usuari"
     },
     "activity": {
         "checkIn": "Fitxatge d'entrada",
@@ -480,7 +482,8 @@
             "invalidatePasswordDesc": "L'empleat haurà de recuperar la contrasenya amb el procediment de contrasenya oblidada.",
             "delete": "Eliminar usuari",
             "deleteWarning": "Abans d'eliminar, exporta totes les seves dades (fitxatges i vacances). Les dades no s'esborren de la base de dades i l'usuari es pot restaurar, però perdrà immediatament l'accés a l'aplicació.",
-            "deleteConfirm": "Segur que vols eliminar aquest usuari? Perdrà immediatament l'accés a l'aplicació."
+            "deleteConfirm": "Segur que vols eliminar aquest usuari? Perdrà immediatament l'accés a l'aplicació.",
+            "incompleteSource": "Les dades d'aquest usuari són incompletes o corruptes; no es poden editar amb seguretat."
         },
         "sessionEditor": {
             "addIn": "Afegir entrada",
