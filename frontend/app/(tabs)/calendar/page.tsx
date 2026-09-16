@@ -247,13 +247,13 @@ export default function CalendarPage() {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-purple-100 border border-purple-200 dark:bg-purple-900/30 dark:border-purple-800/50"></div>
+                            <div className="w-3 h-3 rounded bg-pink-100 border border-pink-200 dark:bg-pink-900/30 dark:border-pink-800/50"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.teamVacation')}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-purple-50 border border-dashed border-purple-300 dark:bg-purple-900/20 dark:border-purple-800/50"></div>
+                            <div className="w-3 h-3 rounded bg-pink-50 border border-dashed border-pink-300 dark:bg-pink-900/20 dark:border-pink-800/50"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.teamPendingVacation')}
                             </span>

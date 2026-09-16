@@ -124,6 +124,8 @@
         "notIn": "No has fitxat",
         "notesLabel": "Notes",
         "notesPlaceholder": "Afegeix notes addicionals...",
+        "overtimeActive": "Hores extra en curs",
+        "overtimeToggle": "Hores extra",
         "reasonLabel": "Raó",
         "sessions": "Sessions",
         "title": "Fitxatge",

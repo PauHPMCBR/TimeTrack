@@ -72,7 +72,7 @@ type CheckInOutResult =
 export default withApi(
     { method: 'POST', body: WorkSessionRequestSchema },
     async (req, res, { body }) => {
-    const { type, notes } = body;
+    const { type, notes, overtime } = body;
 
     try {
         if (![CHECK_IN, CHECK_OUT].includes(type)) {
@@ -140,6 +140,7 @@ export default withApi(
                     type,
                     timestamp: now,
                     notes,
+                    overtime: overtime === true,
                     // Join the day's current version (all active docs of a
                     // day share it); days never touched by a replacement
                     // (or legacy days) are version 1.
@@ -149,6 +150,18 @@ export default withApi(
                 });
 
                 await workSession.save();
+
+                const overtimeFlag = overtime === true;
+                const openCheckIn =
+                    type === CHECK_OUT
+                        ? effective[effective.length - 1]
+                        : undefined;
+                if (openCheckIn && openCheckIn.overtime !== overtimeFlag) {
+                    await WorkSession.updateOne(
+                        { _id: openCheckIn._id },
+                        { $set: { overtime: overtimeFlag, updatedAt: now } }
+                    );
+                }
                 // Live punches set the day source for the whole day.
                 await upsertWorkDaySource(
                     req.user!.userId,

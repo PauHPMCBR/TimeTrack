@@ -124,6 +124,8 @@
         "notIn": "Not checked in",
         "notesLabel": "Notes",
         "notesPlaceholder": "Add any additional notes...",
+        "overtimeActive": "Overtime in progress",
+        "overtimeToggle": "Overtime",
         "reasonLabel": "Reason",
         "sessions": "Sessions",
         "title": "Check-in",

@@ -9,6 +9,11 @@ import { WorkSession, WorksessionReason, User } from '@/types';
 import { toLocalDateKey, formatHM, localeTag } from '@/lib/datetime';
 import { formatClockHM } from '@/lib/timezone';
 import { computeDayHours } from 'shared/src/lib/work-hours';
+import {
+    workedIntervals as sessionsToWorkedIntervals,
+    workedIntervalTone,
+    workedIntervalVisuals,
+} from '@/lib/worked-intervals';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
     CHECK_IN,
@@ -28,7 +33,7 @@ import AutoTimetableModal from '@/components/autoTimetable/AutoTimetableModal';
 import TimetableList from '@/components/autoTimetable/TimetableList';
 import MonthlyApprovalsBanner from '@/components/MonthlyApprovalsBanner';
 import { timetableText } from '@/lib/timetable';
-import { Zap } from 'lucide-react';
+import { Zap, Clock } from 'lucide-react';
 
 export default function CheckInPage() {
     const { t, lang } = useI18n();
@@ -39,6 +44,7 @@ export default function CheckInPage() {
     const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [isChecking, setIsChecking] = useState(false);
+    const [overtimeNext, setOvertimeNext] = useState(false);
     const [workSessionReasons, setWorkSessionReasons] = useState<
         WorksessionReason[]
     >([]);
@@ -140,6 +146,13 @@ export default function CheckInPage() {
         return () => clearInterval(interval);
     }, [isActiveSession]);
 
+    const activeSessionOvertime = activeSession?.overtime === true;
+    useEffect(() => {
+        if (activeSessionOvertime) setOvertimeNext(true);
+    }, [activeSessionOvertime]);
+
+    const isOvertimeSession = Boolean(activeSession) && overtimeNext;
+
     const todaySummary = useMemo(() => {
         const totalHours = computeDayHours(todaySessions, {
             countOpenUntil: new Date(now),
@@ -158,6 +171,16 @@ export default function CheckInPage() {
         const ms = now - new Date(activeSession.timestamp).getTime();
         return formatHM(ms, t);
     }, [activeSession, t, now]);
+
+    const locale = localeTag(lang);
+
+    const todayIntervals = useMemo(
+        () =>
+            sessionsToWorkedIntervals(todaySessions, locale).map((interval) =>
+                interval.unclosed ? { ...interval, problem: false } : interval
+            ),
+        [todaySessions, locale]
+    );
 
     useEffect(() => {
         const fetchData = async () => {
@@ -247,6 +270,7 @@ export default function CheckInPage() {
             const request: WorkSessionRequest = {
                 type: activeSession ? CHECK_OUT : CHECK_IN,
                 notes: notes || undefined,
+                overtime: overtimeNext,
             };
 
             const response = await apiClient.addWorkRecordTimestamp(request);
@@ -254,6 +278,7 @@ export default function CheckInPage() {
             if (response.data) {
                 await refreshSessions(currentUser);
                 setNotes('');
+                if (activeSession) setOvertimeNext(false);
             } else {
                 console.error('Failed to record time:', response.error);
             }
@@ -301,7 +326,15 @@ export default function CheckInPage() {
                 </div>
             </Card>
 
-            <Card className="p-5">
+            <Card className="relative overflow-hidden p-5">
+                {isOvertimeSession && (
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-purple-500 dark:border-purple-400">
+                        <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-purple-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+                            <Clock size={13} />
+                            {t('checkin.overtimeActive')}
+                        </div>
+                    </div>
+                )}
                 <h2 className="text-lg font-semibold">{t('checkin.title')}</h2>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
                     {activeSession
@@ -309,11 +342,11 @@ export default function CheckInPage() {
                         : t('checkin.notIn')}
                 </p>
 
-                <div className="mt-4">
+                <div className="mt-4 flex items-stretch gap-3">
                     <button
                         onClick={handleCheckInOut}
                         disabled={isChecking}
-                        className={`w-full rounded-xl px-4 py-3 text-white font-semibold text-lg ${
+                        className={`flex-1 rounded-xl px-4 py-3 text-white font-semibold text-lg ${
                             activeSession
                                 ? 'bg-red-500 hover:bg-red-600'
                                 : 'bg-green-600 hover:bg-green-700'
@@ -322,6 +355,19 @@ export default function CheckInPage() {
                         {activeSession
                             ? t('checkin.btnOut')
                             : t('checkin.btnIn')}
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={overtimeNext}
+                        onClick={() => setOvertimeNext((v) => !v)}
+                        className={`flex items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-colors ${
+                            overtimeNext
+                                ? 'border-purple-500 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300'
+                                : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                        }`}
+                    >
+                        <Clock size={18} />
+                        <span>{t('checkin.overtimeToggle')}</span>
                     </button>
                 </div>
 
@@ -416,50 +462,42 @@ export default function CheckInPage() {
                     <h3 className="text-lg font-semibold mb-3">
                         {t('checkin.todaySessions')}
                     </h3>
-                    <div className="space-y-3">
-                        {todaySummary.sessions
-                            .sort(
-                                (a, b) =>
-                                    new Date(b.timestamp).getTime() -
-                                    new Date(a.timestamp).getTime()
-                            )
-                            .map((session, index) => {
-                                return (
-                                    <div
+                    <TimetableList
+                        timetable={todayIntervals}
+                        entryClassName={(entry) =>
+                            workedIntervalVisuals[workedIntervalTone(entry)]
+                                .className
+                        }
+                        entryTitle={(entry) =>
+                            entry.overtime
+                                ? t('checkin.overtimeToggle')
+                                : undefined
+                        }
+                        entryIcon={(entry) =>
+                            workedIntervalVisuals[workedIntervalTone(entry)]
+                                .icon
+                        }
+                    />
+                    {todaySummary.sessions.some((s) => s.notes) && (
+                        <ul className="mt-3 space-y-1">
+                            {todaySummary.sessions
+                                .filter((s) => s.notes)
+                                .map((session, index) => (
+                                    <li
                                         key={session._id || index}
-                                        className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg"
+                                        className="text-sm text-zinc-500"
                                     >
-                                        <div className="flex items-center space-x-3">
-                                            <div
-                                                className={`w-3 h-3 rounded-full ${
-                                                    session.type === CHECK_IN
-                                                        ? 'bg-green-500'
-                                                        : 'bg-red-500'
-                                                }`}
-                                            ></div>
-                                            <div>
-                                                <div className="font-medium">
-                                                    {session.type === CHECK_IN
-                                                        ? t('checkin.checkIn')
-                                                        : t('checkin.checkOut')}
-                                                </div>
-                                                {session.notes && (
-                                                    <div className="text-sm text-zinc-500 mt-1">
-                                                        {session.notes}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="text-sm text-zinc-500">
+                                        <span className="font-medium tabular-nums">
                                             {formatClockHM(
                                                 session.timestamp,
-                                                localeTag(lang)
+                                                locale
                                             )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                    </div>
+                                        </span>{' '}
+                                        {session.notes}
+                                    </li>
+                                ))}
+                        </ul>
+                    )}
                 </Card>
             )}
 

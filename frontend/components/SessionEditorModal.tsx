@@ -347,7 +347,7 @@ export default function SessionEditorModal({
                                         title={t('admin.sessionEditor.overtime')}
                                         className={`rounded-lg p-2 ${
                                             session.overtime
-                                                ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400'
+                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300'
                                                 : 'text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                                         } disabled:opacity-30`}
                                     >

@@ -132,7 +132,7 @@ export default function WorkSessionsToolbar({
                         );
                     })}
                     <span className="flex items-center gap-1.5">
-                        <Clock size={12} />
+                        <Clock size={12} className="text-purple-500" />
                         {t('admin.events.legend.overtime')}
                     </span>
                     <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>

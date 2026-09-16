@@ -143,6 +143,7 @@ export type CreateGroupRequest = z.infer<typeof CreateGroupRequestSchema>;
 export const WorkSessionRequestSchema = z.object({
     type: WorkSessionTypeSchema,
     notes: z.string().max(1000).optional(),
+    overtime: z.boolean().optional(),
 });
 export type WorkSessionRequest = z.infer<typeof WorkSessionRequestSchema>;
 

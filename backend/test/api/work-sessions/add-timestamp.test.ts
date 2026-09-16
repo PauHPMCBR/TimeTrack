@@ -43,6 +43,7 @@ vi.mock('@/models', () => {
         });
         static countDocuments = vi.fn().mockResolvedValue(0);
         static updateMany = vi.fn().mockResolvedValue({});
+        static updateOne = vi.fn().mockResolvedValue({});
         constructor(doc: any) {
             constructed.push(doc);
         }
@@ -255,6 +256,139 @@ describe('POST /api/work-sessions/add-timestamp', () => {
                 }),
             })
         );
+    });
+
+    it('should persist the overtime flag on the created session', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: { type: 'check_out', notes: null, overtime: true },
+        });
+        const res = mockRes();
+
+        mockStaticFind.mockReturnValue({
+            sort: vi.fn().mockResolvedValue([
+                {
+                    _id: 'session-1',
+                    type: 'check_in',
+                    timestamp: new Date(),
+                },
+            ]),
+        } as any);
+
+        await addTimestampHandler(req, res);
+
+        expect(constructed).toHaveLength(1);
+        expect(constructed[0]).toMatchObject({
+            type: 'check_out',
+            overtime: true,
+        });
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should default the overtime flag to false when not provided', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: { type: 'check_in', notes: null },
+        });
+        const res = mockRes();
+
+        mockStaticFind.mockReturnValue({
+            sort: vi.fn().mockResolvedValue([]),
+        } as any);
+
+        await addTimestampHandler(req, res);
+
+        expect(constructed).toHaveLength(1);
+        expect(constructed[0]).toMatchObject({
+            type: 'check_in',
+            overtime: false,
+        });
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should sync the paired open check-in overtime flag to the check-out decision', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: { type: 'check_out', notes: null, overtime: false },
+        });
+        const res = mockRes();
+
+        // The check-in was punched with the overtime toggle on, but the
+        // user unchecked it before leaving: the saved interval must not
+        // end up overtime (interval overtime = either end flagged).
+        mockStaticFind.mockReturnValue({
+            sort: vi.fn().mockResolvedValue([
+                {
+                    _id: 'session-1',
+                    type: 'check_in',
+                    timestamp: new Date(),
+                    overtime: true,
+                },
+            ]),
+        } as any);
+
+        await addTimestampHandler(req, res);
+
+        expect(WorkSession.updateOne).toHaveBeenCalledWith(
+            { _id: 'session-1' },
+            { $set: { overtime: false, updatedAt: expect.any(Date) } }
+        );
+        expect(constructed[0]).toMatchObject({
+            type: 'check_out',
+            overtime: false,
+        });
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should flag the paired open check-in when checking out as overtime', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: { type: 'check_out', notes: null, overtime: true },
+        });
+        const res = mockRes();
+
+        mockStaticFind.mockReturnValue({
+            sort: vi.fn().mockResolvedValue([
+                {
+                    _id: 'session-1',
+                    type: 'check_in',
+                    timestamp: new Date(),
+                    overtime: false,
+                },
+            ]),
+        } as any);
+
+        await addTimestampHandler(req, res);
+
+        expect(WorkSession.updateOne).toHaveBeenCalledWith(
+            { _id: 'session-1' },
+            { $set: { overtime: true, updatedAt: expect.any(Date) } }
+        );
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should not touch the paired check-in when its flag already matches', async () => {
+        const req = mockReq({
+            method: 'POST',
+            body: { type: 'check_out', notes: null, overtime: true },
+        });
+        const res = mockRes();
+
+        mockStaticFind.mockReturnValue({
+            sort: vi.fn().mockResolvedValue([
+                {
+                    _id: 'session-1',
+                    type: 'check_in',
+                    timestamp: new Date(),
+                    overtime: true,
+                },
+            ]),
+        } as any);
+
+        await addTimestampHandler(req, res);
+
+        expect(WorkSession.updateOne).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(201);
     });
 
     it('should join the day’s current version and record the actor', async () => {

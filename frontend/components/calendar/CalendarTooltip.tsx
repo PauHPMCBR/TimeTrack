@@ -1,5 +1,10 @@
 import { VacationEvent, WorkSessionEvent } from '@/types/calendar';
-import { CHECK_IN } from 'shared/src/lib/constants';
+import {
+    workedIntervals,
+    workedIntervalTone,
+    workedIntervalVisuals,
+} from '@/lib/worked-intervals';
+import TimetableList from '@/components/autoTimetable/TimetableList';
 import { formatClockHM } from '@/lib/timezone';
 import { Clock } from 'lucide-react';
 
@@ -24,9 +29,9 @@ export function getVacationClass(type: VacationEvent['type']): string {
         case 'elective-rejected':
             return 'bg-red-100 text-red-800 border border-dashed border-red-300';
         case 'team':
-            return 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50';
+            return 'bg-pink-100 text-pink-800 border border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800/50';
         case 'team-pending':
-            return 'bg-purple-50 text-purple-700 border border-dashed border-purple-300 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800/50';
+            return 'bg-pink-50 text-pink-700 border border-dashed border-pink-300 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-800/50';
         default:
             return 'bg-gray-100 text-gray-800';
     }
@@ -126,50 +131,53 @@ export function CalendarTooltip({
                                 {t('calendar.workSessions')} (
                                 {workEvent.hoursWorked.toFixed(1)}h)
                             </div>
-                            <div className="space-y-2">
-                                {workEvent.sessionsList
-                                    .sort(
-                                        (a, b) =>
-                                            new Date(a.timestamp).getTime() -
-                                            new Date(b.timestamp).getTime()
-                                    )
-                                    .map((session, index) => (
-                                        <div
-                                            key={index}
-                                            className="p-2 bg-zinc-50 dark:bg-zinc-700/50 rounded border border-zinc-200 dark:border-zinc-600"
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div
-                                                    className={`font-medium text-sm ${
-                                                        session.type ===
-                                                        CHECK_IN
-                                                            ? 'text-green-600 dark:text-green-400'
-                                                            : 'text-red-600 dark:text-red-400'
-                                                    }`}
-                                                >
-                                                    {session.type === CHECK_IN
-                                                        ? t('calendar.checkIn')
-                                                        : t(
-                                                              'calendar.checkOut'
-                                                          )}
-                                                </div>
-                                                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                            <TimetableList
+                                timetable={workedIntervals(
+                                    workEvent.sessionsList,
+                                    locale
+                                )}
+                                entryClassName={(entry) =>
+                                    workedIntervalVisuals[
+                                        workedIntervalTone(entry)
+                                    ].className
+                                }
+                                entryTitle={(entry) =>
+                                    entry.overtime
+                                        ? t('admin.events.overtime')
+                                        : entry.problem
+                                          ? t('admin.events.intervalProblem')
+                                          : undefined
+                                }
+                                entryIcon={(entry) =>
+                                    workedIntervalVisuals[
+                                        workedIntervalTone(entry)
+                                    ].icon
+                                }
+                            />
+                            {workEvent.sessionsList.some(
+                                (session) => session.notes
+                            ) && (
+                                <ul className="mt-2 space-y-1">
+                                    {workEvent.sessionsList
+                                        .filter((session) => session.notes)
+                                        .map((session, index) => (
+                                            <li
+                                                key={index}
+                                                className="text-xs text-zinc-600 dark:text-zinc-300"
+                                            >
+                                                <span className="font-medium tabular-nums">
                                                     {formatClockHM(
                                                         session.timestamp,
                                                         locale
                                                     )}
-                                                </div>
-                                            </div>
-                                            {session.notes && (
-                                                <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
-                                                    <div className="italic">
-                                                        {session.notes}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                            </div>
+                                                </span>{' '}
+                                                <span className="italic">
+                                                    {session.notes}
+                                                </span>
+                                            </li>
+                                        ))}
+                                </ul>
+                            )}
                         </div>
                     )}
 

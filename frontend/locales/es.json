@@ -124,6 +124,8 @@
         "notIn": "No has fichado",
         "notesLabel": "Notas",
         "notesPlaceholder": "Añade notas addicionales...",
+        "overtimeActive": "Horas extra en curso",
+        "overtimeToggle": "Horas extra",
         "reasonLabel": "Razón",
         "sessions": "Sesiones",
         "title": "Fichaje",
