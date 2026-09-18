@@ -2,6 +2,7 @@ import type {
     AdminReplaceDayWorkSessionsRequest,
     AdminWorkSessionsQueryWithPagination,
     AdminWorkSessionInput,
+    AdminWorkDayRecordUpdateRequest,
     AdminFilesQuery,
     AppSettingsRequest,
     ApplyAutoScheduleRequest,
@@ -31,6 +32,7 @@ import type {
     WorkSessionRequest,
     YearlyVacationAdminRequest,
     YearlyVacationResponse,
+    AuthorizedLeaveRow,
 } from '@/schemas/api';
 import {
     AdminWorkSessionsResponse,
@@ -46,6 +48,7 @@ import {
     WorksessionReason,
     YearlyVacationDays,
 } from '@/types';
+import { TeamAuthorizedLeave } from '@/types/calendar';
 import { ApiResponse, ErrorDetails } from '@/types/apiErrors';
 import type { ErrorCode } from 'shared/src/types/response-errors';
 import type { DateKey } from 'shared/src/lib/day-key';
@@ -549,6 +552,76 @@ class ApiClient {
         });
     }
 
+    async updateWorkDayRecord(
+        userId: string,
+        date: DateKey,
+        classification: AdminWorkDayRecordUpdateRequest['classification'],
+        reason: string
+    ): Promise<ApiResponse<Record<string, never>>> {
+        const body: AdminWorkDayRecordUpdateRequest = {
+            userId,
+            date,
+            classification,
+            ...(reason ? { reason } : {}),
+        };
+        return this.request(`/api/admin/work-day-records`, {
+            method: 'PUT',
+            body: JSON.stringify(body),
+        });
+    }
+
+    async getMyAuthorizedLeaves(
+        year?: number
+    ): Promise<ApiResponse<{ leaves: AuthorizedLeaveRow[] }>> {
+        const search = new URLSearchParams();
+        if (year !== undefined) search.set('year', String(year));
+        const qs = search.toString();
+        return this.request(`/api/me/authorized-leaves${qs ? `?${qs}` : ''}`);
+    }
+
+    async getAuthorizedLeaves(query: {
+        userId?: string;
+        from?: DateKey;
+        to?: DateKey;
+    }): Promise<ApiResponse<{ leaves: AuthorizedLeaveRow[] }>> {
+        const search = new URLSearchParams();
+        if (query.userId) search.set('userId', query.userId);
+        if (query.from) search.set('from', query.from);
+        if (query.to) search.set('to', query.to);
+        const qs = search.toString();
+        return this.request(`/api/admin/authorized-leaves${qs ? `?${qs}` : ''}`);
+    }
+
+    async createAuthorizedLeave(body: {
+        userId: string;
+        startDate: DateKey;
+        endDate: DateKey;
+        notes?: string;
+    }): Promise<ApiResponse<{ leave: AuthorizedLeaveRow }>> {
+        return this.request(`/api/admin/authorized-leaves`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+    }
+
+    async updateAuthorizedLeave(
+        leaveId: string,
+        body: { startDate?: DateKey; endDate?: DateKey; notes?: string }
+    ): Promise<ApiResponse<{ leave: AuthorizedLeaveRow }>> {
+        return this.request(`/api/admin/authorized-leaves/${leaveId}`, {
+            method: 'PUT',
+            body: JSON.stringify(body),
+        });
+    }
+
+    async deleteAuthorizedLeave(
+        leaveId: string
+    ): Promise<ApiResponse<Record<string, never>>> {
+        return this.request(`/api/admin/authorized-leaves/${leaveId}`, {
+            method: 'DELETE',
+        });
+    }
+
     async getAllVacationsYearAdmin(
         year: number
     ): Promise<ApiResponse<YearlyVacationResponse>> {
@@ -614,7 +687,9 @@ class ApiClient {
 
     async getTeamVacations(
         year: number | string
-    ): Promise<ApiResponse<{ vacations: TeamVacation[] }>> {
+    ): Promise<
+        ApiResponse<{ vacations: TeamVacation[]; leaves?: TeamAuthorizedLeave[] }>
+    > {
         return this.request(`/api/groups/team-vacations?year=${year}`);
     }
 

@@ -6,8 +6,10 @@ import { apiClient } from '@/lib/api';
 import {
     YearlyVacationResponse,
     MonthlyWorkRecordResponse,
+    AuthorizedLeaveRow,
 } from '@/schemas/api';
 import { TeamVacation } from '@/types';
+import { TeamAuthorizedLeave } from '@/types/calendar';
 import { useRouter } from 'next/navigation';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
 import {
@@ -48,6 +50,11 @@ export default function CalendarPage() {
     const [workSessions, setWorkSessions] =
         useState<MonthlyWorkRecordResponse | null>(null);
     const [teamVacations, setTeamVacations] = useState<TeamVacation[]>([]);
+    const [authorizedLeaves, setAuthorizedLeaves] = useState<
+        AuthorizedLeaveRow[]
+    >([]);
+    const [teamLeaves, setTeamLeaves] = useState<TeamAuthorizedLeave[]>([]);
+    const [allLeaves, setAllLeaves] = useState<AuthorizedLeaveRow[]>([]);
     const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]);
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -89,6 +96,7 @@ export default function CalendarPage() {
                     settingsRes,
                     allVacationsRes,
                     companyUsersRes,
+                    leavesRes,
                 ] = await Promise.all([
                     globalMode
                         ? Promise.resolve(null)
@@ -106,6 +114,9 @@ export default function CalendarPage() {
                     globalMode
                         ? apiClient.getCompanyUsers()
                         : Promise.resolve(null),
+                    globalMode
+                        ? apiClient.getAuthorizedLeaves({})
+                        : apiClient.getMyAuthorizedLeaves(year),
                 ]);
                 if (cancelled) return;
 
@@ -122,7 +133,6 @@ export default function CalendarPage() {
                 }
 
                 if (teamVacationsRes?.data && teamVacationsRes.data.vacations) {
-                    // Filter out self to not duplicate
                     const others = teamVacationsRes.data.vacations.filter(
                         (v) => {
                             const vUserId =
@@ -133,12 +143,26 @@ export default function CalendarPage() {
                         }
                     );
                     setTeamVacations(others);
+                    const selfLeaves = (teamVacationsRes.data.leaves ?? []).filter(
+                        (l) => l.userId !== user._id
+                    );
+                    setTeamLeaves(selfLeaves);
                 }
 
                 if (allVacationsRes?.error) {
                     setErrorMsg(t(`error.${allVacationsRes.error}`));
                 } else if (allVacationsRes?.data) {
                     setAllVacations(allVacationsRes.data);
+                }
+
+                if (leavesRes?.error) {
+                    setErrorMsg(t(`error.${leavesRes.error}`));
+                } else if (leavesRes?.data) {
+                    if (globalMode) {
+                        setAllLeaves(leavesRes.data.leaves);
+                    } else {
+                        setAuthorizedLeaves(leavesRes.data.leaves);
+                    }
                 }
 
                 if (companyUsersRes?.data?.users) {
@@ -204,6 +228,15 @@ export default function CalendarPage() {
                 vacations={globalMode ? allVacations : vacations}
                 workSessions={globalMode ? null : workSessions}
                 teamVacations={globalMode ? [] : teamVacations}
+                authorizedLeaves={authorizedLeaves}
+                teamAuthorizedLeaves={
+                    globalMode
+                        ? allLeaves.map((l) => ({
+                              ...l,
+                              userName: usersMap[l.userId],
+                          }))
+                        : teamLeaves
+                }
                 usersMap={globalMode ? usersMap : undefined}
                 nonWorkingDays={nonWorkingDays}
                 loading={loading}
@@ -244,6 +277,12 @@ export default function CalendarPage() {
                             <div className="w-3 h-3 rounded bg-blue-100 border border-blue-200"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.obligatoryVacation')}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded bg-violet-100 border border-violet-200 dark:bg-violet-900/30 dark:border-violet-800/50"></div>
+                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
+                                {t('calendar.authorizedLeave')}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">

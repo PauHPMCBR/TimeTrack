@@ -70,6 +70,30 @@ vi.mock('@/models', () => ({
     },
 }));
 
+vi.mock('@/repositories/authorized-leave-repository', () => ({
+    findLeavesOverlapping: vi.fn(() => ({
+        lean: vi.fn().mockResolvedValue([]),
+    })),
+}));
+
+vi.mock('@/repositories/work-day-record-repository', () => ({
+    findWorkDayRecords: vi.fn(() => Promise.resolve([])),
+    findOneWorkDayRecord: vi.fn(),
+    findUserWorkDayRecords: vi.fn(),
+    upsertWorkDayRecord: vi.fn(),
+}));
+
+vi.mock('@/lib/work-day-records', () => ({
+    recomputeWorkDayRecords: vi.fn().mockResolvedValue(undefined),
+    recomputeWorkDayRecordsForRange: vi.fn().mockResolvedValue(undefined),
+    lastClosedDayKey: vi.fn().mockResolvedValue('2025-06-09'),
+    backfillUserWorkDayRecordsFromTrackingStart: vi
+        .fn()
+        .mockResolvedValue(0),
+    ensureWorkDayRecordsForDay: vi.fn().mockResolvedValue(0),
+    backfillAllWorkDayRecords: vi.fn().mockResolvedValue(0),
+}));
+
 import {
     User,
     WorkSession,
@@ -78,12 +102,33 @@ import {
     YearlyVacationDays,
     MonthlyApproval,
 } from '@/models';
+import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 import historyHandler from '@/pages/api/me/history';
 
 const at = (h: number, m = 0, day = '2025-06-09') =>
     new Date(
         `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
     );
+
+const mockRecords = (records: unknown[]) => {
+    vi.mocked(findWorkDayRecords).mockResolvedValue(records as any);
+};
+
+const makeRecord = (userId: string, date: string, overrides: Record<string, unknown> = {}) => ({
+    _id: `rec-${userId}-${date}`,
+    userId,
+    date,
+    classification: 'workday',
+    checkMode: 'hours',
+    timetableIntervals: [],
+    expectedHours: 8,
+    toleranceMinutes: 60,
+    timetableToleranceMinutes: 10,
+    anomalies: [],
+    source: 'system',
+    computedAt: new Date(),
+    ...overrides,
+});
 
 describe('GET /api/me/history', () => {
     beforeEach(() => {
@@ -144,6 +189,14 @@ describe('GET /api/me/history', () => {
         vi.mocked(YearlyVacationDays.find).mockReturnValue(
             simpleChain([]) as any
         );
+        mockRecords([
+            makeRecord('user-123', '2025-06-09', {
+                checkMode: 'timetable',
+                timetableIntervals: [
+                    { checkIn: '09:00', checkOut: '17:00' },
+                ],
+            }),
+        ]);
 
         const req = mockReq({
             method: 'GET',

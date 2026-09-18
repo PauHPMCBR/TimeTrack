@@ -118,6 +118,14 @@ export default function AdminDashboard() {
             icon: <Calendar size={24} />,
         },
         {
+            title: t('admin.menu.authorizedLeaves.title'),
+            desc: t('admin.menu.authorizedLeaves.desc'),
+            href: '/admin/authorized-leaves',
+            iconColor: 'text-violet-600 dark:text-violet-400',
+            bgColor: 'bg-violet-50 dark:bg-violet-900/20',
+            icon: <ShieldCheck size={24} />,
+        },
+        {
             title: t('admin.menu.vacations.title'),
             desc: t('admin.menu.vacations.desc'),
             meta:

@@ -54,6 +54,26 @@ const simpleChain = (result: unknown) => ({
     lean: vi.fn().mockResolvedValue(result),
 });
 
+const makeRecord = (userId: string, date: string, overrides: Record<string, unknown> = {}) => ({
+    _id: `rec-${userId}-${date}`,
+    userId,
+    date,
+    classification: 'workday',
+    checkMode: 'hours',
+    timetableIntervals: [],
+    expectedHours: 8,
+    toleranceMinutes: 60,
+    timetableToleranceMinutes: 10,
+    anomalies: [],
+    source: 'system',
+    computedAt: new Date(),
+    ...overrides,
+});
+
+const mockRecords = (records: unknown[]) => {
+    vi.mocked(findWorkDayRecords).mockResolvedValue(records as any);
+};
+
 vi.mock('@/models', () => ({
     User: { find: vi.fn(), findById: vi.fn() },
     WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
@@ -69,6 +89,30 @@ vi.mock('@/models', () => ({
     },
 }));
 
+vi.mock('@/repositories/authorized-leave-repository', () => ({
+    findLeavesOverlapping: vi.fn(() => ({
+        lean: vi.fn().mockResolvedValue([]),
+    })),
+}));
+
+vi.mock('@/repositories/work-day-record-repository', () => ({
+    findWorkDayRecords: vi.fn(() => Promise.resolve([])),
+    findOneWorkDayRecord: vi.fn(),
+    findUserWorkDayRecords: vi.fn(),
+    upsertWorkDayRecord: vi.fn(),
+}));
+
+vi.mock('@/lib/work-day-records', () => ({
+    recomputeWorkDayRecords: vi.fn().mockResolvedValue(undefined),
+    recomputeWorkDayRecordsForRange: vi.fn().mockResolvedValue(undefined),
+    lastClosedDayKey: vi.fn().mockResolvedValue('2025-06-09'),
+    backfillUserWorkDayRecordsFromTrackingStart: vi
+        .fn()
+        .mockResolvedValue(0),
+    ensureWorkDayRecordsForDay: vi.fn().mockResolvedValue(0),
+    backfillAllWorkDayRecords: vi.fn().mockResolvedValue(0),
+}));
+
 import {
     User,
     WorkSession,
@@ -77,6 +121,7 @@ import {
     YearlyVacationDays,
     MonthlyApproval,
 } from '@/models';
+import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 import adminWorkSessionsHandler from '@/pages/api/admin/work-sessions';
 
 const at = (h: number, m = 0, day = '2025-06-09') =>
@@ -170,6 +215,12 @@ describe('GET /api/admin/work-sessions', () => {
         vi.mocked(YearlyVacationDays.find).mockReturnValue(
             simpleChain([]) as any
         );
+        mockRecords([
+            makeRecord('u1', '2025-06-09'),
+            makeRecord('u2', '2025-06-09', {
+                anomalies: ['forgot_check_out'],
+            }),
+        ]);
 
         const req = mockReq({
             method: 'GET',
@@ -240,6 +291,7 @@ describe('GET /api/admin/work-sessions', () => {
                 },
             ]),
         } as any);
+        mockRecords([]);
 
         const req = mockReq({
             method: 'GET',
@@ -254,7 +306,7 @@ describe('GET /api/admin/work-sessions', () => {
         expect(payload.data.approvedMonths).toEqual(['u1:2025-06']);
     });
 
-    it('should flag hours_over when worked more than expected + benevolence', async () => {
+    it('should flag hours_over from the record when worked more than expected + benevolence', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
         vi.mocked(WorkSession.find).mockReturnValue(
             queryChain([
@@ -273,6 +325,11 @@ describe('GET /api/admin/work-sessions', () => {
         vi.mocked(YearlyVacationDays.find).mockReturnValue(
             simpleChain([]) as any
         );
+        mockRecords([
+            makeRecord('u1', '2025-06-09', {
+                anomalies: ['hours_over'],
+            }),
+        ]);
 
         const req = mockReq({
             method: 'GET',
@@ -291,7 +348,7 @@ describe('GET /api/admin/work-sessions', () => {
         });
     });
 
-    it('should mark a user as vacation when they have an approved vacation', async () => {
+    it('should mark a user as elective vacation when their record says so', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
         vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
@@ -309,6 +366,12 @@ describe('GET /api/admin/work-sessions', () => {
         vi.mocked(YearlyVacationDays.find).mockReturnValue(
             simpleChain([]) as any
         );
+        mockRecords([
+            makeRecord('u2', '2025-06-09', {
+                classification: 'electiveVacation',
+                expectedHours: 0,
+            }),
+        ]);
 
         const req = mockReq({
             method: 'GET',
@@ -320,10 +383,13 @@ describe('GET /api/admin/work-sessions', () => {
 
         const rows = res.json.mock.calls[0][0].data.rows;
         const berta = rows.find((r: any) => r.userId === 'u2');
-        expect(berta).toMatchObject({ status: 'vacation', anomalies: [] });
+        expect(berta).toMatchObject({
+            status: 'electiveVacation',
+            anomalies: [],
+        });
     });
 
-    it('should mark hours_short when a weekday has no sessions', async () => {
+    it('should mark hours_short from the record when a weekday has no sessions', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
         vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
@@ -332,6 +398,11 @@ describe('GET /api/admin/work-sessions', () => {
         vi.mocked(YearlyVacationDays.find).mockReturnValue(
             simpleChain([]) as any
         );
+        mockRecords([
+            makeRecord('u1', '2025-06-09', {
+                anomalies: ['hours_short'],
+            }),
+        ]);
 
         const req = mockReq({
             method: 'GET',
@@ -359,6 +430,7 @@ describe('GET /api/admin/work-sessions', () => {
         vi.mocked(YearlyVacationDays.find).mockReturnValue(
             simpleChain([]) as any
         );
+        mockRecords([]);
 
         const req = mockReq({
             method: 'GET',
@@ -371,6 +443,34 @@ describe('GET /api/admin/work-sessions', () => {
         const rows = res.json.mock.calls[0][0].data.rows;
         expect(rows).toHaveLength(2);
         expect(rows.every((r: any) => r.status === 'nonWorkingDay')).toBe(true);
+    });
+
+    it('should show days without a record as planned (no anomaly judgment)', async () => {
+        vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
+        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(ElectiveVacation.find).mockReturnValue(
+            simpleChain([]) as any
+        );
+        vi.mocked(YearlyVacationDays.find).mockReturnValue(
+            simpleChain([]) as any
+        );
+        mockRecords([]);
+
+        const req = mockReq({
+            method: 'GET',
+            query: { period: 'day', date: '2025-06-09' },
+        });
+        const res = mockRes();
+
+        await adminWorkSessionsHandler(req, res);
+
+        const rows = res.json.mock.calls[0][0].data.rows;
+        expect(rows).toHaveLength(2);
+        expect(rows.every((r: any) => r.status === 'planned')).toBe(true);
+        expect(
+            rows.every((r: any) => r.dayClassification === 'workday')
+        ).toBe(true);
+        expect(rows.every((r: any) => r.anomalies.length === 0)).toBe(true);
     });
 
     it('should mark a user-specific non-working day', async () => {

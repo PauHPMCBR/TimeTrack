@@ -18,6 +18,8 @@ import {
 import { getAppSettings } from '@/lib/settings';
 import { replaceDaySessions } from '@/lib/replace-day';
 import { findWorkDaySources } from '@/repositories/work-day-source-repository';
+import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
+import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 import { dayRange } from '@/lib/date-range';
 import {
     parsePagination,
@@ -28,6 +30,8 @@ import {
     WorkSessionRow,
     ElectiveVacationRow,
     YearlyVacationRow,
+    AuthorizedLeaveRow,
+    WorkDayRecordRow,
 } from '@/lib/rows';
 import {
     responseErrorEntryNotFound,
@@ -49,6 +53,7 @@ import {
     buildWorkSessionRows,
     computeDaysForPeriod,
     daySourceMap,
+    workDayRecordMap,
 } from '@/lib/work-session-rows';
 import type { DateKey } from 'shared/src/lib/day-key';
 
@@ -148,7 +153,7 @@ const getHandler = withApi(
             days.map((d) => Number(d.slice(0, 4)))
         );
 
-            const [users, sessions, approvedVacations, yearlyTemplates, settings, daySources] =
+            const [users, sessions, approvedVacations, yearlyTemplates, settings, daySources, authorizedLeaves, dayRecords] =
             (await Promise.all([
                 User.find(
                     {
@@ -175,6 +180,8 @@ const getHandler = withApi(
                 findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
                 findWorkDaySources(days),
+                findLeavesOverlapping(vacationStart, vacationEnd).lean(),
+                findWorkDayRecords(days),
             ])) as unknown as [
                 UserRow[],
                 WorkSessionRow[],
@@ -182,6 +189,8 @@ const getHandler = withApi(
                 YearlyVacationRow[],
                 Awaited<ReturnType<typeof getAppSettings>>,
                 Awaited<ReturnType<typeof findWorkDaySources>>,
+                AuthorizedLeaveRow[],
+                WorkDayRecordRow[],
             ];
 
         const rows: AdminWorkSessionRow[] = buildWorkSessionRows({
@@ -190,6 +199,8 @@ const getHandler = withApi(
             sessions,
             approvedVacations,
             yearlyTemplates,
+            authorizedLeaves,
+            records: workDayRecordMap(dayRecords),
             defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
             toleranceMinutes: settings.toleranceMinutes,
             timetableToleranceMinutes: settings.timetableToleranceMinutes,

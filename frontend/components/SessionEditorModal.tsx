@@ -18,10 +18,21 @@ import {
     DEFAULT_CHECK_IN_TIME,
     DEFAULT_CHECK_OUT_TIME,
 } from 'shared/src/lib/defaults';
-import type { WorkSessionType } from 'shared/src/schemas/database';
+import type {
+    WorkSessionType,
+    WorkDayClassification,
+} from 'shared/src/schemas/database';
 import Modal from '@/components/Modal';
 import Button from '@/components/ui/Button';
 import { LogIn, LogOut, Plus, Trash2, Loader2, Clock } from 'lucide-react';
+
+const DAY_CLASSIFICATIONS: WorkDayClassification[] = [
+    'workday',
+    'nonWorkingWeekday',
+    'electiveVacation',
+    'obligatoryVacation',
+    'authorizedLeave',
+];
 
 type Props = {
     row: AdminWorkSessionRow;
@@ -86,6 +97,10 @@ export default function SessionEditorModal({
         }))
     );
     const [reason, setReason] = useState('');
+    const [classification, setClassification] = useState<WorkDayClassification>(
+        row.dayClassification
+    );
+    const [leaveNotes, setLeaveNotes] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
@@ -216,6 +231,44 @@ export default function SessionEditorModal({
                 );
             }
             return;
+        }
+
+        if (isAdminPanel && classification !== row.dayClassification) {
+            if (classification === 'authorizedLeave') {
+                const leaveRes = await apiClient.createAuthorizedLeave({
+                    userId: row.userId,
+                    startDate: row.date,
+                    endDate: row.date,
+                    notes: leaveNotes.trim() || undefined,
+                });
+                if (leaveRes.error) {
+                    setError(
+                        t(`error.${leaveRes.error}`) ===
+                            `error.${leaveRes.error}`
+                            ? t('error.PutError')
+                            : t(`error.${leaveRes.error}`)
+                    );
+                    setSaving(false);
+                    return;
+                }
+            } else {
+                const recordRes = await apiClient.updateWorkDayRecord(
+                    row.userId,
+                    row.date,
+                    classification,
+                    reason.trim()
+                );
+                if (recordRes.error) {
+                    setError(
+                        t(`error.${recordRes.error}`) ===
+                            `error.${recordRes.error}`
+                            ? t('error.PutError')
+                            : t(`error.${recordRes.error}`)
+                    );
+                    setSaving(false);
+                    return;
+                }
+            }
         }
 
         onSaved();
@@ -406,6 +459,65 @@ export default function SessionEditorModal({
                     className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
                 />
             </div>
+
+            {isAdminPanel && (
+                <div className="mt-4 space-y-2 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                    <label
+                        htmlFor="session-editor-classification"
+                        className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    >
+                        {t('admin.sessionEditor.classification')}
+                    </label>
+                    <select
+                        id="session-editor-classification"
+                        value={classification}
+                        disabled={saving}
+                        onChange={(e) => {
+                            setClassification(
+                                e.target.value as WorkDayClassification
+                            );
+                            markDirty();
+                        }}
+                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
+                    >
+                        {DAY_CLASSIFICATIONS.map((c) => (
+                            <option key={c} value={c}>
+                                {t(`admin.sessionEditor.classification.${c}`)}
+                            </option>
+                        ))}
+                    </select>
+                    {classification === 'authorizedLeave' && (
+                        <>
+                            <label
+                                htmlFor="session-editor-leave-notes"
+                                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                            >
+                                {t('admin.sessionEditor.leaveNotes')}
+                            </label>
+                            <textarea
+                                id="session-editor-leave-notes"
+                                value={leaveNotes}
+                                onChange={(e) => {
+                                    setLeaveNotes(e.target.value);
+                                    markDirty();
+                                }}
+                                maxLength={2000}
+                                rows={2}
+                                disabled={saving}
+                                placeholder={t(
+                                    'admin.sessionEditor.leaveNotesPlaceholder'
+                                )}
+                                className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
+                            />
+                        </>
+                    )}
+                    {classification !== row.dayClassification && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {t('admin.sessionEditor.classificationHint')}
+                        </p>
+                    )}
+                </div>
+            )}
 
             <p className="mt-3 text-xs text-zinc-400">
                 {!isAdminPanel

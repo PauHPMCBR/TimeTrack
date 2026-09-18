@@ -104,6 +104,7 @@ export type IllegalAction =
     | 'NoVacationConfig'
     | 'FutureDate'
     | 'InvalidTimetable'
+    | 'InvalidInterval'
     | 'MonthNotPast'
     | 'MonthStillHasAnomalies'
     | 'MonthAlreadyApproved'

@@ -34,6 +34,17 @@ vi.mock('@/models', () => ({
     },
 }));
 
+vi.mock('@/lib/work-day-records', () => ({
+    recomputeWorkDayRecords: vi.fn().mockResolvedValue(undefined),
+    recomputeWorkDayRecordsForRange: vi.fn().mockResolvedValue(undefined),
+    lastClosedDayKey: vi.fn().mockResolvedValue('2025-06-09'),
+    backfillUserWorkDayRecordsFromTrackingStart: vi
+        .fn()
+        .mockResolvedValue(0),
+    ensureWorkDayRecordsForDay: vi.fn().mockResolvedValue(0),
+    backfillAllWorkDayRecords: vi.fn().mockResolvedValue(0),
+}));
+
 import { ElectiveVacation } from '@/models';
 import vacationResolveHandler from '@/pages/api/admin/vacations/resolve/[vacationId]';
 
@@ -85,7 +96,9 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 404 if vacation not found', async () => {
-        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue(null);
+        vi.mocked(ElectiveVacation.findById).mockReturnValue({
+            lean: vi.fn().mockResolvedValue(null),
+        } as any);
 
         const req = mockReq({
             method: 'POST',
@@ -105,7 +118,14 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 200 on successful approve', async () => {
-        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue({});
+        vi.mocked(ElectiveVacation.findById).mockReturnValue({
+            lean: vi.fn().mockResolvedValue({
+                userId: 'u1',
+                startDate: '2025-06-09',
+                endDate: '2025-06-09',
+            }),
+        } as any);
+        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue({} as any);
 
         const req = mockReq({
             method: 'POST',
@@ -121,7 +141,14 @@ describe('POST /api/admin/vacations/resolve/[vacationId]', () => {
     });
 
     it('should return 200 on successful reject', async () => {
-        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue({});
+        vi.mocked(ElectiveVacation.findById).mockReturnValue({
+            lean: vi.fn().mockResolvedValue({
+                userId: 'u1',
+                startDate: '2025-06-09',
+                endDate: '2025-06-09',
+            }),
+        } as any);
+        vi.mocked(ElectiveVacation.findByIdAndUpdate).mockResolvedValue({} as any);
 
         const req = mockReq({
             method: 'POST',

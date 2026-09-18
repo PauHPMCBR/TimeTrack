@@ -5,6 +5,8 @@ import {
     WorkSessionSchema,
     ElectiveVacationSchema,
     YearlyVacationDaysSchema,
+    AuthorizedLeaveSchema,
+    WorkDayRecordSchema,
 } from 'shared/src/schemas/database';
 import type { DateKey } from 'shared/src/lib/day-key';
 
@@ -30,4 +32,19 @@ export type YearlyVacationRow = Omit<
 > & {
     _id: string;
     obligatoryDays: DateKey[];
+};
+export type AuthorizedLeaveRow = Omit<
+    z.infer<typeof AuthorizedLeaveSchema>,
+    'startDate' | 'endDate'
+> & {
+    _id: string;
+    startDate: DateKey;
+    endDate: DateKey;
+};
+export type WorkDayRecordRow = Omit<
+    z.infer<typeof WorkDayRecordSchema>,
+    'date'
+> & {
+    _id: string;
+    date: DateKey;
 };

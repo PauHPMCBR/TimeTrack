@@ -51,6 +51,8 @@ export function Calendar({
     vacations,
     workSessions,
     teamVacations = [],
+    authorizedLeaves = [],
+    teamAuthorizedLeaves = [],
     usersMap,
     nonWorkingDays = nonWorkingDaysOfWeek(DEFAULT_WEEKLY_EXPECTED_HOURS),
     loading = false,
@@ -170,12 +172,14 @@ export function Calendar({
                             vac.status === VACATION_PENDING;
 
                         events.push({
-                            type: isPending ? 'team-pending' : 'team',
+                            type: isPending
+                                ? 'team-elective-pending'
+                                : 'team-elective',
                             label:
                                 vacUserName ||
                                 (isPending
                                     ? t('calendar.pendingVacation')
-                                    : t('calendar.teamVacation')),
+                                    : t('calendar.electiveVacation')),
                             userName: vacUserName ?? undefined,
                             elective: vac,
                         });
@@ -183,9 +187,51 @@ export function Calendar({
                 });
             }
 
+            teamAuthorizedLeaves.forEach((leave) => {
+                if (
+                    leave.startDate &&
+                    leave.endDate &&
+                    keyIsWithinInterval(dayKey, leave.startDate, leave.endDate)
+                ) {
+                    events.push({
+                        type: 'team-authorized-leave',
+                        label:
+                            leave.userName ||
+                            leave.notes?.trim() ||
+                            t('calendar.authorizedLeave'),
+                        userName: leave.userName,
+                        leave,
+                    });
+                }
+            });
+
+            authorizedLeaves.forEach((leave) => {
+                if (
+                    leave.startDate &&
+                    leave.endDate &&
+                    keyIsWithinInterval(dayKey, leave.startDate, leave.endDate)
+                ) {
+                    events.push({
+                        type: 'authorized-leave',
+                        label:
+                            leave.notes?.trim() ||
+                            t('calendar.authorizedLeave'),
+                        leave,
+                    });
+                }
+            });
+
             return events;
         },
-        [vacations, teamVacations, showVacations, usersMap, t]
+        [
+            vacations,
+            teamVacations,
+            authorizedLeaves,
+            teamAuthorizedLeaves,
+            showVacations,
+            usersMap,
+            t,
+        ]
     );
 
     const getWorkSessionsForDay = useCallback(
@@ -223,13 +269,15 @@ export function Calendar({
                 isToday: key === toLocalDateKey(today),
                 isWeekend: nonWorkingDays.includes(date.getDay()),
                 // Grey out any day the user does not work: weekly non-working
-                // days, company obligatory holidays and own approved vacations.
+                // days, company obligatory holidays, own approved vacations
+                // and authorized leave.
                 isNonWorking:
                     nonWorkingDays.includes(date.getDay()) ||
                     getVacationsForDay(date).some(
                         (event) =>
                             event.type === 'obligatory' ||
-                            event.type === 'elective-approved'
+                            event.type === 'elective-approved' ||
+                            event.type === 'authorized-leave'
                     ),
             });
         });

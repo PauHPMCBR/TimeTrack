@@ -48,7 +48,7 @@ function CalendarDayComponent({
                         key={eventIdx}
                         className={`text-xs rounded px-1 py-0.5 flex items-center gap-1 ${getVacationClass(event.type)}`}
                     >
-                        {event.type === 'team-pending' && (
+                        {event.type === 'team-elective-pending' && (
                             <Clock size={10} className="shrink-0" />
                         )}
                         <div className="truncate">{event.label}</div>

@@ -30,6 +30,11 @@ vi.mock('@/models', () => ({
     ElectiveVacation: {
         find: vi.fn(),
     },
+    AuthorizedLeave: {
+        find: vi.fn(() => ({
+            lean: vi.fn().mockResolvedValue([]),
+        })),
+    },
 }));
 
 import { User, Group, ElectiveVacation } from '@/models';
@@ -146,6 +151,7 @@ describe('GET /api/groups/team-vacations', () => {
         expect(res.json).toHaveBeenCalledWith({
             success: true,
             data: {
+                leaves: [],
                 vacations: [
                     {
                         ...mockVacations[0],

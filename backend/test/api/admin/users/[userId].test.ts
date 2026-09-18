@@ -57,6 +57,17 @@ vi.mock('@/models', () => ({
     },
 }));
 
+vi.mock('@/lib/work-day-records', () => ({
+    recomputeWorkDayRecords: vi.fn().mockResolvedValue(undefined),
+    recomputeWorkDayRecordsForRange: vi.fn().mockResolvedValue(undefined),
+    lastClosedDayKey: vi.fn().mockResolvedValue('2025-06-09'),
+    backfillUserWorkDayRecordsFromTrackingStart: vi
+        .fn()
+        .mockResolvedValue(0),
+    ensureWorkDayRecordsForDay: vi.fn().mockResolvedValue(0),
+    backfillAllWorkDayRecords: vi.fn().mockResolvedValue(0),
+}));
+
 import { User, Group, AuditEvent } from '@/models';
 import { lookupHash } from '@/lib/crypto';
 import updateUserHandler from '@/pages/api/admin/users/[userId]';

@@ -28,9 +28,12 @@ export function getVacationClass(type: VacationEvent['type']): string {
             return 'bg-yellow-100 text-yellow-800 border border-dashed border-yellow-300';
         case 'elective-rejected':
             return 'bg-red-100 text-red-800 border border-dashed border-red-300';
-        case 'team':
+        case 'authorized-leave':
+            return 'bg-violet-100 text-violet-800 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50';
+        case 'team-elective':
+        case 'team-authorized-leave':
             return 'bg-pink-100 text-pink-800 border border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800/50';
-        case 'team-pending':
+        case 'team-elective-pending':
             return 'bg-pink-50 text-pink-700 border border-dashed border-pink-300 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-800/50';
         default:
             return 'bg-gray-100 text-gray-800';
@@ -73,7 +76,7 @@ export function CalendarTooltip({
                                     className={`p-2 rounded text-sm ${getVacationClass(event.type)}`}
                                 >
                                     <div className="font-medium flex items-center gap-1.5">
-                                        {event.type === 'team-pending' && (
+                                        {event.type === 'team-elective-pending' && (
                                             <Clock
                                                 size={12}
                                                 className="shrink-0"

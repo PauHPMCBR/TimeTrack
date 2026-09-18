@@ -1,10 +1,12 @@
 import { withApi } from '@/lib/api-handler';
 import { User, Group } from '@/models';
 import { findOverlapping } from '@/repositories/vacation-repository';
-import { UserRow, GroupRow } from '@/lib/rows';
+import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
+import { UserRow, GroupRow, AuthorizedLeaveRow } from '@/lib/rows';
 import { resolveVacationNames } from '@/lib/vacation-names';
 import { responseErrorGet } from '@/lib/response-error-generator';
 import { VACATION_APPROVED, VACATION_PENDING } from 'shared/src/lib/constants';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export default withApi({ method: 'GET' }, async (req, res) => {
     try {
@@ -30,8 +32,8 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             g.members.forEach((m) => memberIds.add(m.toString()));
         });
 
-        const yearStart = `${year}-01-01`;
-        const yearEnd = `${year}-12-31`;
+        const yearStart = `${year}-01-01` as DateKey;
+        const yearEnd = `${year}-12-31` as DateKey;
 
         // Exclude blocked/unregistered/deleted members.
         const activeMembers = memberIds.size
@@ -42,10 +44,13 @@ export default withApi({ method: 'GET' }, async (req, res) => {
                       registered: true,
                       deleted: { $ne: true },
                   },
-                  '_id'
-              ).lean()) as unknown as { _id: string }[])
+                  '_id name'
+              ).lean()) as unknown as { _id: string; name: string }[])
             : [];
         const activeMemberIds = activeMembers.map((m) => m._id.toString());
+        const memberNames = new Map(
+            activeMembers.map((m) => [m._id.toString(), m.name])
+        );
 
         const vacations = await findOverlapping(yearStart, yearEnd, {
             // Intervals overlapping the requested year. Pending requests are
@@ -63,7 +68,18 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             populateUserId: true,
         });
 
-        res.status(200).json({ success: true, data: { vacations: resolved } });
+        const leaves = (await findLeavesOverlapping(yearStart, yearEnd, {
+            userId: { $in: activeMemberIds },
+        }).lean()) as unknown as AuthorizedLeaveRow[];
+        const resolvedLeaves = leaves.map((leave) => ({
+            ...leave,
+            userName: memberNames.get(leave.userId),
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: { vacations: resolved, leaves: resolvedLeaves },
+        });
     } catch (error) {
         console.error('Get team vacations error:', error);
         return responseErrorGet(res);

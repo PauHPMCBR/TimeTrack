@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildWorkSessionRows } from '@/lib/work-session-rows';
+import { buildWorkSessionRows, workDayRecordMap } from '@/lib/work-session-rows';
 
 vi.mock('@/lib/mongodb', () => ({
     default: vi.fn().mockResolvedValue({}),
@@ -7,7 +7,11 @@ vi.mock('@/lib/mongodb', () => ({
 vi.mock('@/models', () => ({
     AppSettings: {},
 }));
-import type { UserRow, WorkSessionRow } from '@/lib/rows';
+import type {
+    UserRow,
+    WorkSessionRow,
+    WorkDayRecordRow,
+} from '@/lib/rows';
 import type { DateKey } from 'shared/src/lib/day-key';
 import { defaultTimetable } from 'shared/src/schemas/database';
 
@@ -49,22 +53,52 @@ const makeSession = (
         status: 'active',
     }) as unknown as WorkSessionRow;
 
+const makeRecord = (
+    date: DateKey,
+    overrides: Record<string, unknown> = {}
+) =>
+    ({
+        _id: `rec-${date}`,
+        userId: 'u1',
+        date,
+        classification: 'workday',
+        checkMode: 'hours',
+        timetableIntervals: [],
+        expectedHours: 8,
+        toleranceMinutes: 60,
+        timetableToleranceMinutes: 10,
+        anomalies: [],
+        source: 'system',
+        computedAt: new Date(),
+        ...overrides,
+    }) as unknown as WorkDayRecordRow;
+
 const buildCtx = (overrides: Record<string, unknown> = {}) => ({
     days: [MONDAY_KEY],
     users: [makeUser()],
     sessions: [] as WorkSessionRow[],
     approvedVacations: [],
     yearlyTemplates: [],
+    authorizedLeaves: [],
+    records: new Map<string, WorkDayRecordRow>(),
     defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     toleranceMinutes: 60,
     timetableToleranceMinutes: 10,
     ...overrides,
 });
 
-describe('buildWorkSessionRows — hours mode', () => {
-    it('is ok when regular hours are within the minutes tolerance', () => {
+describe('buildWorkSessionRows — closed days (from the WorkDayRecord)', () => {
+    it('is ok when the record has no anomalies', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
+                records: workDayRecordMap([
+                    makeRecord(MONDAY_KEY, {
+                        checkMode: 'timetable',
+                        timetableIntervals: [
+                            { checkIn: '09:00', checkOut: '17:00' },
+                        ],
+                    }),
+                ]),
                 sessions: [
                     makeSession('check_in', MONDAY, 9),
                     makeSession('check_out', MONDAY, 17),
@@ -72,10 +106,86 @@ describe('buildWorkSessionRows — hours mode', () => {
             })
         );
         expect(rows[0].status).toBe('ok');
+        expect(rows[0].dayClassification).toBe('workday');
+        expect(rows[0].anomalies).toEqual([]);
+        expect(rows[0].expectedHours).toBe(8);
+    });
+
+    it('replays the cached anomalies from the record without recomputing', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                records: workDayRecordMap([
+                    makeRecord(MONDAY_KEY, {
+                        anomalies: ['hours_short'],
+                        expectedHours: 8,
+                    }),
+                ]),
+                sessions: [
+                    makeSession('check_in', MONDAY, 9),
+                    makeSession('check_out', MONDAY, 17),
+                ],
+            })
+        );
+        expect(rows[0].status).toBe('anomaly');
+        expect(rows[0].anomalies).toEqual(['hours_short']);
+    });
+
+    it('maps the elective-vacation classification to its row status', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                records: workDayRecordMap([
+                    makeRecord(MONDAY_KEY, {
+                        classification: 'electiveVacation',
+                        expectedHours: 0,
+                    }),
+                ]),
+            })
+        );
+        expect(rows[0].status).toBe('electiveVacation');
         expect(rows[0].anomalies).toEqual([]);
     });
 
-    it('flags hours_short beyond the minutes tolerance', () => {
+    it('flags a punch on an authorized-leave day via the cached anomaly', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                records: workDayRecordMap([
+                    makeRecord(MONDAY_KEY, {
+                        classification: 'authorizedLeave',
+                        expectedHours: 0,
+                        anomalies: ['work_on_non_working_day'],
+                    }),
+                ]),
+                sessions: [makeSession('check_in', MONDAY, 9)],
+            })
+        );
+        expect(rows[0].status).toBe('anomaly');
+        expect(rows[0].anomalies).toEqual(['work_on_non_working_day']);
+    });
+
+    it('exposes the frozen timetable intervals of the record', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                records: workDayRecordMap([
+                    makeRecord(MONDAY_KEY, {
+                        checkMode: 'timetable',
+                        timetableIntervals: [
+                            { checkIn: '08:00', checkOut: '12:00' },
+                            { checkIn: '13:00', checkOut: '17:00' },
+                        ],
+                    }),
+                ]),
+            })
+        );
+        expect(rows[0].timetable).toEqual([
+            { checkIn: '08:00', checkOut: '12:00' },
+            { checkIn: '13:00', checkOut: '17:00' },
+        ]);
+        expect(rows[0].expectedHours).toBe(8);
+    });
+});
+
+describe('buildWorkSessionRows — planned days (no record yet)', () => {
+    it('shows a would-be workday as planned with no anomaly judgment', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
                 sessions: [
@@ -84,18 +194,16 @@ describe('buildWorkSessionRows — hours mode', () => {
                 ],
             })
         );
-        expect(rows[0].status).toBe('anomaly');
-        expect(rows[0].anomalies).toEqual(['hours_short']);
+        expect(rows[0].status).toBe('planned');
+        expect(rows[0].dayClassification).toBe('workday');
+        expect(rows[0].anomalies).toEqual([]);
+        expect(rows[0].expectedHours).toBe(8);
+        expect(rows[0].totalHours).toBe(6);
     });
 
-    it('treats a 0h weekday as a non-working day', () => {
+    it('derives a non-working weekday classification live', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
-                users: [
-                    makeUser({
-                        weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
-                    }),
-                ],
                 days: [SUNDAY_KEY],
                 sessions: [
                     makeSession('check_in', SUNDAY, 10),
@@ -108,97 +216,46 @@ describe('buildWorkSessionRows — hours mode', () => {
         expect(rows[0].expectedHours).toBe(0);
     });
 
-    it('checks the band against the weekday value when per-weekday hours are set', () => {
+    it('derives elective vacations and authorized leaves live for future days', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
-                users: [
-                    makeUser({
-                        weeklyExpectedHours: [0, 4, 8, 8, 8, 8, 0],
-                    }),
-                ],
-                sessions: [
-                    makeSession('check_in', MONDAY, 9),
-                    makeSession('check_out', MONDAY, 13),
-                ],
+                approvedVacations: [
+                    {
+                        _id: 'v1',
+                        userId: 'u1',
+                        startDate: MONDAY_KEY,
+                        endDate: MONDAY_KEY,
+                        status: 'approved',
+                    },
+                ] as never,
+                authorizedLeaves: [
+                    {
+                        _id: 'l1',
+                        userId: 'u1',
+                        startDate: SUNDAY_KEY,
+                        endDate: SUNDAY_KEY,
+                    },
+                ] as never,
+                days: [MONDAY_KEY, SUNDAY_KEY],
             })
         );
-        expect(rows[0].status).toBe('ok');
-        expect(rows[0].expectedHours).toBe(4);
+        expect(rows[0].status).toBe('electiveVacation');
+        expect(rows[1].status).toBe('authorizedLeave');
     });
 
-});
-
-describe('buildWorkSessionRows — timetable mode', () => {
-    it('is ok when punches match the timetable and exposes the expected intervals', () => {
+    it('planned timetable days expose the expected intervals without judging', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
                 users: [makeUser({ scheduleMode: 'timetable' })],
-                sessions: [
-                    makeSession('check_in', MONDAY, 9),
-                    makeSession('check_out', MONDAY, 17),
-                ],
             })
         );
-        expect(rows[0].status).toBe('ok');
-        expect(rows[0].expectedHours).toBe(8);
-        expect(rows[0].timetable).toEqual([{ checkIn: '09:00', checkOut: '17:00' }]);
-    });
-
-    it('flags late check-ins beyond the timetable tolerance instead of hours', () => {
-        const rows = buildWorkSessionRows(
-            buildCtx({
-                users: [makeUser({ scheduleMode: 'timetable' })],
-                sessions: [
-                    makeSession('check_in', MONDAY, 9, 30),
-                    makeSession('check_out', MONDAY, 17, 30),
-                ],
-            })
-        );
-        expect(rows[0].status).toBe('anomaly');
-        expect(rows[0].anomalies).toEqual([
-            'timetable_check_in_late',
-            'timetable_check_out_late',
+        expect(rows[0].status).toBe('planned');
+        expect(rows[0].timetable).toEqual([
+            { checkIn: '09:00', checkOut: '17:00' },
         ]);
     });
 
-    it('flags a missing day via the shift-count anomaly', () => {
-        const rows = buildWorkSessionRows(
-            buildCtx({ users: [makeUser({ scheduleMode: 'timetable' })] })
-        );
-        expect(rows[0].status).toBe('anomaly');
-        expect(rows[0].anomalies).toEqual(['timetable_shift_count']);
-    });
-
-    it('infers non-working days from empty timetable weekdays', () => {
-        const rows = buildWorkSessionRows(
-            buildCtx({
-                users: [makeUser({ scheduleMode: 'timetable' })],
-                days: [SUNDAY_KEY],
-            })
-        );
-        expect(rows[0].status).toBe('nonWorkingDay');
-        expect(rows[0].anomalies).toEqual([]);
-    });
-
-    it('checks weekdays the user added to their timetable even if the company marks them non-working', () => {
-        const sundayTimetable = defaultTimetable();
-        sundayTimetable[0] = [{ checkIn: '09:00', checkOut: '17:00' }];
-        const rows = buildWorkSessionRows(
-            buildCtx({
-                users: [
-                    makeUser({
-                        scheduleMode: 'timetable',
-                        timetable: sundayTimetable,
-                    }),
-                ],
-                days: [SUNDAY_KEY],
-            })
-        );
-        expect(rows[0].status).toBe('anomaly');
-        expect(rows[0].anomalies).toEqual(['timetable_shift_count']);
-    });
-
-    it('compares punch clock times in the company zone, not the runtime zone', () => {
+    it('checks punch clock times in the company zone, not the runtime zone', () => {
         const sessions = [
             {
                 _id: 'in',
@@ -223,7 +280,7 @@ describe('buildWorkSessionRows — timetable mode', () => {
             })
         );
         expect(rows[0].date).toBe('2024-01-15');
-        expect(rows[0].status).toBe('ok');
-        expect(rows[0].anomalies).toEqual([]);
+        expect(rows[0].status).toBe('planned');
+        expect(rows[0].dayClassification).toBe('workday');
     });
 });

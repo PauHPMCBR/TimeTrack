@@ -11,6 +11,8 @@ import {
     responseErrorIncorrectParameter,
     responseErrorPost,
 } from '@/lib/response-error-generator';
+import { recomputeWorkDayRecordsForRange } from '@/lib/work-day-records';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export default withApi({ method: 'POST', guard: 'admin' }, async (req, res) => {
     try {
@@ -25,26 +27,31 @@ export default withApi({ method: 'POST', guard: 'admin' }, async (req, res) => {
             return responseErrorIncorrectParameter(res, 'status');
         }
 
-        const updateData: {
-            status: string;
-            approvedBy?: string;
-            approvedAt?: Date;
-        } = { status };
-        if (status === VACATION_APPROVED) {
-            updateData.approvedBy = req.user?.userId;
-            updateData.approvedAt = new Date();
+        const existing = (await ElectiveVacation.findById(
+            vacationId
+        ).lean()) as unknown as {
+            userId: string;
+            startDate: string;
+            endDate: string;
+        } | null;
+        if (!existing) {
+            return responseErrorEntryNotFound(res, 'Vacation');
         }
 
         // The spent-days balance is derived from the requests themselves, so
         // resolving only flips the status.
-        const updated = await ElectiveVacation.findByIdAndUpdate(
-            vacationId,
-            updateData
-        );
+        await ElectiveVacation.findByIdAndUpdate(vacationId, {
+            status,
+            ...(status === VACATION_APPROVED
+                ? { approvedBy: req.user?.userId, approvedAt: new Date() }
+                : {}),
+        });
 
-        if (!updated) {
-            return responseErrorEntryNotFound(res, 'Vacation');
-        }
+        await recomputeWorkDayRecordsForRange(
+            existing.userId,
+            existing.startDate as DateKey,
+            existing.endDate as DateKey
+        );
 
         res.status(200).json({ success: true });
     } catch (error) {

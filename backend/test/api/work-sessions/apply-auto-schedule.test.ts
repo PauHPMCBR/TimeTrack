@@ -66,6 +66,17 @@ vi.mock('@/models', () => {
 import { User, WorkDaySource } from '@/models';
 import applyAutoScheduleHandler from '@/pages/api/work-sessions/apply-auto-schedule';
 
+vi.mock('@/lib/work-day-records', () => ({
+    recomputeWorkDayRecords: vi.fn().mockResolvedValue(undefined),
+    recomputeWorkDayRecordsForRange: vi.fn().mockResolvedValue(undefined),
+    lastClosedDayKey: vi.fn().mockResolvedValue('2025-06-09'),
+    backfillUserWorkDayRecordsFromTrackingStart: vi
+        .fn()
+        .mockResolvedValue(0),
+    ensureWorkDayRecordsForDay: vi.fn().mockResolvedValue(0),
+    backfillAllWorkDayRecords: vi.fn().mockResolvedValue(0),
+}));
+
 function mockUser(user: any) {
     vi.mocked(User.findById).mockReturnValue({
         lean: vi.fn().mockResolvedValue(user),

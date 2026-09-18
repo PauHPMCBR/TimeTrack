@@ -17,6 +17,9 @@ export default tseslint.config(
         files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
         languageOptions: {
             globals: { ...globals.browser, ...globals.node },
+            parserOptions: {
+                tsconfigRootDir: import.meta.dirname,
+            },
         },
     },
     pluginJs.configs.recommended,

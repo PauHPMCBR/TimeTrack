@@ -15,6 +15,10 @@ import {
     SourceKindSchema,
     WorkSessionTypeSchema,
     YearlyVacationDaysSchema,
+    AuthorizedLeaveSchema,
+    WorkDayClassificationSchema,
+    WorkDayCheckModeSchema,
+    WorkSessionAnomalySchema,
 } from './database';
 import {
     ADMIN_REPORT_PERIODS,
@@ -268,24 +272,17 @@ export type AdminExportVacationsQuery = z.infer<
     typeof AdminExportVacationsQuerySchema
 >;
 
-export const WorkSessionAnomalySchema = z.enum([
-    'forgot_check_out',
-    'forgot_check_in',
-    'hours_short',
-    'hours_over',
-    'timetable_check_in_late',
-    'timetable_check_in_early',
-    'timetable_check_out_late',
-    'timetable_check_out_early',
-    'timetable_shift_count',
-]);
-export type WorkSessionAnomaly = z.infer<typeof WorkSessionAnomalySchema>;
+export { WorkSessionAnomalySchema };
+export type { WorkSessionAnomaly } from './database';
 
 export const WorkSessionRowStatusSchema = z.enum([
-    'vacation',
     'ok',
     'anomaly',
     'nonWorkingDay',
+    'electiveVacation',
+    'obligatoryVacation',
+    'authorizedLeave',
+    'planned',
 ]);
 export type WorkSessionRowStatus = z.infer<typeof WorkSessionRowStatusSchema>;
 
@@ -299,6 +296,7 @@ export const AdminWorkSessionRowSchema = z.object({
     source: SourceKindSchema.optional(),
     sessions: z.array(WorkSessionSchema.extend({ _id: z.string() })),
     status: WorkSessionRowStatusSchema,
+    dayClassification: WorkDayClassificationSchema,
     anomalies: z.array(WorkSessionAnomalySchema),
 });
 export type AdminWorkSessionRow = z.infer<typeof AdminWorkSessionRowSchema>;
@@ -616,3 +614,67 @@ export const FilesResponseSchema = z.object({
     quotaBytes: z.number().int().gte(0).nullable(),
 });
 export type FilesResponse = z.infer<typeof FilesResponseSchema>;
+
+export const AdminAuthorizedLeaveRequestSchema = z
+    .object({
+        userId: z.string().min(1, 'User ID is required'),
+        startDate: DateKeySchema,
+        endDate: DateKeySchema,
+        notes: z.string().max(2000).optional(),
+    })
+    .refine((data) => data.endDate >= data.startDate, {
+        message: 'endDate must be on or after startDate',
+    });
+export type AdminAuthorizedLeaveRequest = z.infer<
+    typeof AdminAuthorizedLeaveRequestSchema
+>;
+
+export const AdminAuthorizedLeaveUpdateRequestSchema = z
+    .object({
+        startDate: DateKeySchema.optional(),
+        endDate: DateKeySchema.optional(),
+        notes: z.string().max(2000).optional(),
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+        message: 'At least one field is required',
+    });
+export type AdminAuthorizedLeaveUpdateRequest = z.infer<
+    typeof AdminAuthorizedLeaveUpdateRequestSchema
+>;
+
+export const AuthorizedLeaveRowSchema = AuthorizedLeaveSchema.extend({
+    _id: z.string(),
+    startDate: DateKeySchema,
+    endDate: DateKeySchema,
+    createdByName: z.string().optional(),
+});
+export type AuthorizedLeaveRow = z.infer<typeof AuthorizedLeaveRowSchema>;
+
+export const AdminAuthorizedLeavesQuerySchema = z.object({
+    userId: z.string().min(1).optional(),
+    from: DateKeySchema.optional(),
+    to: DateKeySchema.optional(),
+});
+export type AdminAuthorizedLeavesQuery = z.infer<
+    typeof AdminAuthorizedLeavesQuerySchema
+>;
+
+export const AuthorizedLeavesResponseSchema = z.object({
+    leaves: z.array(AuthorizedLeaveRowSchema),
+});
+export type AuthorizedLeavesResponse = z.infer<
+    typeof AuthorizedLeavesResponseSchema
+>;
+
+export const AdminWorkDayRecordUpdateRequestSchema = z.object({
+    userId: z.string().min(1, 'User ID is required'),
+    date: DateKeySchema,
+    classification: WorkDayClassificationSchema,
+    checkMode: WorkDayCheckModeSchema.optional(),
+    timetableIntervals: z.array(AutoScheduleEntrySchema).optional(),
+    expectedHours: z.number().min(0).optional(),
+    reason: z.string().max(500).optional(),
+});
+export type AdminWorkDayRecordUpdateRequest = z.infer<
+    typeof AdminWorkDayRecordUpdateRequestSchema
+>;

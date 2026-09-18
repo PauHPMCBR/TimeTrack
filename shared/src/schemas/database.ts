@@ -170,6 +170,7 @@ export const AppSettingsSchema = z.object({
     // Acknowledgment that the company consulted worker representation before
     // establishing the time-registration system (art. 34.9 LT obligation).
     workerConsultationAcknowledged: z.boolean().default(false),
+    dayRecordBackfillDone: z.boolean().default(false),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });
@@ -248,10 +249,18 @@ export const VacationStatusSchema = z.enum([
     'rejected',
     'cancelled',
 ]);
-export const ElectiveVacationSchema = z.object({
-    userId: z.string(),
+
+// Inclusive day-key interval with optional free text; the shared base of
+// elective vacations and authorized leaves.
+export const DateKeyIntervalSchema = z.object({
     startDate: dateKeyField(),
     endDate: dateKeyField(),
+    notes: z.string().max(1000).optional(),
+});
+export type DateKeyInterval = z.infer<typeof DateKeyIntervalSchema>;
+
+export const ElectiveVacationSchema = DateKeyIntervalSchema.extend({
+    userId: z.string(),
     // Elective vacation days the request costs
     spentDays: z.number().int().gte(0).default(0),
     status: VacationStatusSchema.default('pending'),
@@ -260,11 +269,18 @@ export const ElectiveVacationSchema = z.object({
     reasonEncrypted: z.string().default('').optional(),
     approvedBy: z.string().optional(),
     approvedAt: z.date().optional(),
-    notes: z.string().optional(),
     notesEncrypted: z.string().default('').optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });
+
+export const AuthorizedLeaveSchema = DateKeyIntervalSchema.extend({
+    userId: z.string(),
+    createdBy: z.string().optional(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+});
+export type AuthorizedLeave = z.infer<typeof AuthorizedLeaveSchema>;
 
 export const YearlyVacationDaysSchema = z.object({
     userId: z.string().optional(), // if userId is not set, it's the template for all users
@@ -274,6 +290,57 @@ export const YearlyVacationDaysSchema = z.object({
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });
+
+export const WorkSessionAnomalySchema = z.enum([
+    'forgot_check_out',
+    'forgot_check_in',
+    'hours_short',
+    'hours_over',
+    'timetable_check_in_late',
+    'timetable_check_in_early',
+    'timetable_check_out_late',
+    'timetable_check_out_early',
+    'timetable_shift_count',
+    'work_on_non_working_day',
+]);
+export type WorkSessionAnomaly = z.infer<typeof WorkSessionAnomalySchema>;
+
+export const WorkDayClassificationSchema = z.enum([
+    'workday',
+    'nonWorkingWeekday',
+    'electiveVacation',
+    'obligatoryVacation',
+    'authorizedLeave',
+]);
+export type WorkDayClassification = z.infer<typeof WorkDayClassificationSchema>;
+
+export const WorkDayCheckModeSchema = z.enum(['timetable', 'hours']);
+export type WorkDayCheckMode = z.infer<typeof WorkDayCheckModeSchema>;
+
+export const WorkDayRecordSourceSchema = z.enum(['system', 'adminEdit']);
+export type WorkDayRecordSource = z.infer<typeof WorkDayRecordSourceSchema>;
+
+// Per-(user, day) snapshot: frozen expectations + cached anomalies. Readers
+// never recompute; recomputes happen only when the day's data is edited.
+export const WorkDayRecordSchema = z.object({
+    userId: z.string(),
+    date: dateKeyField(),
+    classification: WorkDayClassificationSchema,
+    checkMode: WorkDayCheckModeSchema,
+    timetableIntervals: z.array(AutoScheduleEntrySchema),
+    expectedHours: z.number().min(0),
+    toleranceMinutes: z.number().int().min(0),
+    timetableToleranceMinutes: z.number().int().min(0),
+    anomalies: z.array(WorkSessionAnomalySchema),
+    source: WorkDayRecordSourceSchema,
+    editedBy: z.string().optional(),
+    editReason: z.string().optional(),
+    editReasonEncrypted: z.string().default('').optional(),
+    computedAt: z.date(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+});
+export type WorkDayRecord = z.infer<typeof WorkDayRecordSchema>;
 
 // Monthly record confirmation (registro de jornada): a document per
 // (user, year, month) exists only once the admin has opened that month for
@@ -336,6 +403,8 @@ export const AuditActionSchema = z.enum([
     'file_updated',
     'file_deleted',
     'work_sessions_replaced',
+    'authorized_leave_changed',
+    'work_day_record_updated',
 ]);
 export type AuditAction = z.infer<typeof AuditActionSchema>;
 export const AuditEventSchema = z.object({

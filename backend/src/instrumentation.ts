@@ -6,5 +6,19 @@ export async function register() {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
         const { scheduleDailyReminder } = await import('@/lib/reminders');
         scheduleDailyReminder();
+
+        void (async () => {
+            try {
+                const { backfillAllWorkDayRecords } = await import(
+                    '@/lib/work-day-records'
+                );
+                await backfillAllWorkDayRecords();
+            } catch (error) {
+                console.error(
+                    '[instrumentation] WorkDayRecord backfill failed:',
+                    error
+                );
+            }
+        })();
     }
 }

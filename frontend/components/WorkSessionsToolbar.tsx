@@ -108,9 +108,15 @@ export default function WorkSessionsToolbar({
                     </span>
                     <span className="flex items-center gap-1.5">
                         <span
-                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('vacation')}`}
+                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('electiveVacation')}`}
                         ></span>
-                        {t('admin.events.status.vacation')}
+                        {t('admin.events.status.electiveVacation')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span
+                            className={`h-2.5 w-2.5 rounded-full ${statusDotClass('authorizedLeave')}`}
+                        ></span>
+                        {t('admin.events.status.authorizedLeave')}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <span

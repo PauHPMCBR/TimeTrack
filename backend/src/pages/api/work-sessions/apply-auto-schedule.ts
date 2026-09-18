@@ -12,6 +12,7 @@ import { withUserLock } from '@/lib/user-lock';
 import { dateKey } from '@/lib/date-key';
 import { dayRange, dayTimestamp } from '@/lib/date-range';
 import { isMonthApproved } from '@/lib/monthly-approvals';
+import { recomputeWorkDayRecords } from '@/lib/work-day-records';
 import { getCompanyLanguage } from '@/lib/mail';
 import type { EmailLanguage } from '@/lib/mail/types';
 import {
@@ -143,6 +144,8 @@ export default withApi(
                 anomalies: computeDayHours(sessions).anomalies,
             };
         });
+
+        await recomputeWorkDayRecords(req.user!.userId, [requestedDate]);
 
         res.status(200).json({
             success: true,

@@ -23,6 +23,14 @@ vi.mock('@/lib/mail', () => ({
     sendInconsistencyReminder: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@/lib/work-day-records', () => ({
+    ensureWorkDayRecordsForDay: vi.fn().mockResolvedValue(0),
+}));
+
+vi.mock('@/repositories/work-day-record-repository', () => ({
+    findOneWorkDayRecord: vi.fn(),
+}));
+
 vi.mock('@/models', () => ({
     User: {
         find: vi.fn(),
@@ -36,6 +44,7 @@ vi.mock('@/models', () => ({
 vi.stubEnv('FRONTEND_URL', 'http://localhost:3000');
 
 import { User, WorkSession } from '@/models';
+import { findOneWorkDayRecord } from '@/repositories/work-day-record-repository';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { getAppSettings } from '@/lib/settings';
 import type { DateKey } from 'shared/src/lib/day-key';
@@ -48,7 +57,6 @@ const openCheckInUser = {
     _id: 'u1',
     email: 'u1@example.com',
     name: 'User One',
-    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     lastInconsistencyReminder: undefined,
 };
 
@@ -56,20 +64,22 @@ const coherentUser = {
     _id: 'u2',
     email: 'u2@example.com',
     name: 'User Two',
-    weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
     lastInconsistencyReminder: undefined,
 };
 
-function sessionsOf(type: 'open' | 'coherent') {
-    if (type === 'open') {
-        return [
-            { type: 'check_in', timestamp: new Date(2026, 7, 27, 9, 0, 0) },
-        ];
-    }
-    return [
-        { type: 'check_in', timestamp: new Date(2026, 7, 27, 9, 0, 0) },
-        { type: 'check_out', timestamp: new Date(2026, 7, 27, 17, 0, 0) },
-    ];
+function mockRecords(
+    byUser: Record<string, string[]>
+) {
+    vi.mocked(findOneWorkDayRecord).mockImplementation(
+        (userId: string) =>
+            ({
+                lean: vi.fn().mockResolvedValue({
+                    userId,
+                    date: DATE,
+                    anomalies: byUser[userId] ?? [],
+                }),
+            }) as any
+    );
 }
 
 function mockUsers(users: any[]) {
@@ -78,26 +88,31 @@ function mockUsers(users: any[]) {
     } as any);
 }
 
+function mockSessions(sessions: any[]) {
+    vi.mocked(WorkSession.find).mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue(sessions),
+        }),
+    } as any);
+}
+
 describe('runDailyInconsistencyReminder', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockUsers([openCheckInUser, coherentUser]);
+        mockSessions([
+            { type: 'check_in', timestamp: new Date(2026, 7, 27, 9, 0, 0) },
+        ]);
     });
 
     afterEach(() => {
         vi.resetModules();
     });
 
-    it('emails only users whose day is inconsistent', async () => {
-        let call = 0;
-        vi.mocked(WorkSession.find).mockImplementation(() => {
-            const sessions = sessionsOf(call === 0 ? 'open' : 'coherent');
-            call += 1;
-            return {
-                sort: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(sessions),
-                }),
-            } as any;
+    it('emails only users whose record carries anomalies', async () => {
+        mockRecords({
+            u1: ['forgot_check_out', 'hours_over'],
+            u2: [],
         });
 
         const summary = await runDailyInconsistencyReminder(DATE as DateKey);
@@ -122,21 +137,24 @@ describe('runDailyInconsistencyReminder', () => {
         expect(summary).toMatchObject({ date: DATE, sentEmails: 1 });
     });
 
+    it('emails users who worked on a non-working day (cached code)', async () => {
+        mockRecords({ u1: ['work_on_non_working_day'] });
+
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
+
+        expect(sendInconsistencyReminder).toHaveBeenCalledTimes(1);
+        expect(sendInconsistencyReminder).toHaveBeenCalledWith(
+            expect.objectContaining({
+                to: 'u1@example.com',
+                anomalies: ['work_on_non_working_day'],
+            })
+        );
+        expect(summary.sentEmails).toBe(1);
+    });
+
     it('does not email a user already reminded that day', async () => {
-        mockUsers([
-            { ...openCheckInUser, lastInconsistencyReminder: DATE },
-            coherentUser,
-        ]);
-        let call = 0;
-        vi.mocked(WorkSession.find).mockImplementation(() => {
-            const sessions = sessionsOf(call === 0 ? 'open' : 'coherent');
-            call += 1;
-            return {
-                sort: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue(sessions),
-                }),
-            } as any;
-        });
+        mockUsers([{ ...openCheckInUser, lastInconsistencyReminder: DATE }]);
+        mockRecords({ u1: ['forgot_check_out'] });
 
         const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
@@ -144,13 +162,9 @@ describe('runDailyInconsistencyReminder', () => {
         expect(summary.sentEmails).toBe(0);
     });
 
-    it('does not email users with no sessions that day', async () => {
+    it('does not email users whose record is clean', async () => {
         mockUsers([openCheckInUser]);
-        vi.mocked(WorkSession.find).mockReturnValue({
-            sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue([]),
-            }),
-        } as any);
+        mockRecords({ u1: [] });
 
         const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
@@ -186,11 +200,7 @@ describe('runDailyInconsistencyReminder', () => {
             monthlyApprovalReminderDays: 5,
         }));
         mockUsers([{ ...openCheckInUser, notifyInconsistency: false }]);
-        vi.mocked(WorkSession.find).mockReturnValue({
-            sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(sessionsOf('open')),
-            }),
-        } as any);
+        mockRecords({ u1: ['forgot_check_out'] });
 
         const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
@@ -207,11 +217,7 @@ describe('runDailyInconsistencyReminder', () => {
             monthlyApprovalReminderDays: 5,
         }));
         mockUsers([{ ...openCheckInUser, notifyInconsistency: true }]);
-        vi.mocked(WorkSession.find).mockReturnValue({
-            sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(sessionsOf('open')),
-            }),
-        } as any);
+        mockRecords({ u1: ['forgot_check_out'] });
 
         const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
@@ -228,11 +234,7 @@ describe('runDailyInconsistencyReminder', () => {
             monthlyApprovalReminderDays: 5,
         }));
         mockUsers([{ ...openCheckInUser, notifyInconsistency: false }]);
-        vi.mocked(WorkSession.find).mockReturnValue({
-            sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(sessionsOf('open')),
-            }),
-        } as any);
+        mockRecords({ u1: ['forgot_check_out'] });
 
         const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 

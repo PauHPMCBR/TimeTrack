@@ -1,11 +1,14 @@
 import { withApi } from '@/lib/api-handler';
-import { YearlyVacationDays } from '@/models';
+import { User, YearlyVacationDays } from '@/models';
 import { findGlobalTemplate } from '@/repositories/vacation-repository';
 import {
     responseErrorIncorrectParameter,
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { YearlyVacationAdminRequestSchema } from 'shared/src/schemas/api';
+import { recomputeWorkDayRecords } from '@/lib/work-day-records';
+import { dateKey } from '@/lib/date-key';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export default withApi(
     {
@@ -28,6 +31,8 @@ export default withApi(
         }
 
         const existingVacation = await findGlobalTemplate(year);
+        const previousObligatory = (existingVacation?.obligatoryDays ??
+            []) as DateKey[];
 
         const update = {
             obligatoryDays,
@@ -42,6 +47,24 @@ export default withApi(
             );
         } else {
             await YearlyVacationDays.create(update);
+        }
+
+        const affected = new Set<string>(
+            [...obligatoryDays, ...previousObligatory].filter(
+                (day) => day <= dateKey(new Date())
+            )
+        );
+        if (affected.size > 0) {
+            const users = (await User.find(
+                { registered: true, deleted: { $ne: true } },
+                '_id'
+            ).lean()) as unknown as { _id: string }[];
+            for (const user of users) {
+                await recomputeWorkDayRecords(
+                    user._id.toString(),
+                    Array.from(affected) as DateKey[]
+                );
+            }
         }
 
         res.status(200).json({

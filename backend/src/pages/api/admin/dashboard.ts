@@ -4,31 +4,18 @@ import {
     CHECK_IN,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
-import { User, Group, WorkSession, ElectiveVacation, MonthlyApproval } from '@/models';
+import { User, Group, WorkSession, ElectiveVacation, MonthlyApproval, WorkDayRecord } from '@/models';
 import {
-    findActiveInRange,
     notReplaced,
 } from '@/repositories/work-session-repository';
 import { notDeleted } from '@/repositories/user-repository';
-import { getAppSettings } from '@/lib/settings';
-import { computeDayHours, isWithinTolerance } from 'shared/src/lib/work-hours';
-import {
-    computeTimetableAnomalies,
-    dayTimetable,
-    impliedHours,
-} from 'shared/src/lib/expected-timetable';
-import { defaultTimetable } from 'shared/src/schemas/database';
 import { dateKey } from '@/lib/date-key';
 import { dayRange } from '@/lib/date-range';
 import {
     dowFromDateKey,
     addDaysToKey,
 } from 'shared/src/lib/day-key';
-import {
-    resolveWeeklyExpectedHours,
-    resolveWeekTimetable,
-} from 'shared/src/lib/user-overrides';
-import { UserRow, GroupRow, WorkSessionRow } from '@/lib/rows';
+import { UserRow, GroupRow } from '@/lib/rows';
 import { responseErrorGet } from '@/lib/response-error-generator';
 
 export default withApi(
@@ -57,7 +44,7 @@ export default withApi(
         const todayKey = dateKey(new Date());
         const today = dayRange(todayKey).start;
 
-        const [pendingVacations, latestSessions, settings, pendingApprovals] =
+        const [pendingVacations, latestSessions, pendingApprovals] =
             await Promise.all([
                 ElectiveVacation.countDocuments({ status: VACATION_PENDING }),
                 WorkSession.aggregate([
@@ -70,7 +57,6 @@ export default withApi(
                     { $sort: { timestamp: -1 } },
                     { $group: { _id: '$userId', latest: { $first: '$$ROOT' } } },
                 ]),
-                getAppSettings(),
                 MonthlyApproval.countDocuments({ status: APPROVAL_PENDING }),
             ]);
 
@@ -80,80 +66,21 @@ export default withApi(
                 .map((s) => s._id)
         );
 
-        // Current week (Mon..Sun) sessions for the anomaly count.
+        // Current week (Mon..Sun) anomaly count from the cached records.
         const diffToMonday = (dowFromDateKey(todayKey) + 6) % 7;
         const mondayKey = addDaysToKey(todayKey, -diffToMonday);
         const weekDays = Array.from({ length: 7 }, (_, i) =>
             addDaysToKey(mondayKey, i)
         );
 
-        const weekSessions = (await findActiveInRange(
-            dayRange(mondayKey).start,
-            dayRange(weekDays[6]).end
-        )
-            .sort({ timestamp: 1 })
-            .lean()) as unknown as WorkSessionRow[];
-        const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
-        for (const s of weekSessions) {
-            const key = `${s.userId}:${dateKey(new Date(s.timestamp))}`;
-            const list = sessionsByUserDay.get(key) ?? [];
-            list.push(s);
-            sessionsByUserDay.set(key, list);
-        }
-
-        let anomalyCount = 0;
-        for (const user of activeUsers) {
-            const isTimetableMode = user.scheduleMode === 'timetable';
-            const weekTimetable = resolveWeekTimetable(
-                user,
-                defaultTimetable()
-            );
-            const weeklyHours = isTimetableMode
-                ? null
-                : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);
-            for (const dayKey of weekDays) {
-                const dow = dowFromDateKey(dayKey);
-                const intervals = dayTimetable(weekTimetable, dow);
-                const expectedHours = isTimetableMode
-                    ? impliedHours(intervals)
-                    : (weeklyHours?.[dow] ?? 0);
-                const isNonWorkingDay = isTimetableMode
-                    ? intervals.length === 0
-                    : expectedHours === 0;
-                if (isNonWorkingDay) continue;
-                const userSessions =
-                    sessionsByUserDay.get(`${user._id}:${dayKey}`) ?? [];
-                const { totalHours, overtimeHours, anomalies } =
-                    computeDayHours(userSessions);
-                const anomalySet = new Set(anomalies);
-                if (isTimetableMode) {
-                    for (const anomaly of computeTimetableAnomalies(
-                        userSessions,
-                        intervals,
-                        settings.timetableToleranceMinutes,
-                        settings.timezone
-                    )) {
-                        anomalySet.add(anomaly);
-                    }
-                } else {
-                    const regularHours = totalHours - overtimeHours;
-                    if (regularHours === 0) {
-                        anomalySet.add('hours_short');
-                    } else if (!isWithinTolerance(
-                        regularHours,
-                        expectedHours,
-                        settings.toleranceMinutes
-                    )) {
-                        anomalySet.add(
-                            regularHours < expectedHours
-                                ? 'hours_short'
-                                : 'hours_over'
-                        );
-                    }
-                }
-                if (anomalySet.size > 0) anomalyCount++;
-            }
-        }
+        const weekRecords = (await WorkDayRecord.find({
+            date: { $gte: mondayKey, $lte: weekDays[6] },
+            anomalies: { $exists: true, $not: { $size: 0 } },
+        }).lean()) as unknown as { userId: string }[];
+        const activeUserIds = new Set(activeUsers.map((u) => u._id.toString()));
+        const anomalyCount = weekRecords.filter((r) =>
+            activeUserIds.has(r.userId)
+        ).length;
 
         res.status(200).json({
             success: true,

@@ -14,6 +14,7 @@ import {
 } from '@/lib/response-error-generator';
 import { UpdateUserRequestSchema, UserIdParamSchema } from 'shared/src/schemas/api';
 import { isValidDateKey } from 'shared/src/lib/day-key';
+import { backfillUserWorkDayRecordsFromTrackingStart } from '@/lib/work-day-records';
 import crypto from 'crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -202,6 +203,13 @@ const putHandler = withApi(
             }
             user.updatedAt = new Date();
             await user.save();
+
+            if (
+                'trackingStartDate' in body &&
+                body.trackingStartDate !== undefined
+            ) {
+                await backfillUserWorkDayRecordsFromTrackingStart(userId);
+            }
 
             res.status(200).json({
                 success: true,

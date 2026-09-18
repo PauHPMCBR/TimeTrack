@@ -1,11 +1,8 @@
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
 import { findActiveInRange } from '@/repositories/work-session-repository';
-import { computeDayHours, DaySessionLike } from 'shared/src/lib/work-hours';
-import {
-    computeTimetableAnomalies,
-    dayTimetable,
-} from 'shared/src/lib/expected-timetable';
+import { findOneWorkDayRecord } from '@/repositories/work-day-record-repository';
+import { ensureWorkDayRecordsForDay } from '@/lib/work-day-records';
 import { getAppSettings } from '@/lib/settings';
 import { dateKey } from '@/lib/date-key';
 import type { DateKey } from 'shared/src/lib/day-key';
@@ -20,29 +17,13 @@ import {
 } from '@/lib/auto-schedule';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
-import {
-    dowFromDateKey,
-} from 'shared/src/lib/day-key';
-import {
-    DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
-    DEFAULT_TOLERANCE_MINUTES,
-} from 'shared/src/lib/defaults';
-import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
 import { getFrontendUrl } from '@/lib/frontend-url';
 import { formatTime } from '@/lib/timezone';
-import {
-    nonWorkingDaysOfWeek,
-    resolveDayExpectedHours,
-    resolveWeekTimetable,
-} from 'shared/src/lib/user-overrides';
 
 interface ReminderUser {
     _id: string;
     email: string;
     name: string;
-    weeklyExpectedHours?: number[];
-    scheduleMode?: 'hours' | 'timetable';
-    timetable?: WeekTimetable;
     autoTimetable?: AutoScheduleEntry[];
     lastInconsistencyReminder?: string;
     checkInRequired?: boolean;
@@ -65,11 +46,10 @@ export interface ReminderSummary {
 }
 
 /**
- * Scans one day's work sessions and emails every registered user whose day is
- * inconsistent (structural anomaly such as a forgotten check-in/out, or worked
- * hours outside expected ± benevolence). Users are emailed at most once per day
- * (lastInconsistencyReminder date key) so cron retries and restarts are safe.
- * Respects the company's `inconsistencyReminderMode` setting ('disabled' = no-op).
+ * Emails every registered user whose WorkDayRecord for the day carries cached
+ * anomalies, at most once per day (lastInconsistencyReminder date key) so
+ * cron retries and restarts are safe. Respects the company's
+ * `inconsistencyReminderMode` setting ('disabled' = no-op).
  */
 export async function runDailyInconsistencyReminder(
     dateKeyStr: DateKey = dateKey(new Date())
@@ -90,67 +70,36 @@ export async function runDailyInconsistencyReminder(
     const { start, end } = dayRange(dateKeyStr);
 
     const users = (await User.find(
-        { registered: true, deleted: { $ne: true } },
-        'name email emailEncrypted weeklyExpectedHours scheduleMode timetable autoTimetable lastInconsistencyReminder checkInRequired notifyInconsistency'
+        { registered: true, deleted: { $ne: true }, checkInRequired: { $ne: false } },
+        'name email emailEncrypted autoTimetable lastInconsistencyReminder checkInRequired notifyInconsistency'
     ).lean()) as unknown as ReminderUser[];
     const sentTo: string[] = [];
 
     for (const user of users) {
-        if (user.checkInRequired === false) continue;
         if (
             settings.inconsistencyReminderMode === 'user_choice' &&
             user.notifyInconsistency === false
         )
             continue;
 
+        const record = (await findOneWorkDayRecord(
+            user._id.toString(),
+            dateKeyStr
+        ).lean()) as unknown as {
+            anomalies?: import('shared/src/schemas/database').WorkSessionAnomaly[];
+        } | null;
+        const anomalies = record?.anomalies ?? [];
+        if (anomalies.length === 0) continue;
+        if (user.lastInconsistencyReminder === dateKeyStr) continue;
+
         const sessions = (await findActiveInRange(start, end, {
             userId: user._id.toString(),
         })
             .sort({ timestamp: 1 })
-            .lean()) as unknown as DaySessionLike[];
-
-        if (sessions.length === 0) continue;
-
-        const result = computeDayHours(sessions, {
-            countOpenUntil: end,
-        });
-        const anomalies = [...result.anomalies];
-        const isTimetableMode = user.scheduleMode === 'timetable';
-        const weekTimetable = resolveWeekTimetable(user, defaultTimetable());
-        const dow = dowFromDateKey(dateKeyStr);
-        const intervals = dayTimetable(weekTimetable, dow);
-        const expected = isTimetableMode
-            ? intervals.length
-            : resolveDayExpectedHours(
-                  user,
-                  dow,
-                  settings.defaultWeeklyExpectedHours
-              );
-        if (expected === 0) continue;
-        if (isTimetableMode) {
-            anomalies.push(
-                ...computeTimetableAnomalies(
-                    sessions,
-                    intervals,
-                    settings.timetableToleranceMinutes ??
-                        DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
-                    settings.timezone
-                )
-            );
-        } else {
-            const tolerance =
-                (settings.toleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES) /
-                60;
-            const regularHours = result.totalHours - result.overtimeHours;
-            if (regularHours < expected - tolerance) {
-                anomalies.push('hours_short');
-            } else if (regularHours > expected + tolerance) {
-                anomalies.push('hours_over');
-            }
-        }
-
-        if (anomalies.length === 0) continue;
-        if (user.lastInconsistencyReminder === dateKeyStr) continue;
+            .lean()) as unknown as {
+            timestamp: Date | string;
+            type: 'check_in' | 'check_out';
+        }[];
 
         const timetable = getAutoTimetable(user);
         const autoTimetable = formatTimetable(timetable);
@@ -216,22 +165,6 @@ export function scheduleDailyReminder(): void {
             await runMonthlyAdminReview(now);
             await runMonthlyApprovalReminders(now);
 
-            // Toggle off: skip without marking the day done, so re-enabling
-            // later (still after end of day) fires for today.
-    if (settings.inconsistencyReminderMode === 'disabled') {
-                return;
-            }
-
-            // Nothing to do on non-working days; mark them done so we don't
-            // retry all day. Calendar decisions use the company time-zone.
-            if (
-                nonWorkingDaysOfWeek(settings.defaultWeeklyExpectedHours).includes(
-                    dowFromDateKey(todayKey)
-                )
-            ) {
-                lastRunDay = todayKey;
-                return;
-            }
             if (lastRunDay === todayKey) return;
 
             const endOfDay = dayTimestamp(
@@ -241,6 +174,7 @@ export function scheduleDailyReminder(): void {
 
             if (now.getTime() >= endOfDay.getTime()) {
                 lastRunDay = todayKey;
+                await ensureWorkDayRecordsForDay(todayKey);
                 await runDailyInconsistencyReminder(todayKey);
             }
         } catch (error) {

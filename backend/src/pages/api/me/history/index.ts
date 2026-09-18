@@ -23,12 +23,15 @@ import {
     WorkSessionRow,
     ElectiveVacationRow,
     YearlyVacationRow,
+    AuthorizedLeaveRow,
+    WorkDayRecordRow,
 } from '@/lib/rows';
 import { responseErrorGet } from '@/lib/response-error-generator';
 import {
     buildWorkSessionRows,
     computeDaysForPeriod,
     daySourceMap,
+    workDayRecordMap,
 } from '@/lib/work-session-rows';
 import type { DateKey } from 'shared/src/lib/day-key';
 import {
@@ -39,6 +42,8 @@ import { dayRange } from '@/lib/date-range';
 import {
     findWorkDaySources,
 } from '@/repositories/work-day-source-repository';
+import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
+import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 
 // Personal work-session report: the same rows (status, expected hours,
 // anomalies) shown in the admin fitxatges view, but restricted to the
@@ -75,7 +80,7 @@ export default withApi(
             days.map((d) => Number(d.slice(0, 4)))
         );
 
-        const [user, sessions, approvedVacations, yearlyTemplates, settings, daySources] =
+        const [user, sessions, approvedVacations, yearlyTemplates, settings, daySources, authorizedLeaves, dayRecords] =
             (await Promise.all([
                 User.findById(userId, 'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable')
                     .lean(),
@@ -94,6 +99,10 @@ export default withApi(
                 findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
                 findWorkDaySources(days, [userId]),
+                findLeavesOverlapping(vacationStart, vacationEnd, {
+                    userId,
+                }).lean(),
+                findWorkDayRecords(days, userId),
             ])) as unknown as [
                 UserRow | null,
                 WorkSessionRow[],
@@ -101,6 +110,8 @@ export default withApi(
                 YearlyVacationRow[],
                 Awaited<ReturnType<typeof getAppSettings>>,
                 Awaited<ReturnType<typeof findWorkDaySources>>,
+                AuthorizedLeaveRow[],
+                WorkDayRecordRow[],
             ];
 
         if (!user) {
@@ -113,6 +124,8 @@ export default withApi(
             sessions,
             approvedVacations,
             yearlyTemplates,
+            authorizedLeaves,
+            records: workDayRecordMap(dayRecords),
             defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
             toleranceMinutes: settings.toleranceMinutes,
             timetableToleranceMinutes: settings.timetableToleranceMinutes,

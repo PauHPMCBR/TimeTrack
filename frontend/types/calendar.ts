@@ -1,8 +1,13 @@
 import {
     YearlyVacationResponse,
     MonthlyWorkRecordResponse,
+    AuthorizedLeaveRow,
 } from '@/schemas/api';
 import { ElectiveVacation, TeamVacation, WorkSession } from '.';
+
+export type TeamAuthorizedLeave = AuthorizedLeaveRow & {
+    userName?: string;
+};
 
 export type VacationEvent = {
     type:
@@ -10,10 +15,13 @@ export type VacationEvent = {
         | 'elective-approved'
         | 'elective-pending'
         | 'elective-rejected'
-        | 'team'
-        | 'team-pending';
+        | 'authorized-leave'
+        | 'team-elective'
+        | 'team-elective-pending'
+        | 'team-authorized-leave';
     label: string;
     elective?: ElectiveVacation | TeamVacation;
+    leave?: AuthorizedLeaveRow;
     userName?: string;
 };
 
@@ -41,6 +49,8 @@ export interface CalendarProps {
     vacations: YearlyVacationResponse | null;
     workSessions: MonthlyWorkRecordResponse | null;
     teamVacations?: TeamVacation[];
+    authorizedLeaves?: AuthorizedLeaveRow[];
+    teamAuthorizedLeaves?: TeamAuthorizedLeave[];
     usersMap?: Record<string, string>;
     nonWorkingDays?: number[];
     loading?: boolean;

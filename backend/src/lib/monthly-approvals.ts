@@ -4,32 +4,16 @@ import {
     MonthlyApprovalEvent,
     User,
     AppSettings,
+    WorkDayRecord,
 } from '@/models';
-import { findActiveInRange } from '@/repositories/work-session-repository';
-import {
-    findOverlapping,
-    findGlobalTemplates,
-} from '@/repositories/vacation-repository';
 import {
     ADMIN_ROLE,
     APPROVAL_APPROVED,
     APPROVAL_EVENT_OPENED,
     APPROVAL_PENDING,
     MS_PER_DAY,
-    VACATION_APPROVED,
 } from 'shared/src/lib/constants';
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
-import {
-    computeDayHours,
-    isWithinTolerance,
-} from 'shared/src/lib/work-hours';
-import {
-    computeTimetableAnomalies,
-    dayTimetable,
-    impliedHours,
-} from 'shared/src/lib/expected-timetable';
-import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
-import { dateKey } from '@/lib/date-key';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
 import {
     sendAdminMonthlyReview,
@@ -38,17 +22,11 @@ import {
 } from '@/lib/mail';
 import { getFrontendUrl } from '@/lib/frontend-url';
 import {
-    resolveWeeklyExpectedHours,
-    resolveWeekTimetable,
-} from 'shared/src/lib/user-overrides';
-import {
-    dowFromDateKey,
-    addDaysToKey,
     dateKeyFromParts,
     daysInMonth,
     DateKey,
 } from 'shared/src/lib/day-key';
-import { dayRange } from '@/lib/date-range';
+import { dateKey } from '@/lib/date-key';
 
 export interface MonthPeriod {
     year: number;
@@ -103,10 +81,9 @@ export async function isMonthApproved(
 }
 
 /**
- * Distinct anomalies across the working days of the user's month — the same
- * criteria as the admin report (structural anomalies, hours outside the
- * expected ± tolerance band; vacation and non-working days are skipped).
- * An empty result means the month is clean and can be opened for approval.
+ * Distinct anomalies across the month, read from the cached WorkDayRecord
+ * anomaly lists. Days before the user's tracking start have no record and are
+ * skipped.
  */
 export async function computeMonthAnomalies(
     userId: string,
@@ -114,117 +91,42 @@ export async function computeMonthAnomalies(
     month: number
 ): Promise<WorkSessionAnomaly[]> {
     await dbConnect();
-    const [user, settings] = (await Promise.all([
-        User.findById(userId, 'weeklyExpectedHours scheduleMode timetable trackingStartDate checkInRequired').lean(),
-        getAppSettings(),
+    const [user] = (await Promise.all([
+        User.findById(userId, 'trackingStartDate checkInRequired').lean(),
     ])) as unknown as [
         {
-            weeklyExpectedHours?: number[];
-            scheduleMode?: 'hours' | 'timetable';
-            timetable?: WeekTimetable;
             trackingStartDate?: DateKey | null;
             checkInRequired?: boolean;
         } | null,
-        Awaited<ReturnType<typeof getAppSettings>>,
     ];
     if (!user) return [];
     if (user.checkInRequired === false) return [];
-
-    const isTimetableMode = user.scheduleMode === 'timetable';
-    const weekTimetable = resolveWeekTimetable(user, defaultTimetable());
-    const weeklyHours = isTimetableMode
-        ? null
-        : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);
 
     const nDaysInMonth = daysInMonth(year, month);
     const monthKeys: DateKey[] = Array.from({ length: nDaysInMonth }, (_, i) =>
         dateKeyFromParts(year, month, i + 1)
     );
 
-    const monthStart = dayRange(monthKeys[0]).start;
-    const nextMonthKey = addDaysToKey(monthKeys[0], nDaysInMonth);
-    const monthEnd = dayRange(nextMonthKey).start;
-
     // Only evaluate days from the user's tracking start onward (if known).
     const trackingStartKey = user.trackingStartDate ?? null;
+    const keys = trackingStartKey
+        ? monthKeys.filter((key) => key >= trackingStartKey)
+        : monthKeys;
+    if (keys.length === 0) return [];
 
-    const [sessions, approvedVacations, yearlyTemplates] = (await Promise.all([
-        findActiveInRange(monthStart, monthEnd, { userId })
-            .sort({ timestamp: 1 })
-            .lean(),
-        findOverlapping(monthKeys[0], monthKeys[nDaysInMonth - 1], {
-            userId,
-            statuses: VACATION_APPROVED,
-            endExclusive: false,
-        }).lean(),
-        findGlobalTemplates(year).lean(),
-    ])) as unknown as [
-        { timestamp: Date | string; type: 'check_in' | 'check_out' }[],
-        { startDate: DateKey; endDate: DateKey }[],
-        { obligatoryDays?: DateKey[] }[],
-    ];
+    const records = (await WorkDayRecord.find({
+        userId,
+        date: { $gte: keys[0], $lte: keys[keys.length - 1] },
+    }).lean()) as unknown as { date: DateKey; anomalies?: WorkSessionAnomaly[] }[];
 
-    const vacationSet = new Set<DateKey>();
-    for (const v of approvedVacations) {
-        for (let key = v.startDate; key <= v.endDate; key = addDaysToKey(key, 1)) {
-            vacationSet.add(key);
-        }
-    }
-    const obligatorySet = new Set<DateKey>();
-    for (const template of yearlyTemplates) {
-        for (const day of template.obligatoryDays ?? []) {
-            obligatorySet.add(day);
-        }
-    }
-
+    const recordByDate = new Map(records.map((r) => [r.date, r]));
     const anomalySet = new Set<WorkSessionAnomaly>();
-    for (const key of monthKeys) {
-        if (trackingStartKey && key < trackingStartKey) continue;
-        const dow = dowFromDateKey(key);
-        const intervals = dayTimetable(weekTimetable, dow);
-        const expectedHours = isTimetableMode
-            ? impliedHours(intervals)
-            : (weeklyHours?.[dow] ?? 0);
-        const isNonWorkingDay = isTimetableMode
-            ? intervals.length === 0
-            : expectedHours === 0;
-        if (isNonWorkingDay) continue;
-        if (vacationSet.has(key) || obligatorySet.has(key)) continue;
-
-        const daySessions = sessions.filter(
-            (s) => dateKey(new Date(s.timestamp)) === key
-        );
-        const { totalHours, overtimeHours, anomalies } =
-            computeDayHours(daySessions);
-        const dayAnomalies = new Set(anomalies);
-        if (isTimetableMode) {
-            for (const anomaly of computeTimetableAnomalies(
-                daySessions,
-                intervals,
-                settings.timetableToleranceMinutes,
-                settings.timezone
-            )) {
-                dayAnomalies.add(anomaly);
-            }
-        } else if (dayAnomalies.size === 0) {
-            // Overtime-flagged hours are declared beyond the expected band:
-            // only the regular part is compared to it.
-            const regularHours = totalHours - overtimeHours;
-            if (regularHours === 0) {
-                dayAnomalies.add('hours_short');
-            } else if (
-                !isWithinTolerance(
-                    regularHours,
-                    expectedHours,
-                    settings.toleranceMinutes
-                )
-            ) {
-                dayAnomalies.add(
-                    regularHours < expectedHours ? 'hours_short' : 'hours_over'
-                );
-            }
+    for (const key of keys) {
+        const record = recordByDate.get(key);
+        if (!record) continue;
+        for (const anomaly of record.anomalies ?? []) {
+            anomalySet.add(anomaly);
         }
-        dayAnomalies.forEach((a) => anomalySet.add(a));
     }
     return Array.from(anomalySet);
 }

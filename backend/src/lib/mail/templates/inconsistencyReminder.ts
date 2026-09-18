@@ -64,6 +64,8 @@ const COPY: Record<EmailLanguage, Copy> = {
                 "Anomalia: has sortit més d'hora que l'horari previst.",
             timetable_shift_count:
                 "Anomalia: el nombre de torns no coincideix amb l'horari previst.",
+            work_on_non_working_day:
+                "Anomalia: has fitxat en un dia que no és laborable per a tu.",
         },
     },
     en: {
@@ -96,6 +98,8 @@ const COPY: Record<EmailLanguage, Copy> = {
                 'Anomaly: you checked out earlier than the expected timetable.',
             timetable_shift_count:
                 'Anomaly: the number of shifts does not match the expected timetable.',
+            work_on_non_working_day:
+                'Anomaly: you checked in on a non-working day.',
         },
     },
     es: {
@@ -128,6 +132,8 @@ const COPY: Record<EmailLanguage, Copy> = {
                 'Anomalía: has salido antes de lo previsto en el horario.',
             timetable_shift_count:
                 'Anomalía: el número de turnos no coincide con el horario previsto.',
+            work_on_non_working_day:
+                'Anomalía: has fichado en un día que no es laborable para ti.',
         },
     },
 };

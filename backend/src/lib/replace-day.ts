@@ -4,6 +4,7 @@ import { upsertWorkDaySource } from '@/repositories/work-day-source-repository';
 import { runInTransaction } from '@/lib/transaction';
 import { withUserLock } from '@/lib/user-lock';
 import { isMonthApproved } from '@/lib/monthly-approvals';
+import { recomputeWorkDayRecords } from '@/lib/work-day-records';
 import { isCoherentSequence } from 'shared/src/lib/work-hours';
 import { dayRange, dayTimestamp } from '@/lib/date-range';
 import { isValidDateKey, DateKey } from 'shared/src/lib/day-key';
@@ -173,6 +174,8 @@ export async function replaceDaySessions(
     );
 
     await upsertWorkDaySource(userId, date, source);
+
+    await recomputeWorkDayRecords(userId, [date]);
 
     return { ok: true, workSessions };
 }

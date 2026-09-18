@@ -18,6 +18,8 @@
         },
         "prev": "Prev",
         "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
         "saving": "Saving...",
         "unsavedChangesConfirm": "You have unsaved changes. Leave without saving?",
         "yes": "Yes",
@@ -182,6 +184,7 @@
     },
     "calendar": {
         "approvedBy": "Approved by",
+        "authorizedLeave": "Authorized leave",
         "checkIn": "Check-in",
         "checkOut": "Check-out",
         "completedSessions": "completed sessions",
@@ -414,6 +417,10 @@
                 "pending": "pending",
                 "none": "no pending"
             },
+            "authorizedLeaves": {
+                "desc": "Mark days or intervals as authorized leave, sick leave...",
+                "title": "Authorized leave"
+            },
             "yearlyvacations": {
                 "desc": "Asign obligatory vacations and amount of elective vacations",
                 "title": "Yearly vacations"
@@ -500,7 +507,17 @@
             "reasonPlaceholder": "E.g.: I forgot to check out",
             "remove": "Remove event",
             "removeLocked": "Cannot remove while keeping check-in/check-out order",
-            "title": "Edit events"
+            "title": "Edit events",
+            "classification": {
+                "workday": "Working day (check punches)",
+                "nonWorkingWeekday": "Non-working day",
+                "electiveVacation": "Elective vacation",
+                "obligatoryVacation": "Obligatory holiday",
+                "authorizedLeave": "Authorized leave / sick leave"
+            },
+            "classificationHint": "On save, this day's anomalies are recomputed with the new classification.",
+            "leaveNotes": "Leave description",
+            "leaveNotesPlaceholder": "E.g.: paid leave, sick leave..."
         },
         "settings": {
             "userDefaults": "Default settings for new users",
@@ -564,7 +581,10 @@
             "status": {
                 "anomaly": "Anomaly",
                 "ok": "Complete",
-                "vacation": "Vacation",
+                "electiveVacation": "Elective vacation",
+                "obligatoryVacation": "Obligatory holiday",
+                "authorizedLeave": "Authorized leave",
+                "planned": "Awaiting day close",
                 "nonWorkingDay": "Non-working day",
                 "confirmed": "Confirmed"
             },
@@ -660,6 +680,26 @@
             "unsavedWarning": "Unsaved changes for year {year}",
             "weekdays": "Weekdays",
             "weekends": "Weekends"
+        },
+        "authorizedLeaves": {
+            "title": "Authorized leave",
+            "subtitle": "Mark days or intervals as leave, sick leave... Affected days stop being checked against the timetable.",
+            "create": "New leave",
+            "createTitle": "New authorized leave",
+            "editTitle": "Edit leave",
+            "employee": "Employee",
+            "selectEmployee": "Select an employee",
+            "startDate": "From",
+            "endDate": "To",
+            "notes": "Description",
+            "notesPlaceholder": "E.g.: paid leave, sick leave...",
+            "hint": "Days covered by the leave are not checked against the timetable; punches there are flagged as an anomaly.",
+            "missingFields": "Employee and both dates are required.",
+            "invalidInterval": "The end date must be on or after the start date.",
+            "deleteConfirm": "Delete this leave? The affected days will be checked against the timetable again.",
+            "empty": "No authorized leave yet.",
+            "allUsers": "All employees",
+            "filter": "Filter by employee"
         },
         "audit": {
             "title": "Activity log",
@@ -869,7 +909,8 @@
             "timetable_check_in_early": "check-in off schedule (early)",
             "timetable_check_out_late": "check-out off schedule (late)",
             "timetable_check_out_early": "check-out off schedule (early)",
-            "timetable_shift_count": "wrong number of shifts"
+            "timetable_shift_count": "wrong number of shifts",
+            "work_on_non_working_day": "check-ins on a non-working day"
         }
     },
     "expectedTimetable": {

@@ -13,6 +13,8 @@ import {
     AuditEventSchema,
     UserFileSchema,
     WorkDaySourceSchema,
+    WorkDayRecordSchema,
+    AuthorizedLeaveSchema,
 } from 'shared/src/schemas/database';
 import { extendZod, zodSchema } from '@zodyac/zod-mongoose';
 import { z } from 'zod';
@@ -204,6 +206,33 @@ zUserFileSchema.index({ size: 1 });
 const zWorkDaySourceSchema = zodSchema(WorkDaySourceSchema);
 zWorkDaySourceSchema.index({ userId: 1, date: 1 }, { unique: true });
 
+const zWorkDayRecordSchema = zodSchema(WorkDayRecordSchema);
+zWorkDayRecordSchema.index({ userId: 1, date: 1 }, { unique: true });
+zWorkDayRecordSchema.index({ date: 1 });
+zWorkDayRecordSchema.index({ anomalies: 1 });
+zWorkDayRecordSchema.pre('save', function (next) {
+    encryptFreeText(this);
+    next();
+});
+const workDayRecordQuerySchema =
+    zWorkDayRecordSchema as unknown as mongoose.Schema;
+workDayRecordQuerySchema.post('find', hydrateFreeTextAll);
+workDayRecordQuerySchema.post('findOne', hydrateFreeTextAll);
+workDayRecordQuerySchema.post('findOneAndUpdate', hydrateFreeTextAll);
+
+const zAuthorizedLeaveSchema = zodSchema(AuthorizedLeaveSchema);
+zAuthorizedLeaveSchema.index({ userId: 1, startDate: 1 });
+zAuthorizedLeaveSchema.index({ startDate: 1 });
+zAuthorizedLeaveSchema.pre('save', function (next) {
+    encryptFreeText(this);
+    next();
+});
+const authorizedLeaveQuerySchema =
+    zAuthorizedLeaveSchema as unknown as mongoose.Schema;
+authorizedLeaveQuerySchema.post('find', hydrateFreeTextAll);
+authorizedLeaveQuerySchema.post('findOne', hydrateFreeTextAll);
+authorizedLeaveQuerySchema.post('findOneAndUpdate', hydrateFreeTextAll);
+
 export const User = mongoose.models.User || mongoose.model('User', zUserSchema);
 export const WorkSessionReason =
     mongoose.models.WorkSessionReason ||
@@ -236,3 +265,9 @@ export const UserFile =
 export const WorkDaySource =
     mongoose.models.WorkDaySource ||
     mongoose.model('WorkDaySource', zWorkDaySourceSchema);
+export const WorkDayRecord =
+    mongoose.models.WorkDayRecord ||
+    mongoose.model('WorkDayRecord', zWorkDayRecordSchema);
+export const AuthorizedLeave =
+    mongoose.models.AuthorizedLeave ||
+    mongoose.model('AuthorizedLeave', zAuthorizedLeaveSchema);

@@ -18,6 +18,8 @@
         },
         "prev": "Ant",
         "save": "Guardar",
+        "edit": "Editar",
+        "delete": "Eliminar",
         "saving": "Guardando...",
         "unsavedChangesConfirm": "Tienes cambios sin guardar. ¿Salir sin guardar?",
         "yes": "Sí",
@@ -182,6 +184,7 @@
     },
     "calendar": {
         "approvedBy": "Aprovado por",
+        "authorizedLeave": "Permiso autorizado",
         "checkIn": "Entrada",
         "checkOut": "Salida",
         "completedSessions": "sesiones completadas",
@@ -414,6 +417,10 @@
                 "pending": "pendientes",
                 "none": "ninguna pendiente"
             },
+            "authorizedLeaves": {
+                "desc": "Marcar días o intervalos como permiso autorizado, baja médica...",
+                "title": "Permisos autorizados"
+            },
             "yearlyvacations": {
                 "desc": "Asigna vacaciones obligatorias y cantidad de vacaciones de elección",
                 "title": "Vacaciones anuales"
@@ -500,7 +507,17 @@
             "reasonPlaceholder": "Ej.: Olvidé fichar la salida",
             "remove": "Eliminar fichaje",
             "removeLocked": "No se puede eliminar para mantener el orden entradas/salidas",
-            "title": "Editar fichajes"
+            "title": "Editar fichajes",
+            "classification": {
+                "workday": "Día laborable (comprueba fichajes)",
+                "nonWorkingWeekday": "Día no laborable",
+                "electiveVacation": "Vacaciones de libre elección",
+                "obligatoryVacation": "Festivo obligatorio",
+                "authorizedLeave": "Permiso autorizado / baja"
+            },
+            "classificationHint": "Al guardar, se recalcularán las anomalías de este día con la nueva clasificación.",
+            "leaveNotes": "Descripción del permiso",
+            "leaveNotesPlaceholder": "Ej.: permiso retribuido, baja médica..."
         },
         "settings": {
             "userDefaults": "Configuración por defecto para nuevos usuarios",
@@ -564,7 +581,10 @@
             "status": {
                 "anomaly": "Anomalía",
                 "ok": "Completo",
-                "vacation": "Vacaciones",
+                "electiveVacation": "Vacaciones de libre elección",
+                "obligatoryVacation": "Festivo obligatorio",
+                "authorizedLeave": "Permiso autorizado",
+                "planned": "Pendiente de cierre",
                 "nonWorkingDay": "Día no laborable",
                 "confirmed": "Confirmado"
             },
@@ -660,6 +680,26 @@
             "unsavedWarning": "Cambios sin guardar para el año {year}",
             "weekdays": "Días laborables",
             "weekends": "Fines de semana"
+        },
+        "authorizedLeaves": {
+            "title": "Permisos autorizados",
+            "subtitle": "Marca días o intervalos como permiso, baja médica... Los días afectados dejan de compararse con el horario.",
+            "create": "Nuevo permiso",
+            "createTitle": "Nuevo permiso autorizado",
+            "editTitle": "Edita el permiso",
+            "employee": "Empleado",
+            "selectEmployee": "Selecciona un empleado",
+            "startDate": "Desde",
+            "endDate": "Hasta",
+            "notes": "Descripción",
+            "notesPlaceholder": "Ej.: permiso retribuido, baja médica...",
+            "hint": "Los días cubiertos por el permiso no se comprueban con el horario; si la persona ficha, se marcará como anomalía.",
+            "missingFields": "Hay que indicar el empleado y las dos fechas.",
+            "invalidInterval": "La fecha final debe ser posterior o igual a la inicial.",
+            "deleteConfirm": "¿Seguro que quieres eliminar este permiso? Los días afectados volverán a compararse con el horario.",
+            "empty": "Aún no hay permisos autorizados.",
+            "allUsers": "Todos los empleados",
+            "filter": "Filtrar por empleado"
         },
         "audit": {
             "title": "Registro de actividad",
@@ -869,7 +909,8 @@
             "timetable_check_in_early": "entrada fuera de horario (antes)",
             "timetable_check_out_late": "salida fuera de horario (tarde)",
             "timetable_check_out_early": "salida fuera de horario (antes)",
-            "timetable_shift_count": "número de turnos incorrecto"
+            "timetable_shift_count": "número de turnos incorrecto",
+            "work_on_non_working_day": "fichajes en un día no laborable"
         }
     },
     "expectedTimetable": {

@@ -2,15 +2,8 @@ import {
     AdminWorkSessionRow,
     WorkSessionRowStatus,
 } from 'shared/src/schemas/api';
-import {
-    computeDayHours,
-    isWithinTolerance,
-} from 'shared/src/lib/work-hours';
-import {
-    computeTimetableAnomalies,
-    dayTimetable,
-    impliedHours,
-} from 'shared/src/lib/expected-timetable';
+import { computeDayHours } from 'shared/src/lib/work-hours';
+import { impliedHours } from 'shared/src/lib/expected-timetable';
 import {
     dowFromDateKey,
     addDaysToKey,
@@ -19,16 +12,18 @@ import {
     isValidDateKey,
     DateKey,
 } from 'shared/src/lib/day-key';
-import {
-    resolveDayExpectedHours,
-    resolveWeekTimetable,
-} from 'shared/src/lib/user-overrides';
-import { defaultTimetable } from 'shared/src/schemas/database';
+import { resolveDayExpectations } from 'shared/src/lib/day-record';
+import type {
+    WorkDayClassification,
+    WorkSessionAnomaly,
+} from 'shared/src/schemas/database';
 import {
     UserRow,
     WorkSessionRow,
     ElectiveVacationRow,
     YearlyVacationRow,
+    AuthorizedLeaveRow,
+    WorkDayRecordRow,
 } from '@/lib/rows';
 import { dateKeyInTz } from '@/lib/timezone';
 import type { WorkDaySourceRow } from '@/repositories/work-day-source-repository';
@@ -78,6 +73,8 @@ export interface WorkSessionRowsContext {
     approvedVacations: ElectiveVacationRow[];
     /** Company-wide obligatory days for the relevant years. */
     yearlyTemplates: YearlyVacationRow[];
+    authorizedLeaves: AuthorizedLeaveRow[];
+    records: Map<string, WorkDayRecordRow>;
     /** Company-wide per-weekday expected hours (0h = non-working). */
     defaultWeeklyExpectedHours: number[];
     toleranceMinutes: number;
@@ -94,11 +91,42 @@ export function daySourceMap(
     return new Map(rows.map((row) => [`${row.userId}:${row.date}`, row]));
 }
 
+export function workDayRecordMap(
+    rows: WorkDayRecordRow[]
+): Map<string, WorkDayRecordRow> {
+    return new Map(rows.map((row) => [`${row.userId}:${row.date}`, row]));
+}
+
+const STATUS_BY_CLASSIFICATION: Record<
+    WorkDayClassification,
+    WorkSessionRowStatus | null
+> = {
+    workday: null,
+    nonWorkingWeekday: 'nonWorkingDay',
+    electiveVacation: 'electiveVacation',
+    obligatoryVacation: 'obligatoryVacation',
+    authorizedLeave: 'authorizedLeave',
+};
+
+function plannedClassification(
+    userId: string,
+    key: DateKey,
+    base: WorkDayClassification,
+    sets: {
+        elective: Set<string>;
+        obligatory: Set<DateKey>;
+        leave: Set<string>;
+    }
+): WorkDayClassification {
+    if (sets.leave.has(`${userId}:${key}`)) return 'authorizedLeave';
+    if (sets.obligatory.has(key)) return 'obligatoryVacation';
+    if (sets.elective.has(`${userId}:${key}`)) return 'electiveVacation';
+    return base;
+}
+
 /**
  * Build the work-session report rows (status, expected hours, anomaly sets)
- * shared by the admin events view and the personal history view. All DB data
- * has already been fetched; this is pure computation so both endpoints produce
- * byte-identical rows.
+ * shared by the admin events view and the personal history view.
  */
 export function buildWorkSessionRows(
     ctx: WorkSessionRowsContext
@@ -109,6 +137,8 @@ export function buildWorkSessionRows(
         sessions,
         approvedVacations,
         yearlyTemplates,
+        authorizedLeaves,
+        records,
         defaultWeeklyExpectedHours,
         toleranceMinutes,
         timetableToleranceMinutes,
@@ -127,19 +157,24 @@ export function buildWorkSessionRows(
         sessionsByUserDay.set(key, list);
     }
 
-    const vacationByUserDay = new Set<string>();
+    const sets = {
+        elective: new Set<string>(),
+        obligatory: new Set<DateKey>(),
+        leave: new Set<string>(),
+    };
     for (const v of approvedVacations) {
-        // Vacations are stored as inclusive [startDate, endDate] key
-        // intervals; expand each one into per-day keys.
         for (let key = v.startDate; key <= v.endDate; key = addDaysToKey(key, 1)) {
-            vacationByUserDay.add(`${v.userId}:${key}`);
+            sets.elective.add(`${v.userId}:${key}`);
         }
     }
-
-    const obligatoryDaySet = new Set<string>();
     for (const template of yearlyTemplates) {
         for (const day of template.obligatoryDays ?? []) {
-            obligatoryDaySet.add(day);
+            sets.obligatory.add(day);
+        }
+    }
+    for (const leave of authorizedLeaves) {
+        for (let key = leave.startDate; key <= leave.endDate; key = addDaysToKey(key, 1)) {
+            sets.leave.add(`${leave.userId}:${key}`);
         }
     }
 
@@ -151,68 +186,55 @@ export function buildWorkSessionRows(
         for (const user of users) {
             const userSessions =
                 sessionsByUserDay.get(`${user._id}:${key}`) ?? [];
-            const onVacation =
-                vacationByUserDay.has(`${user._id}:${key}`) ||
-                obligatoryDaySet.has(key);
-            const isTimetableMode = user.scheduleMode === 'timetable';
-            const weekTimetable = resolveWeekTimetable(
-                user,
-                defaultTimetable()
-            );
-            const intervals = dayTimetable(weekTimetable, dow);
-            const expectedHours = isTimetableMode
-                ? impliedHours(intervals)
-                : resolveDayExpectedHours(user, dow, defaultWeeklyExpectedHours);
-            const isNonWorkingDay = isTimetableMode
-                ? intervals.length === 0
-                : expectedHours === 0;
+            const record = records.get(`${user._id}:${key}`);
+            const { totalHours, overtimeHours } = computeDayHours(userSessions);
 
-            const { totalHours, overtimeHours, anomalies } =
-                computeDayHours(userSessions);
-            const anomalySet = new Set(anomalies);
-            if (isTimetableMode && intervals.length > 0) {
-                for (const anomaly of computeTimetableAnomalies(
-                    userSessions,
-                    intervals,
-                    timetableToleranceMinutes,
-                    timezone
-                )) {
-                    anomalySet.add(anomaly);
-                }
-            }
+            let status: WorkSessionRowStatus;
+            let dayClassification: WorkDayClassification;
+            let expectedHours: number;
+            let intervals: { checkIn: string; checkOut: string }[];
+            let anomalies: WorkSessionAnomaly[];
 
-            let status: WorkSessionRowStatus = 'anomaly';
-            if (onVacation) {
-                status = 'vacation';
-                anomalySet.clear();
-            } else if (isNonWorkingDay) {
-                status = 'nonWorkingDay';
-                anomalySet.clear();
-            } else if (anomalySet.size > 0) {
-                status = 'anomaly';
-            } else if (isTimetableMode) {
-                status = 'ok';
-            } else if (totalHours === 0) {
-                anomalySet.add('hours_short');
-                status = 'anomaly';
+            if (record) {
+                dayClassification = record.classification;
+                intervals = record.timetableIntervals ?? [];
+                expectedHours =
+                    record.checkMode === 'timetable' && intervals.length > 0
+                        ? impliedHours(intervals)
+                        : record.expectedHours;
+                anomalies = record.anomalies;
+                status = anomalies.length
+                    ? 'anomaly'
+                    : (STATUS_BY_CLASSIFICATION[dayClassification] ?? 'ok');
             } else {
-                // Overtime-flagged hours are declared beyond the expected
-                // band: only the regular part is compared to it.
-                const regularHours = totalHours - overtimeHours;
-                if (
-                    isWithinTolerance(
-                        regularHours,
-                        expectedHours,
-                        toleranceMinutes
-                    )
-                ) {
-                    status = 'ok';
-                } else {
-                    anomalySet.add(
-                        regularHours < expectedHours ? 'hours_short' : 'hours_over'
-                    );
-                    status = 'anomaly';
-                }
+                const base = resolveDayExpectations(
+                    user,
+                    {
+                        defaultWeeklyExpectedHours,
+                        toleranceMinutes,
+                        timetableToleranceMinutes,
+                    },
+                    dow
+                );
+                intervals = base.timetableIntervals;
+                dayClassification = plannedClassification(
+                    user._id.toString(),
+                    key,
+                    base.classification,
+                    sets
+                );
+                expectedHours =
+                    dayClassification === 'workday'
+                        ? base.checkMode === 'timetable' &&
+                          intervals.length > 0
+                            ? impliedHours(intervals)
+                            : base.expectedHours
+                        : 0;
+                status =
+                    dayClassification === 'workday'
+                        ? 'planned'
+                        : STATUS_BY_CLASSIFICATION[dayClassification] ?? 'planned';
+                anomalies = [];
             }
 
             rows.push({
@@ -222,9 +244,7 @@ export function buildWorkSessionRows(
                 totalHours,
                 overtimeHours,
                 expectedHours,
-                ...(isTimetableMode && intervals.length > 0
-                    ? { timetable: intervals }
-                    : {}),
+                ...(intervals.length > 0 ? { timetable: intervals } : {}),
                 ...(daySources?.has(`${user._id.toString()}:${key}`)
                     ? {
                           source: daySources.get(
@@ -237,7 +257,8 @@ export function buildWorkSessionRows(
                     _id: s._id.toString(),
                 })),
                 status,
-                anomalies: Array.from(anomalySet),
+                dayClassification,
+                anomalies,
             });
         }
     }

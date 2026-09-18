@@ -18,6 +18,8 @@
         },
         "prev": "Ant",
         "save": "Desar",
+        "edit": "Edita",
+        "delete": "Elimina",
         "saving": "Guardant...",
         "unsavedChangesConfirm": "Tens canvis sense desar. Vols sortir sense desar?",
         "yes": "Sí",
@@ -182,6 +184,7 @@
     },
     "calendar": {
         "approvedBy": "Aprovat per",
+        "authorizedLeave": "Permís autoritzat",
         "checkIn": "Entrada",
         "checkOut": "Sortida",
         "completedSessions": "sessions completes",
@@ -414,6 +417,10 @@
                 "pending": "pendents",
                 "none": "cap de pendent"
             },
+            "authorizedLeaves": {
+                "desc": "Marcar dies o intervals com a permís autoritzat, baixa mèdica...",
+                "title": "Permisos autoritzats"
+            },
             "yearlyvacations": {
                 "desc": "Assigna vacances obligatòries i quantitat de vacances d'elecció",
                 "title": "Vacances anuals"
@@ -500,7 +507,17 @@
             "reasonPlaceholder": "Ex.: He oblidat fitxar la sortida",
             "remove": "Eliminar fitxatge",
             "removeLocked": "No es pot eliminar per mantenir l'ordre entrades/sortides",
-            "title": "Editar fitxatges"
+            "title": "Editar fitxatges",
+            "classification": {
+                "workday": "Dia laborable (comprova fitxatges)",
+                "nonWorkingWeekday": "Dia no laborable",
+                "electiveVacation": "Vacances de lliure elecció",
+                "obligatoryVacation": "Festiu obligatori",
+                "authorizedLeave": "Permís autoritzat / baixa"
+            },
+            "classificationHint": "En desar, es recalcularan les anomalies d'aquest dia amb la nova classificació.",
+            "leaveNotes": "Descripció del permís",
+            "leaveNotesPlaceholder": "Ex.: permís retribuït, baixa mèdica..."
         },
         "settings": {
             "userDefaults": "Configuració per defecte per a usuaris nous",
@@ -564,7 +581,10 @@
             "status": {
                 "anomaly": "Anomalia",
                 "ok": "Complert",
-                "vacation": "Vacances",
+                "electiveVacation": "Vacances de lliure elecció",
+                "obligatoryVacation": "Festiu obligatori",
+                "authorizedLeave": "Permís autoritzat",
+                "planned": "Pendent de tancament",
                 "nonWorkingDay": "Dia no laborable",
                 "confirmed": "Confirmat"
             },
@@ -660,6 +680,26 @@
             "unsavedWarning": "Canvis sense desar per a l'any {year}",
             "weekdays": "Dies laborables",
             "weekends": "Cap de setmana"
+        },
+        "authorizedLeaves": {
+            "title": "Permisos autoritzats",
+            "subtitle": "Marca dies o intervals com a permís, baixa mèdica... Els dies afectats deixen de comparar-se amb l'horari.",
+            "create": "Nou permís",
+            "createTitle": "Nou permís autoritzat",
+            "editTitle": "Edita el permís",
+            "employee": "Empleat",
+            "selectEmployee": "Selecciona un empleat",
+            "startDate": "Des de",
+            "endDate": "Fins a",
+            "notes": "Descripció",
+            "notesPlaceholder": "Ex.: permís retribuït, baixa mèdica...",
+            "hint": "Els dies coberts pel permís no es comproven amb l'horari; si la persona hi fitxa, es marcarà com a anomalia.",
+            "missingFields": "Cal indicar l'empleat i les dues dates.",
+            "invalidInterval": "La data final ha de ser posterior o igual a la inicial.",
+            "deleteConfirm": "Segur que vols eliminar aquest permís? Els dies afectats tornaran a comparar-se amb l'horari.",
+            "empty": "Encara no hi ha permisos autoritzats.",
+            "allUsers": "Tots els empleats",
+            "filter": "Filtrar per empleat"
         },
         "audit": {
             "title": "Registre d'activitat",
@@ -869,7 +909,8 @@
             "timetable_check_in_early": "entrada fora d'hora (d'hora)",
             "timetable_check_out_late": "sortida fora d'hora (tard)",
             "timetable_check_out_early": "sortida fora d'hora (d'hora)",
-            "timetable_shift_count": "nombre de torns incorrecte"
+            "timetable_shift_count": "nombre de torns incorrecte",
+            "work_on_non_working_day": "fitxatges en un dia no laborable"
         }
     },
     "expectedTimetable": {
