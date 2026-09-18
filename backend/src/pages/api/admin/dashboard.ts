@@ -19,7 +19,11 @@ import {
 } from 'shared/src/lib/expected-timetable';
 import { defaultTimetable } from 'shared/src/schemas/database';
 import { dateKey } from '@/lib/date-key';
-import { startOfDay } from '@/lib/date-range';
+import { dayRange } from '@/lib/date-range';
+import {
+    dowFromDateKey,
+    addDaysToKey,
+} from 'shared/src/lib/day-key';
 import {
     resolveWeeklyExpectedHours,
     resolveWeekTimetable,
@@ -50,7 +54,8 @@ export default withApi(
             .sort({ name: 1 })
             .lean()) as unknown as GroupRow[];
 
-        const today = startOfDay(new Date());
+        const todayKey = dateKey(new Date());
+        const today = dayRange(todayKey).start;
 
         const [pendingVacations, latestSessions, settings, pendingApprovals] =
             await Promise.all([
@@ -76,16 +81,16 @@ export default withApi(
         );
 
         // Current week (Mon..Sun) sessions for the anomaly count.
-        const diffToMonday = (today.getDay() + 6) % 7;
-        const monday = new Date(today);
-        monday.setDate(monday.getDate() - diffToMonday);
-        const weekEnd = new Date(monday);
-        weekEnd.setDate(monday.getDate() + 6);
-        weekEnd.setHours(23, 59, 59, 999);
+        const diffToMonday = (dowFromDateKey(todayKey) + 6) % 7;
+        const mondayKey = addDaysToKey(todayKey, -diffToMonday);
+        const weekDays = Array.from({ length: 7 }, (_, i) =>
+            addDaysToKey(mondayKey, i)
+        );
 
-        const weekSessions = (await findActiveInRange(monday, weekEnd, {
-            endInclusive: true,
-        })
+        const weekSessions = (await findActiveInRange(
+            dayRange(mondayKey).start,
+            dayRange(weekDays[6]).end
+        )
             .sort({ timestamp: 1 })
             .lean()) as unknown as WorkSessionRow[];
         const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
@@ -106,10 +111,8 @@ export default withApi(
             const weeklyHours = isTimetableMode
                 ? null
                 : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(monday);
-                day.setDate(monday.getDate() + i);
-                const dow = day.getDay();
+            for (const dayKey of weekDays) {
+                const dow = dowFromDateKey(dayKey);
                 const intervals = dayTimetable(weekTimetable, dow);
                 const expectedHours = isTimetableMode
                     ? impliedHours(intervals)
@@ -119,7 +122,7 @@ export default withApi(
                     : expectedHours === 0;
                 if (isNonWorkingDay) continue;
                 const userSessions =
-                    sessionsByUserDay.get(`${user._id}:${dateKey(day)}`) ?? [];
+                    sessionsByUserDay.get(`${user._id}:${dayKey}`) ?? [];
                 const { totalHours, overtimeHours, anomalies } =
                     computeDayHours(userSessions);
                 const anomalySet = new Set(anomalies);
@@ -127,7 +130,8 @@ export default withApi(
                     for (const anomaly of computeTimetableAnomalies(
                         userSessions,
                         intervals,
-                        settings.timetableToleranceMinutes
+                        settings.timetableToleranceMinutes,
+                        settings.timezone
                     )) {
                         anomalySet.add(anomaly);
                     }

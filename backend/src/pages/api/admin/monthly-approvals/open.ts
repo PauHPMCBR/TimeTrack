@@ -6,6 +6,7 @@ import {
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { APPROVAL_PENDING } from 'shared/src/lib/constants';
+import { dateKeyFromParts } from 'shared/src/lib/day-key';
 import {
     MonthlyApprovalOpenRequestSchema,
     MonthlyApprovalRow,
@@ -67,7 +68,7 @@ export default withApi(
                   ).lean()) as unknown as {
                 _id: string;
                 name: string;
-                trackingStartDate?: Date | null;
+                trackingStartDate?: string | null;
                 checkInRequired?: boolean;
             }[];
 
@@ -79,11 +80,12 @@ export default withApi(
 
         // Users whose tracking started after this month are excluded (they
         // were not doing tracking at all during the target month).
-        const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const monthLastKey = dateKeyFromParts(year, month, daysInMonth);
         const notTrackingIds = new Set<string>();
         const notTracking: SkippedEntry[] = [];
         for (const u of targetUsers) {
-            if (u.checkInRequired === false || (u.trackingStartDate && new Date(u.trackingStartDate) > monthEnd)) {
+            if (u.checkInRequired === false || (u.trackingStartDate && u.trackingStartDate > monthLastKey)) {
                 notTrackingIds.add(u._id.toString());
                 notTracking.push({ userId: u._id.toString(), userName: u.name });
             }

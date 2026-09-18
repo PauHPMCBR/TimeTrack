@@ -5,6 +5,7 @@ import {
     CreateUserRequestSchema,
     WorkSessionRequestSchema,
     ElectiveVacationRequestSchema,
+    WorkSessionRangeQuerySchema,
     YearlyVacationAdminRequestSchema,
 } from '../../src/schemas/api';
 
@@ -130,6 +131,32 @@ describe('API Schemas', () => {
         });
     });
 
+    describe('WorkSessionRangeQuerySchema', () => {
+        it('accepts real calendar dates and rejects impossible ones', () => {
+            expect(
+                WorkSessionRangeQuerySchema.safeParse({
+                    userId: 'u1',
+                    from: '2024-02-29',
+                    to: '2024-06-30',
+                }).success
+            ).toBe(true);
+            expect(
+                WorkSessionRangeQuerySchema.safeParse({
+                    userId: 'u1',
+                    from: '2023-02-29',
+                    to: '2024-06-30',
+                }).success
+            ).toBe(false);
+            expect(
+                WorkSessionRangeQuerySchema.safeParse({
+                    userId: 'u1',
+                    from: '2024-01-01',
+                    to: 'nope',
+                }).success
+            ).toBe(false);
+        });
+    });
+
     describe('ElectiveVacationRequestSchema', () => {
         it('should validate correct vacation request with string dates', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
@@ -172,18 +199,15 @@ describe('API Schemas', () => {
             expect(result.success).toBe(false);
         });
 
-        it('should parse date keys as local midnight', () => {
+        it('should keep the day keys intact', () => {
             const result = ElectiveVacationRequestSchema.safeParse({
                 startDate: '2024-06-15',
                 endDate: '2024-06-16',
             });
             expect(result.success).toBe(true);
             if (result.success) {
-                const d = result.data.startDate;
-                expect(d.getFullYear()).toBe(2024);
-                expect(d.getMonth()).toBe(5);
-                expect(d.getDate()).toBe(15);
-                expect(d.getHours()).toBe(0);
+                expect(result.data.startDate).toBe('2024-06-15');
+                expect(result.data.endDate).toBe('2024-06-16');
             }
         });
 

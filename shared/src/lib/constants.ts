@@ -83,6 +83,7 @@ export const REFRESH_TOKEN_HEADER = 'X-Auth-Token';
 export const TOKEN_BYTE_LENGTH = 32;
 
 // Validation bounds / patterns shared by schemas and callers.
-export const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+export { DATE_KEY_REGEX } from './day-key';
+export const HOUR_MINUTE_KEY_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const MIN_VALID_YEAR = 2000;
 export const MAX_VALID_YEAR = 2100;

@@ -299,8 +299,8 @@ describe('GET /api/admin/work-sessions', () => {
                 {
                     _id: 'v1',
                     userId: 'u2',
-                    startDate: new Date('2025-06-09T00:00:00'),
-                    endDate: new Date('2025-06-09T00:00:00'),
+                    startDate: '2025-06-09',
+                    endDate: '2025-06-09',
                     spentDays: 1,
                     status: 'approved',
                 },
@@ -518,8 +518,8 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     date: '2025-06-09',
                     sessions: [
-                        { type: 'check_in', timestamp: at(9).toISOString() },
-                        { type: 'check_in', timestamp: at(10).toISOString() },
+                        { type: 'check_in', time: '09:00' },
+                        { type: 'check_in', time: '10:00' },
                     ],
                 },
             });
@@ -538,7 +538,7 @@ describe('GET /api/admin/work-sessions', () => {
             });
         });
 
-        it('should reject a timestamp outside the day', async () => {
+        it('should reject a malformed time', async () => {
             vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
 
             const req = mockReq({
@@ -549,9 +549,11 @@ describe('GET /api/admin/work-sessions', () => {
                     sessions: [
                         {
                             type: 'check_in',
-                            timestamp: new Date(
-                                '2025-06-10T09:00:00'
-                            ).toISOString(),
+                            time: '25:99',
+                        },
+                        {
+                            type: 'check_out',
+                            time: '17:00',
                         },
                     ],
                 },
@@ -565,7 +567,7 @@ describe('GET /api/admin/work-sessions', () => {
                 success: false,
                 error: 'IncorrectParameter',
                 details: {
-                    incorrectParameter: 'timestamp',
+                    incorrectParameter: 'time',
                     reasons: ['OutOfDay'],
                 },
             });
@@ -579,8 +581,8 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     date: '2025-06-09',
                     sessions: [
-                        { type: 'check_in', timestamp: at(9).toISOString() },
-                        { type: 'check_out', timestamp: at(9).toISOString() },
+                        { type: 'check_in', time: '09:00' },
+                        { type: 'check_out', time: '09:00' },
                     ],
                 },
             });
@@ -593,7 +595,7 @@ describe('GET /api/admin/work-sessions', () => {
                 success: false,
                 error: 'IncorrectParameter',
                 details: {
-                    incorrectParameter: 'timestamp',
+                    incorrectParameter: 'time',
                     reasons: ['NotInOrder'],
                 },
             });
@@ -620,8 +622,8 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     date: '2025-06-09',
                     sessions: [
-                        { type: 'check_in', timestamp: at(9).toISOString() },
-                        { type: 'check_out', timestamp: at(17).toISOString() },
+                        { type: 'check_in', time: '09:00' },
+                        { type: 'check_out', time: '17:00' },
                     ],
                 },
             });
@@ -699,8 +701,8 @@ describe('GET /api/admin/work-sessions', () => {
                     date: '2025-06-09',
                     reason: 'Worker requested correction',
                     sessions: [
-                        { type: 'check_in', timestamp: at(8).toISOString() },
-                        { type: 'check_out', timestamp: at(16).toISOString() },
+                        { type: 'check_in', time: '08:00' },
+                        { type: 'check_out', time: '16:00' },
                     ],
                 },
             });
@@ -757,8 +759,8 @@ describe('GET /api/admin/work-sessions', () => {
                     userId: 'u1',
                     date: '2025-06-09',
                     sessions: [
-                        { type: 'check_in', timestamp: at(9).toISOString() },
-                        { type: 'check_out', timestamp: at(17).toISOString() },
+                        { type: 'check_in', time: '09:00' },
+                        { type: 'check_out', time: '17:00' },
                     ],
                 },
             });
@@ -796,8 +798,8 @@ describe('GET /api/admin/work-sessions', () => {
                     date: '2025-06-09',
                     reason: 'Shifted schedule',
                     sessions: [
-                        { _id: 's1', type: 'check_in', timestamp: at(8).toISOString() },
-                        { type: 'check_out', timestamp: at(16).toISOString() },
+                        { _id: 's1', type: 'check_in', time: '08:00' },
+                        { type: 'check_out', time: '16:00' },
                     ],
                 },
             });

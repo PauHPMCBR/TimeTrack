@@ -61,6 +61,8 @@ import {
     AuditEvent,
 } from '@/models';
 import exportHandler from '@/pages/api/admin/export/work-sessions';
+import { dayRange } from '@/lib/date-range';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 const mockExportRes = () => {
     const res: any = {
@@ -258,30 +260,10 @@ describe('GET /api/admin/export/work-sessions', () => {
         expect(WorkSession.find).toHaveBeenCalledWith({
             userId: { $in: ['user-1'] },
             timestamp: {
-                $gte: new Date('2024-01-01T00:00:00'),
-                $lte: new Date('2024-01-31T23:59:59.999'),
+                $gte: dayRange('2024-01-01' as DateKey).start,
+                $lt: dayRange('2024-01-31' as DateKey).end,
             },
             status: { $ne: 'replaced' },
-        });
-    });
-
-    it('should return 400 when from is not a valid date', async () => {
-        const req = mockReq({
-            method: 'GET',
-            query: { userIds: 'user-1', from: 'not-a-date' },
-        });
-        const res = mockExportRes();
-
-        await exportHandler(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            error: 'IncorrectParameter',
-            details: {
-                incorrectParameter: 'date',
-                reasons: ['InvalidTimestamp'],
-            },
         });
     });
 

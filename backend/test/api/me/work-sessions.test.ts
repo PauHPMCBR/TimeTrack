@@ -49,18 +49,13 @@ vi.mock('@/models', () => ({
 import { WorkSession, WorkDaySource, MonthlyApproval } from '@/models';
 import selfEditHandler from '@/pages/api/me/work-sessions';
 
-const at = (h: number, m = 0, day = '2025-06-09') =>
-    new Date(
-        `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
-    );
-
 // The self-edit endpoint only accepts past days; use a fixed past date.
 const validBody = {
     date: '2025-06-09',
     reason: 'Forgot to check out',
     sessions: [
-        { type: 'check_in', timestamp: at(9).toISOString() },
-        { type: 'check_out', timestamp: at(17).toISOString() },
+        { type: 'check_in', time: '09:00' },
+        { type: 'check_out', time: '17:00' },
     ],
 };
 
@@ -119,10 +114,10 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 sessions: [
                     {
                         type: 'check_in',
-                        timestamp: at(9).toISOString(),
+                        time: '09:00',
                         overtime: true,
                     },
-                    { type: 'check_out', timestamp: at(17).toISOString() },
+                    { type: 'check_out', time: '17:00' },
                 ],
             },
         });
@@ -158,11 +153,11 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 sessions: [
                     {
                         type: 'check_in',
-                        timestamp: `${dayKey}T09:00:00.000Z`,
+                        time: '09:00',
                     },
                     {
                         type: 'check_out',
-                        timestamp: `${dayKey}T17:00:00.000Z`,
+                        time: '17:00',
                     },
                 ],
             },
@@ -216,7 +211,7 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 sessions: [
                     {
                         type: 'check_out',
-                        timestamp: at(9).toISOString(),
+                        time: '09:00',
                     },
                 ],
             },

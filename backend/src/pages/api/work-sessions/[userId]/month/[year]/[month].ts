@@ -1,6 +1,12 @@
 import { withApi } from '@/lib/api-handler';
 import { findActiveInRange } from '@/repositories/work-session-repository';
-import { monthRange } from 'shared/src/lib/date-ranges';
+import { dayRange } from '@/lib/date-range';
+import { dateKey } from '@/lib/date-key';
+import {
+    addDaysToKey,
+    dateKeyFromParts,
+    daysInMonth,
+} from 'shared/src/lib/day-key';
 import {
     MonthlyWorkRecordResponse,
     YearMonthParamSchema,
@@ -20,7 +26,10 @@ export default withApi(
         const year = parseInt(String(req.query.year));
         const month = parseInt(String(req.query.month));
 
-        const { start: startOfMonth, end: nextMonth } = monthRange(year, month);
+        const firstKey = dateKeyFromParts(year, month, 1);
+        const nextMonthKey = addDaysToKey(firstKey, daysInMonth(year, month));
+        const startOfMonth = dayRange(firstKey).start;
+        const nextMonth = dayRange(nextMonthKey).start;
 
         const sessions = (await findActiveInRange(startOfMonth, nextMonth, {
             userId,
@@ -44,7 +53,7 @@ export default withApi(
         const daysWithSessionsSet = new Set<number>();
 
         sessions.forEach((session) => {
-            const dayOfMonth = new Date(session.timestamp).getDate();
+            const dayOfMonth = Number(dateKey(session.timestamp).slice(8, 10));
             sessionsByDay[dayOfMonth].push(session);
             daysWithSessionsSet.add(dayOfMonth);
         });
@@ -58,9 +67,7 @@ export default withApi(
 
             // An unmatched trailing check-in counts until end of day so forgotten
             // check-outs don't undercount the day.
-            const endOfDay = new Date(
-                new Date(daySessions[0].timestamp).setHours(23, 59, 59, 999)
-            );
+            const endOfDay = dayRange(dateKeyFromParts(year, month, day)).end;
             const dayHours = computeDayHours(daySessions, {
                 countOpenUntil: endOfDay,
                 round: false,

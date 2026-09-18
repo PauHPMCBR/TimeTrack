@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { CompanyTimezoneInit } from '@/components/CompanyTimezoneInit';
 
 // Client-side auth guard: the JWT lives in localStorage, so a Next.js
 // middleware can't see it — the redirect must happen here. Renders nothing
@@ -47,5 +48,10 @@ export default function RequireAuth({
     }, [router, pathname, searchParams, requireAdmin]);
 
     if (!allowed) return null;
-    return <>{children}</>;
+    return (
+        <>
+            <CompanyTimezoneInit />
+            {children}
+        </>
+    );
 }

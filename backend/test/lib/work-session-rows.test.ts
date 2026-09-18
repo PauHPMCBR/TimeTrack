@@ -8,10 +8,13 @@ vi.mock('@/models', () => ({
     AppSettings: {},
 }));
 import type { UserRow, WorkSessionRow } from '@/lib/rows';
+import type { DateKey } from 'shared/src/lib/day-key';
 import { defaultTimetable } from 'shared/src/schemas/database';
 
 const MONDAY = new Date(2024, 0, 15, 0, 0, 0);
+const MONDAY_KEY = '2024-01-15' as DateKey;
 const SUNDAY = new Date(2024, 0, 21, 0, 0, 0);
+const SUNDAY_KEY = '2024-01-21' as DateKey;
 
 const makeUser = (overrides: Record<string, unknown> = {}) =>
     ({
@@ -47,7 +50,7 @@ const makeSession = (
     }) as unknown as WorkSessionRow;
 
 const buildCtx = (overrides: Record<string, unknown> = {}) => ({
-    days: [MONDAY],
+    days: [MONDAY_KEY],
     users: [makeUser()],
     sessions: [] as WorkSessionRow[],
     approvedVacations: [],
@@ -93,7 +96,7 @@ describe('buildWorkSessionRows — hours mode', () => {
                         weeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
                     }),
                 ],
-                days: [SUNDAY],
+                days: [SUNDAY_KEY],
                 sessions: [
                     makeSession('check_in', SUNDAY, 10),
                     makeSession('check_out', SUNDAY, 12),
@@ -170,7 +173,7 @@ describe('buildWorkSessionRows — timetable mode', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
                 users: [makeUser({ scheduleMode: 'timetable' })],
-                days: [SUNDAY],
+                days: [SUNDAY_KEY],
             })
         );
         expect(rows[0].status).toBe('nonWorkingDay');
@@ -188,10 +191,39 @@ describe('buildWorkSessionRows — timetable mode', () => {
                         timetable: sundayTimetable,
                     }),
                 ],
-                days: [SUNDAY],
+                days: [SUNDAY_KEY],
             })
         );
         expect(rows[0].status).toBe('anomaly');
         expect(rows[0].anomalies).toEqual(['timetable_shift_count']);
+    });
+
+    it('compares punch clock times in the company zone, not the runtime zone', () => {
+        const sessions = [
+            {
+                _id: 'in',
+                userId: 'u1',
+                type: 'check_in',
+                timestamp: new Date('2024-01-15T08:00:00Z'),
+                status: 'active',
+            },
+            {
+                _id: 'out',
+                userId: 'u1',
+                type: 'check_out',
+                timestamp: new Date('2024-01-15T16:00:00Z'),
+                status: 'active',
+            },
+        ] as unknown as WorkSessionRow[];
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                users: [makeUser({ scheduleMode: 'timetable' })],
+                sessions,
+                timezone: 'Europe/Madrid',
+            })
+        );
+        expect(rows[0].date).toBe('2024-01-15');
+        expect(rows[0].status).toBe('ok');
+        expect(rows[0].anomalies).toEqual([]);
     });
 });

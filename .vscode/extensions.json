@@ -2,7 +2,6 @@
     "recommendations": [
       "dbaeumer.vscode-eslint",
       "bradlc.vscode-tailwindcss",
-      "usernamehw.errorlens",
-      "gruntfuggly.todo-tree"
+      "usernamehw.errorlens"
     ]
   }

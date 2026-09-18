@@ -9,14 +9,12 @@ import { replaceDaySessions } from '@/lib/replace-day';
 import {
     AdminWorkSessionInputSchema,
 } from 'shared/src/schemas/api';
-import {
-    DATE_KEY_REGEX,
-    SOURCE_USER_MANUAL,
-} from 'shared/src/lib/constants';
+import { SOURCE_USER_MANUAL } from 'shared/src/lib/constants';
 import { dateKey } from '@/lib/date-key';
+import { DateKeySchema } from 'shared/src/lib/day-key';
 
 const ReplaceMyDayWorkSessionsRequestSchema = z.object({
-    date: z.string().regex(DATE_KEY_REGEX, 'date must be YYYY-MM-DD'),
+    date: DateKeySchema,
     sessions: z.array(AdminWorkSessionInputSchema),
     // Audit note: why the day is being corrected (stored on the new version).
     reason: z.string().max(500).optional(),
@@ -72,7 +70,7 @@ export default withApi(
                     ]);
                 }
                 if (result.code === 'OutOfDay') {
-                    return responseErrorIncorrectParameter(res, 'timestamp', [
+                    return responseErrorIncorrectParameter(res, 'time', [
                         'OutOfDay',
                     ]);
                 }

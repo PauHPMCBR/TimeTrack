@@ -7,6 +7,7 @@
     "migrate:user-encryption": "node migrations/003-migrate-user-encryption.cjs",
     "migrate:vacation-intervals": "node migrations/004-migrate-vacation-intervals.cjs",
     "migrate:work-day-sources": "node migrations/005-migrate-work-day-sources.cjs",
-    "migrate:user-schedule": "node migrations/006-migrate-user-schedule.cjs"
+    "migrate:user-schedule": "node migrations/006-migrate-user-schedule.cjs",
+    "migrate:vacation-day-keys": "node migrations/007-migrate-vacation-day-keys.cjs"
   }
 }

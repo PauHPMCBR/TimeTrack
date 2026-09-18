@@ -15,6 +15,11 @@ const s = (type: 'check_in' | 'check_out', hour: number, minute = 0) => ({
     timestamp: new Date(2024, 0, 15, hour, minute, 0),
 });
 
+const s2 = (type: 'check_in' | 'check_out', timestamp: Date) => ({
+    type,
+    timestamp,
+});
+
 describe('dayTimetable', () => {
     it('returns the intervals of a weekday and empty for missing days', () => {
         expect(dayTimetable(DEFAULT_TIMETABLE, 1)).toEqual([entry('09:00', '17:00')]);
@@ -128,6 +133,27 @@ describe('computeTimetableAnomalies', () => {
 
     it('reports nothing on empty intervals', () => {
         expect(computeTimetableAnomalies([s('check_in', 9)], [], 10)).toEqual([]);
+    });
+
+    it('resolves punch clock times in the given zone, not the runtime zone', () => {
+        const utcIn = new Date('2024-01-15T08:00:00Z');
+        const utcOut = new Date('2024-01-15T16:00:00Z');
+        expect(
+            computeTimetableAnomalies(
+                [s2('check_in', utcIn), s2('check_out', utcOut)],
+                [entry('09:00', '17:00')],
+                10,
+                'Europe/Madrid'
+            )
+        ).toEqual([]);
+        expect(
+            computeTimetableAnomalies(
+                [s2('check_in', utcIn), s2('check_out', utcOut)],
+                [entry('09:00', '17:00')],
+                10,
+                'UTC'
+            )
+        ).toEqual(['timetable_check_in_early', 'timetable_check_out_early']);
     });
 });
 

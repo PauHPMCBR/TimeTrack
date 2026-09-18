@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { apiClient } from '../../lib/api';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 vi.mock('../../lib/csv', () => ({
     triggerDownload: vi.fn(),
@@ -459,7 +460,7 @@ describe('apiClient', () => {
 
             const result = await apiClient.setYearlyVacationsAdmin({
                 year: 2024,
-                obligatoryDays: ['2024-01-01'],
+                obligatoryDays: ['2024-01-01' as DateKey],
                 electiveDaysTotalCount: 22,
             });
 
@@ -482,8 +483,8 @@ describe('apiClient', () => {
             mockFetchSuccess(mockResponse);
 
             const result = await apiClient.createVacation({
-                startDate: '2024-06-15',
-                endDate: '2024-06-16',
+                startDate: '2024-06-15' as DateKey,
+                endDate: '2024-06-16' as DateKey,
                 reason: 'Family',
             });
 
@@ -562,7 +563,7 @@ describe('apiClient', () => {
 
             const result = await apiClient.getMyWorkSessions({
                 period: 'week',
-                date: '2024-06-15',
+                date: '2024-06-15' as DateKey,
                 limit: 200,
                 offset: 0,
             });

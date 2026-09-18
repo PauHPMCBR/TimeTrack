@@ -1,5 +1,8 @@
 import { TZDate } from '@date-fns/tz';
-import { dateKeyInTz as sharedDateKeyInTz } from 'shared/src/lib/day-key';
+import {
+    dateKeyInTz as sharedDateKeyInTz,
+    DateKey,
+} from 'shared/src/lib/day-key';
 import { getConfiguredTimezone } from './settings';
 
 
@@ -7,17 +10,13 @@ function resolveTz(tz?: string): string {
     return tz ?? getConfiguredTimezone();
 }
 
-function toMs(utcMs: number | Date): number {
-    return typeof utcMs === 'number' ? utcMs : utcMs.getTime();
-}
-
-/** "YYYY-MM-DD" of a stored UTC instant in the given time-zone (defaults to the configured company zone). */
-export function dateKeyInTz(utcMs: number | Date, tz?: string): string {
+/** DateKey of a stored UTC instant in the given time-zone (defaults to the configured company zone). */
+export function dateKeyInTz(utcMs: number | Date, tz?: string): DateKey {
     return sharedDateKeyInTz(utcMs, resolveTz(tz));
 }
 
-/** Start (inclusive) / end (exclusive) of a local day ("YYYY-MM-DD") as UTC instants. */
-export function dayRange(dateKeyStr: string, tz?: string): { start: Date; end: Date } {
+/** Start (inclusive) / end (exclusive) of a calendar day as UTC instants. */
+export function dayRange(dateKeyStr: DateKey, tz?: string): { start: Date; end: Date } {
     const t = resolveTz(tz);
     const [y, m, d] = dateKeyStr.split('-').map(Number);
     const startMs = new TZDate(`${dateKeyStr}T00:00`, t).getTime();
@@ -28,8 +27,8 @@ export function dayRange(dateKeyStr: string, tz?: string): { start: Date; end: D
     return { start: new Date(startMs), end: new Date(endMs) };
 }
 
-/** A UTC instant at the given clock time ("HH:MM") on a local day ("YYYY-MM-DD"). */
-export function dayTimestamp(dateKeyStr: string, hhmm: string, tz?: string): Date {
+/** A UTC instant at the given clock time ("HH:MM") on a calendar day. */
+export function dayTimestamp(dateKeyStr: DateKey, hhmm: string, tz?: string): Date {
     const t = resolveTz(tz);
     return new Date(new TZDate(`${dateKeyStr}T${hhmm}`, t).getTime());
 }
@@ -56,5 +55,5 @@ export function formatTime(utcMs: number | Date, tz?: string, locale?: string): 
         minute: '2-digit',
         hour12: false,
         timeZone: t,
-    }).format(new Date(toMs(utcMs)));
+    }).format(new Date(utcMs));
 }

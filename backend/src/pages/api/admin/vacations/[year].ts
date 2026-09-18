@@ -1,5 +1,4 @@
 import { withApi } from '@/lib/api-handler';
-import { yearRange } from 'shared/src/lib/date-ranges';
 import { User } from '@/models';
 import {
     findOverlapping,
@@ -12,7 +11,6 @@ import { ElectiveVacationRow, YearlyVacationRow } from '@/lib/rows';
 export default withApi({ method: 'GET', guard: 'admin' }, async (_req, res) => {
     try {
         const year = parseInt(String(_req.query.year));
-        const { start: startDate, end: endDate } = yearRange(year);
 
         const activeUsers = await User.find(
             { deleted: { $ne: true } },
@@ -21,7 +19,7 @@ export default withApi({ method: 'GET', guard: 'admin' }, async (_req, res) => {
         const activeUserIds = activeUsers.map((u) => u._id);
 
         const [vacations, yearlyVacationDays] = (await Promise.all([
-            findOverlapping(startDate, endDate, {
+            findOverlapping(`${year}-01-01`, `${year}-12-31`, {
                 // Intervals overlapping the requested year.
                 userId: { $in: activeUserIds },
             })

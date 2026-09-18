@@ -7,10 +7,12 @@ import {
     findWorkDaySources,
 } from '@/repositories/work-day-source-repository';
 import { notDeleted } from '@/repositories/user-repository';
-import { responseErrorGet, responseErrorIncorrectParameter } from '@/lib/response-error-generator';
+import { responseErrorGet } from '@/lib/response-error-generator';
 import { UserRow, WorkSessionRow } from '@/lib/rows';
 import { AdminExportWorkSessionsQuerySchema } from 'shared/src/schemas/api';
+import { dayRange } from '@/lib/date-range';
 import { dateKey } from '@/lib/date-key';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 
 export default withApi(
@@ -35,25 +37,13 @@ export default withApi(
             .split(',')
             .filter(Boolean);
 
-        // Optional date range (inclusive, local day bounds).
+        // Optional date range (inclusive start, exclusive next-day end).
         const timestampFilter: Record<string, Date> = {};
         if (req.query.from) {
-            const from = new Date(`${req.query.from}T00:00:00`);
-            if (isNaN(from.getTime())) {
-                return responseErrorIncorrectParameter(res, 'date', [
-                    'InvalidTimestamp',
-                ]);
-            }
-            timestampFilter.$gte = from;
+            timestampFilter.$gte = dayRange(req.query.from as DateKey).start;
         }
         if (req.query.to) {
-            const to = new Date(`${req.query.to}T23:59:59.999`);
-            if (isNaN(to.getTime())) {
-                return responseErrorIncorrectParameter(res, 'date', [
-                    'InvalidTimestamp',
-                ]);
-            }
-            timestampFilter.$lte = to;
+            timestampFilter.$lt = dayRange(req.query.to as DateKey).end;
         }
         const filter =
             Object.keys(timestampFilter).length > 0

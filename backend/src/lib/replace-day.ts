@@ -5,6 +5,8 @@ import { runInTransaction } from '@/lib/transaction';
 import { withUserLock } from '@/lib/user-lock';
 import { isMonthApproved } from '@/lib/monthly-approvals';
 import { isCoherentSequence } from 'shared/src/lib/work-hours';
+import { dayRange, dayTimestamp } from '@/lib/date-range';
+import { isValidDateKey, DateKey } from 'shared/src/lib/day-key';
 import {
     SOURCE_ADMIN_MANUAL,
     SOURCE_USER_MANUAL,
@@ -23,12 +25,12 @@ export type ReplaceDayErrorCode =
 
 export interface ReplaceDayInput {
     userId: string;
-    /** Local "YYYY-MM-DD" day the edited sessions belong to. */
-    date: string;
+    /** Calendar day (company time-zone) the edited sessions belong to. */
+    date: DateKey;
     sessions: {
         _id?: string;
         type: WorkSessionType;
-        timestamp: string;
+        time: string;
         overtime?: boolean;
     }[];
     /** Audit note persisted on the new version. */
@@ -41,38 +43,40 @@ export interface ReplaceDayInput {
 
 export type ReplaceDayResult =
     | { ok: true; workSessions: unknown[] }
-    | { ok: false; code: ReplaceDayErrorCode; field: 'date' | 'timestamp' | 'type' };
+    | { ok: false; code: ReplaceDayErrorCode; field: 'date' | 'time' | 'type' };
 
 /**
  * Replaces a day's sessions with an edited set, versioned and never deleting:
  * the current sessions are flagged 'replaced' and the edited set is stored as
- * the next version of that (user, day) sequence. Shared by the admin day
- * correction and the worker self-edit — identical validation, lock and
- * transaction semantics for both (CT 101/2019 traceability).
+ * the next version of that (user, day) sequence.
  */
 export async function replaceDaySessions(
     input: ReplaceDayInput
 ): Promise<ReplaceDayResult> {
     const { userId, date, sessions, reason, source, editedBy } = input;
 
-    const dayStart = new Date(`${date}T00:00:00`);
-    const dayEnd = new Date(`${date}T23:59:59.999`);
-    if (isNaN(dayStart.getTime()) || isNaN(dayEnd.getTime())) {
+    if (!isValidDateKey(date)) {
         return { ok: false, code: 'InvalidDate', field: 'date' };
     }
 
     // Hard lock: an approved month is the worker's confirmed record —
     // it must be revoked before any edit (new approval cycle).
     if (
-        await isMonthApproved(userId, dayStart.getFullYear(), dayStart.getMonth() + 1)
+        await isMonthApproved(
+            userId,
+            Number(date.slice(0, 4)),
+            Number(date.slice(5, 7))
+        )
     ) {
         return { ok: false, code: 'MonthApprovedLocked', field: 'date' };
     }
 
+    const { start: dayStart, end: dayEnd } = dayRange(date);
+
     const parsed = sessions.map((s) => ({
         _id: s._id,
         type: s.type,
-        timestamp: new Date(s.timestamp),
+        timestamp: dayTimestamp(date, s.time),
         overtime: s.overtime === true,
     }));
 
@@ -80,9 +84,9 @@ export async function replaceDaySessions(
         if (
             isNaN(p.timestamp.getTime()) ||
             p.timestamp < dayStart ||
-            p.timestamp > dayEnd
+            p.timestamp >= dayEnd
         ) {
-            return { ok: false, code: 'OutOfDay', field: 'timestamp' };
+            return { ok: false, code: 'OutOfDay', field: 'time' };
         }
     }
 
@@ -90,7 +94,7 @@ export async function replaceDaySessions(
 
     for (let i = 1; i < parsed.length; i++) {
         if (parsed[i].timestamp.getTime() <= parsed[i - 1].timestamp.getTime()) {
-            return { ok: false, code: 'NotInOrder', field: 'timestamp' };
+            return { ok: false, code: 'NotInOrder', field: 'time' };
         }
     }
 

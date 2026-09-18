@@ -30,11 +30,12 @@ import {
     computeDaysForPeriod,
     daySourceMap,
 } from '@/lib/work-session-rows';
+import type { DateKey } from 'shared/src/lib/day-key';
 import {
     parsePagination,
     paginateRows,
 } from '@/lib/pagination';
-import { dateKey } from '@/lib/date-key';
+import { dayRange } from '@/lib/date-range';
 import {
     findWorkDaySources,
 } from '@/repositories/work-day-source-repository';
@@ -56,20 +57,23 @@ export default withApi(
         const { period } = query;
         const { limit, offset } = parsePagination(req.query);
 
-        const days: Date[] = computeDaysForPeriod(
+        const days: DateKey[] = computeDaysForPeriod(
             period,
             query.date as string | undefined,
             query.year as number | undefined,
             query.month as number | undefined
         );
 
-        const periodStart = new Date(days[0]);
-        periodStart.setHours(0, 0, 0, 0);
-        const periodEnd = new Date(days[days.length - 1]);
-        periodEnd.setHours(23, 59, 59, 999);
+        // Session bounds are company-zone instants; vacations are key
+        // intervals compared against the same window.
+        const periodStart = dayRange(days[0]).start;
+        const periodEnd = dayRange(days[days.length - 1]).end;
+        const vacationStart = days[0];
+        const vacationEnd = days[days.length - 1];
 
-        const yearSet = new Set<number>();
-        days.forEach((d) => yearSet.add(d.getFullYear()));
+        const yearSet = new Set<number>(
+            days.map((d) => Number(d.slice(0, 4)))
+        );
 
         const [user, sessions, approvedVacations, yearlyTemplates, settings, daySources] =
             (await Promise.all([
@@ -77,23 +81,19 @@ export default withApi(
                     .lean(),
                 findActiveInRange(periodStart, periodEnd, {
                     userId,
-                    endInclusive: true,
                 })
                     .select(
                         'userId type timestamp overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
                     )
                     .sort({ timestamp: 1 })
                     .lean(),
-                findOverlapping(periodStart, periodEnd, {
+                findOverlapping(vacationStart, vacationEnd, {
                     userId,
                     statuses: VACATION_APPROVED,
                 }).lean(),
                 findGlobalTemplates(Array.from(yearSet)).lean(),
                 getAppSettings(),
-                findWorkDaySources(
-                    days.map((d) => dateKey(d)),
-                    [userId]
-                ),
+                findWorkDaySources(days, [userId]),
             ])) as unknown as [
                 UserRow | null,
                 WorkSessionRow[],
@@ -116,17 +116,16 @@ export default withApi(
             defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
             toleranceMinutes: settings.toleranceMinutes,
             timetableToleranceMinutes: settings.timetableToleranceMinutes,
+            timezone: settings.timezone,
             daySources: daySourceMap(daySources),
         });
 
         rows.sort((a, b) => a.date.localeCompare(b.date) || a.userName.localeCompare(b.userName));
 
         // Determine which months in the requested period are approved by this user.
-        const periodMonthKeys = new Set(
-            days.map((d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-        );
+        const periodMonthKeys = new Set(days.map((d) => d.slice(0, 7)));
         const yearsInPeriod = Array.from(
-            new Set(days.map((d) => d.getFullYear()))
+            new Set(days.map((d) => Number(d.slice(0, 4))))
         );
 
         let approvedDocs: { _id: string; userId: string; year: number; month: number }[];

@@ -1,5 +1,4 @@
 import { withApi } from '@/lib/api-handler';
-import { yearRange } from 'shared/src/lib/date-ranges';
 import { User, Group } from '@/models';
 import { findOverlapping } from '@/repositories/vacation-repository';
 import { UserRow, GroupRow } from '@/lib/rows';
@@ -31,7 +30,8 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             g.members.forEach((m) => memberIds.add(m.toString()));
         });
 
-        const { start: startDate, end: endDate } = yearRange(year);
+        const yearStart = `${year}-01-01`;
+        const yearEnd = `${year}-12-31`;
 
         // Exclude blocked/unregistered/deleted members.
         const activeMembers = memberIds.size
@@ -47,7 +47,7 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             : [];
         const activeMemberIds = activeMembers.map((m) => m._id.toString());
 
-        const vacations = await findOverlapping(startDate, endDate, {
+        const vacations = await findOverlapping(yearStart, yearEnd, {
             // Intervals overlapping the requested year. Pending requests are
             // included so group mates can see upcoming time off that is not
             // confirmed yet (the calendar marks them distinctly).

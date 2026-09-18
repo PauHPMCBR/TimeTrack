@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
 import { User } from '@/types';
 import type { UpdateUserRequest } from '@/schemas/api';
+import type { DateKey } from 'shared/src/lib/day-key';
 import { localeTag, toLocalDateKey } from '@/lib/datetime';
 import Modal from '@/components/Modal';
 import Button from '@/components/ui/Button';
@@ -84,11 +85,7 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
                     : undefined,
             checkInRequired: user.checkInRequired,
         });
-        setStartDate(
-            user.trackingStartDate
-                ? toLocalDateKey(user.trackingStartDate)
-                : ''
-        );
+        setStartDate(user.trackingStartDate ?? '');
         setSourceError(
             isScheduleSourceComplete(user)
                 ? null
@@ -168,9 +165,8 @@ export default function UserEditModal({ user, open, onClose, onSaved }: Props) {
         setSuccess(false);
 
         const payload: UpdateUserRequest = { ...formData };
-        // The tracking start date is non-nullable; always send the chosen day.
         if (startDate) {
-            payload.trackingStartDate = startDate;
+            payload.trackingStartDate = startDate as DateKey;
         }
         // When the admin invalidates the password, force a forgot-password
         // recovery (never let the admin set a known password).

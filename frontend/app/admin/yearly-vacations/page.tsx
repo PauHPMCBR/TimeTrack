@@ -11,7 +11,9 @@ import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
 import { YearlyVacationDays } from '@/types';
-import { parseDateKey, toLocalDateKey } from '@/lib/datetime';
+import { parseDateKey } from '@/lib/datetime';
+import type { DateKey } from 'shared/src/lib/day-key';
+import { DateKeySchema } from 'shared/src/lib/day-key';
 import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
@@ -35,7 +37,7 @@ export default function AdminObligatoryVacationsPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
+    const [obligatoryDays, setObligatoryDays] = useState<DateKey[]>([]);
     const [electiveDaysTotalCount, setElectiveDaysTotalCount] =
         useState<number>(0);
     const [newDate, setNewDate] = useState<string>('');
@@ -66,11 +68,7 @@ export default function AdminObligatoryVacationsPage() {
                 }
             } else if (res.data?.vacations) {
                 setVacationDays(res.data.vacations);
-                setObligatoryDays(
-                    res.data.vacations.obligatoryDays.map(
-                        (date) => new Date(date)
-                    )
-                );
+                setObligatoryDays(res.data.vacations.obligatoryDays);
                 setElectiveDaysTotalCount(
                     res.data.vacations.electiveDaysTotalCount
                 );
@@ -109,29 +107,21 @@ export default function AdminObligatoryVacationsPage() {
     const handleAddDate = () => {
         if (!newDate) return;
 
-        const date = parseDateKey(newDate);
-        if (isNaN(date.getTime())) {
+        const parsed = DateKeySchema.safeParse(newDate);
+        if (!parsed.success) {
             setError(t('admin.vacationsSetup.invalidDate') || 'Invalid date');
             return;
         }
+        const dayKey = parsed.data;
 
-        const exists = obligatoryDays.some(
-            (d) =>
-                d.getFullYear() === date.getFullYear() &&
-                d.getMonth() === date.getMonth() &&
-                d.getDate() === date.getDate()
-        );
-
-        if (exists) {
+        if (obligatoryDays.includes(dayKey)) {
             setError(
                 t('admin.vacationsSetup.dateExists') || 'Date already exists'
             );
             return;
         }
 
-        const newDays = [...obligatoryDays, date].sort(
-            (a, b) => a.getTime() - b.getTime()
-        );
+        const newDays = [...obligatoryDays, dayKey].sort();
         setObligatoryDays(newDays);
         markDirty();
         setNewDate('');
@@ -153,11 +143,7 @@ export default function AdminObligatoryVacationsPage() {
 
             const vacationData: YearlyVacationAdminRequest = {
                 year,
-                // Plain "YYYY-MM-DD" keys: the backend anchors them to local
-                // midnight, so the client timezone can't shift the day.
-                obligatoryDays: obligatoryDays.map((date) =>
-                    toLocalDateKey(date)
-                ),
+                obligatoryDays,
                 electiveDaysTotalCount,
             };
 
@@ -215,9 +201,7 @@ export default function AdminObligatoryVacationsPage() {
                 );
             } else {
                 setObligatoryDays(
-                    res.data.vacations.obligatoryDays.map(
-                        (date) => new Date(date)
-                    )
+                    res.data.vacations.obligatoryDays
                 );
                 setElectiveDaysTotalCount(
                     res.data.vacations.electiveDaysTotalCount
@@ -238,8 +222,8 @@ export default function AdminObligatoryVacationsPage() {
         }
     };
 
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString('en-US', {
+    const formatDate = (key: string) => {
+        return parseDateKey(key).toLocaleDateString('en-US', {
             weekday: 'short',
             year: 'numeric',
             month: 'long',
@@ -247,25 +231,25 @@ export default function AdminObligatoryVacationsPage() {
         });
     };
 
-    const isNonWorkingDay = (date: Date) =>
-        nonWorkingDays.includes(date.getDay());
+    const isNonWorkingDay = (key: string) =>
+        nonWorkingDays.includes(parseDateKey(key).getDay());
 
     const realObligatoryCount = obligatoryDays.filter(
-        (d) => !isNonWorkingDay(d)
+        (key) => !isNonWorkingDay(key)
     ).length;
 
     const datesByMonth = () => {
-        const groups: Record<string, Date[]> = {};
+        const groups: Record<string, string[]> = {};
 
-        obligatoryDays.forEach((date) => {
-            const monthYear = date.toLocaleDateString('en-US', {
+        obligatoryDays.forEach((key) => {
+            const monthYear = parseDateKey(key).toLocaleDateString('en-US', {
                 month: 'long',
                 year: 'numeric',
             });
             if (!groups[monthYear]) {
                 groups[monthYear] = [];
             }
-            groups[monthYear].push(date);
+            groups[monthYear].push(key);
         });
 
         return groups;
@@ -473,14 +457,16 @@ export default function AdminObligatoryVacationsPage() {
                                                     </h3>
                                                 </div>
                                                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                                                    {dates.map((date) => {
+                                                    {dates.map((key) => {
+                                                        const date =
+                                                            parseDateKey(key);
                                                         const nonWorking =
                                                             isNonWorkingDay(
-                                                                date
+                                                                key
                                                             );
                                                         return (
                                                             <div
-                                                                key={date.toISOString()}
+                                                                key={key}
                                                                 className={`flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${nonWorking ? 'bg-red-50/60 dark:bg-red-950/20' : ''}`}
                                                             >
                                                                 <div className="flex items-center gap-3">
@@ -494,7 +480,7 @@ export default function AdminObligatoryVacationsPage() {
                                                                     <div>
                                                                         <div className="text-sm font-medium text-zinc-900 dark:text-white">
                                                                             {formatDate(
-                                                                                date
+                                                                                key
                                                                             )}
                                                                         </div>
                                                                         <div
@@ -517,7 +503,7 @@ export default function AdminObligatoryVacationsPage() {
                                                                     onClick={() =>
                                                                         handleRemoveDate(
                                                                             obligatoryDays.indexOf(
-                                                                                date
+                                                                                key as DateKey
                                                                             )
                                                                         )
                                                                     }

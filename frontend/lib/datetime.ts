@@ -1,14 +1,15 @@
 import { MS_PER_HOUR, MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { dateKeyToLocalMidnight } from 'shared/src/schemas/api';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export { dateKeyToLocalMidnight as parseDateKey };
 
-export function toLocalDateKey(date: Date | string): string {
+export function toLocalDateKey(date: Date | string): DateKey {
     const d = typeof date === 'string' ? new Date(date) : date;
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return `${y}-${m}-${day}` as DateKey;
 }
 
 export function formatHM(ms: number, t?: (k: string) => string): string {

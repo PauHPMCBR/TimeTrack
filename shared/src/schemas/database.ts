@@ -10,6 +10,10 @@ import {
     DEFAULT_WEEKLY_EXPECTED_HOURS,
 } from '../lib/defaults';
 import { isValidDayTimetable } from '../lib/timetable-validation';
+import {
+    dateKeyField,
+    dateKeyOfTodayRuntime,
+} from '../lib/day-key';
 
 // Automatic timetable: a list of check-in/check-out intervals (clock times
 // "HH:MM"). A day can have more than one interval (e.g. split shifts). Every
@@ -112,8 +116,7 @@ export const UserSchema = z.object({
     // Empty string = never reminded yet.
     lastInconsistencyReminder: z.string().default('').optional(),
     checkInRequired: z.boolean().default(true),
-    // When the user started time tracking (local date key "YYYY-MM-DD").
-    trackingStartDate: z.date().default(() => new Date()),
+    trackingStartDate: dateKeyField().default(() => dateKeyOfTodayRuntime()),
     // When the worker acknowledged the privacy notice in-app (RGPD arts.
     // 13-14). Absent = not acknowledged yet.
     privacyNoticeAcknowledgedAt: z.date().optional(),
@@ -247,8 +250,8 @@ export const VacationStatusSchema = z.enum([
 ]);
 export const ElectiveVacationSchema = z.object({
     userId: z.string(),
-    startDate: z.date(),
-    endDate: z.date(),
+    startDate: dateKeyField(),
+    endDate: dateKeyField(),
     // Elective vacation days the request costs
     spentDays: z.number().int().gte(0).default(0),
     status: VacationStatusSchema.default('pending'),
@@ -266,7 +269,7 @@ export const ElectiveVacationSchema = z.object({
 export const YearlyVacationDaysSchema = z.object({
     userId: z.string().optional(), // if userId is not set, it's the template for all users
     year: z.number(),
-    obligatoryDays: z.array(z.date()),
+    obligatoryDays: z.array(dateKeyField()),
     electiveDaysTotalCount: z.number().gte(0),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),

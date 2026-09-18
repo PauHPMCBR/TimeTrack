@@ -3,8 +3,7 @@
 import { useMemo } from 'react';
 
 export type VacationMonthsTableProps = {
-    /** Company obligatory vacation days of a single year. */
-    days: (Date | string)[];
+    days: string[];
     locale: string;
     className?: string;
 };
@@ -28,10 +27,11 @@ export default function VacationMonthsTable({
 }: VacationMonthsTableProps) {
     const daysByMonth = useMemo(() => {
         const byMonth: number[][] = Array.from({ length: 12 }, () => []);
-        days.forEach((raw) => {
-            const d = new Date(raw);
-            if (Number.isNaN(d.getTime())) return;
-            byMonth[d.getMonth()].push(d.getDate());
+        days.forEach((key) => {
+            const month = Number(key.slice(5, 7)) - 1;
+            const day = Number(key.slice(8, 10));
+            if (Number.isNaN(month) || Number.isNaN(day)) return;
+            byMonth[month].push(day);
         });
         byMonth.forEach((list) => list.sort((a, b) => a - b));
         return byMonth;

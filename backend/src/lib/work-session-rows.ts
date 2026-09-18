@@ -12,6 +12,14 @@ import {
     impliedHours,
 } from 'shared/src/lib/expected-timetable';
 import {
+    dowFromDateKey,
+    addDaysToKey,
+    dateKeyFromParts,
+    daysInMonth,
+    isValidDateKey,
+    DateKey,
+} from 'shared/src/lib/day-key';
+import {
     resolveDayExpectedHours,
     resolveWeekTimetable,
 } from 'shared/src/lib/user-overrides';
@@ -22,56 +30,46 @@ import {
     ElectiveVacationRow,
     YearlyVacationRow,
 } from '@/lib/rows';
-import { dateKey } from '@/lib/date-key';
+import { dateKeyInTz } from '@/lib/timezone';
 import type { WorkDaySourceRow } from '@/repositories/work-day-source-repository';
 
 /**
- * Expand a `period` + date/yeear/month selector into the local calendar days
- * it covers. Shared by the admin and the personal work-session reports so the
- * day-bucketing is identical everywhere.
+ * Expand a `period` + date/yeear/month selector into the calendar day keys
+ * (company time-zone) it covers. Shared by the admin and the personal
+ * work-session reports so the day-bucketing is identical everywhere.
  */
-export function computeDaysForPeriod(
-    period: 'day' | 'week' | 'month' | 'year',
+export function computeDaysForPeriod(    period: 'day' | 'week' | 'month' | 'year',
     date?: string,
     year?: number,
     month?: number
-): Date[] {
-    const days: Date[] = [];
-    if (period === 'day') {
-        const d = new Date(date as string);
-        d.setHours(0, 0, 0, 0);
-        days.push(d);
-    } else if (period === 'week') {
-        const d = new Date(date as string);
-        d.setHours(0, 0, 0, 0);
-        const diffToMonday = (d.getDay() + 6) % 7;
-        d.setDate(d.getDate() - diffToMonday);
-        for (let i = 0; i < 7; i++) {
-            const day = new Date(d);
-            day.setDate(d.getDate() + i);
-            days.push(day);
-        }
-    } else if (period === 'month') {
-        const y = year as number;
-        const m = (month as number) - 1;
-        const daysInMonth = new Date(y, m + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) {
-            days.push(new Date(y, m, i));
-        }
-    } else {
-        const y = year as number;
-        const daysInYear =
-            (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
-        for (let i = 1; i <= daysInYear; i++) {
-            days.push(new Date(y, 0, i));
-        }
+): DateKey[] {
+    if (period === 'day' || period === 'week') {
+        const key: DateKey =
+            date && isValidDateKey(date)
+                ? (date as DateKey)
+                : dateKeyInTz(new Date(date as string));
+        if (period === 'day') return [key];
+        const diffToMonday = (dowFromDateKey(key) + 6) % 7;
+        const monday = addDaysToKey(key, -diffToMonday);
+        return Array.from({ length: 7 }, (_, i) => addDaysToKey(monday, i));
     }
-    return days;
+    if (period === 'month') {
+        const n = daysInMonth(year as number, month as number);
+        return Array.from({ length: n }, (_, i) =>
+            dateKeyFromParts(year as number, month as number, i + 1)
+        );
+    }
+    const y = year as number;
+    const daysInYear =
+        (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
+    return Array.from({ length: daysInYear }, (_, i) =>
+        addDaysToKey(dateKeyFromParts(y, 1, 1), i)
+    );
 }
 
 export interface WorkSessionRowsContext {
-    /** Local calendar days in the reported period (ascending). */
-    days: Date[];
+    /** Calendar day keys (company time-zone) in the reported period (ascending). */
+    days: DateKey[];
     /** Users to report rows for (typically all, or a single one for personal view). */
     users: UserRow[];
     /** All sessions within the period (active versions only). */
@@ -84,6 +82,8 @@ export interface WorkSessionRowsContext {
     defaultWeeklyExpectedHours: number[];
     toleranceMinutes: number;
     timetableToleranceMinutes: number;
+    /** Company IANA zone sessions are compared against (defaults to the configured one). */
+    timezone?: string;
     /** Day-level sources keyed by `${userId}:${YYYY-MM-DD}`. */
     daySources?: Map<string, WorkDaySourceRow>;
 }
@@ -112,12 +112,16 @@ export function buildWorkSessionRows(
         defaultWeeklyExpectedHours,
         toleranceMinutes,
         timetableToleranceMinutes,
+        timezone,
         daySources,
     } = ctx;
 
     const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
     for (const session of sessions) {
-        const key = `${session.userId}:${dateKey(new Date(session.timestamp))}`;
+        const key = `${session.userId}:${dateKeyInTz(
+            new Date(session.timestamp),
+            timezone
+        )}`;
         const list = sessionsByUserDay.get(key) ?? [];
         list.push(session);
         sessionsByUserDay.set(key, list);
@@ -125,33 +129,24 @@ export function buildWorkSessionRows(
 
     const vacationByUserDay = new Set<string>();
     for (const v of approvedVacations) {
-        // Vacations are stored as [startDate, endDate] intervals; expand each
-        // one into per-day keys (intervals are short, so this stays cheap).
-        const start = new Date(v.startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(v.endDate);
-        end.setHours(0, 0, 0, 0);
-        for (
-            let cursor = new Date(start);
-            cursor.getTime() <= end.getTime();
-            cursor.setDate(cursor.getDate() + 1)
-        ) {
-            vacationByUserDay.add(`${v.userId}:${dateKey(cursor)}`);
+        // Vacations are stored as inclusive [startDate, endDate] key
+        // intervals; expand each one into per-day keys.
+        for (let key = v.startDate; key <= v.endDate; key = addDaysToKey(key, 1)) {
+            vacationByUserDay.add(`${v.userId}:${key}`);
         }
     }
 
     const obligatoryDaySet = new Set<string>();
     for (const template of yearlyTemplates) {
         for (const day of template.obligatoryDays ?? []) {
-            obligatoryDaySet.add(dateKey(new Date(day)));
+            obligatoryDaySet.add(day);
         }
     }
 
     const rows: AdminWorkSessionRow[] = [];
 
-    for (const day of days) {
-        const key = dateKey(day);
-        const dow = day.getDay();
+    for (const key of days) {
+        const dow = dowFromDateKey(key);
 
         for (const user of users) {
             const userSessions =
@@ -179,7 +174,8 @@ export function buildWorkSessionRows(
                 for (const anomaly of computeTimetableAnomalies(
                     userSessions,
                     intervals,
-                    timetableToleranceMinutes
+                    timetableToleranceMinutes,
+                    timezone
                 )) {
                     anomalySet.add(anomaly);
                 }

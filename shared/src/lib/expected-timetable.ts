@@ -2,6 +2,7 @@ import { WorkSessionAnomaly } from '../schemas/api';
 import type { AutoScheduleEntry, WeekTimetable } from '../schemas/database';
 import { CHECK_IN, CHECK_OUT } from './constants';
 import type { DaySessionLike } from './work-hours';
+import { TZDate } from '@date-fns/tz';
 
 export function dayTimetable(
     timetable: WeekTimetable,
@@ -31,9 +32,10 @@ export function timeToMinutes(time: string): number {
     return hours * 60 + minutes;
 }
 
-function clockMinutes(timestamp: Date | string): number {
-    const date = new Date(timestamp);
-    return date.getHours() * 60 + date.getMinutes();
+function clockMinutes(timestamp: Date | string, timeZone?: string): number {
+    const ms = new Date(timestamp).getTime();
+    const zoned = timeZone ? new TZDate(ms, timeZone) : new Date(ms);
+    return zoned.getHours() * 60 + zoned.getMinutes();
 }
 
 export interface TimetablePair {
@@ -83,7 +85,8 @@ export function computePairDeviations(
 export function computeTimetableAnomalies(
     sessions: DaySessionLike[],
     intervals: AutoScheduleEntry[],
-    toleranceMinutes: number
+    toleranceMinutes: number,
+    timeZone?: string
 ): WorkSessionAnomaly[] {
     const anomalies: WorkSessionAnomaly[] = [];
     const sorted = [...sessions].sort(
@@ -94,11 +97,11 @@ export function computeTimetableAnomalies(
     let pendingCheckIn: number | null = null;
     for (const session of sorted) {
         if (session.type === CHECK_IN) {
-            pendingCheckIn = clockMinutes(session.timestamp);
+            pendingCheckIn = clockMinutes(session.timestamp, timeZone);
         } else if (session.type === CHECK_OUT && pendingCheckIn !== null) {
             pairs.push({
                 checkIn: pendingCheckIn,
-                checkOut: clockMinutes(session.timestamp),
+                checkOut: clockMinutes(session.timestamp, timeZone),
             });
             pendingCheckIn = null;
         }

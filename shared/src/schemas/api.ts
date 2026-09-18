@@ -18,11 +18,12 @@ import {
 } from './database';
 import {
     ADMIN_REPORT_PERIODS,
-    DATE_KEY_REGEX,
     EMPLOYEE_ROLE,
+    HOUR_MINUTE_KEY_REGEX,
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
 } from '../lib/constants';
+import { DateKeySchema } from '../lib/day-key';
 
 export const LoginRequestSchema = z.object({
     email: z.string().email('Invalid email format'),
@@ -77,10 +78,7 @@ export const UpdateUserRequestSchema = z
             .optional(),        scheduleMode: ScheduleModeSchema.optional(),
         timetable: ValidWeekTimetableSchema.optional(),
         // The day the user started time tracking (local "YYYY-MM-DD").
-        trackingStartDate: z
-            .string()
-            .regex(DATE_KEY_REGEX, 'trackingStartDate must be YYYY-MM-DD')
-            .optional(),
+        trackingStartDate: DateKeySchema.optional(),
         // Forces forgot-password recovery; admins can never set a known password.
         invalidatePassword: z.boolean().optional(),
         // When true the user must check in/out daily; when false the system
@@ -148,10 +146,7 @@ export const WorkSessionRequestSchema = z.object({
 export type WorkSessionRequest = z.infer<typeof WorkSessionRequestSchema>;
 
 export const ApplyAutoScheduleRequestSchema = z.object({
-    date: z
-        .string()
-        .regex(DATE_KEY_REGEX, 'date must be YYYY-MM-DD')
-        .optional(),
+    date: DateKeySchema.optional(),
 });
 export type ApplyAutoScheduleRequest = z.infer<
     typeof ApplyAutoScheduleRequestSchema
@@ -185,43 +180,17 @@ export type AvatarUploadRequest = z.infer<typeof AvatarUploadRequestSchema>;
 
 export const ElectiveVacationRequestSchema = z
     .object({
-        // Plain "YYYY-MM-DD" keys: the client's calendar day travels intact
-        // and the backend anchors it to local midnight (storage convention).
-        // Instants must not be sent — re-normalizing them server-side shifts
-        // the day when client and server timezones differ.
-        startDate: z
-            .string()
-            .refine(isValidDateKey, 'Invalid date')
-            .transform(dateKeyToLocalMidnight),
-        endDate: z
-            .string()
-            .refine(isValidDateKey, 'Invalid date')
-            .transform(dateKeyToLocalMidnight),
+        startDate: DateKeySchema,
+        endDate: DateKeySchema,
         reason: z.string().max(1000).optional(),
     })
-    .refine((data) => data.endDate.getTime() >= data.startDate.getTime(), {
+    .refine((data) => data.endDate >= data.startDate, {
         message: 'endDate must be on or after startDate',
     });
-export type ElectiveVacationRequest = z.input<
+export type ElectiveVacationRequest = z.infer<
     typeof ElectiveVacationRequestSchema
 >;
 
-// True for a real calendar "YYYY-MM-DD" key (rejects e.g. 2024-02-30).
-export function isValidDateKey(value: string): boolean {
-    if (!DATE_KEY_REGEX.test(value)) return false;
-    const [y, m, d] = value.split('-').map(Number);
-    const date = new Date(y, m - 1, d, 0, 0, 0, 0);
-    return (
-        date.getFullYear() === y &&
-        date.getMonth() === m - 1 &&
-        date.getDate() === d
-    );
-}
-
-// Parses a "YYYY-MM-DD" key into the instant at local midnight of that
-// calendar day — the app's storage convention for vacation dates. Note this
-// uses the *server's* timezone; only ever apply it to timezone-free keys,
-// never to instants sent by a client (which would shift the day).
 export function dateKeyToLocalMidnight(value: string): Date {
     const [y, m, d] = value.split('-').map(Number);
     return new Date(y, m - 1, d, 0, 0, 0, 0);
@@ -229,15 +198,10 @@ export function dateKeyToLocalMidnight(value: string): Date {
 
 export const YearlyVacationAdminRequestSchema = z.object({
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
-    obligatoryDays: z.array(
-        z
-            .string()
-            .refine(isValidDateKey, 'Invalid date')
-            .transform(dateKeyToLocalMidnight)
-    ),
+    obligatoryDays: z.array(DateKeySchema),
     electiveDaysTotalCount: z.number().gte(0),
 });
-export type YearlyVacationAdminRequest = z.input<
+export type YearlyVacationAdminRequest = z.infer<
     typeof YearlyVacationAdminRequestSchema
 >;
 
@@ -248,7 +212,7 @@ export type UserIdParam = z.infer<typeof UserIdParamSchema>;
 
 export const DateParamSchema = z.object({
     userId: z.string().min(1, 'User ID is required'),
-    date: z.string().regex(DATE_KEY_REGEX, 'date must be YYYY-MM-DD'),
+    date: DateKeySchema,
 });
 export type DateParam = z.infer<typeof DateParamSchema>;
 
@@ -270,8 +234,8 @@ export type YearMonthParam = z.infer<typeof YearMonthParamSchema>;
 
 export const WorkSessionRangeQuerySchema = z.object({
     userId: z.string().min(1, 'User ID is required'),
-    from: z.string().regex(DATE_KEY_REGEX, 'from must be YYYY-MM-DD'),
-    to: z.string().regex(DATE_KEY_REGEX, 'to must be YYYY-MM-DD'),
+    from: DateKeySchema,
+    to: DateKeySchema,
 });
 export type WorkSessionRangeQuery = z.infer<typeof WorkSessionRangeQuerySchema>;
 
@@ -289,14 +253,8 @@ export type UserYearParam = z.infer<typeof UserYearParamSchema>;
 
 export const AdminExportWorkSessionsQuerySchema = z.object({
     userIds: z.string().min(1, 'At least one user id is required'),
-    from: z
-        .string()
-        .regex(DATE_KEY_REGEX, 'from must be YYYY-MM-DD')
-        .optional(),
-    to: z
-        .string()
-        .regex(DATE_KEY_REGEX, 'to must be YYYY-MM-DD')
-        .optional(),
+    from: DateKeySchema.optional(),
+    to: DateKeySchema.optional(),
 });
 export type AdminExportWorkSessionsQuery = z.infer<
     typeof AdminExportWorkSessionsQuerySchema
@@ -334,7 +292,7 @@ export type WorkSessionRowStatus = z.infer<typeof WorkSessionRowStatusSchema>;
 export const AdminWorkSessionRowSchema = z.object({
     userId: z.string(),
     userName: z.string(),
-    date: z.string(), // YYYY-MM-DD (local)
+    date: DateKeySchema,
     totalHours: z.number().gte(0),
     overtimeHours: z.number().gte(0),
     expectedHours: z.number().gte(0),    timetable: z.array(AutoScheduleEntrySchema).optional(),
@@ -383,7 +341,7 @@ function validateAdminWorkSessionsQuery(
 export const AdminWorkSessionsQuerySchema = z
     .object({
         period: z.enum(ADMIN_REPORT_PERIODS),
-        date: z.string().optional(),
+        date: DateKeySchema.optional(),
         year: z.coerce.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR).optional(),
         month: z.coerce.number().int().gte(1).lte(12).optional(),
     })
@@ -395,7 +353,7 @@ export type AdminWorkSessionsQuery = z.infer<
 export const AdminWorkSessionsQueryWithPaginationSchema = z
     .object({
         period: z.enum(ADMIN_REPORT_PERIODS),
-        date: z.string().optional(),
+        date: DateKeySchema.optional(),
         year: z.coerce.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR).optional(),
         month: z.coerce.number().int().gte(1).lte(12).optional(),
         limit: z.coerce.number().int().min(1).max(1000).optional(),
@@ -411,14 +369,14 @@ export const AdminWorkSessionInputSchema = z.object({
     // carry over its notes to the new version). Absent for added sessions.
     _id: z.string().optional(),
     type: WorkSessionTypeSchema,
-    timestamp: z.string().min(1, 'Timestamp is required'),
+    time: z.string().regex(HOUR_MINUTE_KEY_REGEX, 'time must be HH:mm'),
     overtime: z.boolean().optional(),
 });
 export type AdminWorkSessionInput = z.infer<typeof AdminWorkSessionInputSchema>;
 
 export const AdminReplaceDayWorkSessionsRequestSchema = z.object({
     userId: z.string().min(1, 'User ID is required'),
-    date: z.string().min(1, 'Date is required'),
+    date: DateKeySchema,
     sessions: z.array(AdminWorkSessionInputSchema),
     // Why the day is being corrected. Stored as editReason on the new version.
     reason: z.string().max(500).optional(),
@@ -441,9 +399,11 @@ export const YearlyVacationsResponseSchema = z.object({
             // Resolved server-side: display name of the admin who approved.
             approvedByName: z.string().optional(),
         })
+            .extend({ startDate: DateKeySchema, endDate: DateKeySchema })
     ),
     yearlyVacationDays: YearlyVacationDaysSchema.extend({
         _id: z.string(),
+        obligatoryDays: z.array(DateKeySchema),
     }).nullable(),
 });
 export type YearlyVacationResponse = z.infer<
@@ -522,11 +482,8 @@ export type AuditEventRow = z.infer<typeof AuditEventRowSchema>;
 export const AdminAuditEventsQuerySchema = z.object({
     action: z.string().optional(),
     actorId: z.string().optional(),
-    from: z
-        .string()
-        .regex(DATE_KEY_REGEX, 'from must be YYYY-MM-DD')
-        .optional(),
-    to: z.string().regex(DATE_KEY_REGEX, 'to must be YYYY-MM-DD').optional(),
+    from: DateKeySchema.optional(),
+    to: DateKeySchema.optional(),
     limit: z.coerce.number().int().min(1).max(1000).optional(),
     offset: z.coerce.number().int().min(0).optional(),
 });

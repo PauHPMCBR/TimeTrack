@@ -8,7 +8,8 @@ import {
 } from 'shared/src/lib/expected-timetable';
 import { getAppSettings } from '@/lib/settings';
 import { dateKey } from '@/lib/date-key';
-import { dayRange } from '@/lib/date-range';
+import type { DateKey } from 'shared/src/lib/day-key';
+import { dayRange, dayTimestamp } from '@/lib/date-range';
 import {
     runMonthlyAdminReview,
     runMonthlyApprovalReminders,
@@ -20,11 +21,15 @@ import {
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import {
+    dowFromDateKey,
+} from 'shared/src/lib/day-key';
+import {
     DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
     DEFAULT_TOLERANCE_MINUTES,
 } from 'shared/src/lib/defaults';
 import { defaultTimetable, WeekTimetable } from 'shared/src/schemas/database';
 import { getFrontendUrl } from '@/lib/frontend-url';
+import { formatTime } from '@/lib/timezone';
 import {
     nonWorkingDaysOfWeek,
     resolveDayExpectedHours,
@@ -51,12 +56,6 @@ function formatTimetable(timetable: AutoScheduleEntry[]): string {
         .join(', ');
 }
 
-/** "HH:MM" (local) wall-clock time of a session timestamp. */
-function formatClockTime(d: Date): string {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export interface ReminderSummary {
     date: string;
     scannedUsers: number;
@@ -73,7 +72,7 @@ export interface ReminderSummary {
  * Respects the company's `inconsistencyReminderMode` setting ('disabled' = no-op).
  */
 export async function runDailyInconsistencyReminder(
-    dateKeyStr: string = dateKey(new Date())
+    dateKeyStr: DateKey = dateKey(new Date())
 ): Promise<ReminderSummary> {
     await dbConnect();
     const settings = await getAppSettings();
@@ -116,15 +115,15 @@ export async function runDailyInconsistencyReminder(
             countOpenUntil: end,
         });
         const anomalies = [...result.anomalies];
-        const dayStart = new Date(start);
         const isTimetableMode = user.scheduleMode === 'timetable';
         const weekTimetable = resolveWeekTimetable(user, defaultTimetable());
-        const intervals = dayTimetable(weekTimetable, dayStart.getDay());
+        const dow = dowFromDateKey(dateKeyStr);
+        const intervals = dayTimetable(weekTimetable, dow);
         const expected = isTimetableMode
             ? intervals.length
             : resolveDayExpectedHours(
                   user,
-                  dayStart.getDay(),
+                  dow,
                   settings.defaultWeeklyExpectedHours
               );
         if (expected === 0) continue;
@@ -134,7 +133,8 @@ export async function runDailyInconsistencyReminder(
                     sessions,
                     intervals,
                     settings.timetableToleranceMinutes ??
-                        DEFAULT_TIMETABLE_TOLERANCE_MINUTES
+                        DEFAULT_TIMETABLE_TOLERANCE_MINUTES,
+                    settings.timezone
                 )
             );
         } else {
@@ -155,7 +155,7 @@ export async function runDailyInconsistencyReminder(
         const timetable = getAutoTimetable(user);
         const autoTimetable = formatTimetable(timetable);
         const times = sessions.map((s) => ({
-            time: formatClockTime(new Date(s.timestamp)),
+            time: formatTime(new Date(s.timestamp)),
             type: s.type,
         }));
         const frontendUrl = getFrontendUrl();
@@ -223,15 +223,21 @@ export function scheduleDailyReminder(): void {
             }
 
             // Nothing to do on non-working days; mark them done so we don't
-            // retry all day.
-            if (nonWorkingDaysOfWeek(settings.defaultWeeklyExpectedHours).includes(now.getDay())) {
+            // retry all day. Calendar decisions use the company time-zone.
+            if (
+                nonWorkingDaysOfWeek(settings.defaultWeeklyExpectedHours).includes(
+                    dowFromDateKey(todayKey)
+                )
+            ) {
                 lastRunDay = todayKey;
                 return;
             }
             if (lastRunDay === todayKey) return;
 
-            const endOfDay = new Date(now);
-            endOfDay.setHours(settings.endOfDayHour, 0, 0, 0);
+            const endOfDay = dayTimestamp(
+                todayKey,
+                `${String(settings.endOfDayHour).padStart(2, '0')}:00`
+            );
 
             if (now.getTime() >= endOfDay.getTime()) {
                 lastRunDay = todayKey;

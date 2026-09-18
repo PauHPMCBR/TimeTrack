@@ -48,6 +48,7 @@ import {
 } from '@/types';
 import { ApiResponse, ErrorDetails } from '@/types/apiErrors';
 import type { ErrorCode } from 'shared/src/types/response-errors';
+import type { DateKey } from 'shared/src/lib/day-key';
 import {
     VACATION_APPROVED,
     VACATION_REJECTED,
@@ -517,7 +518,7 @@ class ApiClient {
 
     async replaceDayWorkSessions(
         userId: string,
-        date: string,
+        date: DateKey,
         sessions: AdminWorkSessionInput[],
         reason: string
     ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
@@ -534,7 +535,7 @@ class ApiClient {
     }
 
     async replaceMyDayWorkSessions(
-        date: string,
+        date: DateKey,
         sessions: AdminWorkSessionInput[],
         reason: string
     ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {

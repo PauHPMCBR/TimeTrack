@@ -5,6 +5,7 @@ import {
     responseErrorEntryNotFound,
     responseErrorPost,
 } from '@/lib/response-error-generator';
+import { isValidDateKey } from 'shared/src/lib/day-key';
 import { CopyYearlyVacationRequestSchema } from 'shared/src/schemas/api';
 
 export default withApi(
@@ -19,12 +20,11 @@ export default withApi(
         if (!source) {
             return responseErrorEntryNotFound(res, 'YearlyVacationDays');
         }
-
+        // Feb 29 rolls over to Mar 1, matching the old Date arithmetic.
         const obligatoryDays = (source.obligatoryDays ?? []).map(
-            (date: Date) => {
-                const shifted = new Date(date);
-                shifted.setFullYear(toYear);
-                return shifted;
+            (day: string) => {
+                const shifted = `${toYear}${day.slice(4)}`;
+                return isValidDateKey(shifted) ? shifted : `${toYear}-03-01`;
             }
         );
 

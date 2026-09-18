@@ -47,6 +47,7 @@ export type IncorrectParameter =
     | 'fromYear'
     | 'toYear'
     | 'timestamp'
+    | 'time'
     | 'date'
     | 'role'
     | 'currentPassword'

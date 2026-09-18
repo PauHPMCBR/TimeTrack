@@ -5,10 +5,7 @@ import {
     responseErrorIncorrectParameter,
     responseErrorPost,
 } from '@/lib/response-error-generator';
-import {
-    dateKeyToLocalMidnight,
-    YearlyVacationAdminRequestSchema,
-} from 'shared/src/schemas/api';
+import { YearlyVacationAdminRequestSchema } from 'shared/src/schemas/api';
 
 export default withApi(
     {
@@ -20,14 +17,8 @@ export default withApi(
     try {
         const { year, obligatoryDays, electiveDaysTotalCount } = body;
 
-        // Normalize defensively: the schema already converts to local-midnight
-        // Dates; this also covers mocked/raw string inputs.
-        const normalized = obligatoryDays.map((day: string | Date) =>
-            typeof day === 'string' ? dateKeyToLocalMidnight(day) : new Date(day)
-        );
-
-        const invalidObligatoryDays = normalized.filter(
-            (date: Date) => date.getFullYear() !== year
+        const invalidObligatoryDays = obligatoryDays.filter(
+            (day: string) => day.slice(0, 4) !== String(year)
         );
 
         if (invalidObligatoryDays.length > 0) {
@@ -39,7 +30,7 @@ export default withApi(
         const existingVacation = await findGlobalTemplate(year);
 
         const update = {
-            obligatoryDays: normalized,
+            obligatoryDays,
             electiveDaysTotalCount,
             updatedAt: new Date(),
         };

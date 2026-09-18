@@ -12,7 +12,7 @@ import Avatar from '@/components/Avatar';
 import VacationMonthsTable from '@/components/VacationMonthsTable';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
-import { localeTag } from '@/lib/datetime';
+import { localeTag, parseDateKey } from '@/lib/datetime';
 import { Check, X, Download, CalendarOff } from 'lucide-react';
 import StepperNav from '@/components/ui/StepperNav';
 import EmptyState from '@/components/ui/EmptyState';
@@ -33,22 +33,18 @@ type GroupedRequest = {
     reason?: string;
 };
 
-// Requests are stored as intervals with their spent days computed by the
-// backend, so each document maps to exactly one display group.
 const groupRequests = (rawRequests: ElectiveVacation[]): GroupedRequest[] =>
     [...rawRequests]
-        .sort((a, b) => {
-            if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
-            return (
-                new Date(a.startDate).getTime() -
-                new Date(b.startDate).getTime()
-            );
-        })
+        .sort(
+            (a, b) =>
+                a.userId.localeCompare(b.userId) ||
+                a.startDate.localeCompare(b.startDate)
+        )
         .map((vac) => ({
             ids: [vac._id],
             userId: vac.userId,
-            startDate: new Date(vac.startDate),
-            endDate: new Date(vac.endDate),
+            startDate: parseDateKey(vac.startDate),
+            endDate: parseDateKey(vac.endDate),
             daysCount: vac.spentDays ?? 0,
             status: vac.status,
             reason: vac.reason,
@@ -65,7 +61,7 @@ export default function AdminVacationsPage() {
         ADMIN_VACATIONS_YEAR,
         new Date().getFullYear()
     );
-    const [obligatoryDays, setObligatoryDays] = useState<Date[]>([]);
+    const [obligatoryDays, setObligatoryDays] = useState<string[]>([]);
     const [filterUserId, setFilterUserId] = usePersistedState<string>(
         ADMIN_VACATIONS_USER,
         'all'

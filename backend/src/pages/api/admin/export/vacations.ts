@@ -1,6 +1,5 @@
 import { withApi } from '@/lib/api-handler';
 import { toCsv } from 'shared/src/lib/csv';
-import { yearRange } from 'shared/src/lib/date-ranges';
 import { User } from '@/models';
 import { findOverlapping } from '@/repositories/vacation-repository';
 import { responseErrorGet } from '@/lib/response-error-generator';
@@ -14,15 +13,16 @@ export default withApi(
     try {
         const year = parseInt(String(_req.query.year));
 
-        const { start: startDate, end: endDate } = yearRange(year);
+        const yearStart = `${year}-01-01`;
+        const yearEnd = `${year}-12-31`;
 
         const userIdsParam = _req.query.userIds as string | undefined;
         const userIds = userIdsParam?.split(',').filter(Boolean);
 
         const [vacations, users, allActiveUsers] = (await Promise.all([
             findOverlapping(
-                startDate,
-                endDate,
+                yearStart,
+                yearEnd,
                 userIds ? { userId: { $in: userIds } } : {}
             )
                 .sort({ startDate: 1 })
@@ -41,8 +41,8 @@ export default withApi(
         ])) as unknown as [
             Array<{
                 userId: string;
-                startDate: Date;
-                endDate: Date;
+                startDate: string;
+                endDate: string;
                 spentDays: number;
                 status: string;
                 reason?: string;
@@ -85,8 +85,8 @@ export default withApi(
             userMap.get(v.userId)?.name ?? '',
             userMap.get(v.userId)?.dni ?? '',
             userMap.get(v.userId)?.email ?? '',
-            new Date(v.startDate).toISOString().slice(0, 10),
-            new Date(v.endDate).toISOString().slice(0, 10),
+            v.startDate,
+            v.endDate,
             v.spentDays,
             v.status,
             v.reason ?? '',

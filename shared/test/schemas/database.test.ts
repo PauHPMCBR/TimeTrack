@@ -385,8 +385,8 @@ describe('Database Schemas', () => {
         it('should validate correct vacation', () => {
             const result = ElectiveVacationSchema.safeParse({
                 userId: 'user123',
-                startDate: new Date('2024-06-15'),
-                endDate: new Date('2024-06-16'),
+                startDate: '2024-06-15',
+                endDate: '2024-06-16',
                 spentDays: 2,
                 status: 'pending',
             });
@@ -396,8 +396,8 @@ describe('Database Schemas', () => {
         it('should default status to pending and spentDays to 0', () => {
             const result = ElectiveVacationSchema.safeParse({
                 userId: 'user123',
-                startDate: new Date('2024-06-15'),
-                endDate: new Date('2024-06-15'),
+                startDate: '2024-06-15',
+                endDate: '2024-06-15',
             });
             expect(result.success).toBe(true);
             if (result.success) {
@@ -405,13 +405,30 @@ describe('Database Schemas', () => {
                 expect(result.data.spentDays).toBe(0);
             }
         });
+
+        it('should reject non-day-key bounds', () => {
+            expect(
+                ElectiveVacationSchema.safeParse({
+                    userId: 'user123',
+                    startDate: new Date('2024-06-15'),
+                    endDate: '2024-06-16',
+                }).success
+            ).toBe(false);
+            expect(
+                ElectiveVacationSchema.safeParse({
+                    userId: 'user123',
+                    startDate: '2024-02-30',
+                    endDate: '2024-06-16',
+                }).success
+            ).toBe(false);
+        });
     });
 
     describe('YearlyVacationDaysSchema', () => {
         it('should validate correct yearly vacation', () => {
             const result = YearlyVacationDaysSchema.safeParse({
                 year: 2024,
-                obligatoryDays: [new Date('2024-01-01')],
+                obligatoryDays: ['2024-01-01'],
                 electiveDaysTotalCount: 22,
             });
             expect(result.success).toBe(true);

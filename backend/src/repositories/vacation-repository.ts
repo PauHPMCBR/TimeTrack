@@ -1,13 +1,14 @@
 import { ElectiveVacation, YearlyVacationDays } from '@/models';
 import type { YearlyVacationRow } from '@/lib/rows';
 
-// Live vacation intervals overlapping [start, end]. `statuses` narrows the
-// workflow state (default: any status); `userId` scopes to one user or an
-// $in list; `endExclusive` compares the interval starts with $lt (half-open
-// month windows). Returns the query so callers can chain sort/lean.
+// Live vacation intervals overlapping the inclusive day-key window. Keys
+// compare lexicographically. `statuses` narrows the workflow state (default:
+// any status); `userId` scopes to one user or an $in list; `endExclusive`
+// compares the interval starts with $lt (half-open month windows). Returns
+// the query so callers can chain sort/lean.
 export const findOverlapping = (
-    start: Date,
-    end: Date,
+    startKey: string,
+    endKey: string,
     options: {
         userId?: string | { $in: unknown[] };
         statuses?: string | string[];
@@ -23,8 +24,8 @@ export const findOverlapping = (
                       : options.statuses,
               }
             : {}),
-        startDate: options.endExclusive ? { $lt: end } : { $lte: end },
-        endDate: { $gte: start },
+        startDate: options.endExclusive ? { $lt: endKey } : { $lte: endKey },
+        endDate: { $gte: startKey },
     });
 
 // Company-wide template row for a year (userId absent).

@@ -8,6 +8,7 @@ import { WorkSessionRequest } from '@/schemas/api';
 import { WorkSession, WorksessionReason, User } from '@/types';
 import { toLocalDateKey, formatHM, localeTag } from '@/lib/datetime';
 import { formatClockHM } from '@/lib/timezone';
+import type { DateKey } from 'shared/src/lib/day-key';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import {
     workedIntervals as sessionsToWorkedIntervals,
@@ -221,7 +222,9 @@ export default function CheckInPage() {
         if (searchParams.get('applyAuto') === '1') {
             const d = searchParams.get('date');
             setAutoApplyDate(
-                d && DATE_KEY_REGEX.test(d) ? d : toLocalDateKey(new Date())
+                d && DATE_KEY_REGEX.test(d)
+                    ? (d as DateKey)
+                    : toLocalDateKey(new Date())
             );
             setAutoApplyOpen(true);
             // Drop the flag so a refresh doesn't re-open the dialog.
@@ -539,7 +542,9 @@ export default function CheckInPage() {
                             type="date"
                             value={autoApplyDate}
                             max={toLocalDateKey(new Date())}
-                            onChange={(e) => setAutoApplyDate(e.target.value)}
+                            onChange={(e) =>
+                                setAutoApplyDate(e.target.value as DateKey)
+                            }
                             className="mt-1 w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-zinc-700 transition-colors"
                         />
                     </label>

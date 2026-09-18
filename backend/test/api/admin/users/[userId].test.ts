@@ -286,10 +286,7 @@ describe('PUT /api/admin/users/[userId]', () => {
 
         await updateUserHandler(req, res);
 
-        const expected = new Date('2024-01-15T00:00:00');
-        expect(existingUser.trackingStartDate.getTime()).toBe(
-            expected.getTime()
-        );
+        expect(existingUser.trackingStartDate).toBe('2024-01-15');
         expect(existingUser.save).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
     });

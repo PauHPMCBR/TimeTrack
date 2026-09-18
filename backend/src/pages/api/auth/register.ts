@@ -9,6 +9,7 @@ import {
 } from '@/lib/response-error-generator';
 import { RegisterRequestSchema } from 'shared/src/schemas/api';
 import { MS_PER_HOUR } from 'shared/src/lib/constants';
+import { dateKey } from '@/lib/date-key';
 import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
 import { withApi } from '@/lib/api-handler';
@@ -75,9 +76,9 @@ export default withRateLimit(
                             registered: true,
                             failedLoginAttempts: 0,
                             blocked: false,
-                            // Pin the tracking start to the activation moment so
-                            // monthly confirmations only evaluate from here on.
-                            trackingStartDate: new Date(),
+                            // Company-zone activation day: monthly
+                            // confirmations evaluate from here on.
+                            trackingStartDate: dateKey(new Date()),
                             updatedAt: new Date(),
                         },
                         $unset: { blockedSince: 1 },

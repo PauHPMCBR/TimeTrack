@@ -9,7 +9,7 @@ import {
 } from '@/types/calendar';
 import { CalendarDay } from './CalendarDay';
 import { CalendarTooltip, getVacationClass } from './CalendarTooltip';
-import { weekDayShortLabels } from '@/lib/datetime';
+import { toLocalDateKey, weekDayShortLabels } from '@/lib/datetime';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
@@ -17,17 +17,9 @@ import {
 } from 'shared/src/lib/constants';
 import { DEFAULT_WEEKLY_EXPECTED_HOURS } from 'shared/src/lib/defaults';
 import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
-import { dayIsWithinInterval } from 'shared/src/lib/vacation-days';
+import { keyIsWithinInterval } from 'shared/src/lib/vacation-days';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-
-function pad(n: number): string {
-    return n.toString().padStart(2, '0');
-}
-
-function ymd(d: Date): string {
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
 
 function buildMonthMatrix(
     year: number,
@@ -100,18 +92,11 @@ export function Calendar({
 
             const events: VacationEvent[] = [];
 
+            const dayKey = toLocalDateKey(date);
+
             const isObligatory =
-                vacations.yearlyVacationDays?.obligatoryDays?.some(
-                    (obligatoryDate) => {
-                        const obligatoryDateObj = new Date(obligatoryDate);
-                        obligatoryDateObj.setHours(0, 0, 0, 0);
-                        const dateToCheck = new Date(date);
-                        dateToCheck.setHours(0, 0, 0, 0);
-                        return (
-                            obligatoryDateObj.getTime() ===
-                            dateToCheck.getTime()
-                        );
-                    }
+                vacations.yearlyVacationDays?.obligatoryDays?.includes(
+                    dayKey
                 ) || false;
 
             if (isObligatory) {
@@ -126,8 +111,8 @@ export function Calendar({
                     (elective) =>
                         elective.startDate &&
                         elective.endDate &&
-                        dayIsWithinInterval(
-                            date,
+                        keyIsWithinInterval(
+                            dayKey,
                             elective.startDate,
                             elective.endDate
                         )
@@ -172,7 +157,11 @@ export function Calendar({
                     if (
                         vac.startDate &&
                         vac.endDate &&
-                        dayIsWithinInterval(date, vac.startDate, vac.endDate)
+                        keyIsWithinInterval(
+                            dayKey,
+                            vac.startDate,
+                            vac.endDate
+                        )
                     ) {
                         const vacUser = vac.userId;
                         const vacUserName =
@@ -226,12 +215,12 @@ export function Calendar({
         const map = new Map<string, CalendarDayData>();
         rows.flat().forEach((date) => {
             if (!date) return;
-            const key = ymd(date);
+            const key = toLocalDateKey(date);
             map.set(key, {
                 date,
                 vacationEvents: getVacationsForDay(date),
                 workEvent: getWorkSessionsForDay(date),
-                isToday: key === ymd(today),
+                isToday: key === toLocalDateKey(today),
                 isWeekend: nonWorkingDays.includes(date.getDay()),
                 // Grey out any day the user does not work: weekly non-working
                 // days, company obligatory holidays and own approved vacations.
@@ -401,7 +390,7 @@ export function Calendar({
                                 />
                             );
 
-                        const dayData = daysData.get(ymd(date))!;
+                        const dayData = daysData.get(toLocalDateKey(date))!;
 
                         return (
                             <CalendarDay

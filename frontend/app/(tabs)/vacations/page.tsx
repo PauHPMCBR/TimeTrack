@@ -34,6 +34,8 @@ import {
     resolveNonWorkingDays,
 } from 'shared/src/lib/user-overrides';
 import { countSpentVacationDays } from 'shared/src/lib/vacation-days';
+import { DateKeySchema } from 'shared/src/lib/day-key';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export default function MyVacationsPage() {
     const { t, lang } = useI18n();
@@ -58,9 +60,6 @@ export default function MyVacationsPage() {
     const [isCancelling, setIsCancelling] = useState(false);
 
     const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]);
-    const [companyTimezone, setCompanyTimezone] = useState<string | undefined>(
-        undefined
-    );
 
     const fetchData = useCallback(async (year: number) => {
         setYearLoading(true);
@@ -70,8 +69,14 @@ export default function MyVacationsPage() {
                 const res = await apiClient.getUserVacations(user._id, year);
 
                 if (res.data) {
-                    setVacations(res.data.electives || []);
-                    setStats(res.data.yearlyVacationDays || null);
+                    setVacations(
+                        (res.data.electives ?? []) as ElectiveVacation[]
+                    );
+                    setStats(
+                        (res.data.yearlyVacationDays ?? null) as
+                            | YearlyVacationDays
+                            | null
+                    );
                 }
 
                 const settingsRes = await apiClient.getSettings();
@@ -85,13 +90,6 @@ export default function MyVacationsPage() {
                         )
                     )
                 );
-                // Same company timezone the backend resolves day bounds with.
-                if (
-                    !settingsRes.error &&
-                    settingsRes.data?.settings?.timezone
-                ) {
-                    setCompanyTimezone(settingsRes.data.settings.timezone);
-                }
             }
         } catch (error) {
             console.error('Error carregant vacances:', error);
@@ -130,45 +128,35 @@ export default function MyVacationsPage() {
         fetchData(selectedYear);
     }, [fetchData, selectedYear, availableYears]);
 
-    // Requests are stored as intervals with their spent days already computed
-    // by the backend; each document renders as one condensed row.
     const groupedVacations = useMemo(() => {
         return [...vacations]
-            .sort(
-                (a, b) =>
-                    new Date(b.startDate).getTime() -
-                    new Date(a.startDate).getTime()
-            )
+            .sort((a, b) => b.startDate.localeCompare(a.startDate))
             .map((vac) => ({
                 id: vac._id,
-                startDate: new Date(vac.startDate),
-                endDate: new Date(vac.endDate),
+                startDate: parseDateKey(vac.startDate),
+                endDate: parseDateKey(vac.endDate),
                 spentDays: vac.spentDays ?? 0,
                 status: vac.status,
                 reason: vac.reason,
             }));
     }, [vacations]);
 
-    // Preview of the request cost, computed with the same shared function the
-    // backend uses (non-working days, obligatory days, company timezone).
     const requestPreview = useMemo(() => {
-        if (!date || !endDate) return null;
-
-        const start = parseDateKey(date);
-        const end = parseDateKey(endDate);
-        if (end.getTime() < start.getTime()) return null;
+        const start = DateKeySchema.safeParse(date);
+        const end = DateKeySchema.safeParse(endDate);
+        if (!start.success || !end.success) return null;
+        if (end.data < start.data) return null;
 
         return {
-            crossYear: end.getFullYear() !== start.getFullYear(),
+            crossYear: end.data.slice(0, 4) !== start.data.slice(0, 4),
             cost: countSpentVacationDays(
-                start,
-                end,
+                start.data,
+                end.data,
                 nonWorkingDays,
-                stats?.obligatoryDays ?? [],
-                companyTimezone
+                stats?.obligatoryDays ?? []
             ),
         };
-    }, [date, endDate, nonWorkingDays, stats, companyTimezone]);
+    }, [date, endDate, nonWorkingDays, stats]);
 
     const isRequestValid =
         Boolean(date) &&
@@ -187,12 +175,9 @@ export default function MyVacationsPage() {
         setErrorMsg(null);
 
         try {
-            // Send plain "YYYY-MM-DD" keys: the backend anchors them to local
-            // midnight itself, so the client's timezone can never shift the
-            // day. The backend recomputes the spent days.
             const res = await apiClient.createVacation({
-                startDate: date,
-                endDate: endDate,
+                startDate: date as DateKey,
+                endDate: endDate as DateKey,
                 reason: reason.trim() || undefined,
             });
 

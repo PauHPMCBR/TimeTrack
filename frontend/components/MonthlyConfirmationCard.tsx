@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
-import { localeTag, toLocalDateKey } from '@/lib/datetime';
+import { localeTag } from '@/lib/datetime';
 import { MonthlyApprovalRow } from '@/schemas/api';
 import {
     APPROVAL_APPROVED,
@@ -42,11 +42,7 @@ export default function MonthlyConfirmationCard({
             try {
                 const me = await apiClient.getCurrentUser();
                 if (!me || cancelled) return;
-                setStartKey(
-                    me.trackingStartDate
-                        ? toLocalDateKey(me.trackingStartDate)
-                        : null
-                );
+                setStartKey(me.trackingStartDate ?? null);
                 const res = await apiClient.getMonthlyApprovals(me._id);
                 if (!cancelled && res.data?.approvals) {
                     setApprovals(res.data.approvals);

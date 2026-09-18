@@ -41,29 +41,44 @@ import {
     resolveWeeklyExpectedHours,
     resolveWeekTimetable,
 } from 'shared/src/lib/user-overrides';
-import { monthRange, daysInMonth } from 'shared/src/lib/date-ranges';
+import {
+    dowFromDateKey,
+    addDaysToKey,
+    dateKeyFromParts,
+    daysInMonth,
+    DateKey,
+} from 'shared/src/lib/day-key';
+import { dayRange } from '@/lib/date-range';
 
 export interface MonthPeriod {
     year: number;
     month: number; // 1-12
 }
 
-/** "YYYY-MM" key of a Date (local). */
+/** "YYYY-MM" key of a Date (company time-zone). */
 export function monthKeyOf(d: Date): string {
     return dateKey(d).slice(0, 7);
 }
 
-/** The calendar month before the month of `d` (local). */
+/** The calendar month before the month of `d` (company time-zone). */
 export function previousMonthOf(d: Date): MonthPeriod {
-    const year = d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
-    const month = d.getMonth() === 0 ? 12 : d.getMonth();
-    return { year, month };
+    const [year, month] = dateKey(d)
+        .split('-')
+        .slice(0, 2)
+        .map(Number);
+    return month === 1
+        ? { year: year - 1, month: 12 }
+        : { year, month: month - 1 };
 }
 
-/** True when (year, month) is a fully elapsed calendar month (local). */
+/** True when (year, month) is a fully elapsed calendar month (company time-zone). */
 export function isPastMonth(year: number, month: number, now: Date): boolean {
-    const current = now.getFullYear() * 12 + now.getMonth();
-    const target = year * 12 + (month - 1);
+    const [currentYear, currentMonth] = dateKey(now)
+        .split('-')
+        .slice(0, 2)
+        .map(Number);
+    const current = currentYear * 12 + currentMonth;
+    const target = year * 12 + month;
     return target < current;
 }
 
@@ -107,7 +122,7 @@ export async function computeMonthAnomalies(
             weeklyExpectedHours?: number[];
             scheduleMode?: 'hours' | 'timetable';
             timetable?: WeekTimetable;
-            trackingStartDate?: Date | null;
+            trackingStartDate?: DateKey | null;
             checkInRequired?: boolean;
         } | null,
         Awaited<ReturnType<typeof getAppSettings>>,
@@ -121,57 +136,51 @@ export async function computeMonthAnomalies(
         ? null
         : resolveWeeklyExpectedHours(user, settings.defaultWeeklyExpectedHours);
 
-    const { start, end } = monthRange(year, month);
     const nDaysInMonth = daysInMonth(year, month);
+    const monthKeys: DateKey[] = Array.from({ length: nDaysInMonth }, (_, i) =>
+        dateKeyFromParts(year, month, i + 1)
+    );
+
+    const monthStart = dayRange(monthKeys[0]).start;
+    const nextMonthKey = addDaysToKey(monthKeys[0], nDaysInMonth);
+    const monthEnd = dayRange(nextMonthKey).start;
 
     // Only evaluate days from the user's tracking start onward (if known).
-    const trackingStart = user.trackingStartDate
-        ? new Date(user.trackingStartDate)
-        : null;
+    const trackingStartKey = user.trackingStartDate ?? null;
 
     const [sessions, approvedVacations, yearlyTemplates] = (await Promise.all([
-        findActiveInRange(start, end, { userId })
+        findActiveInRange(monthStart, monthEnd, { userId })
             .sort({ timestamp: 1 })
             .lean(),
-        findOverlapping(start, end, {
+        findOverlapping(monthKeys[0], monthKeys[nDaysInMonth - 1], {
             userId,
             statuses: VACATION_APPROVED,
-            endExclusive: true,
+            endExclusive: false,
         }).lean(),
         findGlobalTemplates(year).lean(),
     ])) as unknown as [
         { timestamp: Date | string; type: 'check_in' | 'check_out' }[],
-        { startDate: Date | string; endDate: Date | string }[],
-        { obligatoryDays?: Date[] }[],
+        { startDate: DateKey; endDate: DateKey }[],
+        { obligatoryDays?: DateKey[] }[],
     ];
 
-    const vacationSet = new Set<string>();
+    const vacationSet = new Set<DateKey>();
     for (const v of approvedVacations) {
-        const intervalStart = new Date(v.startDate);
-        intervalStart.setHours(0, 0, 0, 0);
-        const intervalEnd = new Date(v.endDate);
-        intervalEnd.setHours(0, 0, 0, 0);
-        for (
-            let cursor = new Date(intervalStart);
-            cursor.getTime() <= intervalEnd.getTime();
-            cursor.setDate(cursor.getDate() + 1)
-        ) {
-            vacationSet.add(dateKey(cursor));
+        for (let key = v.startDate; key <= v.endDate; key = addDaysToKey(key, 1)) {
+            vacationSet.add(key);
         }
     }
-    const obligatorySet = new Set<string>();
+    const obligatorySet = new Set<DateKey>();
     for (const template of yearlyTemplates) {
         for (const day of template.obligatoryDays ?? []) {
-            obligatorySet.add(dateKey(new Date(day)));
+            obligatorySet.add(day);
         }
     }
 
     const anomalySet = new Set<WorkSessionAnomaly>();
-    for (let day = 1; day <= nDaysInMonth; day++) {
-        const dayDate = new Date(year, month - 1, day);
-        const key = dateKey(dayDate);
-        if (trackingStart && dayDate < trackingStart) continue;
-        const dow = dayDate.getDay();
+    for (const key of monthKeys) {
+        if (trackingStartKey && key < trackingStartKey) continue;
+        const dow = dowFromDateKey(key);
         const intervals = dayTimetable(weekTimetable, dow);
         const expectedHours = isTimetableMode
             ? impliedHours(intervals)
@@ -192,7 +201,8 @@ export async function computeMonthAnomalies(
             for (const anomaly of computeTimetableAnomalies(
                 daySessions,
                 intervals,
-                settings.timetableToleranceMinutes
+                settings.timetableToleranceMinutes,
+                settings.timezone
             )) {
                 dayAnomalies.add(anomaly);
             }

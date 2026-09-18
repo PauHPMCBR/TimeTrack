@@ -1,6 +1,7 @@
 import { withApi } from '@/lib/api-handler';
 import { AuditEvent, User } from '@/models';
 import { responseErrorGet } from '@/lib/response-error-generator';
+import { dayRange } from '@/lib/date-range';
 import {
     AdminAuditEventsQuery,
     AdminAuditEventsQuerySchema,
@@ -27,8 +28,8 @@ export default withApi(
             if (query.actorId) filter.actorId = query.actorId;
             if (query.from || query.to) {
                 const timestamp: Record<string, Date> = {};
-                if (query.from) timestamp.$gte = new Date(`${query.from}T00:00:00`);
-                if (query.to) timestamp.$lte = new Date(`${query.to}T23:59:59.999`);
+                if (query.from) timestamp.$gte = dayRange(query.from).start;
+                if (query.to) timestamp.$lt = dayRange(query.to).end;
                 filter.timestamp = timestamp;
             }
 

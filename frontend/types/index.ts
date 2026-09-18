@@ -9,6 +9,7 @@ import {
     YearlyVacationDaysSchema,
 } from '@/schemas/database';
 import type { AdminWorkSessionRow } from '@/schemas/api';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export type User = z.infer<typeof UserSchema> & { _id: string };
 export type Group = z.infer<typeof GroupSchema> & { _id: string };
@@ -25,12 +26,21 @@ export type WorksessionReason = z.infer<typeof WorkSessionReasonSchema> & {
     _id: string;
 };
 export type WorkSession = z.infer<typeof WorkSessionSchema> & { _id: string };
-export type ElectiveVacation = z.infer<typeof ElectiveVacationSchema> & {
+export type ElectiveVacation = Omit<
+    z.infer<typeof ElectiveVacationSchema>,
+    'startDate' | 'endDate'
+> & {
     _id: string;
+    startDate: DateKey;
+    endDate: DateKey;
     approvedByName?: string;
 };
-export type YearlyVacationDays = z.infer<typeof YearlyVacationDaysSchema> & {
+export type YearlyVacationDays = Omit<
+    z.infer<typeof YearlyVacationDaysSchema>,
+    'obligatoryDays'
+> & {
     _id: string;
+    obligatoryDays: DateKey[];
 };
 export type AppSettings = z.infer<typeof AppSettingsSchema> & { _id: string };
 export type { AdminWorkSessionRow };

@@ -38,6 +38,7 @@ vi.stubEnv('FRONTEND_URL', 'http://localhost:3000');
 import { User, WorkSession } from '@/models';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { getAppSettings } from '@/lib/settings';
+import type { DateKey } from 'shared/src/lib/day-key';
 import { runDailyInconsistencyReminder } from '@/lib/reminders';
 import { createMockAppSettings } from '../utils/mocks';
 
@@ -99,7 +100,7 @@ describe('runDailyInconsistencyReminder', () => {
             } as any;
         });
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).toHaveBeenCalledTimes(1);
         expect(sendInconsistencyReminder).toHaveBeenCalledWith(
@@ -137,7 +138,7 @@ describe('runDailyInconsistencyReminder', () => {
             } as any;
         });
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).not.toHaveBeenCalled();
         expect(summary.sentEmails).toBe(0);
@@ -151,7 +152,7 @@ describe('runDailyInconsistencyReminder', () => {
             }),
         } as any);
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).not.toHaveBeenCalled();
         expect(summary.scannedUsers).toBe(1);
@@ -166,7 +167,7 @@ describe('runDailyInconsistencyReminder', () => {
             monthlyApprovalReminderDays: 5,
         }));
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).not.toHaveBeenCalled();
         expect(summary).toMatchObject({
@@ -191,7 +192,7 @@ describe('runDailyInconsistencyReminder', () => {
             }),
         } as any);
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).not.toHaveBeenCalled();
         expect(summary.sentEmails).toBe(0);
@@ -212,7 +213,7 @@ describe('runDailyInconsistencyReminder', () => {
             }),
         } as any);
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).toHaveBeenCalledTimes(1);
         expect(summary.sentEmails).toBe(1);
@@ -233,7 +234,7 @@ describe('runDailyInconsistencyReminder', () => {
             }),
         } as any);
 
-        const summary = await runDailyInconsistencyReminder(DATE);
+        const summary = await runDailyInconsistencyReminder(DATE as DateKey);
 
         expect(sendInconsistencyReminder).toHaveBeenCalledTimes(1);
         expect(summary.sentEmails).toBe(1);

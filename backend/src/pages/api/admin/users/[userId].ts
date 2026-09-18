@@ -12,10 +12,8 @@ import {
     responseErrorDelete,
     responseErrorPut,
 } from '@/lib/response-error-generator';
-import {
-    UpdateUserRequestSchema,
-    UserIdParamSchema,
-} from 'shared/src/schemas/api';
+import { UpdateUserRequestSchema, UserIdParamSchema } from 'shared/src/schemas/api';
+import { isValidDateKey } from 'shared/src/lib/day-key';
 import crypto from 'crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -181,21 +179,19 @@ const putHandler = withApi(
                 );
             if ('checkInRequired' in body && body.checkInRequired !== undefined)
                 user.checkInRequired = body.checkInRequired;
-            // trackingStartDate accepts "YYYY-MM-DD" (local day, stored as local
-            // midnight). The field is non-nullable, so only a valid date is allowed.
             if (
                 'trackingStartDate' in body &&
                 body.trackingStartDate !== undefined
             ) {
-                const d = new Date(`${body.trackingStartDate}T00:00:00`);
-                if (isNaN(d.getTime())) {
+                const key = body.trackingStartDate;
+                if (!isValidDateKey(key)) {
                     return responseErrorIncorrectParameter(
                         res,
                         'trackingStartDate',
                         ['InvalidTimestamp']
                     );
                 }
-                user.trackingStartDate = d;
+                user.trackingStartDate = key;
             }
             if (body.invalidatePassword) {
                 // Forces forgot-password recovery; admins never set known passwords.

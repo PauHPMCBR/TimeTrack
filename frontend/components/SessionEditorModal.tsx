@@ -11,7 +11,9 @@ import { configuredTimezone, toZonedWallString } from '@/lib/timezone';
 import {
     CHECK_IN,
     CHECK_OUT,
+    HOUR_MINUTE_KEY_REGEX,
 } from 'shared/src/lib/constants';
+import { timeToMinutes } from 'shared/src/lib/expected-timetable';
 import {
     DEFAULT_CHECK_IN_TIME,
     DEFAULT_CHECK_OUT_TIME,
@@ -27,17 +29,14 @@ type Props = {
     onSaved: () => void;
 };
 
-// Times are kept as datetime-local strings ("YYYY-MM-DDTHH:mm") while editing.
 type EditableSession = {
     _id: string;
     type: WorkSessionType;
-    timestamp: string;
+    time: string;
     overtime: boolean;
     notes?: string;
 };
 
-// Wall times are kept as "YYYY-MM-DDTHH:mm" strings in the company timezone
-// (the format the backend interprets); only HH:mm is ever edited directly.
 function addOneHourToWallTime(hm: string): string {
     const [h, m] = hm.split(':').map(Number);
     const total = Math.min((h || 0) * 60 + (m || 0) + 60, 23 * 60 + 59);
@@ -81,7 +80,7 @@ export default function SessionEditorModal({
         row.sessions.map((s) => ({
             _id: s._id,
             type: s.type,
-            timestamp: toZonedWallString(s.timestamp),
+            time: toZonedWallString(s.timestamp).split('T')[1],
             overtime: s.overtime === true,
             notes: s.notes,
         }))
@@ -109,20 +108,16 @@ export default function SessionEditorModal({
     const expected = nextExpectedType(sessions);
 
     const validate = (): string | null => {
-        const dayStart = new Date(`${row.date}T00:00:00`);
-        const dayEnd = new Date(`${row.date}T23:59:59.999`);
-        const times = sessions.map((s) => new Date(s.timestamp));
-
-        for (let i = 0; i < times.length; i++) {
-            if (sessions[i].timestamp === '' || isNaN(times[i].getTime())) {
+        for (const session of sessions) {
+            if (!HOUR_MINUTE_KEY_REGEX.test(session.time)) {
                 return t('error.IncorrectParameter.reason.InvalidTimestamp');
-            }
-            if (times[i] < dayStart || times[i] > dayEnd) {
-                return t('error.IncorrectParameter.reason.OutOfDay');
             }
         }
         for (let i = 1; i < sessions.length; i++) {
-            if (times[i].getTime() <= times[i - 1].getTime()) {
+            if (
+                timeToMinutes(sessions[i].time) <=
+                timeToMinutes(sessions[i - 1].time)
+            ) {
                 return t('error.IncorrectParameter.reason.NotInOrder');
             }
         }
@@ -135,7 +130,7 @@ export default function SessionEditorModal({
     const handleChangeTime = (session: EditableSession, value: string) => {
         setSessions((prev) =>
             prev.map((s) =>
-                s._id === session._id ? { ...s, timestamp: value } : s
+                s._id === session._id ? { ...s, time: value } : s
             )
         );
         markDirty();
@@ -144,7 +139,7 @@ export default function SessionEditorModal({
     const handleAdd = () => {
         const last = sessions[sessions.length - 1];
         const nextTime = last
-            ? addOneHourToWallTime(last.timestamp.split('T')[1] ?? '00:00')
+            ? addOneHourToWallTime(last.time)
             : expected === CHECK_IN
               ? DEFAULT_CHECK_IN_TIME
               : DEFAULT_CHECK_OUT_TIME;
@@ -152,7 +147,7 @@ export default function SessionEditorModal({
         const next = {
             _id: `new-${tempId.current++}`,
             type: expected,
-            timestamp: `${row.date}T${nextTime}`,
+            time: nextTime,
             overtime: false,
         };
         setSessions((prev) => [...prev, next]);
@@ -185,7 +180,7 @@ export default function SessionEditorModal({
         const payload = sessions.map((s) => ({
             ...(s._id.startsWith('new-') ? {} : { _id: s._id }),
             type: s.type,
-            timestamp: s.timestamp,
+            time: s.time,
             overtime: s.overtime,
         }));
         const res = isAdminPanel
@@ -324,16 +319,10 @@ export default function SessionEditorModal({
                                 </span>
                                 <input
                                     type="time"
-                                    value={
-                                        session.timestamp.split('T')[1] ??
-                                        ''
-                                    }
+                                    value={session.time}
                                     disabled={saving}
                                     onChange={(e) =>
-                                        handleChangeTime(
-                                            session,
-                                            `${row.date}T${e.target.value}`
-                                        )
+                                        handleChangeTime(session, e.target.value)
                                     }
                                     className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
                                 />

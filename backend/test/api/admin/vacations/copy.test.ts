@@ -92,7 +92,7 @@ describe('POST /api/admin/vacations/copy', () => {
         const source = {
             _id: 'source-2024',
             year: 2024,
-            obligatoryDays: [new Date(2024, 0, 6)],
+            obligatoryDays: ['2024-01-06'],
             electiveDaysTotalCount: 22,
         };
         vi.mocked(YearlyVacationDays.findOne)
@@ -119,7 +119,7 @@ describe('POST /api/admin/vacations/copy', () => {
             .mockResolvedValueOnce({
                 _id: 'source-2024',
                 year: 2024,
-                obligatoryDays: [new Date(2024, 0, 6)],
+                obligatoryDays: ['2024-01-06'],
                 electiveDaysTotalCount: 22,
                 })
             .mockResolvedValueOnce(null);
@@ -136,7 +136,7 @@ describe('POST /api/admin/vacations/copy', () => {
             expect.objectContaining({
                 year: 2025,
                 electiveDaysTotalCount: 22,
-                obligatoryDays: [new Date(2025, 0, 6)],
+                obligatoryDays: ['2025-01-06'],
                 })
         );
         expect(res.status).toHaveBeenCalledWith(200);
@@ -157,7 +157,7 @@ describe('POST /api/admin/vacations/copy', () => {
             .mockResolvedValueOnce({
                 _id: 'source-2024',
                 year: 2024,
-                obligatoryDays: [new Date(2024, 1, 1)],
+                obligatoryDays: ['2024-02-01'],
                 electiveDaysTotalCount: 20,
                 })
             .mockResolvedValueOnce({ _id: 'target-2025', year: 2025 });
@@ -174,7 +174,7 @@ describe('POST /api/admin/vacations/copy', () => {
             'target-2025',
             expect.objectContaining({
                 electiveDaysTotalCount: 20,
-                obligatoryDays: [new Date(2025, 1, 1)],
+                obligatoryDays: ['2025-02-01'],
                 })
         );
         expect(res.status).toHaveBeenCalledWith(200);

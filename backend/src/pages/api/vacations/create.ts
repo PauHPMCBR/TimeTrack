@@ -9,12 +9,11 @@ import {
 } from '@/lib/response-error-generator';
 import { ElectiveVacationRequestSchema } from 'shared/src/schemas/api';
 import { withApi } from '@/lib/api-handler';
-import { yearRange } from 'shared/src/lib/date-ranges';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
-import { getAppSettings, getConfiguredTimezone } from '@/lib/settings';
+import { getAppSettings } from '@/lib/settings';
 import {
     countSpentVacationDays,
     nonWorkingDaysOfWeek,
@@ -27,14 +26,9 @@ export default withApi(
     try {
         const { startDate, endDate, reason } = body;
         const userId = req.user!.userId;
-        // Both bounds arrive at local midnight (see ElectiveVacationRequestSchema).
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(0, 0, 0, 0);
-        const year = start.getFullYear();
+        const year = Number(startDate.slice(0, 4));
 
-        if (end.getFullYear() !== year) {
+        if (endDate.slice(0, 4) !== String(year)) {
             return responseErrorIllegalAction(res, 'VacationCrossYear');
         }
 
@@ -45,7 +39,7 @@ export default withApi(
 
         // Overlap check: one interval per user (pending/approved), so the same
         // day can never be discounted twice.
-        const overlapping = await findOverlapping(start, end, {
+        const overlapping = await findOverlapping(startDate, endDate, {
             userId,
             statuses: [VACATION_PENDING, VACATION_APPROVED],
         });
@@ -62,11 +56,10 @@ export default withApi(
             nonWorkingDaysOfWeek(settings.defaultWeeklyExpectedHours)
         );
         const spentDays = countSpentVacationDays(
-            start,
-            end,
+            startDate,
+            endDate,
             nonWorkingDays,
-            yearlyVacationDays.obligatoryDays,
-            getConfiguredTimezone()
+            yearlyVacationDays.obligatoryDays
         );
 
         // A period made up only of non-working and obligatory days costs
@@ -77,11 +70,13 @@ export default withApi(
 
         // Balance: spent days of every live request this year (pending ones
         // included — they may still be approved).
-        const { start: yearStart, end: yearEnd } = yearRange(year);
         const yearRequests = (await ElectiveVacation.find({
             userId,
             status: { $in: [VACATION_PENDING, VACATION_APPROVED] },
-            startDate: { $gte: yearStart, $lte: yearEnd },
+            startDate: {
+                $gte: `${year}-01-01`,
+                $lte: `${year}-12-31`,
+            },
         })) as unknown as Array<{ spentDays: number }>;
         const usedDays = yearRequests.reduce(
             (sum, request) => sum + (request.spentDays ?? 0),
@@ -97,8 +92,8 @@ export default withApi(
 
         const elective = await ElectiveVacation.create({
             userId,
-            startDate: start,
-            endDate: end,
+            startDate,
+            endDate,
             spentDays,
             reason,
         });

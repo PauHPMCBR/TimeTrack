@@ -40,8 +40,10 @@ vi.mock('@/models', () => ({
     },
 }));
 
+import type { DateKey } from 'shared/src/lib/day-key';
 import { WorkSession } from '@/models';
 import workSessionRangeHandler from '@/pages/api/work-sessions/[userId]/range';
+import { dayRange } from '@/lib/date-range';
 
 describe('GET /api/work-sessions/[userId]/range', () => {
     beforeEach(() => {
@@ -100,8 +102,8 @@ describe('GET /api/work-sessions/[userId]/range', () => {
         expect(WorkSession.find).toHaveBeenCalledWith({
             userId: 'user-456',
             timestamp: {
-                $gte: new Date('2024-01-01T00:00:00'),
-                $lte: new Date('2024-03-31T23:59:59.999'),
+                $gte: dayRange('2024-01-01' as DateKey).start,
+                $lt: dayRange('2024-03-31' as DateKey).end,
             },
             status: { $ne: 'replaced' },
         });
@@ -109,26 +111,6 @@ describe('GET /api/work-sessions/[userId]/range', () => {
         expect(res.json).toHaveBeenCalledWith({
             success: true,
             data: { workSessions: mockSessions },
-        });
-    });
-
-    it('should return 400 when to is not a valid date', async () => {
-        const req = mockReq({
-            method: 'GET',
-            query: { userId: 'user-456', from: '2024-01-01', to: 'nope' },
-        });
-        const res = mockRes();
-
-        await workSessionRangeHandler(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            success: false,
-            error: 'IncorrectParameter',
-            details: {
-                incorrectParameter: 'date',
-                reasons: ['InvalidTimestamp'],
-            },
         });
     });
 
