@@ -29,7 +29,7 @@ export function getVacationClass(type: VacationEvent['type']): string {
         case 'elective-rejected':
             return 'bg-red-100 text-red-800 border border-dashed border-red-300';
         case 'authorized-leave':
-            return 'bg-violet-100 text-violet-800 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50';
+            return 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800/50';
         case 'team-elective':
         case 'team-authorized-leave':
             return 'bg-pink-100 text-pink-800 border border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800/50';

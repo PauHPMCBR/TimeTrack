@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
@@ -21,6 +21,7 @@ import {
     ADMIN_EVENTS_PERIOD,
     ADMIN_EVENTS_CURSOR,
     ADMIN_EVENTS_ANOMALY_ONLY,
+    ADMIN_EVENTS_USER,
 } from '@/lib/storage';
 
 type Period = AdminReportPeriod;
@@ -74,8 +75,29 @@ function AdminEventsInner() {
         ADMIN_EVENTS_ANOMALY_ONLY,
         false
     );
+    const [users, setUsers] = useState<User[]>([]);
+    const [userFilter, setUserFilter] = usePersistedState<string>(
+        ADMIN_EVENTS_USER,
+        'all'
+    );
     const [exporting, setExporting] = useState(false);
     const [exportError, setExportError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            const res = await apiClient.getCompanyUsers();
+            if (!res.error && res.data?.users) setUsers(res.data.users);
+        };
+        load();
+    }, []);
+
+    const filteredRows = useMemo(
+        () =>
+            userFilter === 'all'
+                ? rows
+                : rows.filter((r) => r.userId === userFilter),
+        [rows, userFilter]
+    );
 
     // Override persisted state from URL params on deep-link (one-time).
     useEffect(() => {
@@ -251,11 +273,14 @@ function AdminEventsInner() {
                         anomalyOnly={anomalyOnly}
                         onAnomalyOnlyChange={setAnomalyOnly}
                         periodLabel={periodLabel()}
+                        users={users}
+                        userId={userFilter}
+                        onUserChange={setUserFilter}
                     />
                 </div>
 
                 <FitxatgesTable
-                    rows={rows}
+                    rows={filteredRows}
                     loading={loading}
                     anomalyOnly={anomalyOnly}
                     total={total}

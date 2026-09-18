@@ -280,7 +280,7 @@ export default function CalendarPage() {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-violet-100 border border-violet-200 dark:bg-violet-900/30 dark:border-violet-800/50"></div>
+                            <div className="w-3 h-3 rounded bg-green-100 border border-green-300 dark:bg-green-900/40 dark:border-green-800/50"></div>
                             <span className="text-zinc-600 dark:text-zinc-300 text-sm">
                                 {t('calendar.authorizedLeave')}
                             </span>

@@ -118,14 +118,6 @@ export default function AdminDashboard() {
             icon: <Calendar size={24} />,
         },
         {
-            title: t('admin.menu.authorizedLeaves.title'),
-            desc: t('admin.menu.authorizedLeaves.desc'),
-            href: '/admin/authorized-leaves',
-            iconColor: 'text-violet-600 dark:text-violet-400',
-            bgColor: 'bg-violet-50 dark:bg-violet-900/20',
-            icon: <ShieldCheck size={24} />,
-        },
-        {
             title: t('admin.menu.vacations.title'),
             desc: t('admin.menu.vacations.desc'),
             meta:
@@ -137,6 +129,14 @@ export default function AdminDashboard() {
             bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
             icon: <CalendarOff size={24} />,
             alert: pendingVacations > 0,
+        },
+        {
+            title: t('admin.menu.authorizedLeaves.title'),
+            desc: t('admin.menu.authorizedLeaves.desc'),
+            href: '/admin/authorized-leaves',
+            iconColor: 'text-violet-600 dark:text-violet-400',
+            bgColor: 'bg-violet-50 dark:bg-violet-900/20',
+            icon: <ShieldCheck size={24} />,
         },
         {
             title: t('admin.menu.settings.title'),
@@ -171,11 +171,11 @@ export default function AdminDashboard() {
         },
         {
             title: t('admin.menu.sections.vacations'),
-            items: menuItems.slice(5, 7),
+            items: menuItems.slice(5, 8),
         },
         {
             title: t('admin.menu.sections.settings'),
-            items: menuItems.slice(7),
+            items: menuItems.slice(8),
         },
     ];
 

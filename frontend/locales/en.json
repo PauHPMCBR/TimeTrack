@@ -508,6 +508,8 @@
             "remove": "Remove event",
             "removeLocked": "Cannot remove while keeping check-in/check-out order",
             "title": "Edit events",
+            "classificationLabel": "Day classification",
+            "anomalies": "Detected anomalies",
             "classification": {
                 "workday": "Working day (check punches)",
                 "nonWorkingWeekday": "Non-working day",
@@ -608,7 +610,9 @@
             "legend": {
                 "overtime": "Overtime"
             },
-            "title": "Events"
+            "title": "Events",
+            "filterEmployee": "Filter by employee",
+            "allEmployees": "All employees"
         },
         "files": {
             "allEmployees": "All employees",

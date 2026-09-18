@@ -1,5 +1,6 @@
 import { TZDate } from '@date-fns/tz';
 import {
+    addDaysToKey,
     dateKeyInTz as sharedDateKeyInTz,
     DateKey,
 } from 'shared/src/lib/day-key';
@@ -18,12 +19,9 @@ export function dateKeyInTz(utcMs: number | Date, tz?: string): DateKey {
 /** Start (inclusive) / end (exclusive) of a calendar day as UTC instants. */
 export function dayRange(dateKeyStr: DateKey, tz?: string): { start: Date; end: Date } {
     const t = resolveTz(tz);
-    const [y, m, d] = dateKeyStr.split('-').map(Number);
     const startMs = new TZDate(`${dateKeyStr}T00:00`, t).getTime();
-    const next = d + 1;
-    const endMs = new TZDate(
-        `${y}-${String(m).padStart(2, '0')}-${String(next).padStart(2, '0')}T00:00`
-    ).getTime();
+    const nextKey = addDaysToKey(dateKeyStr, 1);
+    const endMs = new TZDate(`${nextKey}T00:00`, t).getTime();
     return { start: new Date(startMs), end: new Date(endMs) };
 }
 

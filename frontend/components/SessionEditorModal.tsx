@@ -34,6 +34,13 @@ const DAY_CLASSIFICATIONS: WorkDayClassification[] = [
     'authorizedLeave',
 ];
 
+const EDITABLE_CLASSIFICATIONS = (
+    row: AdminWorkSessionRow
+): WorkDayClassification[] =>
+    DAY_CLASSIFICATIONS.filter(
+        (c) => c !== 'obligatoryVacation' || c === row.dayClassification
+    );
+
 type Props = {
     row: AdminWorkSessionRow;
     onClose: () => void;
@@ -340,6 +347,17 @@ export default function SessionEditorModal({
                 </div>
             )}
 
+            {row.anomalies.length > 0 && (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    <span className="font-medium">
+                        {t('admin.sessionEditor.anomalies')}:
+                    </span>{' '}
+                    {row.anomalies
+                        .map((a) => t(`monthlyApprovals.anomaly.${a}`))
+                        .join(', ')}
+                </div>
+            )}
+
             <div className="space-y-2">
                 {sessions.length === 0 && (
                     <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
@@ -466,7 +484,7 @@ export default function SessionEditorModal({
                         htmlFor="session-editor-classification"
                         className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                     >
-                        {t('admin.sessionEditor.classification')}
+                        {t('admin.sessionEditor.classificationLabel')}
                     </label>
                     <select
                         id="session-editor-classification"
@@ -480,7 +498,7 @@ export default function SessionEditorModal({
                         }}
                         className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
                     >
-                        {DAY_CLASSIFICATIONS.map((c) => (
+                        {EDITABLE_CLASSIFICATIONS(row).map((c) => (
                             <option key={c} value={c}>
                                 {t(`admin.sessionEditor.classification.${c}`)}
                             </option>

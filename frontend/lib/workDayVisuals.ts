@@ -35,7 +35,7 @@ const statusRowClasses: Record<WorkSessionRowStatus, string> = {
     obligatoryVacation:
         'border-l-4 border-l-sky-500 bg-sky-100/90 dark:bg-sky-900/40',
     authorizedLeave:
-        'border-l-4 border-l-violet-500 bg-violet-100/90 dark:bg-violet-900/40',
+        'border-l-4 border-l-green-700 bg-green-100/90 dark:bg-green-900/40',
     ok: 'border-l-4 border-l-green-500 bg-green-100/90 dark:bg-green-900/40',
     planned:
         'border-l-4 border-l-zinc-300 bg-zinc-100/60 dark:bg-zinc-800/40 dark:border-l-zinc-700',
@@ -50,7 +50,7 @@ export const statusRowClass = (status: WorkSessionRowStatus): string =>
 const statusDotClasses: Record<WorkSessionRowStatus, string> = {
     electiveVacation: 'bg-blue-500',
     obligatoryVacation: 'bg-sky-500',
-    authorizedLeave: 'bg-violet-500',
+    authorizedLeave: 'bg-green-700',
     ok: 'bg-green-500',
     planned: 'bg-zinc-300 dark:bg-zinc-600',
     nonWorkingDay: 'bg-zinc-400',
@@ -75,7 +75,7 @@ const statusIconClasses: Record<WorkSessionRowStatus, string> = {
     anomaly: 'text-red-600 dark:text-red-400',
     electiveVacation: 'text-blue-600 dark:text-blue-400',
     obligatoryVacation: 'text-sky-600 dark:text-sky-400',
-    authorizedLeave: 'text-violet-600 dark:text-violet-400',
+    authorizedLeave: 'text-green-700 dark:text-green-400',
     planned: 'text-zinc-400',
     nonWorkingDay: 'text-zinc-400',
 };

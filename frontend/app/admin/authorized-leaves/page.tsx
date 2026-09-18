@@ -13,11 +13,18 @@ import EmptyState from '@/components/ui/EmptyState';
 import LoadingState from '@/components/ui/LoadingState';
 import Modal from '@/components/Modal';
 import AdminBackButton from '@/components/AdminBackButton';
+import TextField, { inputClass } from '@/components/ui/TextField';
+import TextAreaField from '@/components/ui/TextAreaField';
+import StepperNav from '@/components/ui/StepperNav';
 import { useDirty } from '@/lib/useDirty';
+import {
+    usePersistedState,
+} from '@/lib/usePersistedState';
+import {
+    ADMIN_AUTHORIZED_LEAVES_USER,
+    ADMIN_AUTHORIZED_LEAVES_YEAR,
+} from '@/lib/storage';
 import { Plus, Pencil, Trash2, ShieldCheck } from 'lucide-react';
-
-const inputClass =
-    'w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white';
 
 export default function AdminAuthorizedLeavesPage() {
     const { t } = useI18n();
@@ -26,7 +33,14 @@ export default function AdminAuthorizedLeavesPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [filterUserId, setFilterUserId] = useState<string>('all');
+    const [year, setYear] = usePersistedState<number>(
+        ADMIN_AUTHORIZED_LEAVES_YEAR,
+        new Date().getFullYear()
+    );
+    const [filterUserId, setFilterUserId] = usePersistedState<string>(
+        ADMIN_AUTHORIZED_LEAVES_USER,
+        'all'
+    );
     const [modalUser, setModalUser] = useState<string>('');
     const [modalFrom, setModalFrom] = useState('');
     const [modalTo, setModalTo] = useState('');
@@ -47,6 +61,8 @@ export default function AdminAuthorizedLeavesPage() {
                 apiClient.getAuthorizedLeaves({
                     userId:
                         filterUserId === 'all' ? undefined : filterUserId,
+                    from: `${year}-01-01` as DateKey,
+                    to: `${year}-12-31` as DateKey,
                 }),
                 apiClient.getCompanyUsers(),
             ]);
@@ -68,7 +84,7 @@ export default function AdminAuthorizedLeavesPage() {
         } finally {
             if (seq === fetchSeq.current) setLoading(false);
         }
-    }, [filterUserId, t]);
+    }, [filterUserId, year, t]);
 
     useEffect(() => {
         fetchLeaves();
@@ -160,14 +176,50 @@ export default function AdminAuthorizedLeavesPage() {
     return (
         <div className="mx-auto max-w-4xl space-y-4 p-4">
             <AdminBackButton />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">
-                    {t('admin.authorizedLeaves.title')}
-                </h1>
-                <Button onClick={openCreate} variant="primary">
-                    <Plus size={16} />
-                    {t('admin.authorizedLeaves.create')}
-                </Button>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">
+                        {t('admin.authorizedLeaves.title')}
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('admin.authorizedLeaves.subtitle')}
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                    <select
+                        value={filterUserId}
+                        onChange={(e) => setFilterUserId(e.target.value)}
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        aria-label={t('admin.authorizedLeaves.filter')}
+                    >
+                        <option value="all">
+                            {t('admin.authorizedLeaves.allUsers')}
+                        </option>
+                        {users.map((u) => (
+                            <option key={u._id} value={u._id}>
+                                {u.name}
+                            </option>
+                        ))}
+                    </select>
+
+                    <StepperNav
+                        onPrev={() => setYear(year - 1)}
+                        onNext={() => setYear(year + 1)}
+                        prevDisabled={loading}
+                        nextDisabled={loading}
+                        centerClassName="min-w-[100px]"
+                    >
+                        <span className="text-lg font-semibold text-zinc-900 dark:text-white">
+                            {year}
+                        </span>
+                    </StepperNav>
+
+                    <Button onClick={openCreate} variant="primary">
+                        <Plus size={16} />
+                        {t('admin.authorizedLeaves.create')}
+                    </Button>
+                </div>
             </div>
 
             {error && (
@@ -175,24 +227,6 @@ export default function AdminAuthorizedLeavesPage() {
                     {error}
                 </Alert>
             )}
-
-            <div>
-                <select
-                    value={filterUserId}
-                    onChange={(e) => setFilterUserId(e.target.value)}
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                    aria-label={t('admin.authorizedLeaves.filter')}
-                >
-                    <option value="all">
-                        {t('admin.authorizedLeaves.allUsers')}
-                    </option>
-                    {users.map((u) => (
-                        <option key={u._id} value={u._id}>
-                            {u.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
 
             {loading ? (
                 <LoadingState />
@@ -314,52 +348,40 @@ export default function AdminAuthorizedLeavesPage() {
                                     </select>
                                 </div>
                             )}
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    {t('admin.authorizedLeaves.startDate')}
-                                </label>
-                                <input
-                                    type="date"
-                                    value={modalFrom}
-                                    onChange={(e) => {
-                                        setModalFrom(e.target.value);
-                                        markDirty();
-                                    }}
-                                    className={inputClass}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    {t('admin.authorizedLeaves.endDate')}
-                                </label>
-                                <input
-                                    type="date"
-                                    value={modalTo}
-                                    onChange={(e) => {
-                                        setModalTo(e.target.value);
-                                        markDirty();
-                                    }}
-                                    className={inputClass}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    {t('admin.authorizedLeaves.notes')}
-                                </label>
-                                <textarea
-                                    value={modalNotes}
-                                    onChange={(e) => {
-                                        setModalNotes(e.target.value);
-                                        markDirty();
-                                    }}
-                                    maxLength={2000}
-                                    rows={2}
-                                    placeholder={t(
-                                        'admin.authorizedLeaves.notesPlaceholder'
-                                    )}
-                                    className={inputClass}
-                                />
-                            </div>
+                            <TextField
+                                label={t('admin.authorizedLeaves.startDate')}
+                                type="date"
+                                value={modalFrom}
+                                disabled={saving}
+                                onChange={(e) => {
+                                    setModalFrom(e.target.value);
+                                    markDirty();
+                                }}
+                            />
+                            <TextField
+                                label={t('admin.authorizedLeaves.endDate')}
+                                type="date"
+                                value={modalTo}
+                                disabled={saving}
+                                onChange={(e) => {
+                                    setModalTo(e.target.value);
+                                    markDirty();
+                                }}
+                            />
+                            <TextAreaField
+                                label={t('admin.authorizedLeaves.notes')}
+                                value={modalNotes}
+                                maxLength={2000}
+                                rows={2}
+                                disabled={saving}
+                                placeholder={t(
+                                    'admin.authorizedLeaves.notesPlaceholder'
+                                )}
+                                onChange={(e) => {
+                                    setModalNotes(e.target.value);
+                                    markDirty();
+                                }}
+                            />
                             <p className="text-xs text-zinc-400">
                                 {t('admin.authorizedLeaves.hint')}
                             </p>

@@ -27,9 +27,8 @@ import Label from '@/components/ui/Label';
 import { Alert } from '@/components/ui/Alert';
 import AdminBackButton from '@/components/AdminBackButton';
 import Modal from '@/components/Modal';
+import StepperNav from '@/components/ui/StepperNav';
 import {
-    MIN_VALID_YEAR,
-    MAX_VALID_YEAR,
     APPROVAL_PENDING,
     APPROVAL_APPROVED,
 } from 'shared/src/lib/constants';
@@ -229,6 +228,7 @@ export default function AdminMonthlyApprovalsPage() {
 
     const filteredApprovals = useMemo(() => {
         return approvals
+            .filter((a) => a.year === year)
             .filter((a) => filterUserId === 'all' || a.userId === filterUserId)
             .filter(
                 (a) =>
@@ -238,7 +238,7 @@ export default function AdminMonthlyApprovalsPage() {
                     (filterStatus === APPROVAL_APPROVED &&
                         a.status === APPROVAL_APPROVED)
             );
-    }, [approvals, filterUserId, filterStatus]);
+    }, [approvals, year, filterUserId, filterStatus]);
 
     const groupedApprovals = useMemo(() => {
         const sorted = [...filteredApprovals].sort((a, b) => {
@@ -278,13 +278,63 @@ export default function AdminMonthlyApprovalsPage() {
         <div className="space-y-6">
             <AdminBackButton />
 
-            <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {t('monthlyApprovals.adminTitle')}
-                </h1>
-                <p className="mt-1 text-sm text-zinc-500">
-                    {t('monthlyApprovals.adminSubtitle')}
-                </p>
+            {/* Same header pattern as the vacations/authorized-leave pages:
+                title on the left, employee/status filters + year stepper on
+                the right. */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        {t('monthlyApprovals.adminTitle')}
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-500">
+                        {t('monthlyApprovals.adminSubtitle')}
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                    <select
+                        value={filterUserId}
+                        onChange={(e) => setFilterUserId(e.target.value)}
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        aria-label={t('monthlyApprovals.filterEmployees')}
+                    >
+                        <option value="all">
+                            {t('monthlyApprovals.filterAllEmployees')}
+                        </option>
+                        {users.map((u) => (
+                            <option key={u._id} value={u._id}>
+                                {u.name}
+                            </option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        aria-label={t('monthlyApprovals.filterState')}
+                    >
+                        <option value="all">
+                            {t('monthlyApprovals.filterAllStates')}
+                        </option>
+                        <option value={APPROVAL_PENDING}>
+                            {t('monthlyApprovals.statusPending')}
+                        </option>
+                        <option value={APPROVAL_APPROVED}>
+                            {t('monthlyApprovals.statusApproved')}
+                        </option>
+                    </select>
+
+                    <StepperNav
+                        onPrev={() => setYear(year - 1)}
+                        onNext={() => setYear(year + 1)}
+                        centerClassName="min-w-[100px]"
+                    >
+                        <span className="text-lg font-semibold text-zinc-900 dark:text-white">
+                            {year}
+                        </span>
+                    </StepperNav>
+                </div>
             </div>
 
             {error && <Alert variant="destructive">{error}</Alert>}
@@ -317,22 +367,6 @@ export default function AdminMonthlyApprovalsPage() {
                                 </option>
                             ))}
                         </select>
-                    </div>
-                    <div>
-                        <Label className="mb-1.5">
-                            {t('monthlyApprovals.year')}
-                        </Label>
-                        <input
-                            type="number"
-                            min={MIN_VALID_YEAR}
-                            max={MAX_VALID_YEAR}
-                            value={year}
-                            onChange={(e) => {
-                                setYear(Number(e.target.value));
-                                markDirty();
-                            }}
-                            className="w-28 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                        />
                     </div>
                     <Button
                         variant="primary"
@@ -441,56 +475,9 @@ export default function AdminMonthlyApprovalsPage() {
             </Card>
 
             <Card className="p-6">
-                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                    <h2 className="text-lg font-semibold">
-                        {t('monthlyApprovals.registryTitle')}
-                    </h2>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <div>
-                            <Label className="mb-1.5">
-                                {t('monthlyApprovals.filterEmployees')}
-                            </Label>
-                            <select
-                                value={filterUserId}
-                                onChange={(e) =>
-                                    setFilterUserId(e.target.value)
-                                }
-                                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                            >
-                                <option value="all">
-                                    {t('monthlyApprovals.filterAllEmployees')}
-                                </option>
-                                {users.map((u) => (
-                                    <option key={u._id} value={u._id}>
-                                        {u.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <Label className="mb-1.5">
-                                {t('monthlyApprovals.filterState')}
-                            </Label>
-                            <select
-                                value={filterStatus}
-                                onChange={(e) =>
-                                    setFilterStatus(e.target.value)
-                                }
-                                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                            >
-                                <option value="all">
-                                    {t('monthlyApprovals.filterAllStates')}
-                                </option>
-                                <option value={APPROVAL_PENDING}>
-                                    {t('monthlyApprovals.statusPending')}
-                                </option>
-                                <option value={APPROVAL_APPROVED}>
-                                    {t('monthlyApprovals.statusApproved')}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+                <h2 className="mb-4 text-lg font-semibold">
+                    {t('monthlyApprovals.registryTitle')}
+                </h2>
 
                 {loading ? (
                     <LoadingState className="p-6" />

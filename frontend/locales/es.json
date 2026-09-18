@@ -508,6 +508,8 @@
             "remove": "Eliminar fichaje",
             "removeLocked": "No se puede eliminar para mantener el orden entradas/salidas",
             "title": "Editar fichajes",
+            "classificationLabel": "Clasificación del día",
+            "anomalies": "Anomalías detectadas",
             "classification": {
                 "workday": "Día laborable (comprueba fichajes)",
                 "nonWorkingWeekday": "Día no laborable",
@@ -608,7 +610,9 @@
             "legend": {
                 "overtime": "Horas extra"
             },
-            "title": "Fichajes"
+            "title": "Fichajes",
+            "filterEmployee": "Filtrar por persona",
+            "allEmployees": "Todas las personas"
         },
         "files": {
             "allEmployees": "Todos los empleados",

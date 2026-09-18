@@ -5,6 +5,7 @@ import { toLocalDateKey } from '@/lib/datetime';
 import StepperNav from '@/components/ui/StepperNav';
 import { sourceIconOf, statusDotClass } from '@/lib/workDayVisuals';
 import type { SourceKind } from '@/schemas/database';
+import type { User } from '@/types';
 import {
     ADMIN_REPORT_PERIODS,
     AdminReportPeriod,
@@ -32,6 +33,9 @@ interface WorkSessionsToolbarProps {
     anomalyOnly: boolean;
     onAnomalyOnlyChange: (value: boolean) => void;
     periodLabel: string;
+    users?: User[];
+    userId?: string;
+    onUserChange?: (value: string) => void;
 }
 
 export default function WorkSessionsToolbar({
@@ -43,33 +47,36 @@ export default function WorkSessionsToolbar({
     anomalyOnly,
     onAnomalyOnlyChange,
     periodLabel,
+    users,
+    userId,
+    onUserChange,
 }: WorkSessionsToolbarProps) {
     const { t } = useI18n();
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                {/* Narrow screens: pills + date picker share the first row and
-                    the ‹ period › navigator gets its own full-width row, so the
-                    label stays on ONE line. sm+: everything back on one row. */}
-                <div className="order-1 flex min-w-0 items-center gap-1.5">
-                    <div className="flex rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
-                        {PERIODS.map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => onPeriodChange(p)}
-                                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
-                                    period === p
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                                }`}
-                            >
-                                {t(`admin.events.period.${p}`)}
-                            </button>
-                        ))}
-                    </div>
+            {/* One row: period pills, employee filter, date picker and the
+                period navigator. Wraps naturally on narrow screens. */}
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="flex rounded-lg border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
+                    {PERIODS.map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => onPeriodChange(p)}
+                            className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                                period === p
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                            }`}
+                        >
+                            {t(`admin.events.period.${p}`)}
+                        </button>
+                    ))}
                 </div>
 
+                {/* `!w-auto` beats the globals.css base rule that forces
+                    input[type=date] to w-full (attribute selectors out-rank
+                    utility classes). */}
                 <input
                     type="date"
                     value={toLocalDateKey(cursor)}
@@ -78,18 +85,34 @@ export default function WorkSessionsToolbar({
                         const d = new Date(e.target.value + 'T00:00:00');
                         onCursorChange(d);
                     }}
-                    className="order-2 shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white sm:order-3"
+                    className="!w-auto rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                 />
 
-                <div className="order-3 flex w-full min-w-0 items-center sm:order-2 sm:w-auto sm:flex-1">
-                    <StepperNav
-                        onPrev={() => onShift(-1)}
-                        onNext={() => onShift(1)}
-                        className="w-full sm:w-auto sm:flex-1"
+                {users && onUserChange && (
+                    <select
+                        value={userId}
+                        onChange={(e) => onUserChange(e.target.value)}
+                        className="min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                        aria-label={t('admin.events.filterEmployee')}
                     >
-                        {periodLabel}
-                    </StepperNav>
-                </div>
+                        <option value="all">
+                            {t('admin.events.allEmployees')}
+                        </option>
+                        {users.map((u) => (
+                            <option key={u._id} value={u._id}>
+                                {u.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
+
+                <StepperNav
+                    onPrev={() => onShift(-1)}
+                    onNext={() => onShift(1)}
+                    className="min-w-[220px] flex-1"
+                >
+                    {periodLabel}
+                </StepperNav>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4">

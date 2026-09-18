@@ -508,6 +508,8 @@
             "remove": "Eliminar fitxatge",
             "removeLocked": "No es pot eliminar per mantenir l'ordre entrades/sortides",
             "title": "Editar fitxatges",
+            "classificationLabel": "Classificació del dia",
+            "anomalies": "Anomalies detectades",
             "classification": {
                 "workday": "Dia laborable (comprova fitxatges)",
                 "nonWorkingWeekday": "Dia no laborable",
@@ -608,7 +610,9 @@
             "legend": {
                 "overtime": "Hores extra"
             },
-            "title": "Fitxatges"
+            "title": "Fitxatges",
+            "filterEmployee": "Filtra per persona",
+            "allEmployees": "Totes les persones"
         },
         "files": {
             "allEmployees": "Tots els empleats",
