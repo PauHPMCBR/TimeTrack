@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { SourceKind } from '@/schemas/database';
 import type { WorkSessionRowStatus } from '@/schemas/api';
+import { TONE_CLASSES, type SemanticTone } from '@/lib/semanticColors';
 import {
     SOURCE_ADMIN_MANUAL,
     SOURCE_USER_AUTOMATIC,
@@ -30,35 +31,21 @@ const sourceIcons: Record<SourceKind, LucideIcon> = {
 export const sourceIconOf = (source: SourceKind): LucideIcon =>
     sourceIcons[source];
 
-const statusRowClasses: Record<WorkSessionRowStatus, string> = {
-    electiveVacation: 'border-l-4 border-l-blue-500 bg-blue-100/90 dark:bg-blue-900/40',
-    obligatoryVacation:
-        'border-l-4 border-l-sky-500 bg-sky-100/90 dark:bg-sky-900/40',
-    authorizedLeave:
-        'border-l-4 border-l-green-700 bg-green-100/90 dark:bg-green-900/40',
-    ok: 'border-l-4 border-l-green-500 bg-green-100/90 dark:bg-green-900/40',
-    planned:
-        'border-l-4 border-l-zinc-300 bg-zinc-100/60 dark:bg-zinc-800/40 dark:border-l-zinc-700',
-    nonWorkingDay:
-        'border-l-4 border-l-zinc-300 bg-zinc-100/80 dark:bg-zinc-800/60 dark:border-l-zinc-600',
-    anomaly: 'border-l-4 border-l-red-500 bg-red-100/90 dark:bg-red-900/40',
+const statusTones: Record<WorkSessionRowStatus, SemanticTone> = {
+    ok: 'ok',
+    anomaly: 'anomaly',
+    electiveVacation: 'electiveVacation',
+    obligatoryVacation: 'obligatoryVacation',
+    authorizedLeave: 'authorizedLeave',
+    planned: 'planned',
+    nonWorkingDay: 'nonWorking',
 };
 
 export const statusRowClass = (status: WorkSessionRowStatus): string =>
-    statusRowClasses[status];
-
-const statusDotClasses: Record<WorkSessionRowStatus, string> = {
-    electiveVacation: 'bg-blue-500',
-    obligatoryVacation: 'bg-sky-500',
-    authorizedLeave: 'bg-green-700',
-    ok: 'bg-green-500',
-    planned: 'bg-zinc-300 dark:bg-zinc-600',
-    nonWorkingDay: 'bg-zinc-400',
-    anomaly: 'bg-red-500',
-};
+    TONE_CLASSES[statusTones[status]].row;
 
 export const statusDotClass = (status: WorkSessionRowStatus): string =>
-    statusDotClasses[status];
+    TONE_CLASSES[statusTones[status]].dot;
 
 const statusIcons: Record<WorkSessionRowStatus, LucideIcon> = {
     ok: CheckCircle2,
@@ -70,19 +57,9 @@ const statusIcons: Record<WorkSessionRowStatus, LucideIcon> = {
     nonWorkingDay: Ban,
 };
 
-const statusIconClasses: Record<WorkSessionRowStatus, string> = {
-    ok: 'text-green-600 dark:text-green-400',
-    anomaly: 'text-red-600 dark:text-red-400',
-    electiveVacation: 'text-blue-600 dark:text-blue-400',
-    obligatoryVacation: 'text-sky-600 dark:text-sky-400',
-    authorizedLeave: 'text-green-700 dark:text-green-400',
-    planned: 'text-zinc-400',
-    nonWorkingDay: 'text-zinc-400',
-};
-
 export const statusIconOf = (
     status: WorkSessionRowStatus
 ): { Icon: LucideIcon; className: string } => ({
     Icon: statusIcons[status],
-    className: `h-4 w-4 ${statusIconClasses[status]}`,
+    className: `h-4 w-4 ${TONE_CLASSES[statusTones[status]].icon}`,
 });

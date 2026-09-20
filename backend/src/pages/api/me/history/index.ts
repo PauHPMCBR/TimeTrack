@@ -39,6 +39,7 @@ import {
 } from '@/lib/pagination';
 import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
 import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
+import { lastClosedDayKey } from '@/lib/work-day-records';
 
 // Personal work-session report: the same rows (status, expected hours,
 // anomalies) shown in the admin fitxatges view, but restricted to the
@@ -75,7 +76,7 @@ export default withApi(
 
         const [user, dayDocs, approvedVacations, yearlyTemplates, settings, authorizedLeaves, dayRecords] =
             await Promise.all([
-                User.findById(userId, 'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable')
+                User.findById(userId, 'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable trackingStartDate')
                     .lean<UserRow | null>(),
                 findActiveDaySessions(days[0], days[days.length - 1], {
                     userId,
@@ -109,6 +110,7 @@ export default withApi(
             defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
             toleranceMinutes: settings.toleranceMinutes,
             timetableToleranceMinutes: settings.timetableToleranceMinutes,
+            closedThrough: await lastClosedDayKey(),
         });
 
         rows.sort((a, b) => a.date.localeCompare(b.date) || a.userName.localeCompare(b.userName));

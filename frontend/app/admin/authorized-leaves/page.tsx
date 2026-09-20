@@ -16,6 +16,7 @@ import AdminBackButton from '@/components/AdminBackButton';
 import TextField, { inputClass } from '@/components/ui/TextField';
 import TextAreaField from '@/components/ui/TextAreaField';
 import StepperNav from '@/components/ui/StepperNav';
+import { TONE_CLASSES } from '@/lib/semanticColors';
 import { useDirty } from '@/lib/useDirty';
 import {
     usePersistedState,
@@ -244,6 +245,10 @@ export default function AdminAuthorizedLeavesPage() {
                         >
                             <div className="min-w-0">
                                 <div className="text-sm font-medium text-zinc-900 dark:text-white">
+                                    <ShieldCheck
+                                        size={14}
+                                        className={`mr-1.5 inline-block shrink-0 align-[-2px] ${TONE_CLASSES.authorizedLeave.icon}`}
+                                    />
                                     {userNameOf(leave.userId)}
                                     <span className="mx-2 text-zinc-300 dark:text-zinc-600">
                                         ·

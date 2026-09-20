@@ -419,9 +419,44 @@ describe('GET /api/admin/work-sessions', () => {
         expect(rows.every((r: any) => r.status === 'nonWorkingDay')).toBe(true);
     });
 
-    it('should show days without a record as planned (no anomaly judgment)', async () => {
+    it('should show not-yet-closed record-less days as planned (no anomaly judgment)', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
         vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(ElectiveVacation.find).mockReturnValue(
+            simpleChain([]) as any
+        );
+        vi.mocked(YearlyVacationDays.find).mockReturnValue(
+            simpleChain([]) as any
+        );
+        mockRecords([]);
+
+        // Closed-through is mocked to 2025-06-09; 2025-06-10 is still open.
+        const req = mockReq({
+            method: 'GET',
+            query: { period: 'day', date: '2025-06-10' },
+        });
+        const res = mockRes();
+
+        await adminWorkSessionsHandler(req, res);
+
+        const rows = res.json.mock.calls[0][0].data.rows;
+        expect(rows).toHaveLength(2);
+        expect(rows.every((r: any) => r.status === 'planned')).toBe(true);
+        expect(
+            rows.every((r: any) => r.dayClassification === 'workday')
+        ).toBe(true);
+        expect(rows.every((r: any) => r.anomalies.length === 0)).toBe(true);
+    });
+
+    it('judges a closed day live when its cached record is missing', async () => {
+        vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(
+            queryChain([
+                makeDayDoc('u1', '2025-06-09', [
+                    { type: 'check_in', time: '09:00' },
+                ]),
+            ]) as any
+        );
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -439,12 +474,11 @@ describe('GET /api/admin/work-sessions', () => {
         await adminWorkSessionsHandler(req, res);
 
         const rows = res.json.mock.calls[0][0].data.rows;
-        expect(rows).toHaveLength(2);
-        expect(rows.every((r: any) => r.status === 'planned')).toBe(true);
-        expect(
-            rows.every((r: any) => r.dayClassification === 'workday')
-        ).toBe(true);
-        expect(rows.every((r: any) => r.anomalies.length === 0)).toBe(true);
+        const anna = rows.find((r: any) => r.userId === 'u1');
+        expect(anna).toMatchObject({
+            status: 'anomaly',
+            anomalies: ['forgot_check_out'],
+        });
     });
 
     it('should mark a user-specific non-working day', async () => {

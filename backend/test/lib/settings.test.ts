@@ -39,4 +39,26 @@ describe('getAppSettings toleranceMinutes', () => {
 
         expect(settings.toleranceMinutes).toBe(60);
     });
+
+    it('returns plain timetable entries when the stored value is Mongoose subdocuments', async () => {
+        class Subdocument {
+            $__ = { internal: true };
+            _doc = { checkIn: '09:00', checkOut: '17:00' };
+            get checkIn() {
+                return '09:00';
+            }
+            get checkOut() {
+                return '17:00';
+            }
+        }
+        vi.mocked(AppSettings.findOne).mockResolvedValue({
+            defaultTimetable: [[new Subdocument()]],
+        } as any);
+
+        const settings = await getAppSettings();
+
+        expect(settings.defaultTimetable[0]).toEqual([
+            { checkIn: '09:00', checkOut: '17:00' },
+        ]);
+    });
 });

@@ -99,7 +99,10 @@ export async function getAppSettings(): Promise<AppSettingsValues> {
             settings.defaultScheduleMode ?? DEFAULTS.defaultScheduleMode,
         defaultTimetable: Array.isArray(settings.defaultTimetable)
             ? (settings.defaultTimetable as WeekTimetable).map((day) =>
-                  day.map((entry) => ({ ...entry }))
+                  day.map((entry) => ({
+                      checkIn: entry.checkIn,
+                      checkOut: entry.checkOut,
+                  }))
               )
             : DEFAULTS.defaultTimetable,
         timetableToleranceMinutes:

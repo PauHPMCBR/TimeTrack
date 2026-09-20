@@ -12,7 +12,7 @@ import type {
     DaySessionsRow,
     WorkDayRecordRow,
 } from '@/lib/rows';
-import type { DateKey } from 'shared/src/lib/day-key';
+import { addDaysToKey, type DateKey } from 'shared/src/lib/day-key';
 import { defaultTimetable } from 'shared/src/schemas/database';
 
 const MONDAY_KEY = '2024-01-15' as DateKey;
@@ -186,6 +186,81 @@ describe('buildWorkSessionRows — closed days (from the WorkDayRecord)', () => 
             { checkIn: '13:00', checkOut: '17:00' },
         ]);
         expect(rows[0].expectedHours).toBe(8);
+    });
+
+    it('drops expected hours and timetable on a vacation record', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                records: workDayRecordMap([
+                    makeRecord(MONDAY_KEY, {
+                        classification: 'electiveVacation',
+                        checkMode: 'timetable',
+                        timetableIntervals: [
+                            { checkIn: '09:00', checkOut: '17:00' },
+                        ],
+                        expectedHours: 0,
+                    }),
+                ]),
+            })
+        );
+        expect(rows[0].status).toBe('electiveVacation');
+        expect(rows[0].expectedHours).toBe(0);
+        expect(rows[0].timetable).toBeUndefined();
+    });
+});
+
+describe('buildWorkSessionRows — closed day without a cached record', () => {
+    it('judges a lone check-in as forgot_check_out instead of planned', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                closedThrough: MONDAY_KEY,
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [makeSession('check_in', 9)]),
+                ],
+            })
+        );
+        expect(rows[0].status).toBe('anomaly');
+        expect(rows[0].anomalies).toEqual(['forgot_check_out']);
+    });
+
+    it('flags a punch on a closed vacation day and drops expected hours', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                closedThrough: MONDAY_KEY,
+                approvedVacations: [
+                    {
+                        _id: 'v1',
+                        userId: 'u1',
+                        startDate: MONDAY_KEY,
+                        endDate: MONDAY_KEY,
+                        status: 'approved',
+                    },
+                ] as never,
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [makeSession('check_in', 9)]),
+                ],
+            })
+        );
+        expect(rows[0].status).toBe('anomaly');
+        expect(rows[0].anomalies).toEqual(['work_on_non_working_day']);
+        expect(rows[0].expectedHours).toBe(0);
+        expect(rows[0].timetable).toBeUndefined();
+    });
+
+    it('keeps record-less days after the last closed day planned', () => {
+        const rows = buildWorkSessionRows(
+            buildCtx({
+                closedThrough: addDaysToKey(MONDAY_KEY, -1),
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [
+                        makeSession('check_in', 9),
+                        makeSession('check_out', 15),
+                    ]),
+                ],
+            })
+        );
+        expect(rows[0].status).toBe('planned');
+        expect(rows[0].anomalies).toEqual([]);
     });
 });
 

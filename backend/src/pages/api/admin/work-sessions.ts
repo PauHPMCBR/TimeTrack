@@ -15,6 +15,7 @@ import {
 } from '@/repositories/vacation-repository';
 import { getAppSettings } from '@/lib/settings';
 import { replaceDaySessions } from '@/lib/replace-day';
+import { lastClosedDayKey } from '@/lib/work-day-records';
 import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
 import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 import {
@@ -157,7 +158,7 @@ const getHandler = withApi(
                         // the events report (they never show as non-working rows).
                         checkInRequired: { $ne: false },
                     },
-                    'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable'
+                    'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable trackingStartDate'
                 )
                     .sort({ name: 1 })
                     .lean<UserRow[]>(),
@@ -186,6 +187,7 @@ const getHandler = withApi(
             defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
             toleranceMinutes: settings.toleranceMinutes,
             timetableToleranceMinutes: settings.timetableToleranceMinutes,
+            closedThrough: await lastClosedDayKey(),
         });
 
         rows.sort(

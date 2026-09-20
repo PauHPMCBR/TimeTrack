@@ -12,7 +12,10 @@ import {
     isValidDateKey,
     DateKey,
 } from 'shared/src/lib/day-key';
-import { resolveDayExpectations } from 'shared/src/lib/day-record';
+import {
+    computeWorkDayAnomalies,
+    resolveDayExpectations,
+} from 'shared/src/lib/day-record';
 import type {
     WorkDayClassification,
     WorkSessionAnomaly,
@@ -78,6 +81,8 @@ export interface WorkSessionRowsContext {
     defaultWeeklyExpectedHours: number[];
     toleranceMinutes: number;
     timetableToleranceMinutes: number;
+    /** Latest day that has fully closed. */
+    closedThrough?: DateKey;
 }
 
 export function workDayRecordMap(
@@ -131,6 +136,7 @@ export function buildWorkSessionRows(
         defaultWeeklyExpectedHours,
         toleranceMinutes,
         timetableToleranceMinutes,
+        closedThrough,
     } = ctx;
 
     const dayDocByUserDay = new Map<string, DaySessionsRow>();
@@ -179,11 +185,17 @@ export function buildWorkSessionRows(
 
             if (record) {
                 dayClassification = record.classification;
-                intervals = record.timetableIntervals ?? [];
+                intervals =
+                    dayClassification === 'workday'
+                        ? (record.timetableIntervals ?? [])
+                        : [];
                 expectedHours =
-                    record.checkMode === 'timetable' && intervals.length > 0
-                        ? impliedHours(intervals)
-                        : record.expectedHours;
+                    dayClassification === 'workday'
+                        ? record.checkMode === 'timetable' &&
+                          intervals.length > 0
+                            ? impliedHours(intervals)
+                            : record.expectedHours
+                        : 0;
                 anomalies = record.anomalies;
                 status = anomalies.length
                     ? 'anomaly'
@@ -198,25 +210,54 @@ export function buildWorkSessionRows(
                     },
                     dow
                 );
-                intervals = base.timetableIntervals;
                 dayClassification = plannedClassification(
                     user._id.toString(),
                     key,
                     base.classification,
                     sets
                 );
-                expectedHours =
-                    dayClassification === 'workday'
-                        ? base.checkMode === 'timetable' &&
-                          intervals.length > 0
-                            ? impliedHours(intervals)
-                            : base.expectedHours
-                        : 0;
-                status =
-                    dayClassification === 'workday'
+                const isWorkday = dayClassification === 'workday';
+                intervals =
+                    isWorkday && base.checkMode === 'timetable'
+                        ? base.timetableIntervals
+                        : [];
+                expectedHours = isWorkday
+                    ? base.checkMode === 'timetable' && intervals.length > 0
+                        ? impliedHours(intervals)
+                        : base.expectedHours
+                    : 0;
+
+                const isClosed =
+                    closedThrough !== undefined && key <= closedThrough;
+                const afterTrackingStart =
+                    !user.trackingStartDate ||
+                    key >= user.trackingStartDate;
+
+                if (isClosed && afterTrackingStart) {
+                    // The day closed but its record is missing (e.g. the
+                    // day-close job never ran): judge it live instead of
+                    // showing it as "awaiting close" forever.
+                    anomalies = computeWorkDayAnomalies(
+                        userSessions,
+                        {
+                            ...base,
+                            classification: dayClassification,
+                            timetableIntervals: intervals,
+                            expectedHours,
+                        },
+                        { countOpenUntil: '24:00' }
+                    );
+                    status = anomalies.length
+                        ? 'anomaly'
+                        : (STATUS_BY_CLASSIFICATION[dayClassification] ??
+                          'ok');
+                } else {
+                    status = isWorkday
                         ? 'planned'
-                        : STATUS_BY_CLASSIFICATION[dayClassification] ?? 'planned';
-                anomalies = [];
+                        : (STATUS_BY_CLASSIFICATION[dayClassification] ??
+                          'planned');
+                    anomalies = [];
+                }
             }
 
             rows.push({

@@ -26,9 +26,21 @@ import {
 import { Calendar } from '@/components/calendar/Calendar';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
+import { TONE_CLASSES, type SemanticTone } from '@/lib/semanticColors';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { CALENDAR_ALL_USERS, CALENDAR_MONTH } from '@/lib/storage';
 import { defaultWeeklyExpectedHours } from 'shared/src/index';
+
+function LegendItem({ tone, label }: { tone: SemanticTone; label: string }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded ${TONE_CLASSES[tone].swatch}`} />
+            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
+                {label}
+            </span>
+        </div>
+    );
+}
 
 export default function CalendarPage() {
     const router = useRouter();
@@ -272,50 +284,36 @@ export default function CalendarPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-green-100 border border-green-200"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.electiveVacation')}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-yellow-100 border border-dashed border-yellow-300"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.pendingVacation')}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-red-100 border border-dashed border-red-300"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.rejectedVacation')}
-                            </span>
-                        </div>
+                        <LegendItem
+                            tone="electiveVacation"
+                            label={t('calendar.electiveVacation')}
+                        />
+                        <LegendItem
+                            tone="pending"
+                            label={t('calendar.pendingVacation')}
+                        />
+                        <LegendItem
+                            tone="rejected"
+                            label={t('calendar.rejectedVacation')}
+                        />
                     </div>
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-blue-100 border border-blue-200"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.obligatoryVacation')}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-green-100 border border-green-300 dark:bg-green-900/40 dark:border-green-800/50"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.authorizedLeave')}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-pink-100 border border-pink-200 dark:bg-pink-900/30 dark:border-pink-800/50"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.teamVacation')}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded bg-pink-50 border border-dashed border-pink-300 dark:bg-pink-900/20 dark:border-pink-800/50"></div>
-                            <span className="text-zinc-600 dark:text-zinc-300 text-sm">
-                                {t('calendar.teamPendingVacation')}
-                            </span>
-                        </div>
+                        <LegendItem
+                            tone="obligatoryVacation"
+                            label={t('calendar.obligatoryVacation')}
+                        />
+                        <LegendItem
+                            tone="authorizedLeave"
+                            label={t('calendar.authorizedLeave')}
+                        />
+                        <LegendItem
+                            tone="teamVacation"
+                            label={t('calendar.teamVacation')}
+                        />
+                        <LegendItem
+                            tone="teamPending"
+                            label={t('calendar.teamPendingVacation')}
+                        />
                     </div>
                 </div>
 
