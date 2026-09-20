@@ -57,7 +57,8 @@ frontend/node_modules/
 **/.turbo/
 
 # Per-company branding files
-branding/
+branding/*
+!branding/.gitkeep
 
 # Local runtime data dir (backend DATA_DIR, profile pictures in dev)
 backend/data/
