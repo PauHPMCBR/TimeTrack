@@ -139,6 +139,7 @@ const CHECK_INTERVAL_MS = 5 * MS_PER_MINUTE;
  */
 export function scheduleDailyReminder(): void {
     let lastRunDay: string | null = null;
+    let lastHealDay: string | null = null;
     let running = false;
 
     const tick = async () => {
@@ -155,13 +156,22 @@ export function scheduleDailyReminder(): void {
             await runMonthlyAdminReview(now);
             await runMonthlyApprovalReminders(now);
 
+            // Self-heal WorkDayRecords once per day on the first tick,
+            // regardless of the hour: any past day that closed while the
+            // server was down (or after the one-time startup backfill) gets
+            // its record computed here. `writeWorkDayRecords` only writes
+            // days up to the last closed day, so today stays planned.
+            if (lastHealDay !== todayKey) {
+                lastHealDay = todayKey;
+                await ensureWorkDayRecordsForDay(todayKey);
+            }
+
             if (lastRunDay === todayKey) return;
 
             const endOfDay = `${String(settings.endOfDayHour).padStart(2, '0')}:00`;
 
             if (timeKeyInTz(now) >= endOfDay) {
                 lastRunDay = todayKey;
-                await ensureWorkDayRecordsForDay(todayKey);
                 await runDailyInconsistencyReminder(todayKey);
             }
         } catch (error) {
