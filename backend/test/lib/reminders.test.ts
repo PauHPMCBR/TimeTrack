@@ -36,14 +36,14 @@ vi.mock('@/models', () => ({
         find: vi.fn(),
         updateOne: vi.fn(),
     },
-    WorkSession: {
+    WorkDaySessions: {
         find: vi.fn(),
     },
 }));
 
 vi.stubEnv('FRONTEND_URL', 'http://localhost:3000');
 
-import { User, WorkSession } from '@/models';
+import { User, WorkDaySessions } from '@/models';
 import { findOneWorkDayRecord } from '@/repositories/work-day-record-repository';
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { getAppSettings } from '@/lib/settings';
@@ -89,10 +89,8 @@ function mockUsers(users: any[]) {
 }
 
 function mockSessions(sessions: any[]) {
-    vi.mocked(WorkSession.find).mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-            lean: vi.fn().mockResolvedValue(sessions),
-        }),
+    vi.mocked(WorkDaySessions.find).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(sessions),
     } as any);
 }
 
@@ -101,7 +99,10 @@ describe('runDailyInconsistencyReminder', () => {
         vi.clearAllMocks();
         mockUsers([openCheckInUser, coherentUser]);
         mockSessions([
-            { type: 'check_in', timestamp: new Date(2026, 7, 27, 9, 0, 0) },
+            {
+                date: DATE,
+                sessions: [{ time: '09:00', type: 'check_in' }],
+            },
         ]);
     });
 

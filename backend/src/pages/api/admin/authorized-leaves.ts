@@ -20,20 +20,15 @@ const getHandler = withApi(
         guard: 'admin',
         query: AdminAuthorizedLeavesQuerySchema,
     },
-    async (req, res) => {
+    async (_req, res, { query }) => {
         try {
-            const query = req.query as unknown as {
-                userId?: string;
-                from?: string;
-                to?: string;
-            };
-            const leaves = (await AuthorizedLeave.find({
+            const leaves = await AuthorizedLeave.find({
                 ...(query.userId ? { userId: query.userId } : {}),
                 ...(query.to ? { startDate: { $lte: query.to } } : {}),
                 ...(query.from ? { endDate: { $gte: query.from } } : {}),
             })
                 .sort({ startDate: -1 })
-                .lean()) as unknown as AuthorizedLeaveRow[];
+                .lean<AuthorizedLeaveRow[]>();
 
             res.status(200).json({ success: true, data: { leaves } });
         } catch (error) {
@@ -71,13 +66,13 @@ const postHandler = withApi(
                 return responseErrorEntryNotFound(res, 'User');
             }
 
-            const created = (await AuthorizedLeave.create({
+            const created = await AuthorizedLeave.create({
                 userId,
                 startDate,
                 endDate,
                 notes: notes ?? '',
                 createdBy: req.user!.userId,
-            })) as unknown as AuthorizedLeaveRow;
+            });
 
             await recomputeWorkDayRecordsForRange(userId, startDate, endDate);
 

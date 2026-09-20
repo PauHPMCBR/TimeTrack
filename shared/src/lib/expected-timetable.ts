@@ -2,7 +2,10 @@ import { WorkSessionAnomaly } from '../schemas/api';
 import type { AutoScheduleEntry, WeekTimetable } from '../schemas/database';
 import { CHECK_IN, CHECK_OUT } from './constants';
 import type { DaySessionLike } from './work-hours';
-import { TZDate } from '@date-fns/tz';
+import { timeToMinutes } from './work-hours';
+import type { TimeKey } from './time-key';
+
+export { timeToMinutes };
 
 export function dayTimetable(
     timetable: WeekTimetable,
@@ -21,21 +24,12 @@ export function timetableWorkingDays(timetable: WeekTimetable): number[] {
 export function impliedHours(intervals: AutoScheduleEntry[]): number {
     let minutes = 0;
     for (const entry of intervals) {
-        const span = timeToMinutes(entry.checkOut) - timeToMinutes(entry.checkIn);
+        const span =
+            timeToMinutes(entry.checkOut as TimeKey) -
+            timeToMinutes(entry.checkIn as TimeKey);
         if (span > 0) minutes += span;
     }
     return Math.round((minutes / 60) * 100) / 100;
-}
-
-export function timeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-}
-
-function clockMinutes(timestamp: Date | string, timeZone?: string): number {
-    const ms = new Date(timestamp).getTime();
-    const zoned = timeZone ? new TZDate(ms, timeZone) : new Date(ms);
-    return zoned.getHours() * 60 + zoned.getMinutes();
 }
 
 export interface TimetablePair {
@@ -71,8 +65,10 @@ export function computePairDeviations(
                 checkOutEarly: false,
             };
         }
-        const checkInDelta = pair.checkIn - timeToMinutes(interval.checkIn);
-        const checkOutDelta = pair.checkOut - timeToMinutes(interval.checkOut);
+        const checkInDelta =
+            pair.checkIn - timeToMinutes(interval.checkIn as TimeKey);
+        const checkOutDelta =
+            pair.checkOut - timeToMinutes(interval.checkOut as TimeKey);
         return {
             checkInLate: checkInDelta > tolerance,
             checkInEarly: -checkInDelta > tolerance,
@@ -85,23 +81,19 @@ export function computePairDeviations(
 export function computeTimetableAnomalies(
     sessions: DaySessionLike[],
     intervals: AutoScheduleEntry[],
-    toleranceMinutes: number,
-    timeZone?: string
+    toleranceMinutes: number
 ): WorkSessionAnomaly[] {
     const anomalies: WorkSessionAnomaly[] = [];
-    const sorted = [...sessions].sort(
-        (a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    const sorted = [...sessions].sort((a, b) => a.time.localeCompare(b.time));
     const pairs: TimetablePair[] = [];
     let pendingCheckIn: number | null = null;
     for (const session of sorted) {
         if (session.type === CHECK_IN) {
-            pendingCheckIn = clockMinutes(session.timestamp, timeZone);
+            pendingCheckIn = timeToMinutes(session.time);
         } else if (session.type === CHECK_OUT && pendingCheckIn !== null) {
             pairs.push({
                 checkIn: pendingCheckIn,
-                checkOut: clockMinutes(session.timestamp, timeZone),
+                checkOut: timeToMinutes(session.time),
             });
             pendingCheckIn = null;
         }

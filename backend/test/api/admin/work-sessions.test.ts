@@ -76,10 +76,11 @@ const mockRecords = (records: unknown[]) => {
 
 vi.mock('@/models', () => ({
     User: { find: vi.fn(), findById: vi.fn() },
-    WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
-    WorkDaySource: {
-        find: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
-        updateOne: vi.fn().mockResolvedValue({ upsertedCount: 1 }),
+    WorkDaySessions: {
+        find: vi.fn(),
+        findOne: vi.fn().mockResolvedValue(null),
+        updateOne: vi.fn().mockResolvedValue({}),
+        create: vi.fn().mockResolvedValue([]),
     },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
@@ -115,19 +116,27 @@ vi.mock('@/lib/work-day-records', () => ({
 
 import {
     User,
-    WorkSession,
-    WorkDaySource,
+    WorkDaySessions,
     ElectiveVacation,
     YearlyVacationDays,
     MonthlyApproval,
 } from '@/models';
 import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 import adminWorkSessionsHandler from '@/pages/api/admin/work-sessions';
+import { AdminReplaceDayWorkSessionsRequestSchema } from 'shared/src/schemas/api';
 
-const at = (h: number, m = 0, day = '2025-06-09') =>
-    new Date(
-        `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
-    );
+const makeDayDoc = (
+    userId: string,
+    date: string,
+    sessions: { type: string; time: string }[],
+    source = 'userClick'
+) => ({
+    _id: `day-${userId}-${date}`,
+    userId,
+    date,
+    source,
+    sessions: sessions.map((s) => ({ ...s, overtime: false })),
+});
 
 const users = [
     {
@@ -171,42 +180,18 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should return ok and anomaly rows for a day', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(
+        vi.mocked(WorkDaySessions.find).mockReturnValue(
             queryChain([
-                {
-                    _id: 's1',
-                    userId: 'u1',
-                    type: 'check_in',
-                    timestamp: at(9),
-                },
-                {
-                    _id: 's2',
-                    userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(17),
-                },
-                {
-                    _id: 's3',
-                    userId: 'u2',
-                    type: 'check_in',
-                    timestamp: at(9),
-                },
-            ]) as any
-        );
-        vi.mocked(WorkDaySource.find).mockReturnValue(
-            simpleChain([
-                {
-                    _id: 'd1',
-                    userId: 'u1',
-                    date: '2025-06-09',
-                    source: 'userClick',
-                },
-                {
-                    _id: 'd2',
-                    userId: 'u2',
-                    date: '2025-06-09',
-                    source: 'adminManual',
-                },
+                makeDayDoc('u1', '2025-06-09', [
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '17:00' },
+                ]),
+                makeDayDoc(
+                    'u2',
+                    '2025-06-09',
+                    [{ type: 'check_in', time: '09:00' }],
+                    'adminManual'
+                ),
             ]) as any
         );
         vi.mocked(ElectiveVacation.find).mockReturnValue(
@@ -258,20 +243,12 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should return approved months when monthly approvals exist', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(
+        vi.mocked(WorkDaySessions.find).mockReturnValue(
             queryChain([
-                {
-                    _id: 's1',
-                    userId: 'u1',
-                    type: 'check_in',
-                    timestamp: at(9),
-                },
-                {
-                    _id: 's2',
-                    userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(17),
-                },
+                makeDayDoc('u1', '2025-06-09', [
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '17:00' },
+                ]),
             ]) as any
         );
         vi.mocked(ElectiveVacation.find).mockReturnValue(
@@ -308,15 +285,12 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should flag hours_over from the record when worked more than expected + benevolence', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(
+        vi.mocked(WorkDaySessions.find).mockReturnValue(
             queryChain([
-                { _id: 's1', userId: 'u1', type: 'check_in', timestamp: at(9) },
-                {
-                    _id: 's2',
-                    userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(20),
-                },
+                makeDayDoc('u1', '2025-06-09', [
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '20:00' },
+                ]),
             ]) as any
         );
         vi.mocked(ElectiveVacation.find).mockReturnValue(
@@ -350,7 +324,7 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should mark a user as elective vacation when their record says so', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([
                 {
@@ -391,7 +365,7 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should mark hours_short from the record when a weekday has no sessions', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -423,7 +397,7 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should show quiet non-working days as nonWorkingDay', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -447,7 +421,7 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should show days without a record as planned (no anomaly judgment)', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -485,7 +459,7 @@ describe('GET /api/admin/work-sessions', () => {
                 },
             ]) as any
         );
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -512,44 +486,20 @@ describe('GET /api/admin/work-sessions', () => {
 
     it('should sort rows by date then name', async () => {
         vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-        vi.mocked(WorkSession.find).mockReturnValue(
+        vi.mocked(WorkDaySessions.find).mockReturnValue(
             queryChain([
-                {
-                    _id: 's1',
-                    userId: 'u1',
-                    type: 'check_in',
-                    timestamp: at(9, 0, '2025-06-09'),
-                },
-                {
-                    _id: 's2',
-                    userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(17, 0, '2025-06-09'),
-                },
-                {
-                    _id: 's3',
-                    userId: 'u2',
-                    type: 'check_in',
-                    timestamp: at(9, 0, '2025-06-09'),
-                },
-                {
-                    _id: 's4',
-                    userId: 'u2',
-                    type: 'check_out',
-                    timestamp: at(17, 0, '2025-06-09'),
-                },
-                {
-                    _id: 's5',
-                    userId: 'u1',
-                    type: 'check_in',
-                    timestamp: at(9, 0, '2025-06-10'),
-                },
-                {
-                    _id: 's6',
-                    userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(17, 0, '2025-06-10'),
-                },
+                makeDayDoc('u1', '2025-06-09', [
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '17:00' },
+                ]),
+                makeDayDoc('u2', '2025-06-09', [
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '17:00' },
+                ]),
+                makeDayDoc('u1', '2025-06-10', [
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '17:00' },
+                ]),
             ]) as any
         );
         vi.mocked(ElectiveVacation.find).mockReturnValue(
@@ -638,42 +588,26 @@ describe('GET /api/admin/work-sessions', () => {
             });
         });
 
-        it('should reject a malformed time', async () => {
-            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
-
-            const req = mockReq({
-                method: 'PUT',
-                body: {
-                    userId: 'u1',
-                    date: '2025-06-09',
-                    sessions: [
-                        {
-                            type: 'check_in',
-                            time: '25:99',
-                        },
-                        {
-                            type: 'check_out',
-                            time: '17:00',
-                        },
-                    ],
-                },
+        it('should reject a malformed time at validation', async () => {
+            const result = AdminReplaceDayWorkSessionsRequestSchema.safeParse({
+                userId: 'u1',
+                date: '2025-06-09',
+                sessions: [
+                    {
+                        type: 'check_in',
+                        time: '25:99',
+                    },
+                    {
+                        type: 'check_out',
+                        time: '17:00',
+                    },
+                ],
             });
-            const res = mockRes();
-
-            await adminWorkSessionsHandler(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith({
-                success: false,
-                error: 'IncorrectParameter',
-                details: {
-                    incorrectParameter: 'time',
-                    reasons: ['OutOfDay'],
-                },
-            });
+            expect(result.success).toBe(false);
         });
 
-        it('should reject equal timestamps', async () => {            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
+        it('should reject equal timestamps', async () => {
+            vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
 
             const req = mockReq({
                 method: 'PUT',
@@ -704,15 +638,13 @@ describe('GET /api/admin/work-sessions', () => {
         it('should replace the day sessions on success', async () => {
             vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
             // No previous sessions for that day (fresh day).
-            vi.mocked(WorkSession.find).mockResolvedValue([] as any);
-            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
-            vi.mocked(WorkSession.insertMany).mockResolvedValue([
-                { _id: 'x1', userId: 'u1', type: 'check_in', timestamp: at(9) },
+            vi.mocked(WorkDaySessions.findOne).mockResolvedValue(null as any);
+            vi.mocked(WorkDaySessions.create).mockResolvedValue([
                 {
-                    _id: 'x2',
+                    _id: 'x1',
                     userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(17),
+                    date: '2025-06-09',
+                    type: 'check_in',
                 },
             ] as any);
 
@@ -733,37 +665,38 @@ describe('GET /api/admin/work-sessions', () => {
 
             expect(res.status).toHaveBeenCalledWith(200);
             // Nothing is ever deleted: on a fresh day there is nothing to
-            // supersede and no updateMany happens.
-            expect(WorkSession.updateMany).not.toHaveBeenCalled();
-            expect(WorkSession.insertMany).toHaveBeenCalledWith(
-                expect.arrayContaining([
+            // supersede and no updateOne happens.
+            expect(WorkDaySessions.updateOne).not.toHaveBeenCalled();
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                [
                     expect.objectContaining({
                         userId: 'u1',
-                        type: 'check_in',
+                        date: '2025-06-09',
+                        source: 'adminManual',
                         version: 1,
                         status: 'active',
                         editedBy: 'admin-123',
+                        sessions: [
+                            {
+                                type: 'check_in',
+                                time: '09:00',
+                                overtime: false,
+                            },
+                            {
+                                type: 'check_out',
+                                time: '17:00',
+                                overtime: false,
+                            },
+                        ],
                     }),
-                    expect.objectContaining({
-                        userId: 'u1',
-                        type: 'check_out',
-                        version: 1,
-                        status: 'active',
-                        editedBy: 'admin-123',
-                    }),
-                ])
-            );
-            // The corrected day adopts the admin-edit source wholesale.
-            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-                { userId: 'u1', date: '2025-06-09' },
-                { $set: { source: 'adminManual' } },
-                { upsert: true }
+                ],
+                undefined
             );
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: true,
                     data: expect.objectContaining({
-                        workSessions: expect.any(Array),
+                        workDaySessions: expect.anything(),
                     }),
                 })
             );
@@ -773,26 +706,13 @@ describe('GET /api/admin/work-sessions', () => {
             vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
             // The day already has an active version 3 (e.g. an auto-timetable
             // applied earlier over the original punches).
-            vi.mocked(WorkSession.find).mockResolvedValue([
-                {
-                    _id: 's1',
-                    userId: 'u1',
-                    type: 'check_in',
-                    timestamp: at(9),
-                    version: 3,
-                    status: 'active',
-                },
-                {
-                    _id: 's2',
-                    userId: 'u1',
-                    type: 'check_out',
-                    timestamp: at(17),
-                    version: 3,
-                    status: 'active',
-                },
-            ] as any);
-            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
-            vi.mocked(WorkSession.insertMany).mockResolvedValue([] as any);
+            vi.mocked(WorkDaySessions.findOne).mockResolvedValue({
+                _id: 's1',
+                userId: 'u1',
+                date: '2025-06-09',
+                version: 3,
+                status: 'active',
+            } as any);
 
             const req = mockReq({
                 method: 'PUT',
@@ -811,9 +731,9 @@ describe('GET /api/admin/work-sessions', () => {
             await adminWorkSessionsHandler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            // The old set is flagged replaced, pointing at the new version.
-            expect(WorkSession.updateMany).toHaveBeenCalledWith(
-                { _id: { $in: ['s1', 's2'] } },
+            // The old version is flagged replaced, pointing at the new one.
+            expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+                { _id: 's1' },
                 expect.objectContaining({
                     $set: expect.objectContaining({
                         status: 'replaced',
@@ -824,34 +744,33 @@ describe('GET /api/admin/work-sessions', () => {
             );
             // The new set becomes version 4, with the reason stored as
             // editReason and the day source marking the admin authorship.
-            expect(WorkSession.insertMany).toHaveBeenCalledWith(
-                expect.arrayContaining([
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                [
                     expect.objectContaining({
                         userId: 'u1',
-                        type: 'check_in',
                         version: 4,
                         status: 'active',
+                        source: 'adminManual',
                         editReason: 'Worker requested correction',
+                        sessions: [
+                            expect.objectContaining({
+                                type: 'check_in',
+                                time: '08:00',
+                            }),
+                            expect.objectContaining({
+                                type: 'check_out',
+                                time: '16:00',
+                            }),
+                        ],
                     }),
-                    expect.objectContaining({
-                        type: 'check_out',
-                        version: 4,
-                        editReason: 'Worker requested correction',
-                    }),
-                ])
-            );
-            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-                { userId: 'u1', date: '2025-06-09' },
-                { $set: { source: 'adminManual' } },
-                { upsert: true }
+                ],
+                undefined
             );
         });
 
         it('should default the audit reason when the admin does not provide one', async () => {
             vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
-            vi.mocked(WorkSession.find).mockResolvedValue([] as any);
-            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
-            vi.mocked(WorkSession.insertMany).mockResolvedValue([] as any);
+            vi.mocked(WorkDaySessions.findOne).mockResolvedValue(null as any);
 
             const req = mockReq({
                 method: 'PUT',
@@ -868,28 +787,19 @@ describe('GET /api/admin/work-sessions', () => {
 
             await adminWorkSessionsHandler(req, res);
 
-            expect(WorkSession.insertMany).toHaveBeenCalledWith(
-                expect.arrayContaining([
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                [
                     expect.objectContaining({
                         editReason: 'Admin day correction',
                     }),
-                ])
+                ],
+                undefined
             );
         });
 
-        it('should carry over the original notes of kept sessions to the new version', async () => {
+        it('should pass the session notes through to the new version', async () => {
             vi.mocked(User.findById).mockResolvedValue({ _id: 'u1' });
-            vi.mocked(WorkSession.find).mockResolvedValue([
-                {
-                    _id: 's1',
-                    version: 3,
-                    notes: 'Morning note',
-                    notesEncrypted: 'enc-note',
-                },
-                { _id: 's2', version: 3 },
-            ] as any);
-            vi.mocked(WorkSession.updateMany).mockResolvedValue({} as any);
-            vi.mocked(WorkSession.insertMany).mockResolvedValue([] as any);
+            vi.mocked(WorkDaySessions.findOne).mockResolvedValue(null as any);
 
             const req = mockReq({
                 method: 'PUT',
@@ -898,7 +808,11 @@ describe('GET /api/admin/work-sessions', () => {
                     date: '2025-06-09',
                     reason: 'Shifted schedule',
                     sessions: [
-                        { _id: 's1', type: 'check_in', time: '08:00' },
+                        {
+                            type: 'check_in',
+                            time: '08:00',
+                            notes: 'Morning note',
+                        },
                         { type: 'check_out', time: '16:00' },
                     ],
                 },
@@ -908,20 +822,22 @@ describe('GET /api/admin/work-sessions', () => {
             await adminWorkSessionsHandler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(WorkSession.insertMany).toHaveBeenCalledWith(
-                expect.arrayContaining([
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                [
                     expect.objectContaining({
-                        type: 'check_in',
-                        notes: 'Morning note',
-                        notesEncrypted: 'enc-note',
                         editReason: 'Shifted schedule',
+                        sessions: [
+                            expect.objectContaining({
+                                type: 'check_in',
+                                notes: 'Morning note',
+                            }),
+                            expect.objectContaining({
+                                type: 'check_out',
+                            }),
+                        ],
                     }),
-                    expect.objectContaining({
-                        type: 'check_out',
-                        notes: undefined,
-                        editReason: 'Shifted schedule',
-                    }),
-                ])
+                ],
+                undefined
             );
         });
 
@@ -946,7 +862,7 @@ describe('GET /api/admin/work-sessions', () => {
 
         it('should paginate rows when limit/offset are provided', async () => {
             vi.mocked(User.find).mockReturnValue(queryChain(users) as any);
-            vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+            vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
             vi.mocked(ElectiveVacation.find).mockReturnValue(
                 simpleChain([]) as any
             );

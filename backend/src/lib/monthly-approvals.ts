@@ -13,7 +13,10 @@ import {
     APPROVAL_PENDING,
     MS_PER_DAY,
 } from 'shared/src/lib/constants';
-import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
+import type {
+    MonthlyApprovalRow,
+    WorkSessionAnomaly,
+} from 'shared/src/schemas/api';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
 import {
     sendAdminMonthlyReview,
@@ -27,6 +30,7 @@ import {
     DateKey,
 } from 'shared/src/lib/day-key';
 import { dateKey } from '@/lib/date-key';
+import type { UserRow, WorkDayRecordRow } from '@/lib/rows';
 
 export interface MonthPeriod {
     year: number;
@@ -91,14 +95,10 @@ export async function computeMonthAnomalies(
     month: number
 ): Promise<WorkSessionAnomaly[]> {
     await dbConnect();
-    const [user] = (await Promise.all([
-        User.findById(userId, 'trackingStartDate checkInRequired').lean(),
-    ])) as unknown as [
-        {
-            trackingStartDate?: DateKey | null;
-            checkInRequired?: boolean;
-        } | null,
-    ];
+    const user = await User.findById(
+        userId,
+        'trackingStartDate checkInRequired'
+    ).lean<Pick<UserRow, 'trackingStartDate' | 'checkInRequired'> | null>();
     if (!user) return [];
     if (user.checkInRequired === false) return [];
 
@@ -114,10 +114,10 @@ export async function computeMonthAnomalies(
         : monthKeys;
     if (keys.length === 0) return [];
 
-    const records = (await WorkDayRecord.find({
+    const records = await WorkDayRecord.find({
         userId,
         date: { $gte: keys[0], $lte: keys[keys.length - 1] },
-    }).lean()) as unknown as { date: DateKey; anomalies?: WorkSessionAnomaly[] }[];
+    }).lean<Pick<WorkDayRecordRow, 'date' | 'anomalies'>[]>();
 
     const recordByDate = new Map(records.map((r) => [r.date, r]));
     const anomalySet = new Set<WorkSessionAnomaly>();
@@ -149,10 +149,10 @@ export async function runMonthlyAdminReview(now: Date = new Date()): Promise<num
     const frontendUrl = getFrontendUrl();
     const reviewUrl = `${frontendUrl}/admin/monthly-approvals?year=${period.year}&month=${period.month}`;
 
-    const admins = (await User.find(
+    const admins = await User.find(
         { role: ADMIN_ROLE, registered: true, deleted: { $ne: true } },
         'email'
-    ).lean()) as unknown as { email: string }[];
+    ).lean<Pick<UserRow, 'email'>[]>();
 
     for (const admin of admins) {
         if (!admin.email) continue;
@@ -187,28 +187,24 @@ export async function runMonthlyApprovalReminders(
     const settings = await getAppSettings();
     const cutoff = new Date(now.getTime() - settings.monthlyApprovalReminderDays * MS_PER_DAY);
 
-    const pending = (await MonthlyApproval.find({
+    const pending = await MonthlyApproval.find({
         status: APPROVAL_PENDING,
         reminderSentAt: null,
         requestedAt: { $lte: cutoff },
-    }).lean()) as unknown as {
-        _id: unknown;
-        userId: string;
-        year: number;
-        month: number;
-    }[];
+    }).lean<
+        Pick<MonthlyApprovalRow, '_id' | 'userId' | 'year' | 'month'>[]
+    >();
 
     let sent = 0;
     const frontendUrl = getFrontendUrl();
     for (const doc of pending) {
-        const user = (await User.findById(
+        const user: Pick<
+            UserRow,
+            'name' | 'email' | 'deleted'
+        > | null = await User.findById(
             doc.userId,
             'name email emailEncrypted deleted'
-        )) as unknown as {
-            name: string;
-            email: string;
-            deleted?: boolean;
-        } | null;
+        );
         if (!user?.email || user.deleted) continue;
 
         await sendMonthlyApprovalReminder({
@@ -240,7 +236,7 @@ export async function openMonthForUser(
     period: MonthPeriod,
     openedBy: string,
     now: Date = new Date()
-): Promise<{ doc: unknown; emailSent: boolean }> {
+): Promise<{ doc: MonthlyApprovalRow | null; emailSent: boolean }> {
     await dbConnect();
     const doc = await MonthlyApproval.findOneAndUpdate(
         { userId, year: period.year, month: period.month },
@@ -254,7 +250,7 @@ export async function openMonthForUser(
             $setOnInsert: { userId, year: period.year, month: period.month },
         },
         { upsert: true, new: true }
-    ).lean();
+    ).lean<MonthlyApprovalRow>();
 
     await MonthlyApprovalEvent.create({
         userId,
@@ -265,10 +261,10 @@ export async function openMonthForUser(
         timestamp: now,
     });
 
-    const user = (await User.findById(
+    const user: Pick<UserRow, 'name' | 'email'> | null = await User.findById(
         userId,
         'name email emailEncrypted'
-    )) as unknown as { name: string; email: string } | null;
+    );
     if (user?.email) {
         const frontendUrl = getFrontendUrl();
         try {

@@ -58,9 +58,8 @@ const user = {
 
 vi.mock('@/models', () => ({
     User: { findById: vi.fn() },
-    WorkSession: { find: vi.fn() },
-    WorkDaySource: {
-        find: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
+    WorkDaySessions: {
+        find: vi.fn(),
     },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
@@ -96,19 +95,13 @@ vi.mock('@/lib/work-day-records', () => ({
 
 import {
     User,
-    WorkSession,
-    WorkDaySource,
+    WorkDaySessions,
     ElectiveVacation,
     YearlyVacationDays,
     MonthlyApproval,
 } from '@/models';
 import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
 import historyHandler from '@/pages/api/me/history';
-
-const at = (h: number, m = 0, day = '2025-06-09') =>
-    new Date(
-        `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
-    );
 
 const mockRecords = (records: unknown[]) => {
     vi.mocked(findWorkDayRecords).mockResolvedValue(records as any);
@@ -157,29 +150,17 @@ describe('GET /api/me/history', () => {
         vi.mocked(User.findById).mockReturnValue({
             lean: vi.fn().mockResolvedValue(user),
         } as any);
-        vi.mocked(WorkSession.find).mockReturnValue(
+        vi.mocked(WorkDaySessions.find).mockReturnValue(
             queryChain([
                 {
-                    _id: 's1',
-                    userId: 'user-123',
-                    type: 'check_in',
-                    timestamp: at(9),
-                },
-                {
-                    _id: 's2',
-                    userId: 'user-123',
-                    type: 'check_out',
-                    timestamp: at(17),
-                },
-            ]) as any
-        );
-        vi.mocked(WorkDaySource.find).mockReturnValue(
-            simpleChain([
-                {
-                    _id: 'd1',
+                    _id: 'day-1',
                     userId: 'user-123',
                     date: '2025-06-09',
                     source: 'userClick',
+                    sessions: [
+                        { type: 'check_in', time: '09:00', overtime: false },
+                        { type: 'check_out', time: '17:00', overtime: false },
+                    ],
                 },
             ]) as any
         );
@@ -232,7 +213,7 @@ describe('GET /api/me/history', () => {
         vi.mocked(User.findById).mockReturnValue({
             lean: vi.fn().mockResolvedValue(user),
         } as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -266,7 +247,7 @@ describe('GET /api/me/history', () => {
         vi.mocked(User.findById).mockReturnValue({
             lean: vi.fn().mockResolvedValue(user),
         } as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );
@@ -302,7 +283,7 @@ describe('GET /api/me/history', () => {
         vi.mocked(User.findById).mockReturnValue({
             lean: vi.fn().mockResolvedValue(null),
         } as any);
-        vi.mocked(WorkSession.find).mockReturnValue(queryChain([]) as any);
+        vi.mocked(WorkDaySessions.find).mockReturnValue(queryChain([]) as any);
         vi.mocked(ElectiveVacation.find).mockReturnValue(
             simpleChain([]) as any
         );

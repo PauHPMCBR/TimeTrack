@@ -1,15 +1,17 @@
 import { z } from 'zod';
 import {
     AppSettingsSchema,
+    DaySessionSchema,
     ElectiveVacationSchema,
     GroupSchema,
     UserSchema,
+    WorkDaySessionsSchema,
     WorkSessionReasonSchema,
-    WorkSessionSchema,
     YearlyVacationDaysSchema,
 } from '@/schemas/database';
 import type { AdminWorkSessionRow } from '@/schemas/api';
 import type { DateKey } from 'shared/src/lib/day-key';
+import type { TimeKey } from 'shared/src/lib/time-key';
 
 export type User = z.infer<typeof UserSchema> & { _id: string };
 export type Group = z.infer<typeof GroupSchema> & { _id: string };
@@ -25,7 +27,17 @@ export type GroupMember = {
 export type WorksessionReason = z.infer<typeof WorkSessionReasonSchema> & {
     _id: string;
 };
-export type WorkSession = z.infer<typeof WorkSessionSchema> & { _id: string };
+export type DaySession = Omit<z.infer<typeof DaySessionSchema>, 'time'> & {
+    time: TimeKey;
+};
+export type WorkDaySessions = Omit<
+    z.infer<typeof WorkDaySessionsSchema>,
+    'date' | 'sessions'
+> & {
+    _id: string;
+    date: DateKey;
+    sessions: DaySession[];
+};
 export type ElectiveVacation = Omit<
     z.infer<typeof ElectiveVacationSchema>,
     'startDate' | 'endDate'

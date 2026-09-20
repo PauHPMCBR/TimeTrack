@@ -32,7 +32,7 @@ vi.mock('@/models', () => ({
         }),
         findById: vi.fn(),
     },
-    WorkSession: { find: vi.fn() },
+    WorkDaySessions: { find: vi.fn() },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
     AppSettings: { findOne: vi.fn(), updateOne: vi.fn() },

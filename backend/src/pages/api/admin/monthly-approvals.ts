@@ -3,6 +3,7 @@ import { MonthlyApproval, User } from '@/models';
 import { notDeleted } from '@/repositories/user-repository';
 import { APPROVAL_PENDING } from 'shared/src/lib/constants';
 import { MonthlyApprovalRow } from 'shared/src/schemas/api';
+import type { UserRow } from '@/lib/rows';
 
 // Registry of monthly record confirmations: which months are pending worker
 // approval and which are already confirmed. Pending rows come first (oldest
@@ -10,14 +11,13 @@ import { MonthlyApprovalRow } from 'shared/src/schemas/api';
 export default withApi(
     { method: 'GET', guard: 'admin' },
     async (_req, res) => {
-        const approvals = (await MonthlyApproval.find({})
-            .lean()) as unknown as (MonthlyApprovalRow & {
-            userId: string;
-        })[];
+        const approvals = await MonthlyApproval.find({}).lean<
+            MonthlyApprovalRow[]
+        >();
 
         const userIds = Array.from(new Set(approvals.map((a) => a.userId)));
         const users = userIds.length
-            ? ((await User.find(
+            ? await User.find(
                   {
                       _id: { $in: userIds },
                       blocked: { $ne: true },
@@ -25,7 +25,7 @@ export default withApi(
                       ...notDeleted,
                   },
                   'name'
-              ).lean()) as unknown as { _id: string; name: string }[])
+              ).lean<(Pick<UserRow, 'name'> & { _id: string })[]>()
             : [];
         const nameById = new Map(users.map((u) => [u._id.toString(), u.name]));
 

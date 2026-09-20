@@ -22,6 +22,7 @@ import { notDeleted } from '@/repositories/user-repository';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendNewFileEmail } from '@/lib/mail';
 import { getFrontendUrl } from '@/lib/frontend-url';
+import type { UserRow } from '@/lib/rows';
 
 export const config = {
     api: {
@@ -46,23 +47,18 @@ const getHandler = withApi(
 
         const sortDir = order === 'asc' ? 1 : -1;
         const sortField = String(sortBy);
-        const files = (
-            await UserFile.find(filter)
-                .sort({ [sortField]: sortDir })
-                .lean()
-        ) as unknown as Record<string, unknown>[];
+        const files = await UserFile.find(filter)
+            .sort({ [sortField]: sortDir })
+            .lean<FileRow[]>();
 
         // Resolve the owner display names in one query.
         const ownerIds = Array.from(
             new Set(files.map((f) => String(f.userId)))
         );
         const owners = ownerIds.length
-            ? ((await User.find({ _id: { $in: ownerIds } })
+            ? await User.find({ _id: { $in: ownerIds } })
                   .select('name')
-                  .lean()) as unknown as {
-                  _id: { toString(): string };
-                  name: string;
-              }[])
+                  .lean<(Pick<UserRow, 'name'> & { _id: string })[]>()
             : [];
         const nameById = new Map(owners.map((u) => [String(u._id), u.name]));
 

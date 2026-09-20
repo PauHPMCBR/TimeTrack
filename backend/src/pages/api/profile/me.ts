@@ -10,11 +10,12 @@ import {
 import { UpdateProfileRequestSchema } from 'shared/src/schemas/api';
 import { validatePassword } from '@/lib/password';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { UserRow } from '@/lib/rows';
 
 const getHandler = withApi({ method: 'GET' }, async (req, res) => {
     const userDoc = await User.findById(req.user?.userId)
         .populate('groups', 'name description')
-        .lean();
+        .lean<UserRow>();
 
     if (!userDoc) {
         return responseErrorEntryNotFound(res, 'User');
@@ -23,7 +24,7 @@ const getHandler = withApi({ method: 'GET' }, async (req, res) => {
     res.status(200).json({
         success: true,
         data: {
-            user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+            user: toPublicUser(userDoc),
         },
     });
 });
@@ -87,7 +88,7 @@ const putHandler = withApi(
                 { new: true }
             )
                 .populate('groups', 'name description')
-                .lean();
+                .lean<UserRow>();
 
             if (!userDoc) {
                 return responseErrorEntryNotFound(res, 'User');
@@ -96,7 +97,7 @@ const putHandler = withApi(
             res.status(200).json({
                 success: true,
                 data: {
-                    user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+                    user: toPublicUser(userDoc),
                 },
             });
         } catch (error) {

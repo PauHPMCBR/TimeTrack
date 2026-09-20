@@ -61,21 +61,21 @@ const { findOne } = vi.hoisted(() => ({
 
 vi.mock('@/models', () => ({
     User: { find: vi.fn(), findById: vi.fn() },
-    WorkSession: { find: vi.fn(), updateMany: vi.fn(), insertMany: vi.fn() },
+    WorkDaySessions: {
+        find: vi.fn(),
+        findOne: vi.fn().mockResolvedValue(null),
+        updateOne: vi.fn().mockResolvedValue({}),
+        create: vi.fn().mockResolvedValue([]),
+    },
     ElectiveVacation: { find: vi.fn() },
     YearlyVacationDays: { find: vi.fn() },
     MonthlyApproval: { findOne, deleteOne: vi.fn(), updateOne: vi.fn() },
     AppSettings: { findOne: vi.fn(), updateOne: vi.fn() },
 }));
 
-import { User, WorkSession, MonthlyApproval } from '@/models';
+import { User, WorkDaySessions, MonthlyApproval } from '@/models';
 import adminWorkSessionsHandler from '@/pages/api/admin/work-sessions';
 import applyAutoScheduleHandler from '@/pages/api/work-sessions/apply-auto-schedule';
-
-const at = (h: number, m = 0, day = '2025-07-10') =>
-    new Date(
-        `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
-    );
 
 describe('monthly approval hard lock', () => {
     beforeEach(() => {
@@ -99,8 +99,8 @@ describe('monthly approval hard lock', () => {
                 userId: 'u1',
                 date: '2025-07-10',
                 sessions: [
-                    { type: 'check_in', timestamp: at(9).toISOString() },
-                    { type: 'check_out', timestamp: at(17).toISOString() },
+                    { type: 'check_in', time: '09:00' },
+                    { type: 'check_out', time: '17:00' },
                 ],
             },
         });
@@ -120,8 +120,8 @@ describe('monthly approval hard lock', () => {
             })
         );
         // Nothing was written.
-        expect(WorkSession.insertMany).not.toHaveBeenCalled();
-        expect(WorkSession.updateMany).not.toHaveBeenCalled();
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
+        expect(WorkDaySessions.updateOne).not.toHaveBeenCalled();
     });
 
     it('apply-auto-schedule is refused while the month is approved', async () => {
@@ -150,6 +150,6 @@ describe('monthly approval hard lock', () => {
         );
         // The lock check happens before any day work: no sessions were read
         // or written.
-        expect(vi.mocked(WorkSession.find)).not.toHaveBeenCalled();
+        expect(WorkDaySessions.findOne).not.toHaveBeenCalled();
     });
 });

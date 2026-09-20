@@ -17,16 +17,14 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             return res.status(400).json({ error: 'YearRequired' });
         }
 
-        const currentUser = (await User.findById(
-            userId
-        ).lean()) as unknown as UserRow | null;
+        const currentUser = await User.findById(userId).lean<UserRow | null>();
         if (!currentUser) {
             return res.status(404).json({ error: 'UserNotFound' });
         }
 
-        const groups = (await Group.find({
+        const groups = await Group.find({
             _id: { $in: currentUser.groups },
-        }).lean()) as unknown as GroupRow[];
+        }).lean<GroupRow[]>();
         const memberIds = new Set<string>();
         groups.forEach((g) => {
             g.members.forEach((m) => memberIds.add(m.toString()));
@@ -37,7 +35,7 @@ export default withApi({ method: 'GET' }, async (req, res) => {
 
         // Exclude blocked/unregistered/deleted members.
         const activeMembers = memberIds.size
-            ? ((await User.find(
+            ? await User.find(
                   {
                       _id: { $in: Array.from(memberIds) },
                       blocked: { $ne: true },
@@ -45,7 +43,7 @@ export default withApi({ method: 'GET' }, async (req, res) => {
                       deleted: { $ne: true },
                   },
                   '_id name'
-              ).lean()) as unknown as { _id: string; name: string }[])
+              ).lean<(Pick<UserRow, 'name'> & { _id: string })[]>()
             : [];
         const activeMemberIds = activeMembers.map((m) => m._id.toString());
         const memberNames = new Map(
@@ -68,9 +66,9 @@ export default withApi({ method: 'GET' }, async (req, res) => {
             populateUserId: true,
         });
 
-        const leaves = (await findLeavesOverlapping(yearStart, yearEnd, {
+        const leaves = await findLeavesOverlapping(yearStart, yearEnd, {
             userId: { $in: activeMemberIds },
-        }).lean()) as unknown as AuthorizedLeaveRow[];
+        }).lean<AuthorizedLeaveRow[]>();
         const resolvedLeaves = leaves.map((leave) => ({
             ...leave,
             userName: memberNames.get(leave.userId),

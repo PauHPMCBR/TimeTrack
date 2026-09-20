@@ -1,5 +1,5 @@
-import { User, WorkSession } from '@/models';
-import { findActiveInRange } from '@/repositories/work-session-repository';
+import { User, WorkDaySessions } from '@/models';
+import { findActiveDay } from '@/repositories/work-day-sessions-repository';
 import {
     responseErrorEntryNotFound,
     responseErrorIllegalAction,
@@ -10,17 +10,18 @@ import { withApi } from '@/lib/api-handler';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { withUserLock } from '@/lib/user-lock';
 import { dateKey } from '@/lib/date-key';
-import { dayRange, dayTimestamp } from '@/lib/date-range';
 import { isMonthApproved } from '@/lib/monthly-approvals';
 import { recomputeWorkDayRecords } from '@/lib/work-day-records';
 import { getCompanyLanguage } from '@/lib/mail';
 import type { EmailLanguage } from '@/lib/mail/types';
 import {
     getAutoTimetable,
-    AutoScheduleEntry,
 } from '@/lib/auto-schedule';
 import { isValidDayTimetable } from 'shared/src/lib/timetable-validation';
-import { upsertWorkDaySource } from '@/repositories/work-day-source-repository';
+import type { WorkSessionType } from 'shared/src/schemas/database';
+import type { TimeKey } from 'shared/src/lib/time-key';
+import type { DaySessionLike } from 'shared/src/lib/work-hours';
+import type { DaySessionsRow, UserRow } from '@/lib/rows';
 import {
     CHECK_IN,
     CHECK_OUT,
@@ -29,9 +30,7 @@ import {
     SESSION_REPLACED,
 } from 'shared/src/lib/constants';
 
-interface AutoScheduleUser {
-    autoTimetable?: AutoScheduleEntry[];
-}
+type AutoScheduleUser = Pick<UserRow, 'autoTimetable'>;
 const AUTO_TIMETABLE_NOTES: Record<EmailLanguage, string> = {
     ca: 'Horari automàtic aplicat',
     en: 'Automatic timetable applied',
@@ -67,9 +66,9 @@ export default withApi(
             return responseErrorIllegalAction(res, 'MonthApprovedLocked');
         }
 
-        const user = (await User.findById(
+        const user = await User.findById(
             req.user?.userId
-        ).lean()) as unknown as AutoScheduleUser | null;
+        ).lean<AutoScheduleUser | null>();
         if (!user) {
             return responseErrorEntryNotFound(res, 'User');
         }
@@ -80,21 +79,20 @@ export default withApi(
         if (!isValidDayTimetable(timetable)) {
             return responseErrorIllegalAction(res, 'InvalidTimetable');
         }
-        const { start, end } = dayRange(requestedDate);
 
         const result = await withUserLock(req.user!.userId, async () => {
-            // Versioning / audit trail: the day's current sessions are flagged
+            // Versioning / audit trail: the day's current version is flagged
             // 'replaced' (never deleted) and the timetable set is stored as
-            // the next version of that (user, day) sequence.
-            const active = (await findActiveInRange(start, end, {
-                userId: req.user!.userId,
-            }).lean()) as unknown as { _id: unknown; version?: number }[];
+            // the next version of that (user, day) document.
+            const active = await findActiveDay(
+                req.user!.userId,
+                requestedDate
+            ).lean<Pick<DaySessionsRow, '_id' | 'version'> | null>();
             const now = new Date();
-            const nextVersion =
-                active.reduce((max, s) => Math.max(max, s.version ?? 1), 0) + 1;
-            if (active.length > 0) {
-                await WorkSession.updateMany(
-                    { _id: { $in: active.map((s) => s._id) } },
+            const nextVersion = (active?.version ?? 0) + 1;
+            if (active) {
+                await WorkDaySessions.updateOne(
+                    { _id: active._id },
                     {
                         $set: {
                             status: SESSION_REPLACED,
@@ -106,40 +104,35 @@ export default withApi(
                 );
             }
 
-            const sessions = timetable.flatMap((entry) => [
-                new WorkSession({
-                    userId: req.user!.userId,
-                    type: CHECK_IN,
-                    timestamp: dayTimestamp(requestedDate, entry.checkIn),
-                    version: nextVersion,
-                    status: SESSION_ACTIVE,
+            const sessions: DaySessionLike[] = timetable.flatMap((entry) => [
+                {
+                    type: CHECK_IN as WorkSessionType,
+                    time: entry.checkIn as TimeKey,
                     notes: autoTimetableNote(),
-                    createdAt: now,
-                    // Self-declaration: the worker applied their timetable.
-                    editedBy: req.user!.userId,
-                }),
-                new WorkSession({
-                    userId: req.user!.userId,
-                    type: CHECK_OUT,
-                    timestamp: dayTimestamp(requestedDate, entry.checkOut),
-                    version: nextVersion,
-                    status: SESSION_ACTIVE,
+                    overtime: false,
+                },
+                {
+                    type: CHECK_OUT as WorkSessionType,
+                    time: entry.checkOut as TimeKey,
                     notes: autoTimetableNote(),
-                    createdAt: now,
-                    editedBy: req.user!.userId,
-                }),
+                    overtime: false,
+                },
             ]);
 
-            await Promise.all(sessions.map((s) => s.save()));
-
-            await upsertWorkDaySource(
-                req.user!.userId,
-                requestedDate,
-                SOURCE_USER_AUTOMATIC
-            );
+            const dayDoc = await WorkDaySessions.create({
+                userId: req.user!.userId,
+                date: requestedDate,
+                sessions,
+                source: SOURCE_USER_AUTOMATIC,
+                version: nextVersion,
+                status: SESSION_ACTIVE,
+                // Self-declaration: the worker applied their timetable.
+                editedBy: req.user!.userId,
+                createdAt: now,
+            });
 
             return {
-                workSessions: sessions,
+                workDaySessions: dayDoc,
                 totalHours: computeDayHours(sessions).totalHours,
                 anomalies: computeDayHours(sessions).anomalies,
             };
@@ -150,7 +143,7 @@ export default withApi(
         res.status(200).json({
             success: true,
             data: {
-                workSessions: result.workSessions,
+                workDaySessions: result.workDaySessions,
                 totalHours: result.totalHours,
                 anomalies: result.anomalies,
             },

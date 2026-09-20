@@ -16,7 +16,13 @@ import {
     nonWorkingDaysOfWeek,
     resolveNonWorkingDays,
 } from 'shared/src/lib/user-overrides';
-import { localeTag } from '@/lib/datetime';
+import { localeTag, toLocalDateKey } from '@/lib/datetime';
+import { todayKey } from '@/lib/timezone';
+import {
+    dateKeyFromParts,
+    isValidDateKey,
+    type DateKey,
+} from 'shared/src/lib/day-key';
 import { Calendar } from '@/components/calendar/Calendar';
 import { Alert } from '@/components/ui/Alert';
 import Card from '@/components/ui/Card';
@@ -29,15 +35,28 @@ export default function CalendarPage() {
     const { t, lang } = useI18n();
     const locale = localeTag(lang);
 
-    const today = new Date();
-    const [cursor, setCursor] = usePersistedState<Date>(
+    const [cursor, setCursor] = usePersistedState<DateKey>(
         CALENDAR_MONTH,
-        () => new Date(today.getFullYear(), today.getMonth(), 1),
+        () => {
+            const today = todayKey();
+            return dateKeyFromParts(
+                Number(today.slice(0, 4)),
+                Number(today.slice(5, 7)),
+                1
+            );
+        },
         {
-            serialize: (d) => d.toISOString(),
+            serialize: (k) => k,
             deserialize: (s) => {
+                if (isValidDateKey(s)) return s as DateKey;
                 const d = new Date(s);
-                return new Date(d.getFullYear(), d.getMonth(), 1);
+                if (isNaN(d.getTime())) return todayKey();
+                const key = toLocalDateKey(d);
+                return dateKeyFromParts(
+                    Number(key.slice(0, 4)),
+                    Number(key.slice(5, 7)),
+                    1
+                );
             },
         }
     );
@@ -64,7 +83,7 @@ export default function CalendarPage() {
     );
     const [isAdmin, setIsAdmin] = useState(false);
 
-    const handleMonthChange = (newCursor: Date) => {
+    const handleMonthChange = (newCursor: DateKey) => {
         setCursor(newCursor);
     };
 
@@ -85,8 +104,8 @@ export default function CalendarPage() {
 
                 const isAdmin = user.role === ADMIN_ROLE;
                 const globalMode = isAdmin && allUsers;
-                const year = cursor.getFullYear();
-                const month = cursor.getMonth() + 1;
+                const year = Number(cursor.slice(0, 4));
+                const month = Number(cursor.slice(5, 7));
                 setIsAdmin(isAdmin);
 
                 const [

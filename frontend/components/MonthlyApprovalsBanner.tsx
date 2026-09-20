@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api';
 import { localeTag } from '@/lib/datetime';
 import { MonthlyApprovalRow } from '@/schemas/api';
 import { APPROVAL_PENDING } from 'shared/src/lib/constants';
+import { dateKeyFromParts } from 'shared/src/lib/day-key';
 import { HISTORY_PERIOD, HISTORY_CURSOR } from '@/lib/storage';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -52,7 +53,8 @@ export default function MonthlyApprovalsBanner() {
         new Intl.DateTimeFormat(localeTag(lang), {
             month: 'long',
             year: 'numeric',
-        }).format(new Date(year, month - 1, 1));
+            timeZone: 'UTC',
+        }).format(new Date(Date.UTC(year, month - 1, 1)));
 
     const handleApprove = async (row: MonthlyApprovalRow) => {
         if (
@@ -85,7 +87,7 @@ export default function MonthlyApprovalsBanner() {
             localStorage.setItem(HISTORY_PERIOD, JSON.stringify('month'));
             localStorage.setItem(
                 HISTORY_CURSOR,
-                new Date(row.year, row.month - 1, 15).toISOString()
+                dateKeyFromParts(row.year, row.month, 15)
             );
         } catch (err) {
             console.error('Failed to persist history filters:', err);

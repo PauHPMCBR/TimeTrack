@@ -1,17 +1,13 @@
-import { WorkSession } from '@/models';
+import { WorkDaySessions } from '@/models';
 import { responseErrorIncorrectParameter, responseErrorPost } from '@/lib/response-error-generator';
 import { WorkSessionRequestSchema } from 'shared/src/schemas/api';
 import { withApi } from '@/lib/api-handler';
 import { computeDayHours } from 'shared/src/lib/work-hours';
 import { CheckInIncorrectParameterReason } from 'shared/src/types/response-errors';
 import { withUserLock } from '@/lib/user-lock';
-import { todayRange } from '@/lib/date-range';
-import { findActiveInRange } from '@/repositories/work-session-repository';
-import {
-    findWorkDaySource,
-    upsertWorkDaySource,
-} from '@/repositories/work-day-source-repository';
-import { dateKey } from '@/lib/date-key';
+import { nowWallClock } from '@/lib/timezone';
+import { findActiveDay } from '@/repositories/work-day-sessions-repository';
+import { encrypt } from '@/lib/crypto';
 import {
     CHECK_IN,
     CHECK_OUT,
@@ -20,22 +16,25 @@ import {
     SESSION_ACTIVE,
     SESSION_REPLACED,
 } from 'shared/src/lib/constants';
+import type { WorkSessionType } from 'shared/src/schemas/database';
+import type { TimeKey } from 'shared/src/lib/time-key';
+import type { DateKey } from 'shared/src/lib/day-key';
+import type { DaySessionLike } from 'shared/src/lib/work-hours';
+import type { DaySessionsRow } from '@/lib/rows';
 
-// Fetches today's active sessions once (ascending) and derives from them the
-// in/out guard (ignoring programmed future automatic sessions) and the day's
-// worked hours. Day boundary is the server's local time — same convention as
-// every other date-bucketed endpoint in the app. Replaced versions of the day
-// are excluded: only the current record drives the in/out guard.
-async function getTodaySessions(
-    userId: string
-): Promise<InstanceType<typeof WorkSession>[]> {
-    const { start, end } = todayRange();
-
-    return findActiveInRange(start, end, { userId }).sort({ timestamp: 1 });
+// The day document holding the current version of today's sessions (ordered),
+// or null when the day has no data yet.
+async function getTodayDay(
+    userId: string,
+    todayKey: DateKey
+): Promise<
+    Pick<DaySessionsRow, '_id' | 'version' | 'source' | 'sessions'> | null
+> {
+    return findActiveDay(userId, todayKey);
 }
 
 function verifyInOut(
-    lastSession: InstanceType<typeof WorkSession> | undefined,
+    lastSession: DaySessionLike | undefined,
     type: string
 ): CheckInIncorrectParameterReason | null {
     if (type === CHECK_IN) {
@@ -58,14 +57,14 @@ function verifyInOut(
 // auto timetable, or a day correction that planned ahead. Manual punches must
 // be able to override them: otherwise a programmed future check-out always
 // sorts last and the in/out guard would allow unlimited consecutive check-ins.
-function isProgrammed(timestamp: Date, now: Date): boolean {
-    return timestamp.getTime() > now.getTime();
+function isProgrammed(time: TimeKey, nowTime: TimeKey): boolean {
+    return time > nowTime;
 }
 
 type CheckInOutResult =
     | { error: CheckInIncorrectParameterReason }
     | {
-          workSession: InstanceType<typeof WorkSession>;
+          session: DaySessionLike;
           hoursWorked: number | null;
       };
 
@@ -82,14 +81,12 @@ export default withApi(
         const result = await withUserLock<CheckInOutResult>(
             req.user!.userId,
             async () => {
-                const todaySessions = await getTodaySessions(req.user!.userId);
-                const now = new Date();
-                const daySource = await findWorkDaySource(
-                    req.user!.userId,
-                    dateKey(now)
-                );
+                const now = nowWallClock();
+                const todayKey = now.date;
+                const stamp = new Date();
+                const day = await getTodayDay(req.user!.userId, todayKey);
                 const daySourceIsAutomatic =
-                    daySource?.source === SOURCE_USER_AUTOMATIC;
+                    day?.source === SOURCE_USER_AUTOMATIC;
 
                 // Manual punch vs programmed sessions: any future-dated
                 // session (auto timetable or a planned-ahead correction) is
@@ -97,16 +94,16 @@ export default withApi(
                 // supersedes the open automatic check-in (the start of the
                 // interval being lived through), since the punch redefines
                 // when work actually started.
-                const overridden = todaySessions.filter((s) =>
-                    isProgrammed(new Date(s.timestamp), now)
+                const effective = (day?.sessions ?? []).filter(
+                    (s) => !isProgrammed(s.time, now.time)
                 );
-                const effective = todaySessions.filter(
-                    (s) => !isProgrammed(new Date(s.timestamp), now)
-                );
+                const hasProgrammed =
+                    (day?.sessions ?? []).length > effective.length;
+                let dropOpenAutoCheckIn = false;
                 if (type === CHECK_IN) {
                     const last = effective[effective.length - 1];
                     if (last && last.type === CHECK_IN && daySourceIsAutomatic) {
-                        overridden.push(last);
+                        dropOpenAutoCheckIn = true;
                         effective.pop();
                     }
                 }
@@ -119,65 +116,99 @@ export default withApi(
                     return { error: inOutCheckError };
                 }
 
-                const currentVersion = todaySessions[0]?.version ?? 1;
+                const punch: DaySessionLike = {
+                    type: type as WorkSessionType,
+                    time: now.time,
+                    ...(notes ? { notes } : {}),
+                    overtime: overtime === true,
+                };
 
-                if (overridden.length > 0) {
-                    await WorkSession.updateMany(
-                        { _id: { $in: overridden.map((s) => s._id) } },
+                if (!day) {
+                    await WorkDaySessions.create({
+                        userId: req.user!.userId,
+                        date: todayKey,
+                        sessions: [punch],
+                        source: SOURCE_USER_CLICK,
+                        version: 1,
+                        status: SESSION_ACTIVE,
+                        editedBy: req.user!.userId,
+                        createdAt: stamp,
+                    });
+                    return { session: punch, hoursWorked: null };
+                }
+
+                const openCheckIn =
+                    type === CHECK_OUT ? effective[effective.length - 1] : undefined;
+                const openCheckInOvertimeChanged =
+                    !!openCheckIn && openCheckIn.overtime !== punch.overtime;
+                if (openCheckInOvertimeChanged) {
+                    openCheckIn.overtime = punch.overtime === true;
+                }
+
+                // Programmed sessions are superseded (whole-day versioning):
+                // the day is replaced by a new version with only the
+                // still-effective sessions plus the punch.
+                if (hasProgrammed || dropOpenAutoCheckIn) {
+                    const nextVersion = (day.version ?? 1) + 1;
+                    await WorkDaySessions.updateOne(
+                        { _id: day._id },
                         {
                             $set: {
                                 status: SESSION_REPLACED,
-                                replacedByVersion: currentVersion,
-                                replacedAt: now,
-                                updatedAt: now,
+                                replacedByVersion: nextVersion,
+                                replacedAt: stamp,
+                                updatedAt: stamp,
                             },
                         }
                     );
-                }
-
-                const workSession = new WorkSession({
-                    userId: req.user!.userId,
-                    type,
-                    timestamp: now,
-                    notes,
-                    overtime: overtime === true,
-                    // Join the day's current version (all active docs of a
-                    // day share it); days never touched by a replacement
-                    // (or legacy days) are version 1.
-                    version: currentVersion,
-                    status: SESSION_ACTIVE,
-                    editedBy: req.user!.userId,
-                });
-
-                await workSession.save();
-
-                const overtimeFlag = overtime === true;
-                const openCheckIn =
-                    type === CHECK_OUT
-                        ? effective[effective.length - 1]
-                        : undefined;
-                if (openCheckIn && openCheckIn.overtime !== overtimeFlag) {
-                    await WorkSession.updateOne(
-                        { _id: openCheckIn._id },
-                        { $set: { overtime: overtimeFlag, updatedAt: now } }
+                    await WorkDaySessions.create({
+                        userId: req.user!.userId,
+                        date: todayKey,
+                        sessions: [...effective, punch],
+                        source: SOURCE_USER_CLICK,
+                        version: nextVersion,
+                        status: SESSION_ACTIVE,
+                        editedBy: req.user!.userId,
+                        createdAt: stamp,
+                    });
+                } else {
+                    await WorkDaySessions.updateOne(
+                        { _id: day._id },
+                        {
+                            $set: { source: SOURCE_USER_CLICK, updatedAt: stamp },
+                            $push: {
+                                sessions: {
+                                    type: punch.type,
+                                    time: punch.time,
+                                    notesEncrypted: punch.notes
+                                        ? encrypt(punch.notes)
+                                        : '',
+                                    overtime: punch.overtime,
+                                },
+                            },
+                        }
                     );
+                    if (openCheckInOvertimeChanged) {
+                        await WorkDaySessions.updateOne(
+                            {
+                                _id: day._id,
+                                'sessions.time': openCheckIn!.time,
+                                'sessions.type': openCheckIn!.type,
+                            },
+                            { $set: { 'sessions.$.overtime': punch.overtime } }
+                        );
+                    }
                 }
-                // Live punches set the day source for the whole day.
-                await upsertWorkDaySource(
-                    req.user!.userId,
-                    dateKey(now),
-                    SOURCE_USER_CLICK
-                );
 
-                let hoursWorked = null;
+                let hoursWorked: number | null = null;
                 if (type === CHECK_OUT) {
                     hoursWorked = computeDayHours([
                         ...effective,
-                        workSession,
+                        punch,
                     ]).totalHours;
                 }
 
-                return { workSession, hoursWorked };
+                return { session: punch, hoursWorked };
             }
         );
 
@@ -192,7 +223,7 @@ export default withApi(
                     type === CHECK_IN
                         ? 'CheckInRegistered'
                         : 'CheckOutRegistered',
-                session: result.workSession,
+                session: result.session,
                 hoursWorked: result.hoursWorked,
             },
         });

@@ -1,33 +1,51 @@
 import { z } from 'zod';
 import {
     AutoScheduleEntrySchema,
+    DaySessionSchema,
+    DateKeyIntervalSchema,
     ElectiveVacationSchema,
+    GroupSchema,
     MonthlyApprovalSchema,
     MonthlyApprovalEventSchema,
     AuditEventSchema,
-    InconsistencyReminderModeSchema,
     ScheduleModeSchema,
     UserRoleSchema,
     UserSchema,
     UserFileSchema,
     ValidWeekTimetableSchema,
-    WorkSessionSchema,
     SourceKindSchema,
-    WorkSessionTypeSchema,
     YearlyVacationDaysSchema,
     AuthorizedLeaveSchema,
     WorkDayClassificationSchema,
     WorkDayCheckModeSchema,
     WorkSessionAnomalySchema,
+    AppSettingsSchema,
 } from './database';
 import {
     ADMIN_REPORT_PERIODS,
     EMPLOYEE_ROLE,
-    HOUR_MINUTE_KEY_REGEX,
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
 } from '../lib/constants';
 import { DateKeySchema } from '../lib/day-key';
+import { TimeKeySchema } from '../lib/time-key';
+
+const userIdField = () => z.string().min(1, 'User ID is required');
+
+const yearQueryField = () =>
+    z
+        .string()
+        .transform((val) => parseInt(val, 10))
+        .refine(
+            (val) => !isNaN(val) && val >= MIN_VALID_YEAR && val <= MAX_VALID_YEAR,
+            'Invalid year'
+        );
+
+const monthQueryField = () =>
+    z
+        .string()
+        .transform((val) => parseInt(val, 10))
+        .refine((val) => !isNaN(val) && val >= 1 && val <= 12, 'Invalid month');
 
 export const LoginRequestSchema = z.object({
     email: z.string().email('Invalid email format'),
@@ -103,23 +121,22 @@ export type CopyYearlyVacationRequest = z.infer<
     typeof CopyYearlyVacationRequestSchema
 >;
 
-export const AppSettingsRequestSchema = z
-    .object({
-        defaultWeeklyExpectedHours: z
-            .array(z.number().min(0))
-            .length(7)
-            .optional(),
-        toleranceMinutes: z.number().int().gte(0).optional(),
-        defaultScheduleMode: ScheduleModeSchema.optional(),
+export const AppSettingsRequestSchema = AppSettingsSchema.pick({
+    defaultWeeklyExpectedHours: true,
+    toleranceMinutes: true,
+    defaultScheduleMode: true,
+    defaultTimetable: true,
+    timetableToleranceMinutes: true,
+    endOfDayHour: true,
+    inconsistencyReminderMode: true,
+    monthlyApprovalReminderDays: true,
+    timezone: true,
+    privacyNoticeText: true,
+    workerConsultationAcknowledged: true,
+})
+    .partial()
+    .extend({
         defaultTimetable: ValidWeekTimetableSchema.optional(),
-        timetableToleranceMinutes: z.number().int().gte(0).optional(),
-        endOfDayHour: z.number().min(0).max(24).optional(),
-        inconsistencyReminderMode:
-            InconsistencyReminderModeSchema.optional(),
-        monthlyApprovalReminderDays: z.number().int().min(1).max(60).optional(),
-        timezone: z.string().min(1, 'Timezone is required').optional(),
-        privacyNoticeText: z.string().max(5000).optional(),
-        workerConsultationAcknowledged: z.boolean().optional(),
     })
     .refine(
         (data) => Object.keys(data).length > 0,
@@ -135,16 +152,20 @@ export const GroupIdParamSchema = z.object({
 });
 export type GroupIdParam = z.infer<typeof GroupIdParamSchema>;
 
-export const CreateGroupRequestSchema = z.object({
-    name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-    description: z.string().optional(),
+export const CreateGroupRequestSchema = GroupSchema.pick({
+    name: true,
+    description: true,
+    members: true,
+}).extend({
     members: z.array(z.string()),
 });
 export type CreateGroupRequest = z.infer<typeof CreateGroupRequestSchema>;
 
-export const WorkSessionRequestSchema = z.object({
-    type: WorkSessionTypeSchema,
-    notes: z.string().max(1000).optional(),
+export const WorkSessionRequestSchema = DaySessionSchema.pick({
+    type: true,
+    notes: true,
+    overtime: true,
+}).extend({
     overtime: z.boolean().optional(),
 });
 export type WorkSessionRequest = z.infer<typeof WorkSessionRequestSchema>;
@@ -156,20 +177,20 @@ export type ApplyAutoScheduleRequest = z.infer<
     typeof ApplyAutoScheduleRequestSchema
 >;
 
-export const UpdateProfileRequestSchema = z.object({
-    autoTimetable: z.array(AutoScheduleEntrySchema).optional(),
-    // Per-user email notification for files shared by admins (profile toggle).
-    notifyNewFile: z.boolean().optional(),
-    // Per-user inconsistency-reminder email preference (profile toggle, only
-    // effective while the company mode is 'user_choice').
-    notifyInconsistency: z.boolean().optional(),
-    // Self-service password change: both must be provided together.
-    currentPassword: z.string().optional(),
-    password: z
-        .string()
-        .min(8, 'Password must be at least 8 characters')
-        .optional(),
-});
+export const UpdateProfileRequestSchema = UserSchema.pick({
+    autoTimetable: true,
+    notifyNewFile: true,
+    notifyInconsistency: true,
+})
+    .partial()
+    .extend({
+        // Self-service password change: both must be provided together.
+        currentPassword: z.string().optional(),
+        password: z
+            .string()
+            .min(8, 'Password must be at least 8 characters')
+            .optional(),
+    });
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequestSchema>;
 
 export const AvatarUploadRequestSchema = z.object({
@@ -182,8 +203,11 @@ export const AvatarUploadRequestSchema = z.object({
 });
 export type AvatarUploadRequest = z.infer<typeof AvatarUploadRequestSchema>;
 
-export const ElectiveVacationRequestSchema = z
-    .object({
+export const ElectiveVacationRequestSchema = DateKeyIntervalSchema.pick({
+    startDate: true,
+    endDate: true,
+})
+    .extend({
         startDate: DateKeySchema,
         endDate: DateKeySchema,
         reason: z.string().max(1000).optional(),
@@ -195,11 +219,6 @@ export type ElectiveVacationRequest = z.infer<
     typeof ElectiveVacationRequestSchema
 >;
 
-export function dateKeyToLocalMidnight(value: string): Date {
-    const [y, m, d] = value.split('-').map(Number);
-    return new Date(y, m - 1, d, 0, 0, 0, 0);
-}
-
 export const YearlyVacationAdminRequestSchema = z.object({
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
     obligatoryDays: z.array(DateKeySchema),
@@ -210,48 +229,33 @@ export type YearlyVacationAdminRequest = z.infer<
 >;
 
 export const UserIdParamSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
 });
 export type UserIdParam = z.infer<typeof UserIdParamSchema>;
 
 export const DateParamSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
     date: DateKeySchema,
 });
 export type DateParam = z.infer<typeof DateParamSchema>;
 
 export const YearMonthParamSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
-    year: z
-        .string()
-        .transform((val) => parseInt(val, 10))
-        .refine(
-            (val) => !isNaN(val) && val >= MIN_VALID_YEAR && val <= MAX_VALID_YEAR,
-            'Invalid year'
-        ),
-    month: z
-        .string()
-        .transform((val) => parseInt(val, 10))
-        .refine((val) => !isNaN(val) && val >= 1 && val <= 12, 'Invalid month'),
+    userId: userIdField(),
+    year: yearQueryField(),
+    month: monthQueryField(),
 });
 export type YearMonthParam = z.infer<typeof YearMonthParamSchema>;
 
 export const WorkSessionRangeQuerySchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
     from: DateKeySchema,
     to: DateKeySchema,
 });
 export type WorkSessionRangeQuery = z.infer<typeof WorkSessionRangeQuerySchema>;
 
 export const UserYearParamSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
-    year: z
-        .string()
-        .transform((val) => parseInt(val, 10))
-        .refine(
-            (val) => !isNaN(val) && val >= MIN_VALID_YEAR && val <= MAX_VALID_YEAR,
-            'Invalid year'
-        ),
+    userId: userIdField(),
+    year: yearQueryField(),
 });
 export type UserYearParam = z.infer<typeof UserYearParamSchema>;
 
@@ -286,15 +290,24 @@ export const WorkSessionRowStatusSchema = z.enum([
 ]);
 export type WorkSessionRowStatus = z.infer<typeof WorkSessionRowStatusSchema>;
 
+export const DaySessionRowSchema = DaySessionSchema.extend({
+    time: TimeKeySchema,
+});
+export type DaySessionRow = z.infer<typeof DaySessionRowSchema>;
+
 export const AdminWorkSessionRowSchema = z.object({
     userId: z.string(),
     userName: z.string(),
     date: DateKeySchema,
     totalHours: z.number().gte(0),
     overtimeHours: z.number().gte(0),
-    expectedHours: z.number().gte(0),    timetable: z.array(AutoScheduleEntrySchema).optional(),
+    expectedHours: z.number().gte(0),
+    timetable: z.array(AutoScheduleEntrySchema).optional(),
     source: SourceKindSchema.optional(),
-    sessions: z.array(WorkSessionSchema.extend({ _id: z.string() })),
+    sessions: z.array(DaySessionRowSchema),
+    editedBy: z.string().optional(),
+    editReason: z.string().optional(),
+    createdAt: z.date().optional(),
     status: WorkSessionRowStatusSchema,
     dayClassification: WorkDayClassificationSchema,
     anomalies: z.array(WorkSessionAnomalySchema),
@@ -362,18 +375,19 @@ export type AdminWorkSessionsQueryWithPagination = z.infer<
     typeof AdminWorkSessionsQueryWithPaginationSchema
 >;
 
-export const AdminWorkSessionInputSchema = z.object({
-    // Original session id when the session already exists (lets the backend
-    // carry over its notes to the new version). Absent for added sessions.
-    _id: z.string().optional(),
-    type: WorkSessionTypeSchema,
-    time: z.string().regex(HOUR_MINUTE_KEY_REGEX, 'time must be HH:mm'),
+export const AdminWorkSessionInputSchema = DaySessionSchema.pick({
+    type: true,
+    time: true,
+    notes: true,
+    overtime: true,
+}).extend({
+    time: TimeKeySchema,
     overtime: z.boolean().optional(),
 });
 export type AdminWorkSessionInput = z.infer<typeof AdminWorkSessionInputSchema>;
 
 export const AdminReplaceDayWorkSessionsRequestSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
     date: DateKeySchema,
     sessions: z.array(AdminWorkSessionInputSchema),
     // Why the day is being corrected. Stored as editReason on the new version.
@@ -412,9 +426,7 @@ export const MonthlyWorkRecordResponseSchema = z.object({
     userId: z.string(),
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
     month: z.number().int().gte(1).lte(12),
-    sessionsByDay: z.array(
-        z.array(WorkSessionSchema.extend({ _id: z.string() }))
-    ), // index is day of the month, position 0 is empty
+    sessionsByDay: z.array(z.array(DaySessionRowSchema)), // index is day of the month, position 0 is empty
     summary: z.object({
         totalSessions: z.number().int().gte(0),
         totalHoursWorked: z.number().gte(0),
@@ -449,7 +461,7 @@ export type MonthlyApprovalOpenRequest = z.infer<
 >;
 
 export const MonthlyApprovalRevokeRequestSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
     month: z.number().int().gte(1).lte(12),
 });
@@ -583,7 +595,7 @@ export type FileUpdateRequest = z.infer<typeof FileUpdateRequestSchema>;
 // JSON body (same transport as avatar uploads); the binary must fit within
 // FILE_MAX_BYTES after decoding.
 export const FileUploadRequestSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
     originalName: z.string().min(1, 'File name is required').max(255),
     description: z.string().max(1000).optional(),
     dataUrl: z
@@ -617,7 +629,7 @@ export type FilesResponse = z.infer<typeof FilesResponseSchema>;
 
 export const AdminAuthorizedLeaveRequestSchema = z
     .object({
-        userId: z.string().min(1, 'User ID is required'),
+        userId: userIdField(),
         startDate: DateKeySchema,
         endDate: DateKeySchema,
         notes: z.string().max(2000).optional(),
@@ -667,7 +679,7 @@ export type AuthorizedLeavesResponse = z.infer<
 >;
 
 export const AdminWorkDayRecordUpdateRequestSchema = z.object({
-    userId: z.string().min(1, 'User ID is required'),
+    userId: userIdField(),
     date: DateKeySchema,
     classification: WorkDayClassificationSchema,
     checkMode: WorkDayCheckModeSchema.optional(),

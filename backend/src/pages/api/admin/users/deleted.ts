@@ -7,9 +7,9 @@ import { toPublicUser } from '@/lib/sanitize';
 export default withApi(
     { method: 'GET', guard: 'admin' },
     async (_req, res) => {
-        const users = (await User.find({ deleted: true })
+        const users = await User.find({ deleted: true })
             .sort({ deletedAt: -1 })
-            .lean()) as unknown as UserRow[];
+            .lean<UserRow[]>();
 
         res.status(200).json({
             success: true,

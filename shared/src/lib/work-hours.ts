@@ -1,16 +1,19 @@
 import { WorkSessionAnomaly } from '../schemas/api';
-import { CHECK_IN, CHECK_OUT, MS_PER_HOUR } from './constants';
+import { CHECK_IN, CHECK_OUT } from './constants';
+import type { TimeKey } from './time-key';
 
 export interface DaySessionLike {
     type: 'check_in' | 'check_out';
-    timestamp: Date | string;
+    time: TimeKey;
+    notes?: string;
     overtime?: boolean;
 }
 
+/** The end of a day expressed as a wall clock ("HH:MM" keys, or "24:00"). */
+export type DayEndTime = TimeKey | '24:00';
+
 export interface DayHoursOptions {
-    /** Count an unmatched trailing check-in up to this instant (e.g. now / end of day). */
-    countOpenUntil?: Date;
-    /** Round totalHours to 2 decimals. Defaults to true. */
+    countOpenUntil?: DayEndTime;
     round?: boolean;
 }
 
@@ -20,38 +23,42 @@ export interface DayHoursResult {
     anomalies: WorkSessionAnomaly[];
 }
 
+export function timeToMinutes(time: DayEndTime): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
 /**
- * Pairs check-in/check-out timestamps of a single day into worked hours and
- * flags structural anomalies:
+ * Pairs check-in/check-out clock times ("HH:MM") of a single day into worked
+ * hours and flags structural anomalies:
  *  - forgot_check_out: a trailing check-in with no matching check-out
  *  - forgot_check_in:  a check-out with no preceding check-in
- * Sessions must be sorted by timestamp before calling.
+ * Sessions must be sorted by `time` before calling.
  */
 export function computeDayHours(
     sessions: DaySessionLike[],
     options: DayHoursOptions = {}
 ): DayHoursResult {
-    let totalMs = 0;
-    let overtimeMs = 0;
+    let totalMinutes = 0;
+    let overtimeMinutes = 0;
     const anomalies: WorkSessionAnomaly[] = [];
-    let pendingCheckIn: Date | null = null;
+    let pendingCheckIn: TimeKey | null = null;
     let pendingOvertime = false;
 
     for (const session of sessions) {
-        const timestamp = new Date(session.timestamp);
         if (session.type === CHECK_IN) {
             if (pendingCheckIn) {
                 anomalies.push('forgot_check_out');
             }
-            pendingCheckIn = timestamp;
+            pendingCheckIn = session.time;
             pendingOvertime = session.overtime === true;
         } else if (session.type === CHECK_OUT) {
             if (pendingCheckIn) {
-                const ms = timestamp.getTime() - pendingCheckIn.getTime();
-                totalMs += ms;
+                const minutes = timeToMinutes(session.time) - timeToMinutes(pendingCheckIn);
+                totalMinutes += minutes;
                 // Either end flagged marks the whole interval as overtime.
                 if (pendingOvertime || session.overtime === true) {
-                    overtimeMs += ms;
+                    overtimeMinutes += minutes;
                 }
                 pendingCheckIn = null;
                 pendingOvertime = false;
@@ -64,21 +71,21 @@ export function computeDayHours(
     if (pendingCheckIn) {
         anomalies.push('forgot_check_out');
         if (options.countOpenUntil) {
-            const ms = Math.max(
+            const minutes = Math.max(
                 0,
-                options.countOpenUntil.getTime() - pendingCheckIn.getTime()
+                timeToMinutes(options.countOpenUntil) - timeToMinutes(pendingCheckIn)
             );
-            totalMs += ms;
+            totalMinutes += minutes;
             if (pendingOvertime) {
-                overtimeMs += ms;
+                overtimeMinutes += minutes;
             }
         }
     }
 
     const roundHours = (raw: number) =>
         options.round === false ? raw : Math.round(raw * 100) / 100;
-    const totalHours = roundHours(Math.max(0, totalMs / MS_PER_HOUR));
-    const overtimeHours = roundHours(Math.max(0, overtimeMs / MS_PER_HOUR));
+    const totalHours = roundHours(Math.max(0, totalMinutes / 60));
+    const overtimeHours = roundHours(Math.max(0, overtimeMinutes / 60));
 
     return { totalHours, overtimeHours, anomalies };
 }

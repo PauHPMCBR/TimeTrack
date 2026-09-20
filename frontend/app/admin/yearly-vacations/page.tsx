@@ -11,9 +11,9 @@ import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
 import { YearlyVacationDays } from '@/types';
-import { parseDateKey } from '@/lib/datetime';
+import { formatDateKey } from '@/lib/datetime';
 import type { DateKey } from 'shared/src/lib/day-key';
-import { DateKeySchema } from 'shared/src/lib/day-key';
+import { DateKeySchema, dowFromDateKey } from 'shared/src/lib/day-key';
 import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
@@ -223,7 +223,7 @@ export default function AdminObligatoryVacationsPage() {
     };
 
     const formatDate = (key: string) => {
-        return parseDateKey(key).toLocaleDateString('en-US', {
+        return formatDateKey(key, 'en-US', {
             weekday: 'short',
             year: 'numeric',
             month: 'long',
@@ -232,7 +232,7 @@ export default function AdminObligatoryVacationsPage() {
     };
 
     const isNonWorkingDay = (key: string) =>
-        nonWorkingDays.includes(parseDateKey(key).getDay());
+        nonWorkingDays.includes(dowFromDateKey(key as DateKey));
 
     const realObligatoryCount = obligatoryDays.filter(
         (key) => !isNonWorkingDay(key)
@@ -242,10 +242,12 @@ export default function AdminObligatoryVacationsPage() {
         const groups: Record<string, string[]> = {};
 
         obligatoryDays.forEach((key) => {
-            const monthYear = parseDateKey(key).toLocaleDateString('en-US', {
+            const [y, m] = key.split('-').map(Number);
+            const monthYear = new Intl.DateTimeFormat('en-US', {
                 month: 'long',
                 year: 'numeric',
-            });
+                timeZone: 'UTC',
+            }).format(new Date(Date.UTC(y, m - 1, 1)));
             if (!groups[monthYear]) {
                 groups[monthYear] = [];
             }
@@ -458,8 +460,6 @@ export default function AdminObligatoryVacationsPage() {
                                                 </div>
                                                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
                                                     {dates.map((key) => {
-                                                        const date =
-                                                            parseDateKey(key);
                                                         const nonWorking =
                                                             isNonWorkingDay(
                                                                 key
@@ -474,7 +474,7 @@ export default function AdminObligatoryVacationsPage() {
                                                                         className={`flex h-8 w-8 items-center justify-center rounded-full ${nonWorking ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}
                                                                     >
                                                                         <span className="text-sm font-medium">
-                                                                            {date.getDate()}
+                                                                            {Number(key.slice(8, 10))}
                                                                         </span>
                                                                     </div>
                                                                     <div>
@@ -486,7 +486,8 @@ export default function AdminObligatoryVacationsPage() {
                                                                         <div
                                                                             className={`text-xs ${nonWorking ? 'text-red-500 dark:text-red-400' : 'text-zinc-500'}`}
                                                                         >
-                                                                            {date.toLocaleDateString(
+                                                                            {formatDateKey(
+                                                                                key,
                                                                                 'en-US',
                                                                                 {
                                                                                     weekday:

@@ -9,6 +9,7 @@ import { YearlyVacationAdminRequestSchema } from 'shared/src/schemas/api';
 import { recomputeWorkDayRecords } from '@/lib/work-day-records';
 import { dateKey } from '@/lib/date-key';
 import type { DateKey } from 'shared/src/lib/day-key';
+import type { YearlyVacationRow } from '@/lib/rows';
 
 export default withApi(
     {
@@ -30,9 +31,9 @@ export default withApi(
             ]);
         }
 
-        const existingVacation = await findGlobalTemplate(year);
-        const previousObligatory = (existingVacation?.obligatoryDays ??
-            []) as DateKey[];
+        const existingVacation: YearlyVacationRow | null =
+            await findGlobalTemplate(year);
+        const previousObligatory = existingVacation?.obligatoryDays ?? [];
 
         const update = {
             obligatoryDays,
@@ -55,10 +56,10 @@ export default withApi(
             )
         );
         if (affected.size > 0) {
-            const users = (await User.find(
+            const users = await User.find(
                 { registered: true, deleted: { $ne: true } },
                 '_id'
-            ).lean()) as unknown as { _id: string }[];
+            ).lean<{ _id: string }[]>();
             for (const user of users) {
                 await recomputeWorkDayRecords(
                     user._id.toString(),

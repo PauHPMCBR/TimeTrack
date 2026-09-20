@@ -336,7 +336,11 @@ describe('apiClient', () => {
     describe('addWorkRecordTimestamp', () => {
         it('should add work record timestamp', async () => {
             const mockResponse = {
-                data: { workSession: { id: 'ws1', type: 'check_in' } },
+                data: {
+                    message: 'ok',
+                    session: { type: 'check_in', time: '09:00', overtime: false },
+                    hoursWorked: null,
+                },
             };
             mockFetchSuccess(mockResponse);
 
@@ -350,7 +354,20 @@ describe('apiClient', () => {
 
     describe('getMonthlyRecords', () => {
         it('should fetch monthly records', async () => {
-            const mockResponse = { data: { sessions: [], totalHours: 0 } };
+            const mockResponse = {
+                data: {
+                    userId: 'u1',
+                    year: 2024,
+                    month: 6,
+                    sessionsByDay: [],
+                    summary: {
+                        totalSessions: 0,
+                        totalHoursWorked: 0,
+                        daysWithSessions: 0,
+                        dailyStats: [],
+                    },
+                },
+            };
             mockFetchSuccess(mockResponse);
 
             const result = await apiClient.getMonthlyRecords('u1', 6, 2024);
@@ -529,12 +546,18 @@ describe('apiClient', () => {
 
     describe('getDailyRecords', () => {
         it('should fetch daily records', async () => {
-            const mockResponse = { data: { workSessions: [{ id: 'ws1' }] } };
+            const mockResponse = {
+                data: {
+                    workSessions: [
+                        { type: 'check_in', time: '09:00', overtime: false },
+                    ],
+                },
+            };
             mockFetchSuccess(mockResponse);
 
             const result = await apiClient.getDailyRecords(
                 'u1',
-                new Date('2024-06-15')
+                '2024-06-15'
             );
 
             expect(result.data).toEqual(mockResponse.data);

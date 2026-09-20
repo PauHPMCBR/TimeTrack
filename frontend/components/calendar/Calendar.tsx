@@ -9,7 +9,14 @@ import {
 } from '@/types/calendar';
 import { CalendarDay } from './CalendarDay';
 import { CalendarTooltip, getVacationClass } from './CalendarTooltip';
-import { toLocalDateKey, weekDayShortLabels } from '@/lib/datetime';
+import { weekDayShortLabels } from '@/lib/datetime';
+import { todayKey } from '@/lib/timezone';
+import {
+    dateKeyFromParts,
+    daysInMonth,
+    dowFromDateKey,
+    type DateKey,
+} from 'shared/src/lib/day-key';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
@@ -23,22 +30,19 @@ import Button from '@/components/ui/Button';
 
 function buildMonthMatrix(
     year: number,
-    monthIndex0: number
-): (Date | null)[][] {
-    const first = new Date(year, monthIndex0, 1);
-    const last = new Date(year, monthIndex0 + 1, 0);
-    const startWeekday = (first.getDay() + 6) % 7; // dilluns=0
-    const daysInMonth = last.getDate();
+    month: number
+): (DateKey | null)[][] {
+    const startWeekday = (dowFromDateKey(dateKeyFromParts(year, month, 1)) + 6) % 7; // dilluns=0
 
-    const cells: (Date | null)[] = Array.from(
+    const cells: (DateKey | null)[] = Array.from(
         { length: startWeekday },
         () => null
     );
-    for (let d = 1; d <= daysInMonth; d++)
-        cells.push(new Date(year, monthIndex0, d));
+    for (let d = 1; d <= daysInMonth(year, month); d++)
+        cells.push(dateKeyFromParts(year, month, d));
     while (cells.length % 7 !== 0) cells.push(null);
 
-    const rows: (Date | null)[][] = [];
+    const rows: (DateKey | null)[][] = [];
     for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
     return rows;
 }
@@ -62,39 +66,47 @@ export function Calendar({
     t,
     className = '',
 }: CalendarProps) {
-    const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+    const [hoveredDay, setHoveredDay] = useState<DateKey | null>(null);
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-    const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+    const [selectedDay, setSelectedDay] = useState<DateKey | null>(null);
     const calendarRef = useRef<HTMLDivElement>(null);
 
-    const rows = useMemo(
-        () => buildMonthMatrix(cursor.getFullYear(), cursor.getMonth()),
-        [cursor]
-    );
+    const rows = useMemo(() => {
+        const [y, m] = cursor.split('-').map(Number);
+        return buildMonthMatrix(y, m);
+    }, [cursor]);
 
-    const today = useMemo(() => new Date(), []);
-
-    const monthLabel = new Intl.DateTimeFormat(locale, {
-        month: 'long',
-        year: 'numeric',
-    })
-        .format(cursor)
-        .replace(/^./, (c) => c.toLocaleUpperCase(locale));
+    const monthLabel = (() => {
+        const [y, m] = cursor.split('-').map(Number);
+        return new Intl.DateTimeFormat(locale, {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+        })
+            .format(new Date(Date.UTC(y, m - 1, 1)))
+            .replace(/^./, (c) => c.toLocaleUpperCase(locale));
+    })();
 
     const weekdayLabels = useMemo(() => weekDayShortLabels(locale), [locale]);
 
-    const prevMonth = () =>
-        onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1));
-    const nextMonth = () =>
-        onMonthChange(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1));
+    const prevMonth = () => {
+        const [y, m] = cursor.split('-').map(Number);
+        onMonthChange(
+            m === 1 ? dateKeyFromParts(y - 1, 12, 1) : dateKeyFromParts(y, m - 1, 1)
+        );
+    };
+    const nextMonth = () => {
+        const [y, m] = cursor.split('-').map(Number);
+        onMonthChange(
+            m === 12 ? dateKeyFromParts(y + 1, 1, 1) : dateKeyFromParts(y, m + 1, 1)
+        );
+    };
 
     const getVacationsForDay = useCallback(
-        (date: Date): VacationEvent[] => {
+        (dayKey: DateKey): VacationEvent[] => {
             if (!vacations || !showVacations) return [];
 
             const events: VacationEvent[] = [];
-
-            const dayKey = toLocalDateKey(date);
 
             const isObligatory =
                 vacations.yearlyVacationDays?.obligatoryDays?.includes(
@@ -235,10 +247,10 @@ export function Calendar({
     );
 
     const getWorkSessionsForDay = useCallback(
-        (date: Date) => {
+        (dayKey: DateKey) => {
             if (!workSessions || !showWorkSessions) return null;
 
-            const day = date.getDate();
+            const day = Number(dayKey.slice(8, 10));
             const dailyStat = workSessions.summary?.dailyStats?.[day];
             const sessionsList = workSessions.sessionsByDay?.[day];
 
@@ -259,21 +271,20 @@ export function Calendar({
     // recomputation and full-grid re-renders on every hover/tooltip move.
     const daysData = useMemo(() => {
         const map = new Map<string, CalendarDayData>();
-        rows.flat().forEach((date) => {
-            if (!date) return;
-            const key = toLocalDateKey(date);
-            map.set(key, {
-                date,
-                vacationEvents: getVacationsForDay(date),
-                workEvent: getWorkSessionsForDay(date),
-                isToday: key === toLocalDateKey(today),
-                isWeekend: nonWorkingDays.includes(date.getDay()),
+        rows.flat().forEach((dayKey) => {
+            if (!dayKey) return;
+            map.set(dayKey, {
+                date: dayKey,
+                vacationEvents: getVacationsForDay(dayKey),
+                workEvent: getWorkSessionsForDay(dayKey),
+                isToday: dayKey === todayKey(),
+                isWeekend: nonWorkingDays.includes(dowFromDateKey(dayKey)),
                 // Grey out any day the user does not work: weekly non-working
                 // days, company obligatory holidays, own approved vacations
                 // and authorized leave.
                 isNonWorking:
-                    nonWorkingDays.includes(date.getDay()) ||
-                    getVacationsForDay(date).some(
+                    nonWorkingDays.includes(dowFromDateKey(dayKey)) ||
+                    getVacationsForDay(dayKey).some(
                         (event) =>
                             event.type === 'obligatory' ||
                             event.type === 'elective-approved' ||
@@ -286,13 +297,12 @@ export function Calendar({
         rows,
         getVacationsForDay,
         getWorkSessionsForDay,
-        today,
         nonWorkingDays,
     ]);
 
     const handleDayHover = useCallback(
-        (date: Date, event: React.MouseEvent) => {
-            setHoveredDay(date);
+        (dayKey: DateKey, event: React.MouseEvent) => {
+            setHoveredDay(dayKey);
             const rect = event.currentTarget.getBoundingClientRect();
             setTooltipPosition({
                 x: rect.left + rect.width / 2,
@@ -303,10 +313,10 @@ export function Calendar({
     );
 
     const handleDayClick = useCallback(
-        (date: Date) => {
+        (dayKey: DateKey) => {
             setHoveredDay(null);
-            setSelectedDay(date);
-            onDayClick?.(date);
+            setSelectedDay(dayKey);
+            onDayClick?.(dayKey);
         },
         [onDayClick]
     );
@@ -428,8 +438,8 @@ export function Calendar({
                 </div>
 
                 <div className="grid grid-cols-7 gap-px bg-zinc-200/60 dark:bg-zinc-800/60">
-                    {rows.flat().map((date, idx) => {
-                        if (!date)
+                    {rows.flat().map((dayKey, idx) => {
+                        if (!dayKey)
                             return (
                                 <div
                                     key={idx}
@@ -438,7 +448,7 @@ export function Calendar({
                                 />
                             );
 
-                        const dayData = daysData.get(toLocalDateKey(date))!;
+                        const dayData = daysData.get(dayKey)!;
 
                         return (
                             <CalendarDay

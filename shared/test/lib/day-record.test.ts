@@ -3,11 +3,6 @@ import { computeWorkDayAnomalies } from '../../src/lib/day-record';
 import type { WorkDayExpectations } from '../../src/lib/day-record';
 import type { WorkDayClassification } from '../../src/schemas/database';
 
-const DAY = new Date(2024, 0, 15);
-
-const at = (hour: number, minute = 0) =>
-    new Date(DAY.getFullYear(), DAY.getMonth(), DAY.getDate(), hour, minute);
-
 const expectations = (
     overrides: Partial<WorkDayExpectations> = {}
 ): WorkDayExpectations => ({
@@ -21,7 +16,10 @@ const expectations = (
 });
 
 const sessionsAt = (times: Array<['check_in' | 'check_out', number, number?]>) =>
-    times.map(([type, hour, minute]) => ({ type, timestamp: at(hour, minute) }));
+    times.map(([type, hour, minute]) => ({
+        type,
+        time: `${String(hour).padStart(2, '0')}:${String(minute ?? 0).padStart(2, '0')}`,
+    }));
 
 describe('computeWorkDayAnomalies — non-workday classifications', () => {
     it.each([
@@ -34,8 +32,7 @@ describe('computeWorkDayAnomalies — non-workday classifications', () => {
         (classification) => {
             const anomalies = computeWorkDayAnomalies(
                 sessionsAt([['check_in', 9], ['check_out', 10]]),
-                expectations({ classification }),
-                'Europe/Madrid'
+                expectations({ classification })
             );
             expect(anomalies).toEqual(['work_on_non_working_day']);
         }
@@ -44,8 +41,7 @@ describe('computeWorkDayAnomalies — non-workday classifications', () => {
     it('is clean when a non-working day has no punches', () => {
         const anomalies = computeWorkDayAnomalies(
             [],
-            expectations({ classification: 'electiveVacation' }),
-            'Europe/Madrid'
+            expectations({ classification: 'electiveVacation' })
         );
         expect(anomalies).toEqual([]);
     });
@@ -55,8 +51,7 @@ describe('computeWorkDayAnomalies — hours mode', () => {
     it('is clean within the tolerance band', () => {
         const anomalies = computeWorkDayAnomalies(
             sessionsAt([['check_in', 9], ['check_out', 17]]),
-            expectations(),
-            'Europe/Madrid'
+            expectations()
         );
         expect(anomalies).toEqual([]);
     });
@@ -64,8 +59,7 @@ describe('computeWorkDayAnomalies — hours mode', () => {
     it('flags hours_short beyond the tolerance', () => {
         const anomalies = computeWorkDayAnomalies(
             sessionsAt([['check_in', 9], ['check_out', 15]]),
-            expectations(),
-            'Europe/Madrid'
+            expectations()
         );
         expect(anomalies).toEqual(['hours_short']);
     });
@@ -73,8 +67,7 @@ describe('computeWorkDayAnomalies — hours mode', () => {
     it('flags hours_over beyond the tolerance', () => {
         const anomalies = computeWorkDayAnomalies(
             sessionsAt([['check_in', 9], ['check_out', 20]]),
-            expectations(),
-            'Europe/Madrid'
+            expectations()
         );
         expect(anomalies).toEqual(['hours_over']);
     });
@@ -82,8 +75,7 @@ describe('computeWorkDayAnomalies — hours mode', () => {
     it('flags hours_short when nothing was recorded', () => {
         const anomalies = computeWorkDayAnomalies(
             [],
-            expectations(),
-            'Europe/Madrid'
+            expectations()
         );
         expect(anomalies).toEqual(['hours_short']);
     });
@@ -91,8 +83,7 @@ describe('computeWorkDayAnomalies — hours mode', () => {
     it('flags structural anomalies (forgot check-out)', () => {
         const anomalies = computeWorkDayAnomalies(
             sessionsAt([['check_in', 9]]),
-            expectations(),
-            'Europe/Madrid'
+            expectations()
         );
         expect(anomalies).toEqual(['forgot_check_out']);
     });
@@ -105,9 +96,8 @@ describe('computeWorkDayAnomalies — timetable mode', () => {
             expectations({
                 checkMode: 'timetable',
                 timetableIntervals: [{ checkIn: '09:00', checkOut: '17:00' }],
-            }),
-            'Europe/Madrid'
-        );
+            })
+);
         expect(anomalies).toEqual([]);
     });
 
@@ -117,9 +107,8 @@ describe('computeWorkDayAnomalies — timetable mode', () => {
             expectations({
                 checkMode: 'timetable',
                 timetableIntervals: [{ checkIn: '09:00', checkOut: '17:00' }],
-            }),
-            'Europe/Madrid'
-        );
+            })
+);
         expect(anomalies).toEqual(['timetable_check_in_late']);
     });
 
@@ -129,9 +118,8 @@ describe('computeWorkDayAnomalies — timetable mode', () => {
             expectations({
                 checkMode: 'timetable',
                 timetableIntervals: [{ checkIn: '09:00', checkOut: '17:00' }],
-            }),
-            'Europe/Madrid'
-        );
+            })
+);
         expect(anomalies).toEqual(['timetable_shift_count']);
     });
 });

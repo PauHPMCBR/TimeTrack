@@ -31,12 +31,12 @@ export const findOneWorkDayRecord = (userId: string, date: DateKey) =>
 
 export const findWorkDayRecords = (
     dates: DateKey[],
-    userId?: string | { $in: unknown[] }
+    userId?: string | { $in: string[] }
 ) =>
     WorkDayRecord.find({
         date: { $in: dates },
         ...(userId !== undefined ? { userId } : {}),
-    });
+    }).lean<WorkDayRecordRow[]>();
 
 export const findUserWorkDayRecords = (
     userId: string,
@@ -50,7 +50,7 @@ export const findUserWorkDayRecords = (
 
 export const upsertWorkDayRecord = async (
     doc: WorkDayRecordDoc
-): Promise<WorkDayRecordRow> =>
+): Promise<WorkDayRecordRow | null> =>
     WorkDayRecord.findOneAndUpdate(
         { userId: doc.userId, date: doc.date },
         {
@@ -58,4 +58,4 @@ export const upsertWorkDayRecord = async (
             $setOnInsert: { createdAt: new Date() },
         },
         { upsert: true, new: true }
-    ).lean() as unknown as Promise<WorkDayRecordRow>;
+    ).lean<WorkDayRecordRow>();

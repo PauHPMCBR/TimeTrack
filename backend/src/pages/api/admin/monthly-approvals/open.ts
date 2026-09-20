@@ -17,6 +17,12 @@ import {
     isPastMonth,
     openMonthForUser,
 } from '@/lib/monthly-approvals';
+import type { UserRow } from '@/lib/rows';
+
+type TargetUser = Pick<UserRow, 'name' | 'trackingStartDate'> & {
+    _id: string;
+    checkInRequired?: boolean;
+};
 
 interface BlockedEntry {
     userId: string;
@@ -48,7 +54,7 @@ export default withApi(
                 return responseErrorIllegalAction(res, 'MonthNotPast');
             }
 
-            const targetUsers = (userIds
+            const targetUsers = userIds
                 ? await User.find(
                       {
                           _id: { $in: userIds },
@@ -56,7 +62,7 @@ export default withApi(
                           ...notDeleted,
                       },
                       'name trackingStartDate checkInRequired'
-                  ).lean()
+                  ).lean<TargetUser[]>()
                 : await User.find(
                       {
                           registered: true,
@@ -65,12 +71,7 @@ export default withApi(
                           checkInRequired: { $ne: false },
                       },
                       'name trackingStartDate'
-                  ).lean()) as unknown as {
-                _id: string;
-                name: string;
-                trackingStartDate?: string | null;
-                checkInRequired?: boolean;
-            }[];
+                  ).lean<TargetUser[]>();
 
         const now = new Date();
         const notified: MonthlyApprovalRow[] = [];
@@ -92,12 +93,12 @@ export default withApi(
         }
 
         // Pending requests that already exist for this month: skip re-emailing.
-        const existingPending = (await MonthlyApproval.find({
+        const existingPending = await MonthlyApproval.find({
             year,
             month,
             status: APPROVAL_PENDING,
             userId: { $in: targetUsers.map((u) => u._id.toString()) },
-        }).lean()) as unknown as { userId: string }[];
+        }).lean<{ userId: string }[]>();
         const existingPendingIds = new Set(
             existingPending.map((e) => e.userId.toString())
         );
@@ -128,12 +129,13 @@ export default withApi(
                 continue;
             }
 
-            const { doc, emailSent } = (await openMonthForUser(
+            const { doc, emailSent } = await openMonthForUser(
                 id,
                 { year, month },
                 req.user!.userId,
                 now
-            )) as { doc: MonthlyApprovalRow; emailSent: boolean };
+            );
+            if (!doc) continue;
             const row = {
                 ...doc,
                 _id: doc._id.toString(),

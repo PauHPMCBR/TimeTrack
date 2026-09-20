@@ -35,12 +35,12 @@ vi.mock('@/lib/validation', () => ({
 }));
 
 vi.mock('@/models', () => ({
-    WorkSession: {
-        find: vi.fn(),
+    WorkDaySessions: {
+        findOne: vi.fn(),
     },
 }));
 
-import { WorkSession } from '@/models';
+import { WorkDaySessions } from '@/models';
 import workSessionDayHandler from '@/pages/api/work-sessions/[userId]/day/[date]';
 
 describe('GET /api/work-sessions/[userId]/day/[date]', () => {
@@ -70,23 +70,19 @@ describe('GET /api/work-sessions/[userId]/day/[date]', () => {
     });
 
     it('should return 200 with sessions on successful GET', async () => {
-        const mockSessions = [
-            {
-                _id: 'session-1',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T08:00:00'),
-            },
-            {
-                _id: 'session-2',
-                type: 'check_out',
-                timestamp: new Date('2024-01-15T17:00:00'),
-            },
-        ];
+        const mockDay = {
+            _id: 'day-1',
+            userId: 'user-456',
+            date: '2024-01-15',
+            source: 'userClick',
+            sessions: [
+                { type: 'check_in', time: '08:00', overtime: false },
+                { type: 'check_out', time: '17:00', overtime: false },
+            ],
+        };
 
-        vi.mocked(WorkSession.find).mockReturnValue({
-            sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(mockSessions),
-            }),
+        vi.mocked(WorkDaySessions.findOne).mockReturnValue({
+            lean: vi.fn().mockResolvedValue(mockDay),
         } as any);
 
         const req = mockReq({
@@ -97,27 +93,27 @@ describe('GET /api/work-sessions/[userId]/day/[date]', () => {
 
         await workSessionDayHandler(req, res);
 
-        // Day bucket must be the local calendar day, derived from the raw
-        // "YYYY-MM-DD" string (independent of the server timezone). Replaced
-        // versions are excluded.
-        expect(WorkSession.find).toHaveBeenCalledWith({
-            userId: 'user-456',
-            timestamp: {
-                $gte: new Date(2024, 0, 15, 0, 0, 0, 0),
-                $lt: new Date(2024, 0, 16, 0, 0, 0, 0),
+        // Day bucket is the raw "YYYY-MM-DD" key compared inclusively;
+        // replaced versions are excluded.
+        expect(WorkDaySessions.findOne).toHaveBeenCalledWith(
+            {
+                userId: 'user-456',
+                date: '2024-01-15',
+                status: { $ne: 'replaced' },
             },
-            status: { $ne: 'replaced' },
-        });
+            undefined,
+            undefined
+        );
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
-            data: { workSessions: mockSessions },
+            data: { workSessions: mockDay.sessions },
         });
     });
 
     it('should return 500 on database error', async () => {
-        vi.mocked(WorkSession.find).mockReturnValue({
+        vi.mocked(WorkDaySessions.findOne).mockReturnValue({
             sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockRejectedValue(new Error('DB Error')),
             }),

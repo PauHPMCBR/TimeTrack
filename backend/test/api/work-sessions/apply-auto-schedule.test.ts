@@ -37,33 +37,30 @@ vi.mock('@/lib/user-lock', () => ({
     withUserLock: async (_userId: string, fn: () => unknown) => fn(),
 }));
 
-const { savedDocs, find, updateMany } = vi.hoisted(() => {
+const { savedDocs, findOne, updateOne } = vi.hoisted(() => {
     const savedDocs: any[] = [];
-    const find = vi.fn().mockReturnValue({
-        lean: vi.fn().mockResolvedValue([]),
-    });
-    const updateMany = vi.fn().mockResolvedValue({});
-    return { savedDocs, find, updateMany };
+    const findOne = vi.fn().mockResolvedValue(null);
+    const updateOne = vi.fn().mockResolvedValue({});
+    return { savedDocs, findOne, updateOne };
 });
 
 vi.mock('@/models', () => {
-    const WorkSession = vi.fn(function (doc: any) {
-        savedDocs.push(doc);
-        return { ...doc, save: vi.fn().mockResolvedValue(doc) };
-    });
-    (WorkSession as any).find = find;
-    (WorkSession as any).updateMany = updateMany;
+    const WorkDaySessions = {
+        findOne,
+        updateOne,
+        create: vi.fn((doc: any) => {
+            savedDocs.push(doc);
+            return Promise.resolve({ ...doc, _id: 'day-1' });
+        }),
+    };
     return {
         User: { findById: vi.fn() },
-        WorkSession,
+        WorkDaySessions,
         MonthlyApproval: { findOne: vi.fn().mockResolvedValue(null) },
-        WorkDaySource: {
-            updateOne: vi.fn().mockResolvedValue({ upsertedCount: 1 }),
-        },
     };
 });
 
-import { User, WorkDaySource } from '@/models';
+import { User, WorkDaySessions } from '@/models';
 import applyAutoScheduleHandler from '@/pages/api/work-sessions/apply-auto-schedule';
 
 vi.mock('@/lib/work-day-records', () => ({
@@ -87,8 +84,8 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         savedDocs.length = 0;
-        find.mockReturnValue({
-            lean: vi.fn().mockResolvedValue([]),
+        findOne.mockReturnValue({
+            lean: vi.fn().mockResolvedValue(null),
         });
     });
 
@@ -113,43 +110,35 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         await applyAutoScheduleHandler(req, res);
 
         // On a fresh day there is nothing to supersede.
-        expect(updateMany).not.toHaveBeenCalled();
-        expect(savedDocs).toHaveLength(4);
+        expect(updateOne).not.toHaveBeenCalled();
+        expect(savedDocs).toHaveLength(1);
         expect(savedDocs[0]).toMatchObject({
             userId: 'user-123',
-            type: 'check_in',
+            date: '2026-08-27',
+            source: 'userAutomatic',
             version: 1,
             status: 'active',
-            notes: 'Automatic timetable applied',
-            timestamp: new Date(2026, 7, 27, 8, 30, 0),
+            sessions: [
+                {
+                    type: 'check_in',
+                    time: '08:30',
+                    notes: 'Automatic timetable applied',
+                    overtime: false,
+                },
+                { type: 'check_out', time: '12:30' },
+                { type: 'check_in', time: '14:00' },
+                { type: 'check_out', time: '18:00' },
+            ],
         });
-        expect(savedDocs[1]).toMatchObject({
-            userId: 'user-123',
-            type: 'check_out',
-            timestamp: new Date(2026, 7, 27, 12, 30, 0),
-        });
-        expect(savedDocs[2]).toMatchObject({
-            userId: 'user-123',
-            type: 'check_in',
-            timestamp: new Date(2026, 7, 27, 14, 0, 0),
-        });
-        expect(savedDocs[3]).toMatchObject({
-            userId: 'user-123',
-            type: 'check_out',
-            timestamp: new Date(2026, 7, 27, 18, 0, 0),
-        });
-        // The self-applied timetable becomes the day source.
-        expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-            { userId: 'user-123', date: '2026-08-27' },
-            { $set: { source: 'userAutomatic' } },
-            { upsert: true }
-        );
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: true,
                 data: expect.objectContaining({
+                    workDaySessions: expect.objectContaining({
+                        _id: 'day-1',
+                    }),
                     totalHours: 8,
                     anomalies: [],
                 }),
@@ -163,16 +152,12 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
         });
         // The day already has an active version 2 (original punches plus a
         // later correction); it must be superseded, never deleted.
-        find.mockReturnValue({
-            lean: vi.fn().mockResolvedValue([
-                {
-                    _id: 's1',
-                    type: 'check_in',
-                    timestamp: new Date(2026, 7, 27, 8, 50, 0),
-                    version: 2,
-                    status: 'active',
-                },
-            ]),
+        findOne.mockReturnValue({
+            lean: vi.fn().mockResolvedValue({
+                _id: 's1',
+                version: 2,
+                status: 'active',
+            }),
         });
 
         const req = mockReq({
@@ -183,8 +168,8 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
 
         await applyAutoScheduleHandler(req, res);
 
-        expect(updateMany).toHaveBeenCalledWith(
-            { _id: { $in: ['s1'] } },
+        expect(updateOne).toHaveBeenCalledWith(
+            { _id: 's1' },
             expect.objectContaining({
                 $set: expect.objectContaining({
                     status: 'replaced',
@@ -192,10 +177,15 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
                 }),
             })
         );
-        expect(savedDocs).toHaveLength(2);
+        expect(savedDocs).toHaveLength(1);
         expect(savedDocs[0]).toMatchObject({
             version: 3,
             status: 'active',
+            source: 'userAutomatic',
+        });
+        expect(savedDocs[0].sessions[0]).toMatchObject({
+            type: 'check_in',
+            time: '09:00',
             notes: 'Automatic timetable applied',
         });
         expect(res.status).toHaveBeenCalledWith(200);
@@ -212,13 +202,15 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
 
         await applyAutoScheduleHandler(req, res);
 
-        expect(savedDocs).toHaveLength(2);
-        expect(savedDocs[0].timestamp).toEqual(
-            new Date(2026, 7, 27, 9, 0, 0)
-        );
-        expect(savedDocs[1].timestamp).toEqual(
-            new Date(2026, 7, 27, 17, 0, 0)
-        );
+        expect(savedDocs).toHaveLength(1);
+        expect(savedDocs[0].sessions[0]).toMatchObject({
+            type: 'check_in',
+            time: '09:00',
+        });
+        expect(savedDocs[0].sessions[1]).toMatchObject({
+            type: 'check_out',
+            time: '17:00',
+        });
     });
 
     it('returns 404 when the user does not exist', async () => {
@@ -257,6 +249,7 @@ describe('POST /api/work-sessions/apply-auto-schedule', () => {
             details: { illegalAction: 'FutureDate' },
         });
         expect(savedDocs).toHaveLength(0);
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
     });
 
     it('rejects an invalid stored timetable', async () => {

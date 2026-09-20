@@ -6,6 +6,15 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { AdminWorkSessionRow, User } from '@/types';
 import { localeTag, toLocalDateKey, formatPeriodLabel } from '@/lib/datetime';
+import { todayKey } from '@/lib/timezone';
+import {
+    addDaysToKey,
+    dateKeyFromParts,
+    daysInMonth,
+    dowFromDateKey,
+    isValidDateKey,
+    type DateKey,
+} from 'shared/src/lib/day-key';
 import { Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SessionEditorModal from '@/components/SessionEditorModal';
@@ -41,19 +50,15 @@ function AdminEventsInner() {
     const urlParamConsumed = useRef(false);
 
     const [period, setPeriod] = usePersistedState<Period>(ADMIN_EVENTS_PERIOD, 'week');
-    const [cursor, setCursor] = usePersistedState<Date>(
+    const [cursor, setCursor] = usePersistedState<DateKey>(
         ADMIN_EVENTS_CURSOR,
-        () => {
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            return now;
-        },
+        () => todayKey(),
         {
-            serialize: (d) => d.toISOString(),
+            serialize: (k) => k,
             deserialize: (s) => {
+                if (isValidDateKey(s)) return s as DateKey;
                 const d = new Date(s);
-                d.setHours(0, 0, 0, 0);
-                return d;
+                return isNaN(d.getTime()) ? todayKey() : toLocalDateKey(d);
             },
         }
     );
@@ -108,12 +113,8 @@ function AdminEventsInner() {
             setPeriod(p as Period);
         }
         const d = searchParams.get('date');
-        if (d) {
-            const parsed = new Date(`${d}T00:00:00`);
-            if (!isNaN(parsed.getTime())) {
-                parsed.setHours(0, 0, 0, 0);
-                setCursor(parsed);
-            }
+        if (d && isValidDateKey(d)) {
+            setCursor(d as DateKey);
         }
     }, [searchParams, setPeriod, setCursor]);
 
@@ -126,22 +127,22 @@ function AdminEventsInner() {
         if (period === 'day' || period === 'week') {
             params = {
                 period,
-                date: toLocalDateKey(cursor),
+                date: cursor,
                 limit: PAGE_SIZE,
                 offset,
             };
         } else if (period === 'month') {
             params = {
                 period,
-                year: cursor.getFullYear(),
-                month: cursor.getMonth() + 1,
+                year: Number(cursor.slice(0, 4)),
+                month: Number(cursor.slice(5, 7)),
                 limit: PAGE_SIZE,
                 offset,
             };
         } else {
             params = {
                 period,
-                year: cursor.getFullYear(),
+                year: Number(cursor.slice(0, 4)),
                 limit: PAGE_SIZE,
                 offset,
             };
@@ -173,12 +174,22 @@ function AdminEventsInner() {
 
     const shiftCursor = (dir: -1 | 1) => {
         setOffset(0);
-        const next = new Date(cursor);
-        if (period === 'day') next.setDate(next.getDate() + dir);
-        else if (period === 'week') next.setDate(next.getDate() + 7 * dir);
-        else if (period === 'month') next.setMonth(next.getMonth() + dir);
-        else next.setFullYear(next.getFullYear() + dir);
-        setCursor(next);
+        const [y, m, d] = cursor.split('-').map(Number);
+        if (period === 'day') setCursor(addDaysToKey(cursor, dir));
+        else if (period === 'week') setCursor(addDaysToKey(cursor, 7 * dir));
+        else if (period === 'month') {
+            const nm = m + dir;
+            const ny = nm < 1 ? y - 1 : nm > 12 ? y + 1 : y;
+            const norm = nm < 1 ? 12 : nm > 12 ? 1 : nm;
+            setCursor(
+                dateKeyFromParts(ny, norm, Math.min(d, daysInMonth(ny, norm)))
+            );
+        } else {
+            const ny = y + dir;
+            setCursor(
+                dateKeyFromParts(ny, m, Math.min(d, daysInMonth(ny, m)))
+            );
+        }
     };
 
     const periodLabel = () =>
@@ -190,19 +201,24 @@ function AdminEventsInner() {
     };
 
     const exportRange = (): { from: string; to: string } => {
-        const start = new Date(cursor);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(cursor);
-        end.setHours(0, 0, 0, 0);
+        const [y, m] = cursor.split('-').map(Number);
         if (period === 'week') {
-            end.setDate(end.getDate() + 6);
-        } else if (period === 'month') {
-            end.setMonth(end.getMonth() + 1, 0);
-        } else if (period === 'year') {
-            start.setMonth(0, 1);
-            end.setMonth(11, 31);
+            const monday = addDaysToKey(cursor, -((dowFromDateKey(cursor) + 6) % 7));
+            return { from: monday, to: addDaysToKey(monday, 6) };
         }
-        return { from: toLocalDateKey(start), to: toLocalDateKey(end) };
+        if (period === 'month') {
+            return {
+                from: dateKeyFromParts(y, m, 1),
+                to: dateKeyFromParts(y, m, daysInMonth(y, m)),
+            };
+        }
+        if (period === 'year') {
+            return {
+                from: dateKeyFromParts(y, 1, 1),
+                to: dateKeyFromParts(y, 12, 31),
+            };
+        }
+        return { from: cursor, to: cursor };
     };
 
     const handleExport = async () => {
@@ -267,7 +283,7 @@ function AdminEventsInner() {
                         cursor={cursor}
                         onCursorChange={(d) => {
                             setOffset(0);
-                            setCursor(d);
+                            setCursor(d as DateKey);
                         }}
                         onShift={shiftCursor}
                         anomalyOnly={anomalyOnly}

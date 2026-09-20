@@ -35,12 +35,12 @@ vi.mock('@/lib/validation', () => ({
 }));
 
 vi.mock('@/models', () => ({
-    WorkSession: {
+    WorkDaySessions: {
         find: vi.fn(),
     },
 }));
 
-import { WorkSession } from '@/models';
+import { WorkDaySessions } from '@/models';
 import workSessionMonthHandler from '@/pages/api/work-sessions/[userId]/month/[year]/[month]';
 
 describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
@@ -70,22 +70,22 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
     });
 
     it('should return 200 with monthly sessions on successful GET', async () => {
-        const mockSessions = [
+        const mockDaySessions = [
             {
-                _id: 'session-1',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T08:00:00'),
-            },
-            {
-                _id: 'session-2',
-                type: 'check_out',
-                timestamp: new Date('2024-01-15T17:00:00'),
+                _id: 'day-1',
+                userId: 'user-456',
+                date: '2024-01-15',
+                source: 'userClick',
+                sessions: [
+                    { type: 'check_in', time: '08:00', overtime: false },
+                    { type: 'check_out', time: '17:00', overtime: false },
+                ],
             },
         ];
 
-        vi.mocked(WorkSession.find).mockReturnValue({
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(mockSessions),
+                lean: vi.fn().mockResolvedValue(mockDaySessions),
             }),
         } as any);
 
@@ -96,6 +96,15 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
         const res = mockRes();
 
         await workSessionMonthHandler(req, res);
+
+        expect(WorkDaySessions.find).toHaveBeenCalledWith({
+            userId: 'user-456',
+            date: { $gte: '2024-01-01', $lte: '2024-01-31' },
+            status: { $ne: 'replaced' },
+        });
+        expect(
+            vi.mocked(WorkDaySessions.find).mock.results[0].value.sort
+        ).toHaveBeenCalledWith({ date: 1 });
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
@@ -117,32 +126,35 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
     });
 
     it('should count only completed sessions, not isolated check-ins/outs', async () => {
-        const mockSessions = [
+        const mockDaySessions = [
             {
-                _id: 'session-1',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T08:00:00'),
+                _id: 'day-1',
+                userId: 'user-456',
+                date: '2024-01-15',
+                sessions: [{ type: 'check_in', time: '08:00', overtime: false }],
             },
             {
-                _id: 'session-2',
-                type: 'check_in',
-                timestamp: new Date('2024-01-16T09:00:00'),
+                _id: 'day-2',
+                userId: 'user-456',
+                date: '2024-01-16',
+                sessions: [
+                    { type: 'check_in', time: '09:00', overtime: false },
+                    { type: 'check_out', time: '17:00', overtime: false },
+                ],
             },
             {
-                _id: 'session-3',
-                type: 'check_out',
-                timestamp: new Date('2024-01-16T17:00:00'),
-            },
-            {
-                _id: 'session-4',
-                type: 'check_out',
-                timestamp: new Date('2024-01-17T17:00:00'),
+                _id: 'day-3',
+                userId: 'user-456',
+                date: '2024-01-17',
+                sessions: [
+                    { type: 'check_out', time: '17:00', overtime: false },
+                ],
             },
         ];
 
-        vi.mocked(WorkSession.find).mockReturnValue({
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue(mockSessions),
+                lean: vi.fn().mockResolvedValue(mockDaySessions),
             }),
         } as any);
 
@@ -166,7 +178,7 @@ describe('GET /api/work-sessions/[userId]/month/[year]/[month]', () => {
     });
 
     it('should return 500 on database error', async () => {
-        vi.mocked(WorkSession.find).mockReturnValue({
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockRejectedValue(new Error('DB Error')),
             }),

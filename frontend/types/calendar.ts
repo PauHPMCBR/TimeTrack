@@ -3,7 +3,12 @@ import {
     MonthlyWorkRecordResponse,
     AuthorizedLeaveRow,
 } from '@/schemas/api';
-import { ElectiveVacation, TeamVacation, WorkSession } from '.';
+import {
+    ElectiveVacation,
+    TeamVacation,
+    DaySession,
+} from '.';
+import type { DateKey } from 'shared/src/lib/day-key';
 
 export type TeamAuthorizedLeave = AuthorizedLeaveRow & {
     userName?: string;
@@ -28,11 +33,11 @@ export type VacationEvent = {
 export type WorkSessionEvent = {
     hoursWorked: number;
     sessions: number;
-    sessionsList?: WorkSession[];
+    sessionsList?: DaySession[];
 };
 
 export interface CalendarDayData {
-    date: Date;
+    date: DateKey;
     vacationEvents: VacationEvent[];
     workEvent: WorkSessionEvent | null;
     isToday: boolean;
@@ -42,10 +47,10 @@ export interface CalendarDayData {
 }
 
 export interface CalendarProps {
-    cursor: Date;
-    onMonthChange: (newCursor: Date) => void;
-    onDayClick?: (date: Date) => void;
-    onDayDetailAction?: (date: Date) => void;
+    cursor: DateKey;
+    onMonthChange: (newCursor: DateKey) => void;
+    onDayClick?: (date: DateKey) => void;
+    onDayDetailAction?: (date: DateKey) => void;
     vacations: YearlyVacationResponse | null;
     workSessions: MonthlyWorkRecordResponse | null;
     teamVacations?: TeamVacation[];
@@ -63,8 +68,8 @@ export interface CalendarProps {
 
 export interface CalendarDayProps {
     day: CalendarDayData;
-    onHover: (date: Date, event: React.MouseEvent) => void;
-    onClick?: (date: Date) => void;
+    onHover: (date: DateKey, event: React.MouseEvent) => void;
+    onClick?: (date: DateKey) => void;
     getVacationClass: (type: VacationEvent['type']) => string;
     t: (key: string) => string;
 }

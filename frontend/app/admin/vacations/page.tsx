@@ -12,7 +12,8 @@ import Avatar from '@/components/Avatar';
 import VacationMonthsTable from '@/components/VacationMonthsTable';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
-import { localeTag, parseDateKey } from '@/lib/datetime';
+import { formatDateKey, localeTag } from '@/lib/datetime';
+import type { DateKey } from 'shared/src/lib/day-key';
 import { Check, X, Download, CalendarOff } from 'lucide-react';
 import StepperNav from '@/components/ui/StepperNav';
 import EmptyState from '@/components/ui/EmptyState';
@@ -26,8 +27,8 @@ import {
 type GroupedRequest = {
     ids: string[];
     userId: string;
-    startDate: Date;
-    endDate: Date;
+    startDate: DateKey;
+    endDate: DateKey;
     daysCount: number;
     status: string;
     reason?: string;
@@ -43,8 +44,8 @@ const groupRequests = (rawRequests: ElectiveVacation[]): GroupedRequest[] =>
         .map((vac) => ({
             ids: [vac._id],
             userId: vac.userId,
-            startDate: parseDateKey(vac.startDate),
-            endDate: parseDateKey(vac.endDate),
+            startDate: vac.startDate,
+            endDate: vac.endDate,
             daysCount: vac.spentDays ?? 0,
             status: vac.status,
             reason: vac.reason,
@@ -227,9 +228,9 @@ export default function AdminVacationsPage() {
         [filteredRequests, obligatoryDays]
     );
 
-    const formatDateRange = (start: Date, end: Date) => {
-        const s = start.toLocaleDateString();
-        const e = end.toLocaleDateString();
+    const formatDateRange = (start: string, end: string) => {
+        const s = formatDateKey(start, localeTag(lang));
+        const e = formatDateKey(end, localeTag(lang));
         if (s === e) return s;
         return `${s} - ${e}`;
     };

@@ -35,12 +35,12 @@ vi.mock('@/lib/validation', () => ({
 }));
 
 vi.mock('@/models', () => ({
-    WorkSession: {
+    WorkDaySessions: {
         find: vi.fn(),
     },
 }));
 
-import { WorkSession } from '@/models';
+import { WorkDaySessions } from '@/models';
 import dayVersionsHandler from '@/pages/api/work-sessions/[userId]/day/[date]/versions';
 
 describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
@@ -72,44 +72,34 @@ describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
     it('should return the full version history (active and replaced)', async () => {
         const history = [
             {
-                _id: 's1',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T08:50:00'),
+                _id: 'day-1',
+                userId: 'user-456',
+                date: '2024-01-15',
                 version: 1,
                 status: 'replaced',
                 replacedByVersion: 2,
                 replacedAt: new Date('2024-01-15T09:10:00'),
+                sessions: [
+                    { type: 'check_in', time: '08:50', overtime: false },
+                    { type: 'check_out', time: '17:00', overtime: false },
+                ],
             },
             {
-                _id: 's2',
-                type: 'check_out',
-                timestamp: new Date('2024-01-15T17:00:00'),
-                version: 1,
-                status: 'replaced',
-                replacedByVersion: 2,
-                replacedAt: new Date('2024-01-15T09:10:00'),
-            },
-            {
-                _id: 's3',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T09:00:00'),
+                _id: 'day-2',
+                userId: 'user-456',
+                date: '2024-01-15',
                 version: 2,
                 status: 'active',
                 source: 'adminManual',
                 editReason: 'Admin day correction',
-            },
-            {
-                _id: 's4',
-                type: 'check_out',
-                timestamp: new Date('2024-01-15T17:30:00'),
-                version: 2,
-                status: 'active',
-                source: 'adminManual',
-                editReason: 'Admin day correction',
+                sessions: [
+                    { type: 'check_in', time: '09:00', overtime: false },
+                    { type: 'check_out', time: '17:30', overtime: false },
+                ],
             },
         ];
 
-        vi.mocked(WorkSession.find).mockReturnValue({
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(history),
             }),
@@ -124,17 +114,13 @@ describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
         await dayVersionsHandler(req, res);
 
         // Unlike the regular day reader, the versions endpoint must NOT
-        // filter replaced documents: it returns every version, ordered by
-        // version then timestamp.
-        expect(WorkSession.find).toHaveBeenCalledWith({
+        // filter replaced documents: it returns every version, ascending.
+        expect(WorkDaySessions.find).toHaveBeenCalledWith({
             userId: 'user-456',
-            timestamp: {
-                $gte: new Date(2024, 0, 15, 0, 0, 0, 0),
-                $lt: new Date(2024, 0, 16, 0, 0, 0, 0),
-            },
+            date: '2024-01-15',
         });
-        expect(vi.mocked(WorkSession.find).mock.results[0].value.sort).toHaveBeenCalledWith(
-            { version: 1, timestamp: 1 }
+        expect(vi.mocked(WorkDaySessions.find).mock.results[0].value.sort).toHaveBeenCalledWith(
+            { version: 1 }
         );
 
         expect(res.status).toHaveBeenCalledWith(200);
@@ -145,7 +131,7 @@ describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
     });
 
     it('should return 500 on database error', async () => {
-        vi.mocked(WorkSession.find).mockReturnValue({
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
             sort: vi.fn().mockReturnValue({
                 lean: vi.fn().mockRejectedValue(new Error('DB Error')),
             }),

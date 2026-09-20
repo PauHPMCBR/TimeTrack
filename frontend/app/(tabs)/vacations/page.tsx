@@ -19,7 +19,7 @@ import LoadingState from '@/components/ui/LoadingState';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import VacationMonthsTable from '@/components/VacationMonthsTable';
-import { localeTag, parseDateKey } from '@/lib/datetime';
+import { formatDateKey, localeTag } from '@/lib/datetime';
 import {
     VACATION_APPROVED,
     VACATION_PENDING,
@@ -133,8 +133,8 @@ export default function MyVacationsPage() {
             .sort((a, b) => b.startDate.localeCompare(a.startDate))
             .map((vac) => ({
                 id: vac._id,
-                startDate: parseDateKey(vac.startDate),
-                endDate: parseDateKey(vac.endDate),
+                startDate: vac.startDate,
+                endDate: vac.endDate,
                 spentDays: vac.spentDays ?? 0,
                 status: vac.status,
                 reason: vac.reason,
@@ -259,9 +259,9 @@ export default function MyVacationsPage() {
         .filter((vac) => vac.status === VACATION_PENDING)
         .reduce((sum, vac) => sum + (vac.spentDays ?? 0), 0);
 
-    const formatDateRange = (start: Date, end: Date) => {
-        const s = start.toLocaleDateString();
-        const e = end.toLocaleDateString();
+    const formatDateRange = (start: string, end: string) => {
+        const s = formatDateKey(start, localeTag(lang));
+        const e = formatDateKey(end, localeTag(lang));
         if (s === e) return s;
         return `${s} - ${e}`;
     };
@@ -503,7 +503,7 @@ export default function MyVacationsPage() {
                         <div className="space-y-3">
                             {groupedVacations.map((group, index) => (
                                 <Card
-                                    key={`${group.startDate.toString()}-${index}`}
+                                    key={`${group.startDate}-${index}`}
                                     className="group flex items-center justify-between p-4 hover:border-indigo-300 transition-colors dark:hover:border-indigo-700"
                                 >
                                     <div>

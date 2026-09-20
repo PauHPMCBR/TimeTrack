@@ -3,12 +3,13 @@
 import { Fragment } from 'react';
 import { useI18n } from '@/app/i18n';
 import { AdminWorkSessionRow } from '@/types';
-import { formatHM, localeTag } from '@/lib/datetime';
+import { formatDateKey, formatHM, localeTag } from '@/lib/datetime';
 import type { TimetablePair } from 'shared/src/lib/expected-timetable';
 import {
     computePairDeviations,
     timeToMinutes,
 } from 'shared/src/lib/expected-timetable';
+import type { TimeKey } from 'shared/src/lib/time-key';
 import {
     MISSING_TIME,
     workedIntervals as baseWorkedIntervals,
@@ -63,7 +64,7 @@ export default function FitxatgesTable({
         : rows;
 
     const dateLabelOf = (row: AdminWorkSessionRow) =>
-        new Date(`${row.date}T00:00:00`).toLocaleDateString(locale, {
+        formatDateKey(row.date, locale, {
             weekday: 'short',
             day: 'numeric',
             month: 'short',
@@ -85,7 +86,7 @@ export default function FitxatgesTable({
             : MISSING_TIME;
 
     const workedIntervals = (row: AdminWorkSessionRow) => {
-        const intervals = baseWorkedIntervals(row.sessions, locale);
+        const intervals = baseWorkedIntervals(row.sessions);
 
         const closedPairs: TimetablePair[] = intervals
             .filter(
@@ -94,8 +95,8 @@ export default function FitxatgesTable({
                     interval.checkOut !== MISSING_TIME
             )
             .map((interval) => ({
-                checkIn: timeToMinutes(interval.checkIn),
-                checkOut: timeToMinutes(interval.checkOut),
+                checkIn: timeToMinutes(interval.checkIn as TimeKey),
+                checkOut: timeToMinutes(interval.checkOut as TimeKey),
             }));
         const expected = row.timetable;
         const deviations =

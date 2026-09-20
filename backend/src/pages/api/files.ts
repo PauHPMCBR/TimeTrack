@@ -14,11 +14,9 @@ export default withApi(
 
         const sortDir = order === 'asc' ? 1 : -1;
         const sortField = String(sortBy);
-        const files = (
-            await UserFile.find({ userId: req.user!.userId })
-                .sort({ [sortField]: sortDir })
-                .lean()
-        ) as unknown as (FileRow & { _id: { toString(): string } })[];
+        const files = await UserFile.find({ userId: req.user!.userId })
+            .sort({ [sortField]: sortDir })
+            .lean<FileRow[]>();
 
         const rows: FileRow[] = files.map((f) => ({
             ...f,

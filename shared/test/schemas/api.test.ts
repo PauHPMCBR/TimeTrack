@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+    AdminReplaceDayWorkSessionsRequestSchema,
+    AppSettingsRequestSchema,
+    CreateGroupRequestSchema,
     LoginRequestSchema,
     RegisterRequestSchema,
     CreateUserRequestSchema,
+    UpdateProfileRequestSchema,
     WorkSessionRequestSchema,
     ElectiveVacationRequestSchema,
     WorkSessionRangeQuerySchema,
@@ -246,6 +250,157 @@ describe('API Schemas', () => {
                 electiveDaysTotalCount: -1,
             });
             expect(result.success).toBe(false);
+        });
+    });
+
+    // Payloads below mirror the exact shapes the frontend builds, so a change
+    // to the derived schemas that breaks the wire contract fails here.
+    describe('frontend payload contracts', () => {
+        it('accepts the punch payload built by the check-in page', () => {
+            expect(
+                WorkSessionRequestSchema.safeParse({
+                    type: 'check_in',
+                    notes: undefined,
+                    overtime: true,
+                }).success
+            ).toBe(true);
+            expect(
+                WorkSessionRequestSchema.safeParse({
+                    type: 'check_out',
+                    notes: 'Remote',
+                    overtime: false,
+                }).success
+            ).toBe(true);
+        });
+
+        it('accepts the day-editor payload (sessions without ids)', () => {
+            const result = AdminReplaceDayWorkSessionsRequestSchema.safeParse({
+                userId: 'u1',
+                date: '2024-06-10',
+                sessions: [
+                    { type: 'check_in', time: '09:00', overtime: false },
+                    {
+                        type: 'check_out',
+                        time: '17:00',
+                        overtime: true,
+                        notes: 'extra',
+                    },
+                ],
+                reason: 'Correction',
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it('rejects an out-of-order or malformed time in the day editor', () => {
+            expect(
+                AdminReplaceDayWorkSessionsRequestSchema.safeParse({
+                    userId: 'u1',
+                    date: '2024-06-10',
+                    sessions: [{ type: 'check_in', time: '9:00' }],
+                }).success
+            ).toBe(false);
+            expect(
+                AdminReplaceDayWorkSessionsRequestSchema.safeParse({
+                    userId: 'u1',
+                    date: '2024-06-10',
+                    sessions: [{ type: 'check_in', time: '25:00' }],
+                }).success
+            ).toBe(false);
+        });
+
+        it('accepts each profile-update payload the profile page sends', () => {
+            expect(
+                UpdateProfileRequestSchema.safeParse({ notifyNewFile: true })
+                    .success
+            ).toBe(true);
+            expect(
+                UpdateProfileRequestSchema.safeParse({
+                    notifyInconsistency: false,
+                }).success
+            ).toBe(true);
+            expect(
+                UpdateProfileRequestSchema.safeParse({
+                    autoTimetable: [{ checkIn: '09:00', checkOut: '17:00' }],
+                }).success
+            ).toBe(true);
+            const password = UpdateProfileRequestSchema.safeParse({
+                currentPassword: 'old-secret',
+                password: 'new-secret',
+            });
+            expect(password.success).toBe(true);
+            if (password.success) {
+                expect(password.data.autoTimetable).toBeUndefined();
+                expect(password.data.notifyNewFile).toBeUndefined();
+            }
+        });
+
+        it('rejects a short password in the profile payload', () => {
+            expect(
+                UpdateProfileRequestSchema.safeParse({
+                    currentPassword: 'old-secret',
+                    password: 'short',
+                }).success
+            ).toBe(false);
+        });
+
+        it('accepts the settings payload sent by the admin settings page', () => {
+            expect(
+                AppSettingsRequestSchema.safeParse({
+                    defaultWeeklyExpectedHours: [0, 8, 8, 8, 8, 8, 0],
+                    toleranceMinutes: 60,
+                    defaultScheduleMode: 'hours',
+                    defaultTimetable: [
+                        [],
+                        [{ checkIn: '09:00', checkOut: '17:00' }],
+                        [{ checkIn: '09:00', checkOut: '17:00' }],
+                        [{ checkIn: '09:00', checkOut: '17:00' }],
+                        [{ checkIn: '09:00', checkOut: '17:00' }],
+                        [{ checkIn: '09:00', checkOut: '17:00' }],
+                        [],
+                    ],
+                    timetableToleranceMinutes: 10,
+                    endOfDayHour: 20,
+                    inconsistencyReminderMode: 'forced',
+                    monthlyApprovalReminderDays: 5,
+                    timezone: 'Europe/Madrid',
+                    privacyNoticeText: 'Notice',
+                    workerConsultationAcknowledged: true,
+                }).success
+            ).toBe(true);
+        });
+
+        it('rejects an empty settings patch and an invalid timetable', () => {
+            expect(AppSettingsRequestSchema.safeParse({}).success).toBe(false);
+            expect(
+                AppSettingsRequestSchema.safeParse({
+                    defaultTimetable: [
+                        [{ checkIn: '17:00', checkOut: '09:00' }],
+                    ],
+                }).success
+            ).toBe(false);
+        });
+
+        it('accepts the group payload and rejects one without members', () => {
+            expect(
+                CreateGroupRequestSchema.safeParse({
+                    name: 'Team',
+                    description: 'Ops',
+                    members: ['u1', 'u2'],
+                }).success
+            ).toBe(true);
+            expect(
+                CreateGroupRequestSchema.safeParse({ name: 'Team' }).success
+            ).toBe(false);
+        });
+
+        it('accepts the vacation payload built by the vacations page', () => {
+            expect(
+                ElectiveVacationRequestSchema.safeParse({
+                    startDate: '2024-07-01',
+                    endDate: '2024-07-05',
+                    reason: undefined,
+                }).success
+            ).toBe(true);
         });
     });
 });

@@ -4,30 +4,29 @@ import {
     CHECK_IN,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
-import { User, Group, WorkSession, ElectiveVacation, MonthlyApproval, WorkDayRecord } from '@/models';
+import { User, Group, WorkDaySessions, ElectiveVacation, MonthlyApproval, WorkDayRecord } from '@/models';
 import {
     notReplaced,
-} from '@/repositories/work-session-repository';
+} from '@/repositories/work-day-sessions-repository';
 import { notDeleted } from '@/repositories/user-repository';
 import { dateKey } from '@/lib/date-key';
-import { dayRange } from '@/lib/date-range';
 import {
     dowFromDateKey,
     addDaysToKey,
 } from 'shared/src/lib/day-key';
-import { UserRow, GroupRow } from '@/lib/rows';
+import { UserRow, GroupRow, DaySessionsRow, WorkDayRecordRow } from '@/lib/rows';
 import { responseErrorGet } from '@/lib/response-error-generator';
 
 export default withApi(
     { method: 'GET', guard: 'admin' },
     async (_req, res) => {
         try {
-            const users = (await User.find(
+            const users = await User.find(
                 notDeleted,
                 'name email emailEncrypted dni dniEncrypted role registered blocked groups weeklyExpectedHours scheduleMode timetable avatar blockedSince trackingStartDate checkInRequired'
             )
                 .sort({ name: 1 })
-                .lean()) as unknown as UserRow[];
+                .lean<UserRow[]>();
 
         // Active employees = registered, not blocked, and required to check in.
         // These are the ones used for operational counts (anomalies / currently
@@ -37,24 +36,25 @@ export default withApi(
             (u) => u.registered && !u.blocked && u.checkInRequired !== false
         );
 
-        const groups = (await Group.find({})
+        const groups = await Group.find({})
             .sort({ name: 1 })
-            .lean()) as unknown as GroupRow[];
+            .lean<GroupRow[]>();
 
         const todayKey = dateKey(new Date());
-        const today = dayRange(todayKey).start;
 
         const [pendingVacations, latestSessions, pendingApprovals] =
             await Promise.all([
                 ElectiveVacation.countDocuments({ status: VACATION_PENDING }),
-                WorkSession.aggregate([
+                WorkDaySessions.aggregate<{
+                    _id: string;
+                    latest: DaySessionsRow;
+                }>([
                     {
                         $match: {
-                            timestamp: { $gte: today },
+                            date: todayKey,
                             ...notReplaced,
                         },
                     },
-                    { $sort: { timestamp: -1 } },
                     { $group: { _id: '$userId', latest: { $first: '$$ROOT' } } },
                 ]),
                 MonthlyApproval.countDocuments({ status: APPROVAL_PENDING }),
@@ -62,7 +62,7 @@ export default withApi(
 
         const workingUserIds = new Set(
             latestSessions
-                .filter((s) => s.latest.type === CHECK_IN)
+                .filter((s) => s.latest.sessions.at(-1)?.type === CHECK_IN)
                 .map((s) => s._id)
         );
 
@@ -73,10 +73,10 @@ export default withApi(
             addDaysToKey(mondayKey, i)
         );
 
-        const weekRecords = (await WorkDayRecord.find({
+        const weekRecords = await WorkDayRecord.find({
             date: { $gte: mondayKey, $lte: weekDays[6] },
             anomalies: { $exists: true, $not: { $size: 0 } },
-        }).lean()) as unknown as { userId: string }[];
+        }).lean<Pick<WorkDayRecordRow, 'userId'>[]>();
         const activeUserIds = new Set(activeUsers.map((u) => u._id.toString()));
         const anomalyCount = weekRecords.filter((r) =>
             activeUserIds.has(r.userId)

@@ -8,30 +8,25 @@ import {
     User,
     MonthlyApproval,
 } from '@/models';
-import {
-    findActiveInRange,
-} from '@/repositories/work-session-repository';
+import { findActiveDaySessions } from '@/repositories/work-day-sessions-repository';
 import {
     findOverlapping,
     findGlobalTemplates,
 } from '@/repositories/vacation-repository';
 import { getAppSettings } from '@/lib/settings';
 import { replaceDaySessions } from '@/lib/replace-day';
-import { findWorkDaySources } from '@/repositories/work-day-source-repository';
 import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
 import { findWorkDayRecords } from '@/repositories/work-day-record-repository';
-import { dayRange } from '@/lib/date-range';
 import {
     parsePagination,
     paginateRows,
 } from '@/lib/pagination';
 import {
     UserRow,
-    WorkSessionRow,
+    DaySessionsRow,
     ElectiveVacationRow,
     YearlyVacationRow,
     AuthorizedLeaveRow,
-    WorkDayRecordRow,
 } from '@/lib/rows';
 import {
     responseErrorEntryNotFound,
@@ -47,12 +42,12 @@ import {
     AdminWorkSessionsQuery,
     AdminWorkSessionRow,
     AdminReplaceDayWorkSessionsRequestSchema,
+    MonthlyApprovalRow,
 } from 'shared/src/schemas/api';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import {
     buildWorkSessionRows,
     computeDaysForPeriod,
-    daySourceMap,
     workDayRecordMap,
 } from '@/lib/work-session-rows';
 import type { DateKey } from 'shared/src/lib/day-key';
@@ -114,7 +109,7 @@ const putHandler = withApi(
 
             res.status(200).json({
                 success: true,
-                data: { workSessions: result.workSessions },
+                data: { workDaySessions: result.workDaySessions },
             });
         } catch (error) {
             console.error('Admin replace day work sessions error:', error);
@@ -142,10 +137,8 @@ const getHandler = withApi(
             query.month as number | undefined
         );
 
-        // Session bounds are company-zone instants; vacations are key
-        // intervals compared against the same window.
-        const periodStart = dayRange(days[0]).start;
-        const periodEnd = dayRange(days[days.length - 1]).end;
+        // Sessions are keyed by their own company-zone `date` field; vacations
+        // are key intervals compared against the same day range.
         const vacationStart = days[0];
         const vacationEnd = days[days.length - 1];
 
@@ -153,8 +146,8 @@ const getHandler = withApi(
             days.map((d) => Number(d.slice(0, 4)))
         );
 
-            const [users, sessions, approvedVacations, yearlyTemplates, settings, daySources, authorizedLeaves, dayRecords] =
-            (await Promise.all([
+            const [users, dayDocs, approvedVacations, yearlyTemplates, settings, authorizedLeaves, dayRecords] =
+            await Promise.all([
                 User.find(
                     {
                         blocked: { $ne: true },
@@ -167,36 +160,25 @@ const getHandler = withApi(
                     'name email emailEncrypted dni dniEncrypted weeklyExpectedHours scheduleMode timetable'
                 )
                     .sort({ name: 1 })
-                    .lean(),
-                findActiveInRange(periodStart, periodEnd)
-                    .select(
-                        'userId type timestamp overtime notes notesEncrypted editReason editReasonEncrypted createdAt'
-                    )
-                    .sort({ timestamp: 1 })
-                    .lean(),
+                    .lean<UserRow[]>(),
+                findActiveDaySessions(days[0], days[days.length - 1])
+                    .sort({ date: 1 })
+                    .lean<DaySessionsRow[]>(),
                 findOverlapping(vacationStart, vacationEnd, {
                     statuses: VACATION_APPROVED,
-                }).lean(),
-                findGlobalTemplates(Array.from(yearSet)).lean(),
+                }).lean<ElectiveVacationRow[]>(),
+                findGlobalTemplates(Array.from(yearSet)).lean<YearlyVacationRow[]>(),
                 getAppSettings(),
-                findWorkDaySources(days),
-                findLeavesOverlapping(vacationStart, vacationEnd).lean(),
+                findLeavesOverlapping(vacationStart, vacationEnd).lean<
+                    AuthorizedLeaveRow[]
+                >(),
                 findWorkDayRecords(days),
-            ])) as unknown as [
-                UserRow[],
-                WorkSessionRow[],
-                ElectiveVacationRow[],
-                YearlyVacationRow[],
-                Awaited<ReturnType<typeof getAppSettings>>,
-                Awaited<ReturnType<typeof findWorkDaySources>>,
-                AuthorizedLeaveRow[],
-                WorkDayRecordRow[],
-            ];
+            ]);
 
         const rows: AdminWorkSessionRow[] = buildWorkSessionRows({
             days,
             users,
-            sessions,
+            daySessions: dayDocs,
             approvedVacations,
             yearlyTemplates,
             authorizedLeaves,
@@ -204,8 +186,6 @@ const getHandler = withApi(
             defaultWeeklyExpectedHours: settings.defaultWeeklyExpectedHours,
             toleranceMinutes: settings.toleranceMinutes,
             timetableToleranceMinutes: settings.timetableToleranceMinutes,
-            timezone: settings.timezone,
-            daySources: daySourceMap(daySources),
         });
 
         rows.sort(
@@ -221,12 +201,15 @@ const getHandler = withApi(
             new Set(days.map((d) => Number(d.slice(0, 4))))
         );
 
-        let approvedDocs: { _id: string; userId: string; year: number; month: number }[];
+        let approvedDocs: Pick<
+            MonthlyApprovalRow,
+            'userId' | 'year' | 'month'
+        >[];
         if (yearsInPeriod.length > 0 && periodMonthKeys.size > 0) {
             approvedDocs = await MonthlyApproval.find({
                 status: APPROVAL_APPROVED,
                 year: { $in: yearsInPeriod },
-            }).lean() as unknown as typeof approvedDocs;
+            }).lean<Pick<MonthlyApprovalRow, 'userId' | 'year' | 'month'>[]>();
         } else {
             approvedDocs = [];
         }

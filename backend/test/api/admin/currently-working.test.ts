@@ -23,7 +23,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 vi.mock('@/models', () => ({
-    WorkSession: {
+    WorkDaySessions: {
         aggregate: vi.fn(),
     },
     User: {
@@ -31,7 +31,7 @@ vi.mock('@/models', () => ({
     },
 }));
 
-import { WorkSession, User } from '@/models';
+import { WorkDaySessions, User } from '@/models';
 import currentlyWorkingHandler from '@/pages/api/admin/currently-working';
 
 describe('GET /api/admin/currently-working', () => {
@@ -40,6 +40,7 @@ describe('GET /api/admin/currently-working', () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         vi.resetModules();
     });
 
@@ -58,14 +59,21 @@ describe('GET /api/admin/currently-working', () => {
     });
 
     it('should return 200 with users currently working', async () => {
-        vi.mocked(WorkSession.aggregate).mockResolvedValue([
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2024-06-10T10:00:00Z'));
+
+        vi.mocked(WorkDaySessions.aggregate).mockResolvedValue([
             {
                 _id: 'user-1',
-                latestSession: { type: 'check_in', timestamp: new Date() },
+                userId: 'user-1',
+                date: '2024-06-10',
+                sessions: [{ type: 'check_in', time: '12:00' }],
             },
             {
                 _id: 'user-2',
-                latestSession: { type: 'check_in', timestamp: new Date() },
+                userId: 'user-2',
+                date: '2024-06-10',
+                sessions: [{ type: 'check_in', time: '12:00' }],
             },
         ]);
 
@@ -82,6 +90,11 @@ describe('GET /api/admin/currently-working', () => {
 
         await currentlyWorkingHandler(req, res);
 
+        const pipeline = vi.mocked(WorkDaySessions.aggregate).mock.calls[0][0];
+        expect(pipeline[0]).toEqual({
+            $match: { date: '2024-06-10', status: { $ne: 'replaced' } },
+        });
+
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({
             success: true,
@@ -93,7 +106,7 @@ describe('GET /api/admin/currently-working', () => {
     });
 
     it('should return 200 with empty array when no users are working', async () => {
-        vi.mocked(WorkSession.aggregate).mockResolvedValue([]);
+        vi.mocked(WorkDaySessions.aggregate).mockResolvedValue([]);
         vi.mocked(User.find).mockReturnValue({
             lean: vi.fn().mockResolvedValue([]),
         } as any);
@@ -114,7 +127,7 @@ describe('GET /api/admin/currently-working', () => {
     });
 
     it('should return 500 on database error', async () => {
-        vi.mocked(WorkSession.aggregate).mockRejectedValue(
+        vi.mocked(WorkDaySessions.aggregate).mockRejectedValue(
             new Error('DB Error')
         );
 

@@ -4,7 +4,7 @@ import {
     GroupSchema,
     UserSchema,
     ElectiveVacationSchema,
-    WorkSessionSchema,
+    WorkDaySessionsSchema,
     YearlyVacationDaysSchema,
     WorkSessionReasonSchema,
     AppSettingsSchema,
@@ -12,7 +12,6 @@ import {
     MonthlyApprovalEventSchema,
     AuditEventSchema,
     UserFileSchema,
-    WorkDaySourceSchema,
     WorkDayRecordSchema,
     AuthorizedLeaveSchema,
 } from 'shared/src/schemas/database';
@@ -125,6 +124,7 @@ function hydrateFreeTextAll(docs: unknown): void {
     if (Array.isArray(docs)) docs.forEach(hydrateFreeText);
     else hydrateFreeText(docs);
 }
+
 zUserSchema.methods.comparePassword = async function (
     candidatePassword: string
 ): Promise<boolean> {
@@ -132,26 +132,64 @@ zUserSchema.methods.comparePassword = async function (
     return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Day-session documents: the day-level editReason plus the notes of every
+// embedded session are encrypted / hydrated.
+function encryptDaySessionSecrets(doc: {
+    editReason?: unknown;
+    editReasonEncrypted?: string;
+    sessions?: { notes?: unknown; notesEncrypted?: string }[];
+}) {
+    if (typeof doc.editReason === 'string' && doc.editReason) {
+        doc.editReasonEncrypted = encrypt(doc.editReason);
+        doc.editReason = undefined;
+    }
+    for (const session of doc.sessions ?? []) {
+        if (typeof session.notes === 'string' && session.notes) {
+            session.notesEncrypted = encrypt(session.notes);
+            session.notes = undefined;
+        }
+    }
+}
+
+function hydrateDaySessionSecrets(doc: unknown): void {
+    if (!doc || typeof doc !== 'object') return;
+    const d = doc as Record<string, unknown> & {
+        sessions?: { notesEncrypted?: string }[];
+    };
+    if (typeof d.editReasonEncrypted === 'string' && d.editReasonEncrypted) {
+        d.editReason = decrypt(d.editReasonEncrypted);
+    }
+    for (const session of d.sessions ?? []) {
+        if (typeof session.notesEncrypted === 'string' && session.notesEncrypted) {
+            (session as { notes?: string }).notes = decrypt(session.notesEncrypted);
+        }
+    }
+}
+
+function hydrateDaySessionSecretsAll(docs: unknown): void {
+    if (Array.isArray(docs)) docs.forEach(hydrateDaySessionSecrets);
+    else hydrateDaySessionSecrets(docs);
+}
+
 const zWorkSessionReasonSchema = zodSchema(WorkSessionReasonSchema);
 
-const zWorkSessionSchema = zodSchema(WorkSessionSchema);
-zWorkSessionSchema.index({ userId: 1, timestamp: -1 });
-// Admin "currently working" aggregation matches on timestamp alone.
-zWorkSessionSchema.index({ timestamp: -1 });
-zWorkSessionSchema.pre('save', function (next) {
-    encryptFreeText(this);
+const zWorkDaySessionsSchema = zodSchema(WorkDaySessionsSchema);
+zWorkDaySessionsSchema.index({ userId: 1, date: 1, version: -1 });
+zWorkDaySessionsSchema.index({ date: -1 });
+zWorkDaySessionsSchema.pre('save', function (next) {
+    encryptDaySessionSecrets(this);
     next();
 });
-zWorkSessionSchema.pre('insertMany', function (next, docs) {
-    docs.forEach(encryptFreeText);
+zWorkDaySessionsSchema.pre('insertMany', function (next, docs) {
+    docs.forEach(encryptDaySessionSecrets);
     next();
 });
-const workSessionQuerySchema =
-    zWorkSessionSchema as unknown as mongoose.Schema;
-workSessionQuerySchema.post('find', hydrateFreeTextAll);
-workSessionQuerySchema.post('findOne', hydrateFreeTextAll);
-workSessionQuerySchema.post('findOneAndUpdate', hydrateFreeTextAll);
-workSessionQuerySchema.post('insertMany', hydrateFreeTextAll);
+const workDaySessionsQuerySchema =
+    zWorkDaySessionsSchema as unknown as mongoose.Schema;
+workDaySessionsQuerySchema.post('find', hydrateDaySessionSecretsAll);
+workDaySessionsQuerySchema.post('findOne', hydrateDaySessionSecrets);
+workDaySessionsQuerySchema.post('findOneAndUpdate', hydrateDaySessionSecrets);
+workDaySessionsQuerySchema.post('insertMany', hydrateDaySessionSecretsAll);
 
 const zElectiveVacationSchema = zodSchema(ElectiveVacationSchema);
 zElectiveVacationSchema.index({ userId: 1, startDate: 1 });
@@ -203,9 +241,6 @@ zUserFileSchema.index({ userId: 1, uploadedAt: -1 });
 // Covered index for the storage-quota aggregate (sum of size across all docs).
 zUserFileSchema.index({ size: 1 });
 
-const zWorkDaySourceSchema = zodSchema(WorkDaySourceSchema);
-zWorkDaySourceSchema.index({ userId: 1, date: 1 }, { unique: true });
-
 const zWorkDayRecordSchema = zodSchema(WorkDayRecordSchema);
 zWorkDayRecordSchema.index({ userId: 1, date: 1 }, { unique: true });
 zWorkDayRecordSchema.index({ date: 1 });
@@ -237,9 +272,9 @@ export const User = mongoose.models.User || mongoose.model('User', zUserSchema);
 export const WorkSessionReason =
     mongoose.models.WorkSessionReason ||
     mongoose.model('WorkSessionReason', zWorkSessionReasonSchema);
-export const WorkSession =
-    mongoose.models.WorkSession ||
-    mongoose.model('WorkSession', zWorkSessionSchema);
+export const WorkDaySessions =
+    mongoose.models.WorkDaySessions ||
+    mongoose.model('WorkDaySessions', zWorkDaySessionsSchema);
 export const ElectiveVacation =
     mongoose.models.ElectiveVacation ||
     mongoose.model('ElectiveVacation', zElectiveVacationSchema);
@@ -262,9 +297,6 @@ export const AuditEvent =
     mongoose.model('AuditEvent', zAuditEventSchema);
 export const UserFile =
     mongoose.models.UserFile || mongoose.model('UserFile', zUserFileSchema);
-export const WorkDaySource =
-    mongoose.models.WorkDaySource ||
-    mongoose.model('WorkDaySource', zWorkDaySourceSchema);
 export const WorkDayRecord =
     mongoose.models.WorkDayRecord ||
     mongoose.model('WorkDayRecord', zWorkDayRecordSchema);

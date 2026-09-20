@@ -44,7 +44,8 @@ import {
     GroupMember,
     TeamVacation,
     User,
-    WorkSession,
+    DaySession,
+    WorkDaySessions,
     WorksessionReason,
     YearlyVacationDays,
 } from '@/types';
@@ -249,7 +250,7 @@ class ApiClient {
         input?: ApplyAutoScheduleRequest
     ): Promise<
         ApiResponse<{
-            workSessions: WorkSession[];
+            workDaySessions: WorkDaySessions;
             totalHours: number;
             anomalies: WorkSessionAnomaly[];
         }>
@@ -524,7 +525,7 @@ class ApiClient {
         date: DateKey,
         sessions: AdminWorkSessionInput[],
         reason: string
-    ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+    ): Promise<ApiResponse<{ workDaySessions: WorkDaySessions }>> {
         const body: AdminReplaceDayWorkSessionsRequest = {
             userId,
             date,
@@ -541,7 +542,7 @@ class ApiClient {
         date: DateKey,
         sessions: AdminWorkSessionInput[],
         reason: string
-    ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+    ): Promise<ApiResponse<{ workDaySessions: WorkDaySessions }>> {
         return this.request(`/api/me/work-sessions`, {
             method: 'PUT',
             body: JSON.stringify({
@@ -706,7 +707,7 @@ class ApiClient {
     async addWorkRecordTimestamp(info: WorkSessionRequest): Promise<
         ApiResponse<{
             message: string;
-            session: WorkSession;
+            session: DaySession;
             hoursWorked: number | null;
         }>
     > {
@@ -718,10 +719,10 @@ class ApiClient {
 
     async getDailyRecords(
         userId: string,
-        date: Date
-    ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+        dateKey: string
+    ): Promise<ApiResponse<{ workSessions: DaySession[] }>> {
         return this.request(
-            `/api/work-sessions/${userId}/day/${toLocalDateKey(date)}`
+            `/api/work-sessions/${userId}/day/${dateKey}`
         );
     }
 
@@ -729,7 +730,7 @@ class ApiClient {
         userId: string,
         from: string,
         to: string
-    ): Promise<ApiResponse<{ workSessions: WorkSession[] }>> {
+    ): Promise<ApiResponse<{ daySessions: WorkDaySessions[] }>> {
         return this.request(
             `/api/work-sessions/${userId}/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
         );
@@ -854,7 +855,7 @@ class ApiClient {
             const blob = await response.blob();
             triggerDownload(
                 blob,
-                `work_sessions_${new Date().toISOString().slice(0, 10)}.csv`
+                `work_sessions_${toLocalDateKey(new Date())}.csv`
             );
             return { data: null };
         } catch (error) {
@@ -930,7 +931,7 @@ class ApiClient {
             const blob = await response.blob();
             triggerDownload(
                 blob,
-                `vacations_${year}_${new Date().toISOString().slice(0, 10)}.csv`
+                `vacations_${year}_${toLocalDateKey(new Date())}.csv`
             );
             return { data: null };
         } catch (error) {

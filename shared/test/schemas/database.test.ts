@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
     UserSchema,
     GroupSchema,
-    WorkSessionSchema,
+    DaySessionSchema,
+    WorkDaySessionsSchema,
     WorkSessionTypeSchema,
-    WorkDaySourceSchema,
     ElectiveVacationSchema,
     VacationStatusSchema,
     YearlyVacationDaysSchema,
@@ -186,30 +186,69 @@ describe('Database Schemas', () => {
         });
     });
 
-    describe('WorkSessionSchema', () => {
-        it('should validate correct work session', () => {
-            const result = WorkSessionSchema.safeParse({
-                userId: 'user123',
+    describe('DaySessionSchema', () => {
+        it('should validate a correct session entry', () => {
+            const result = DaySessionSchema.safeParse({
                 type: 'check_in',
-                timestamp: new Date(),
+                time: '08:00',
             });
             expect(result.success).toBe(true);
         });
 
-        it('should accept optional notes', () => {
-            const result = WorkSessionSchema.safeParse({
-                userId: 'user123',
+        it('should accept optional notes and default overtime to false', () => {
+            const result = DaySessionSchema.safeParse({
                 type: 'check_in',
-                timestamp: new Date(),
+                time: '08:00',
                 notes: 'Feeling productive',
+            });
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.overtime).toBe(false);
+            }
+        });
+
+        it('should reject an invalid time key', () => {
+            const result = DaySessionSchema.safeParse({
+                type: 'check_in',
+                time: '8:00',
+            });
+            expect(result.success).toBe(false);
+        });
+    });
+
+    describe('WorkDaySessionsSchema', () => {
+        it('should validate correct day sessions document', () => {
+            const result = WorkDaySessionsSchema.safeParse({
+                userId: 'user123',
+                date: '2024-01-15',
+                sessions: [
+                    { type: 'check_in', time: '08:00' },
+                    { type: 'check_out', time: '17:00' },
+                ],
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it('should accept optional notes on sessions', () => {
+            const result = WorkDaySessionsSchema.safeParse({
+                userId: 'user123',
+                date: '2024-01-15',
+                sessions: [
+                    {
+                        type: 'check_in',
+                        time: '08:00',
+                        notes: 'Feeling productive',
+                    },
+                ],
             });
             expect(result.success).toBe(true);
         });
 
         it('should default the day source to userClick', () => {
-            const result = WorkDaySourceSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
                 date: '2025-06-09',
+                sessions: [],
             });
             expect(result.success).toBe(true);
             if (result.success) {
@@ -224,9 +263,10 @@ describe('Database Schemas', () => {
                 'userManual',
                 'adminManual',
             ]) {
-                const result = WorkDaySourceSchema.safeParse({
+                const result = WorkDaySessionsSchema.safeParse({
                     userId: 'user123',
                     date: '2025-06-09',
+                    sessions: [],
                     source,
                 });
                 expect(result.success).toBe(true);
@@ -237,27 +277,29 @@ describe('Database Schemas', () => {
         });
 
         it('should reject an invalid day source', () => {
-            const result = WorkDaySourceSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
                 date: '2025-06-09',
+                sessions: [],
                 source: 'system',
             });
             expect(result.success).toBe(false);
         });
 
         it('should reject an invalid day key', () => {
-            const result = WorkDaySourceSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
                 date: '2025-6-9',
+                sessions: [],
             });
             expect(result.success).toBe(false);
         });
 
         it('should default version to 1 and status to active', () => {
-            const result = WorkSessionSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
-                type: 'check_in',
-                timestamp: new Date(),
+                date: '2024-01-15',
+                sessions: [],
             });
             expect(result.success).toBe(true);
             if (result.success) {
@@ -269,10 +311,10 @@ describe('Database Schemas', () => {
         });
 
         it('should accept a replaced document with audit fields', () => {
-            const result = WorkSessionSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
-                type: 'check_in',
-                timestamp: new Date(),
+                date: '2024-01-15',
+                sessions: [{ type: 'check_in', time: '08:00' }],
                 version: 3,
                 status: 'replaced',
                 replacedByVersion: 4,
@@ -287,20 +329,20 @@ describe('Database Schemas', () => {
         });
 
         it('should reject an invalid status', () => {
-            const result = WorkSessionSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
-                type: 'check_in',
-                timestamp: new Date(),
+                date: '2024-01-15',
+                sessions: [],
                 status: 'deleted',
             });
             expect(result.success).toBe(false);
         });
 
         it('should reject a version below 1', () => {
-            const result = WorkSessionSchema.safeParse({
+            const result = WorkDaySessionsSchema.safeParse({
                 userId: 'user123',
-                type: 'check_in',
-                timestamp: new Date(),
+                date: '2024-01-15',
+                sessions: [],
                 version: 0,
             });
             expect(result.success).toBe(false);

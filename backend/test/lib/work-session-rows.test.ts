@@ -9,15 +9,13 @@ vi.mock('@/models', () => ({
 }));
 import type {
     UserRow,
-    WorkSessionRow,
+    DaySessionsRow,
     WorkDayRecordRow,
 } from '@/lib/rows';
 import type { DateKey } from 'shared/src/lib/day-key';
 import { defaultTimetable } from 'shared/src/schemas/database';
 
-const MONDAY = new Date(2024, 0, 15, 0, 0, 0);
 const MONDAY_KEY = '2024-01-15' as DateKey;
-const SUNDAY = new Date(2024, 0, 21, 0, 0, 0);
 const SUNDAY_KEY = '2024-01-21' as DateKey;
 
 const makeUser = (overrides: Record<string, unknown> = {}) =>
@@ -33,25 +31,26 @@ const makeUser = (overrides: Record<string, unknown> = {}) =>
         ...overrides,
     }) as unknown as UserRow;
 
-const makeSession = (
-    type: 'check_in' | 'check_out',
-    day: Date,
-    hour: number,
-    minute = 0
+const makeSession = (type: 'check_in' | 'check_out', hour: number, minute = 0) =>
+    ({
+        type,
+        time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+        overtime: false,
+    }) as const;
+
+const makeDayDoc = (
+    day: DateKey,
+    sessions: ReturnType<typeof makeSession>[],
+    overrides: Record<string, unknown> = {}
 ) =>
     ({
-        _id: `${type}-${hour}-${minute}`,
+        _id: `day-${day}`,
         userId: 'u1',
-        type,
-        timestamp: new Date(
-            day.getFullYear(),
-            day.getMonth(),
-            day.getDate(),
-            hour,
-            minute
-        ),
-        status: 'active',
-    }) as unknown as WorkSessionRow;
+        date: day,
+        source: 'userClick',
+        sessions,
+        ...overrides,
+    }) as unknown as DaySessionsRow;
 
 const makeRecord = (
     date: DateKey,
@@ -76,7 +75,7 @@ const makeRecord = (
 const buildCtx = (overrides: Record<string, unknown> = {}) => ({
     days: [MONDAY_KEY],
     users: [makeUser()],
-    sessions: [] as WorkSessionRow[],
+    daySessions: [] as DaySessionsRow[],
     approvedVacations: [],
     yearlyTemplates: [],
     authorizedLeaves: [],
@@ -99,9 +98,11 @@ describe('buildWorkSessionRows — closed days (from the WorkDayRecord)', () => 
                         ],
                     }),
                 ]),
-                sessions: [
-                    makeSession('check_in', MONDAY, 9),
-                    makeSession('check_out', MONDAY, 17),
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [
+                        makeSession('check_in', 9),
+                        makeSession('check_out', 17),
+                    ]),
                 ],
             })
         );
@@ -120,9 +121,11 @@ describe('buildWorkSessionRows — closed days (from the WorkDayRecord)', () => 
                         expectedHours: 8,
                     }),
                 ]),
-                sessions: [
-                    makeSession('check_in', MONDAY, 9),
-                    makeSession('check_out', MONDAY, 17),
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [
+                        makeSession('check_in', 9),
+                        makeSession('check_out', 17),
+                    ]),
                 ],
             })
         );
@@ -155,7 +158,9 @@ describe('buildWorkSessionRows — closed days (from the WorkDayRecord)', () => 
                         anomalies: ['work_on_non_working_day'],
                     }),
                 ]),
-                sessions: [makeSession('check_in', MONDAY, 9)],
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [makeSession('check_in', 9)]),
+                ],
             })
         );
         expect(rows[0].status).toBe('anomaly');
@@ -188,9 +193,11 @@ describe('buildWorkSessionRows — planned days (no record yet)', () => {
     it('shows a would-be workday as planned with no anomaly judgment', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
-                sessions: [
-                    makeSession('check_in', MONDAY, 9),
-                    makeSession('check_out', MONDAY, 15),
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [
+                        makeSession('check_in', 9),
+                        makeSession('check_out', 15),
+                    ]),
                 ],
             })
         );
@@ -199,15 +206,21 @@ describe('buildWorkSessionRows — planned days (no record yet)', () => {
         expect(rows[0].anomalies).toEqual([]);
         expect(rows[0].expectedHours).toBe(8);
         expect(rows[0].totalHours).toBe(6);
+        expect(rows[0].sessions).toEqual([
+            { type: 'check_in', time: '09:00', overtime: false },
+            { type: 'check_out', time: '15:00', overtime: false },
+        ]);
     });
 
     it('derives a non-working weekday classification live', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
                 days: [SUNDAY_KEY],
-                sessions: [
-                    makeSession('check_in', SUNDAY, 10),
-                    makeSession('check_out', SUNDAY, 12),
+                daySessions: [
+                    makeDayDoc(SUNDAY_KEY, [
+                        makeSession('check_in', 10),
+                        makeSession('check_out', 12),
+                    ]),
                 ],
             })
         );
@@ -255,32 +268,23 @@ describe('buildWorkSessionRows — planned days (no record yet)', () => {
         ]);
     });
 
-    it('checks punch clock times in the company zone, not the runtime zone', () => {
-        const sessions = [
-            {
-                _id: 'in',
-                userId: 'u1',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T08:00:00Z'),
-                status: 'active',
-            },
-            {
-                _id: 'out',
-                userId: 'u1',
-                type: 'check_out',
-                timestamp: new Date('2024-01-15T16:00:00Z'),
-                status: 'active',
-            },
-        ] as unknown as WorkSessionRow[];
+    it('buckets sessions by their own date key', () => {
         const rows = buildWorkSessionRows(
             buildCtx({
                 users: [makeUser({ scheduleMode: 'timetable' })],
-                sessions,
-                timezone: 'Europe/Madrid',
+                days: [MONDAY_KEY, SUNDAY_KEY],
+                daySessions: [
+                    makeDayDoc(MONDAY_KEY, [
+                        makeSession('check_in', 9),
+                        makeSession('check_out', 17),
+                    ]),
+                ],
             })
         );
         expect(rows[0].date).toBe('2024-01-15');
-        expect(rows[0].status).toBe('planned');
-        expect(rows[0].dayClassification).toBe('workday');
+        expect(rows[0].totalHours).toBe(8);
+        expect(rows[1].date).toBe('2024-01-21');
+        expect(rows[1].totalHours).toBe(0);
+        expect(rows[1].status).toBe('nonWorkingDay');
     });
 });

@@ -4,7 +4,7 @@ import {
     findOverlapping,
 } from '@/repositories/vacation-repository';
 import { responseErrorGet } from '@/lib/response-error-generator';
-import { ElectiveVacationRow, YearlyVacationRow } from '@/lib/rows';
+import { ElectiveVacationRow } from '@/lib/rows';
 import { resolveVacationNames } from '@/lib/vacation-names';
 import {
     UserYearParamSchema,
@@ -20,17 +20,14 @@ export default withApi(
             // instead of trusting the schema transform.
             const year = parseInt(String(_req.query.year));
 
-            const [vacations, yearlyVacationDays] = (await Promise.all([
+            const [vacations, yearlyVacationDays] = await Promise.all([
                 findOverlapping(`${year}-01-01`, `${year}-12-31`, { userId })
                     .sort({ startDate: 1 })
-                    .lean(),
+                    .lean<ElectiveVacationRow[]>(),
                 // Creates the per-user row from the global template when
                 // missing and syncs drifted fields with the template.
                 ensureUserYearConfig(userId, year, { sync: true }),
-            ])) as unknown as [
-                ElectiveVacationRow[],
-                YearlyVacationRow | null,
-            ];
+            ]);
 
             const response: YearlyVacationResponse = {
                 year: year,

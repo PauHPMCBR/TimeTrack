@@ -1,19 +1,20 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { useDirty } from '@/lib/useDirty';
 import { AdminWorkSessionRow } from '@/types';
-import { localeTag } from '@/lib/datetime';
-import { configuredTimezone, toZonedWallString } from '@/lib/timezone';
+import { formatDateKey, localeTag } from '@/lib/datetime';
+import { configuredTimezone } from '@/lib/timezone';
 import {
     CHECK_IN,
     CHECK_OUT,
     HOUR_MINUTE_KEY_REGEX,
 } from 'shared/src/lib/constants';
 import { timeToMinutes } from 'shared/src/lib/expected-timetable';
+import type { TimeKey } from 'shared/src/lib/time-key';
 import {
     DEFAULT_CHECK_IN_TIME,
     DEFAULT_CHECK_OUT_TIME,
@@ -48,18 +49,17 @@ type Props = {
 };
 
 type EditableSession = {
-    _id: string;
     type: WorkSessionType;
-    time: string;
+    time: TimeKey;
     overtime: boolean;
     notes?: string;
 };
 
-function addOneHourToWallTime(hm: string): string {
+function addOneHourToWallTime(hm: TimeKey): TimeKey {
     const [h, m] = hm.split(':').map(Number);
     const total = Math.min((h || 0) * 60 + (m || 0) + 60, 23 * 60 + 59);
     const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+    return `${pad(Math.floor(total / 60))}:${pad(total % 60)}` as TimeKey;
 }
 
 function nextExpectedType(sessions: EditableSession[]): WorkSessionType {
@@ -91,14 +91,12 @@ export default function SessionEditorModal({
 }: Props) {
     const { t, lang } = useI18n();
     const locale = localeTag(lang);
-    const tempId = useRef(0);
     const isAdminPanel = usePathname().startsWith('/admin');
 
     const [sessions, setSessions] = useState<EditableSession[]>(
         row.sessions.map((s) => ({
-            _id: s._id,
             type: s.type,
-            time: toZonedWallString(s.timestamp).split('T')[1],
+            time: s.time,
             overtime: s.overtime === true,
             notes: s.notes,
         }))
@@ -112,20 +110,16 @@ export default function SessionEditorModal({
     const [error, setError] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
 
-    const lastEditSession =
-        row.source === 'userManual' || row.source === 'adminManual'
-            ? [...row.sessions]
-                  .reverse()
-                  .find((s) => s.editReason || s.notes)
-            : undefined;
-    // Days edited before editReason existed stored the reason in `notes`.
-    const lastEditReason = lastEditSession?.editReason ?? lastEditSession?.notes;
-    const lastEditDate = lastEditSession?.createdAt;
-
     const requestClose = () => {
         if (dirty && !window.confirm(t('common.unsavedChangesConfirm'))) return;
         onClose();
     };
+
+    const lastEditReason =
+        row.source === 'userManual' || row.source === 'adminManual'
+            ? (row.editReason ??
+              [...row.sessions].reverse().find((s) => s.notes)?.notes)
+            : undefined;
 
     const expected = nextExpectedType(sessions);
 
@@ -149,10 +143,10 @@ export default function SessionEditorModal({
         return null;
     };
 
-    const handleChangeTime = (session: EditableSession, value: string) => {
+    const handleChangeTime = (idx: number, value: string) => {
         setSessions((prev) =>
-            prev.map((s) =>
-                s._id === session._id ? { ...s, time: value } : s
+            prev.map((s, i) =>
+                i === idx ? { ...s, time: value as TimeKey } : s
             )
         );
         markDirty();
@@ -163,11 +157,10 @@ export default function SessionEditorModal({
         const nextTime = last
             ? addOneHourToWallTime(last.time)
             : expected === CHECK_IN
-              ? DEFAULT_CHECK_IN_TIME
-              : DEFAULT_CHECK_OUT_TIME;
+              ? (DEFAULT_CHECK_IN_TIME as TimeKey)
+              : (DEFAULT_CHECK_OUT_TIME as TimeKey);
 
         const next = {
-            _id: `new-${tempId.current++}`,
             type: expected,
             time: nextTime,
             overtime: false,
@@ -176,15 +169,15 @@ export default function SessionEditorModal({
         markDirty();
     };
 
-    const handleDelete = (session: EditableSession) => {
-        setSessions((prev) => prev.filter((s) => s._id !== session._id));
+    const handleDelete = (idx: number) => {
+        setSessions((prev) => prev.filter((_, i) => i !== idx));
         markDirty();
     };
 
-    const handleToggleOvertime = (session: EditableSession) => {
+    const handleToggleOvertime = (idx: number) => {
         setSessions((prev) =>
-            prev.map((s) =>
-                s._id === session._id ? { ...s, overtime: !s.overtime } : s
+            prev.map((s, i) =>
+                i === idx ? { ...s, overtime: !s.overtime } : s
             )
         );
         markDirty();
@@ -200,10 +193,10 @@ export default function SessionEditorModal({
         setSaving(true);
         setError(null);
         const payload = sessions.map((s) => ({
-            ...(s._id.startsWith('new-') ? {} : { _id: s._id }),
             type: s.type,
             time: s.time,
             overtime: s.overtime,
+            ...(s.notes !== undefined ? { notes: s.notes } : {}),
         }));
         const res = isAdminPanel
             ? await apiClient.replaceDayWorkSessions(
@@ -283,15 +276,12 @@ export default function SessionEditorModal({
         onClose();
     };
 
-    const dateLabel = new Date(`${row.date}T00:00:00`).toLocaleDateString(
-        locale,
-        {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-        }
-    );
+    const dateLabel = formatDateKey(row.date, locale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
 
     return (
         <Modal
@@ -327,13 +317,24 @@ export default function SessionEditorModal({
                 </div>
             )}
 
+            {row.anomalies.length > 0 && (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    <span className="font-medium">
+                        {t('admin.sessionEditor.anomalies')}:
+                    </span>{' '}
+                    {row.anomalies
+                        .map((a) => t(`monthlyApprovals.anomaly.${a}`))
+                        .join(', ')}
+                </div>
+            )}
+
             {lastEditReason && (
                 <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                     <span className="font-medium">
                         {t('admin.sessionEditor.lastEdit')}
                     </span>
-                    {lastEditDate
-                        ? ` · ${new Date(lastEditDate).toLocaleString(locale, {
+                    {row.createdAt
+                        ? ` · ${new Date(row.createdAt).toLocaleString(locale, {
                               timeZone: configuredTimezone(),
                               day: 'numeric',
                               month: 'short',
@@ -344,17 +345,6 @@ export default function SessionEditorModal({
                           })}`
                         : null}
                     : {lastEditReason}
-                </div>
-            )}
-
-            {row.anomalies.length > 0 && (
-                <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                    <span className="font-medium">
-                        {t('admin.sessionEditor.anomalies')}:
-                    </span>{' '}
-                    {row.anomalies
-                        .map((a) => t(`monthlyApprovals.anomaly.${a}`))
-                        .join(', ')}
                 </div>
             )}
 
@@ -371,7 +361,7 @@ export default function SessionEditorModal({
                     );
                     return (
                         <div
-                            key={session._id}
+                            key={idx}
                             className="rounded-xl border border-zinc-200 p-2 dark:border-zinc-800"
                         >
                             <div className="flex items-center gap-2">
@@ -393,14 +383,14 @@ export default function SessionEditorModal({
                                     value={session.time}
                                     disabled={saving}
                                     onChange={(e) =>
-                                        handleChangeTime(session, e.target.value)
+                                        handleChangeTime(idx, e.target.value)
                                     }
                                     className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:text-white"
                                 />
                                 {session.type === CHECK_IN && (
                                     <button
                                         onClick={() =>
-                                            handleToggleOvertime(session)
+                                            handleToggleOvertime(idx)
                                         }
                                         disabled={saving}
                                         aria-pressed={session.overtime}
@@ -415,7 +405,7 @@ export default function SessionEditorModal({
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => handleDelete(session)}
+                                    onClick={() => handleDelete(idx)}
                                     disabled={!removable || saving}
                                     className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-red-900/20"
                                     title={

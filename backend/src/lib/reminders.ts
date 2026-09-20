@@ -1,12 +1,11 @@
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
-import { findActiveInRange } from '@/repositories/work-session-repository';
+import { findActiveDaySessions } from '@/repositories/work-day-sessions-repository';
 import { findOneWorkDayRecord } from '@/repositories/work-day-record-repository';
 import { ensureWorkDayRecordsForDay } from '@/lib/work-day-records';
 import { getAppSettings } from '@/lib/settings';
-import { dateKey } from '@/lib/date-key';
+import { dateKey, timeKeyInTz } from '@/lib/date-key';
 import type { DateKey } from 'shared/src/lib/day-key';
-import { dayRange, dayTimestamp } from '@/lib/date-range';
 import {
     runMonthlyAdminReview,
     runMonthlyApprovalReminders,
@@ -18,17 +17,18 @@ import {
 import { sendInconsistencyReminder } from '@/lib/mail';
 import { MS_PER_MINUTE } from 'shared/src/lib/constants';
 import { getFrontendUrl } from '@/lib/frontend-url';
-import { formatTime } from '@/lib/timezone';
+import type { DaySessionsRow, UserRow, WorkDayRecordRow } from '@/lib/rows';
 
-interface ReminderUser {
-    _id: string;
-    email: string;
-    name: string;
-    autoTimetable?: AutoScheduleEntry[];
-    lastInconsistencyReminder?: string;
-    checkInRequired?: boolean;
-    notifyInconsistency?: boolean;
-}
+type ReminderUser = Pick<
+    UserRow,
+    | '_id'
+    | 'email'
+    | 'name'
+    | 'autoTimetable'
+    | 'lastInconsistencyReminder'
+    | 'checkInRequired'
+    | 'notifyInconsistency'
+>;
 
 /** "09:00 – 13:00, 15:00 – 19:00" — human-readable timetable for the email. */
 function formatTimetable(timetable: AutoScheduleEntry[]): string {
@@ -67,12 +67,10 @@ export async function runDailyInconsistencyReminder(
         };
     }
 
-    const { start, end } = dayRange(dateKeyStr);
-
-    const users = (await User.find(
+    const users = await User.find(
         { registered: true, deleted: { $ne: true }, checkInRequired: { $ne: false } },
         'name email emailEncrypted autoTimetable lastInconsistencyReminder checkInRequired notifyInconsistency'
-    ).lean()) as unknown as ReminderUser[];
+    ).lean<ReminderUser[]>();
     const sentTo: string[] = [];
 
     for (const user of users) {
@@ -82,31 +80,23 @@ export async function runDailyInconsistencyReminder(
         )
             continue;
 
-        const record = (await findOneWorkDayRecord(
+        const record = await findOneWorkDayRecord(
             user._id.toString(),
             dateKeyStr
-        ).lean()) as unknown as {
-            anomalies?: import('shared/src/schemas/database').WorkSessionAnomaly[];
-        } | null;
+        ).lean<Pick<WorkDayRecordRow, 'anomalies'> | null>();
         const anomalies = record?.anomalies ?? [];
         if (anomalies.length === 0) continue;
         if (user.lastInconsistencyReminder === dateKeyStr) continue;
 
-        const sessions = (await findActiveInRange(start, end, {
+        const dayDocs = await findActiveDaySessions(dateKeyStr, dateKeyStr, {
             userId: user._id.toString(),
-        })
-            .sort({ timestamp: 1 })
-            .lean()) as unknown as {
-            timestamp: Date | string;
-            type: 'check_in' | 'check_out';
-        }[];
+        }).lean<Pick<DaySessionsRow, 'sessions'>[]>();
 
         const timetable = getAutoTimetable(user);
         const autoTimetable = formatTimetable(timetable);
-        const times = sessions.map((s) => ({
-            time: formatTime(new Date(s.timestamp)),
-            type: s.type,
-        }));
+        const times = dayDocs
+            .flatMap((d) => d.sessions)
+            .map((s) => ({ time: s.time, type: s.type }));
         const frontendUrl = getFrontendUrl();
         const applyAutoUrl = `${frontendUrl}/check-in?applyAuto=1&date=${dateKeyStr}`;
 
@@ -167,12 +157,9 @@ export function scheduleDailyReminder(): void {
 
             if (lastRunDay === todayKey) return;
 
-            const endOfDay = dayTimestamp(
-                todayKey,
-                `${String(settings.endOfDayHour).padStart(2, '0')}:00`
-            );
+            const endOfDay = `${String(settings.endOfDayHour).padStart(2, '0')}:00`;
 
-            if (now.getTime() >= endOfDay.getTime()) {
+            if (timeKeyInTz(now) >= endOfDay) {
                 lastRunDay = todayKey;
                 await ensureWorkDayRecordsForDay(todayKey);
                 await runDailyInconsistencyReminder(todayKey);

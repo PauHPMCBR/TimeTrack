@@ -58,7 +58,8 @@ const stateIcons: Record<MonthCellState, LucideIcon> = {
 function monthLabel(locale: string, month: number) {
     const label = new Intl.DateTimeFormat(locale, {
         month: 'short',
-    }).format(new Date(2024, month - 1, 1));
+        timeZone: 'UTC',
+    }).format(new Date(Date.UTC(2024, month - 1, 1)));
     return label.replace('.', '');
 }
 

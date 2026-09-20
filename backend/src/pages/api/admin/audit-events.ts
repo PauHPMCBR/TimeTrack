@@ -1,12 +1,13 @@
 import { withApi } from '@/lib/api-handler';
 import { AuditEvent, User } from '@/models';
 import { responseErrorGet } from '@/lib/response-error-generator';
-import { dayRange } from '@/lib/date-range';
+import { dayRange } from '@/lib/timezone';
 import {
     AdminAuditEventsQuery,
     AdminAuditEventsQuerySchema,
     AuditEventRow,
 } from 'shared/src/schemas/api';
+import type { UserRow } from '@/lib/rows';
 
 const DEFAULT_LIMIT = 50;
 
@@ -38,7 +39,7 @@ export default withApi(
                 .skip(offset)
                 .limit(limit);
             const [events, total] = await Promise.all([
-                findQuery.lean(),
+                findQuery.lean<AuditEventRow[]>(),
                 AuditEvent.countDocuments(filter),
             ]);
 
@@ -47,16 +48,14 @@ export default withApi(
                 new Set(events.map((e) => e.actorId).filter(Boolean))
             );
             const actors = actorIds.length
-                ? ((await User.find(
+                ? await User.find(
                       { _id: { $in: actorIds } },
                       'name'
-                  ).lean()) as unknown as { _id: string; name: string }[])
+                  ).lean<(Pick<UserRow, 'name'> & { _id: string })[]>()
                 : [];
             const nameById = new Map(actors.map((u) => [u._id.toString(), u.name]));
 
-            const rows: AuditEventRow[] = (
-                events as unknown as (AuditEventRow & { actorId: string })[]
-            ).map((e) => ({
+            const rows: AuditEventRow[] = events.map((e) => ({
                 ...e,
                 _id: String(e._id),
                 actorName: nameById.get(e.actorId),

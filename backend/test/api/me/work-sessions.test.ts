@@ -33,13 +33,10 @@ vi.mock('@/lib/validation', () => ({
 }));
 
 vi.mock('@/models', () => ({
-    WorkSession: {
-        find: vi.fn().mockResolvedValue([]),
-        updateMany: vi.fn().mockResolvedValue({}),
-        insertMany: vi.fn().mockResolvedValue([]),
-    },
-    WorkDaySource: {
-        updateOne: vi.fn().mockResolvedValue({ upsertedCount: 1 }),
+    WorkDaySessions: {
+        findOne: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue([{ _id: 'day-1' }]),
+        updateOne: vi.fn().mockResolvedValue({}),
     },
     MonthlyApproval: {
         findOne: vi.fn().mockResolvedValue(null),
@@ -57,7 +54,7 @@ vi.mock('@/lib/work-day-records', () => ({
     backfillAllWorkDayRecords: vi.fn().mockResolvedValue(0),
 }));
 
-import { WorkSession, WorkDaySource, MonthlyApproval } from '@/models';
+import { WorkDaySessions, MonthlyApproval } from '@/models';
 import selfEditHandler from '@/pages/api/me/work-sessions';
 
 // The self-edit endpoint only accepts past days; use a fixed past date.
@@ -80,8 +77,6 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
     });
 
     it('should replace the day with source manual, attributed to the worker', async () => {
-        vi.mocked(WorkSession.find).mockResolvedValue([] as any);
-
         const req = mockReq({ method: 'PUT', body: validBody });
         const res = mockRes();
 
@@ -89,35 +84,35 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(MonthlyApproval.findOne).toHaveBeenCalled();
-        expect(WorkSession.insertMany).toHaveBeenCalledWith(
-            expect.arrayContaining([
+        expect(WorkDaySessions.create).toHaveBeenCalledWith(
+            [
                 expect.objectContaining({
                     userId: 'user-123',
-                    type: 'check_in',
-                    editedBy: 'user-123',
-                    overtime: false,
-                    editReason: 'Forgot to check out',
+                    date: '2025-06-09',
+                    source: 'userManual',
                     version: 1,
                     status: 'active',
-                }),
-                expect.objectContaining({
-                    userId: 'user-123',
-                    type: 'check_out',
                     editedBy: 'user-123',
+                    editReason: 'Forgot to check out',
+                    sessions: [
+                        expect.objectContaining({
+                            type: 'check_in',
+                            time: '09:00',
+                            overtime: false,
+                        }),
+                        expect.objectContaining({
+                            type: 'check_out',
+                            time: '17:00',
+                            overtime: false,
+                        }),
+                    ],
                 }),
-            ])
-        );
-        // The self-edit adopts the day source wholesale.
-        expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-            { userId: 'user-123', date: '2025-06-09' },
-            { $set: { source: 'userManual' } },
-            { upsert: true }
+            ],
+            undefined
         );
     });
 
     it('should persist the overtime flag on the flagged sessions', async () => {
-        vi.mocked(WorkSession.find).mockResolvedValue([] as any);
-
         const req = mockReq({
             method: 'PUT',
             body: {
@@ -137,17 +132,22 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
         await selfEditHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(WorkSession.insertMany).toHaveBeenCalledWith(
-            expect.arrayContaining([
+        expect(WorkDaySessions.create).toHaveBeenCalledWith(
+            [
                 expect.objectContaining({
-                    type: 'check_in',
-                    overtime: true,
+                    sessions: [
+                        expect.objectContaining({
+                            type: 'check_in',
+                            overtime: true,
+                        }),
+                        expect.objectContaining({
+                            type: 'check_out',
+                            overtime: false,
+                        }),
+                    ],
                 }),
-                expect.objectContaining({
-                    type: 'check_out',
-                    overtime: false,
-                }),
-            ])
+            ],
+            undefined
         );
     });
 
@@ -185,7 +185,7 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 details: { illegalAction: 'FutureDate' },
             })
         );
-        expect(WorkSession.insertMany).not.toHaveBeenCalled();
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
     });
 
     it('should refuse while the month is approved (hard lock)', async () => {
@@ -210,7 +210,7 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 details: { illegalAction: 'MonthApprovedLocked' },
             })
         );
-        expect(WorkSession.insertMany).not.toHaveBeenCalled();
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
     });
 
     it('should reject an incoherent sequence', async () => {
@@ -238,6 +238,6 @@ describe('PUT /api/me/work-sessions (worker self-edit)', () => {
                 error: 'IncorrectParameter',
             })
         );
-        expect(WorkSession.insertMany).not.toHaveBeenCalled();
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
     });
 });

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { ADMIN_ROLE } from 'shared/src/lib/constants';
+import { configuredTimezone } from '@/lib/timezone';
 import { User, DeletedUserRow } from '@/types';
 import Card from '@/components/ui/Card';
 import LoadingState from '@/components/ui/LoadingState';
@@ -354,7 +355,13 @@ export default function UsersListPage() {
                                             {t('admin.users.deletedOn', {
                                                 date: new Date(
                                                     user.deletedAt
-                                                ).toLocaleDateString(),
+                                                ).toLocaleDateString(
+                                                    undefined,
+                                                    {
+                                                        timeZone:
+                                                            configuredTimezone(),
+                                                    }
+                                                ),
                                             })}
                                         </span>
                                         <button

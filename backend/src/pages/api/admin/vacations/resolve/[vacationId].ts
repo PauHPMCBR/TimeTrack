@@ -12,7 +12,7 @@ import {
     responseErrorPost,
 } from '@/lib/response-error-generator';
 import { recomputeWorkDayRecordsForRange } from '@/lib/work-day-records';
-import type { DateKey } from 'shared/src/lib/day-key';
+import type { ElectiveVacationRow } from '@/lib/rows';
 
 export default withApi({ method: 'POST', guard: 'admin' }, async (req, res) => {
     try {
@@ -27,13 +27,9 @@ export default withApi({ method: 'POST', guard: 'admin' }, async (req, res) => {
             return responseErrorIncorrectParameter(res, 'status');
         }
 
-        const existing = (await ElectiveVacation.findById(
-            vacationId
-        ).lean()) as unknown as {
-            userId: string;
-            startDate: string;
-            endDate: string;
-        } | null;
+        const existing = await ElectiveVacation.findById(vacationId).lean<
+            Pick<ElectiveVacationRow, 'userId' | 'startDate' | 'endDate'> | null
+        >();
         if (!existing) {
             return responseErrorEntryNotFound(res, 'Vacation');
         }
@@ -49,8 +45,8 @@ export default withApi({ method: 'POST', guard: 'admin' }, async (req, res) => {
 
         await recomputeWorkDayRecordsForRange(
             existing.userId,
-            existing.startDate as DateKey,
-            existing.endDate as DateKey
+            existing.startDate,
+            existing.endDate
         );
 
         res.status(200).json({ success: true });

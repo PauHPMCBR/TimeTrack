@@ -31,8 +31,13 @@ const row = {
     expectedHours: 8,
     source: 'userClick',
     sessions: [
-        { _id: 's1', type: 'check_in', timestamp: '2025-06-09T07:00:00.000Z' },
-        { _id: 's2', type: 'check_out', timestamp: '2025-06-09T15:00:00.000Z' },
+        {
+            type: 'check_in',
+            time: '09:00',
+            overtime: false,
+            notes: 'Treball des de casa',
+        },
+        { type: 'check_out', time: '17:00', overtime: false },
     ],
 } as unknown as AdminWorkSessionRow;
 
@@ -65,8 +70,13 @@ describe('SessionEditorModal', () => {
             apiClient.replaceDayWorkSessions
         ).mock.calls[0];
         expect(sessions).toEqual([
-            { _id: 's1', type: 'check_in', time: '09:00', overtime: false },
-            { _id: 's2', type: 'check_out', time: '17:00', overtime: false },
+            {
+                type: 'check_in',
+                time: '09:00',
+                overtime: false,
+                notes: 'Treball des de casa',
+            },
+            { type: 'check_out', time: '17:00', overtime: false },
         ]);
     });
 

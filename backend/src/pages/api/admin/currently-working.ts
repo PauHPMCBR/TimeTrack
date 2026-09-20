@@ -1,38 +1,32 @@
 import { withApi } from '@/lib/api-handler';
 import { CHECK_IN } from 'shared/src/lib/constants';
-import { WorkSession, User } from '@/models';
-import { notReplaced } from '@/repositories/work-session-repository';
+import { WorkDaySessions, User } from '@/models';
+import { notReplaced } from '@/repositories/work-day-sessions-repository';
 import { notDeleted } from '@/repositories/user-repository';
-import { startOfDay } from '@/lib/date-range';
+import { dateKey } from '@/lib/date-key';
 import { responseErrorGet } from '@/lib/response-error-generator';
+import type { DaySessionsRow, UserRow } from '@/lib/rows';
 
 export default withApi(
     { method: 'GET', guard: 'admin' },
     async (_req, res) => {
         try {
-            const today = startOfDay(new Date());
+            const todayKey = dateKey(new Date());
 
-            const latestSessions = await WorkSession.aggregate([
+            const dayDocs = await WorkDaySessions.aggregate<
+                Pick<DaySessionsRow, 'userId' | 'sessions'>
+            >([
                 {
                     $match: {
-                        timestamp: { $gte: today },
+                        date: todayKey,
                         ...notReplaced,
-                    },
-                },
-                {
-                    $sort: { timestamp: -1 },
-                },
-                {
-                    $group: {
-                        _id: '$userId',
-                        latestSession: { $first: '$$ROOT' },
                     },
                 },
             ]);
 
-            const activeUserIds = latestSessions
-                .filter((s) => s.latestSession.type === CHECK_IN)
-                .map((s) => s._id);
+            const activeUserIds = dayDocs
+                .filter((d) => d.sessions.at(-1)?.type === CHECK_IN)
+                .map((d) => d.userId);
 
             const activeUsers = await User.find(
                 {
@@ -42,7 +36,7 @@ export default withApi(
                     ...notDeleted,
                 },
                 'name email emailEncrypted'
-            ).lean();
+            ).lean<UserRow[]>();
 
             res.status(200).json({
                 success: true,

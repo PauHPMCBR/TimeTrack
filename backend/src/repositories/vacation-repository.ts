@@ -10,7 +10,7 @@ export const findOverlapping = (
     startKey: string,
     endKey: string,
     options: {
-        userId?: string | { $in: unknown[] };
+        userId?: string | { $in: string[] };
         statuses?: string | string[];
         endExclusive?: boolean;
     } = {}
@@ -48,17 +48,18 @@ export const ensureUserYearConfig = async (
     year: number,
     options: { sync?: boolean } = {}
 ): Promise<YearlyVacationRow | null> => {
-    const userConfig = await YearlyVacationDays.findOne({ year, userId });
+    const userConfig: YearlyVacationRow | null =
+        await YearlyVacationDays.findOne({ year, userId });
 
     if (!userConfig) {
         const globalConfig = await findGlobalTemplate(year);
         if (!globalConfig) return null;
-        return (await YearlyVacationDays.create({
+        return await YearlyVacationDays.create({
             userId,
             year: globalConfig.year,
             obligatoryDays: globalConfig.obligatoryDays,
             electiveDaysTotalCount: globalConfig.electiveDaysTotalCount,
-        })) as unknown as YearlyVacationRow;
+        });
     }
 
     if (options.sync) {
@@ -96,5 +97,5 @@ export const ensureUserYearConfig = async (
         }
     }
 
-    return userConfig as unknown as YearlyVacationRow;
+    return userConfig;
 };

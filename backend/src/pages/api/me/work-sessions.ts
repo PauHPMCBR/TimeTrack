@@ -81,7 +81,7 @@ export default withApi(
 
             res.status(200).json({
                 success: true,
-                data: { workSessions: result.workSessions },
+                data: { workDaySessions: result.workDaySessions },
             });
         } catch (error) {
             console.error('Worker replace day work sessions error:', error);

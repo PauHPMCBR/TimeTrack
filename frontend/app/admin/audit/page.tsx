@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api';
 import { AuditEventRow } from '@/schemas/api';
 import { User } from '@/types';
 import { localeTag } from '@/lib/datetime';
+import { configuredTimezone } from '@/lib/timezone';
 import { AUDIT_ACTIONS } from 'shared/src/lib/constants';
 import Card from '@/components/ui/Card';
 import Label from '@/components/ui/Label';
@@ -91,6 +92,7 @@ export default function AdminAuditPage() {
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: configuredTimezone(),
               })
             : '—';
 

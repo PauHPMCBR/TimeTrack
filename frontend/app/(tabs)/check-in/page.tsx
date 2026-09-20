@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { WorkSessionRequest } from '@/schemas/api';
-import { WorkSession, WorksessionReason, User } from '@/types';
-import { toLocalDateKey, formatHM, localeTag } from '@/lib/datetime';
-import { formatClockHM } from '@/lib/timezone';
+import { DaySession, WorksessionReason, User } from '@/types';
+import { formatHM } from '@/lib/datetime';
+import { nowWallTime, todayKey } from '@/lib/timezone';
 import type { DateKey } from 'shared/src/lib/day-key';
-import { computeDayHours } from 'shared/src/lib/work-hours';
+import { computeDayHours, timeToMinutes } from 'shared/src/lib/work-hours';
 import {
     workedIntervals as sessionsToWorkedIntervals,
     workedIntervalTone,
@@ -41,7 +41,7 @@ export default function CheckInPage() {
     const searchParams = useSearchParams();
 
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [workSessions, setWorkSessions] = useState<WorkSession[]>([]);
+    const [workSessions, setWorkSessions] = useState<DaySession[]>([]);
     const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [isChecking, setIsChecking] = useState(false);
@@ -58,9 +58,7 @@ export default function CheckInPage() {
     >([{ checkIn: DEFAULT_CHECK_IN_TIME, checkOut: DEFAULT_CHECK_OUT_TIME }]);
     const [autoModalOpen, setAutoModalOpen] = useState(false);
     const [autoApplyOpen, setAutoApplyOpen] = useState(false);
-    const [autoApplyDate, setAutoApplyDate] = useState(() =>
-        toLocalDateKey(new Date())
-    );
+    const [autoApplyDate, setAutoApplyDate] = useState(() => todayKey());
     const [autoApplying, setAutoApplying] = useState(false);
     const [autoMessage, setAutoMessage] = useState<string | null>(null);
     const [autoError, setAutoError] = useState<string | null>(null);
@@ -68,10 +66,9 @@ export default function CheckInPage() {
     const refreshSessions = async (user: User) => {
         if (!user) return;
         try {
-            const today = new Date();
             const sessionsResponse = await apiClient.getDailyRecords(
                 user._id,
-                today
+                todayKey()
             );
             if (sessionsResponse.data) {
                 setWorkSessions(sessionsResponse.data.workSessions || []);
@@ -110,21 +107,13 @@ export default function CheckInPage() {
         }
     };
 
-    const todaySessions = useMemo(() => {
-        const todayString = toLocalDateKey(new Date());
-        return workSessions
-            .filter(
-                (session) => toLocalDateKey(session.timestamp) === todayString
-            )
-            .sort(
-                (a, b) =>
-                    new Date(a.timestamp).getTime() -
-                    new Date(b.timestamp).getTime()
-            );
-    }, [workSessions]);
+    const todaySessions = useMemo(
+        () => [...workSessions].sort((a, b) => a.time.localeCompare(b.time)),
+        [workSessions]
+    );
 
     const activeSession = useMemo(() => {
-        let lastCheckIn: WorkSession | null = null;
+        let lastCheckIn: DaySession | null = null;
 
         for (const session of todaySessions) {
             if (session.type === CHECK_IN) {
@@ -156,7 +145,7 @@ export default function CheckInPage() {
 
     const todaySummary = useMemo(() => {
         const totalHours = computeDayHours(todaySessions, {
-            countOpenUntil: new Date(now),
+            countOpenUntil: nowWallTime(),
             round: false,
         }).totalHours;
 
@@ -169,18 +158,19 @@ export default function CheckInPage() {
 
     const currentElapsed = useMemo(() => {
         if (!activeSession) return null;
-        const ms = now - new Date(activeSession.timestamp).getTime();
-        return formatHM(ms, t);
+        const minutes = Math.max(
+            0,
+            timeToMinutes(nowWallTime()) - timeToMinutes(activeSession.time)
+        );
+        return formatHM(minutes * MS_PER_HOUR, t);
     }, [activeSession, t, now]);
-
-    const locale = localeTag(lang);
 
     const todayIntervals = useMemo(
         () =>
-            sessionsToWorkedIntervals(todaySessions, locale).map((interval) =>
+            sessionsToWorkedIntervals(todaySessions).map((interval) =>
                 interval.unclosed ? { ...interval, problem: false } : interval
             ),
-        [todaySessions, locale]
+        [todaySessions]
     );
 
     useEffect(() => {
@@ -224,7 +214,7 @@ export default function CheckInPage() {
             setAutoApplyDate(
                 d && DATE_KEY_REGEX.test(d)
                     ? (d as DateKey)
-                    : toLocalDateKey(new Date())
+                    : todayKey()
             );
             setAutoApplyOpen(true);
             // Drop the flag so a refresh doesn't re-open the dialog.
@@ -249,7 +239,7 @@ export default function CheckInPage() {
 
     const applyAutoSchedule = async () => {
         if (!currentUser) return;
-        if (autoApplyDate > toLocalDateKey(new Date())) {
+        if (autoApplyDate > todayKey()) {
             setAutoError(t('checkin.autoFutureDate'));
             return;
         }
@@ -487,14 +477,11 @@ export default function CheckInPage() {
                                 .filter((s) => s.notes)
                                 .map((session, index) => (
                                     <li
-                                        key={session._id || index}
+                                        key={index}
                                         className="text-sm text-zinc-500"
                                     >
                                         <span className="font-medium tabular-nums">
-                                            {formatClockHM(
-                                                session.timestamp,
-                                                locale
-                                            )}
+                                            {session.time}
                                         </span>{' '}
                                         {session.notes}
                                     </li>
@@ -541,7 +528,7 @@ export default function CheckInPage() {
                         <input
                             type="date"
                             value={autoApplyDate}
-                            max={toLocalDateKey(new Date())}
+                            max={todayKey()}
                             onChange={(e) =>
                                 setAutoApplyDate(e.target.value as DateKey)
                             }

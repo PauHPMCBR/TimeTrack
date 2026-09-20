@@ -11,9 +11,10 @@ export type VacationMonthsTableProps = {
 const MONTHS = Array.from({ length: 12 }, (_, i) => i);
 
 function monthLabel(locale: string, month: number) {
-    return new Intl.DateTimeFormat(locale, { month: 'long' }).format(
-        new Date(2024, month, 1)
-    );
+    return new Intl.DateTimeFormat(locale, {
+        month: 'long',
+        timeZone: 'UTC',
+    }).format(new Date(Date.UTC(2024, month, 1)));
 }
 
 /**

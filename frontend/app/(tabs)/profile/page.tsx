@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
-import { WorkSession, User } from '@/types';
-import { formatHM, toLocalDateKey } from '@/lib/datetime';
+import { DaySession, User } from '@/types';
+import { formatHM } from '@/lib/datetime';
+import { nowWallTime, todayKey } from '@/lib/timezone';
 import { applyTheme, DEFAULT_THEME_FLAVOR, ThemeFlavor } from '@/lib/theme';
 import { THEME_KEY } from '@/lib/storage';
 import { TimetableEntry } from '@/lib/timetable';
@@ -18,7 +19,10 @@ import {
     CHECK_IN,
     CHECK_OUT,
     MS_PER_HOUR,
+    MS_PER_MINUTE,
 } from 'shared/src/lib/constants';
+import { timeToMinutes } from 'shared/src/lib/work-hours';
+import type { TimeKey } from 'shared/src/lib/time-key';
 import type { InconsistencyReminderMode } from 'shared/src/schemas/database';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -101,7 +105,7 @@ export default function ProfilePage() {
     const router = useRouter();
 
     const [user, setUser] = useState<User | null>(null);
-    const [sessions, setSessions] = useState<WorkSession[]>([]);
+    const [sessions, setSessions] = useState<DaySession[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [theme, setTheme] = useState<ThemeFlavor>(DEFAULT_THEME_FLAVOR);
@@ -173,11 +177,7 @@ export default function ProfilePage() {
     // Sorted copy computed once — reused by isCheckedIn / workedHoursToday /
     // checkedInDuration instead of re-sorting on every 30s tick.
     const sortedSessions = useMemo(() => {
-        return [...sessions].sort(
-            (a, b) =>
-                new Date(a.timestamp).getTime() -
-                new Date(b.timestamp).getTime()
-        );
+        return [...sessions].sort((a, b) => a.time.localeCompare(b.time));
     }, [sessions]);
 
     const isCheckedIn = useMemo(() => {
@@ -215,10 +215,9 @@ export default function ProfilePage() {
                         );
                     }
 
-                    const today = new Date();
                     const res = await apiClient.getDailyRecords(
                         currentUser._id,
-                        today
+                        todayKey()
                     );
                     if (cancelled) return;
                     if (res.data && res.data.workSessions) {
@@ -345,30 +344,35 @@ export default function ProfilePage() {
     };
 
     const workedHoursToday = useMemo(() => {
-        let totalMs = 0;
-        let lastIn: Date | null = null;
+        let totalMinutes = 0;
+        let lastIn: TimeKey | null = null;
 
-        const todaySessions = sortedSessions.filter(
-            (s) => toLocalDateKey(s.timestamp) === toLocalDateKey(new Date())
-        );
+        const todaySessions = sortedSessions;
 
         todaySessions.forEach((s) => {
-            if (s.type === CHECK_IN) lastIn = new Date(s.timestamp);
+            if (s.type === CHECK_IN) lastIn = s.time;
             else if (s.type === CHECK_OUT && lastIn) {
-                totalMs += new Date(s.timestamp).getTime() - lastIn.getTime();
+                totalMinutes += timeToMinutes(s.time) - timeToMinutes(lastIn);
                 lastIn = null;
             }
         });
 
-        if (lastIn) totalMs += now - (lastIn as Date).getTime();
-        return totalMs / MS_PER_HOUR;
+        if (lastIn)
+            totalMinutes += Math.max(
+                0,
+                timeToMinutes(nowWallTime()) - timeToMinutes(lastIn)
+            );
+        return totalMinutes / 60;
     }, [sortedSessions, now]);
 
     const checkedInDuration = useMemo(() => {
         if (!isCheckedIn || sessions.length === 0) return '';
         const last = sortedSessions[sortedSessions.length - 1];
-        const ms = now - new Date(last.timestamp).getTime();
-        return formatHM(ms, t);
+        const minutes = Math.max(
+            0,
+            timeToMinutes(nowWallTime()) - timeToMinutes(last.time)
+        );
+        return formatHM(minutes * MS_PER_MINUTE, t);
     }, [isCheckedIn, sortedSessions, t, now]);
 
     if (loading) return <LoadingState />;

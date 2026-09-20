@@ -9,9 +9,9 @@ export default withApi(
     async (req, res) => {
         const userId = req.query.userId as string;
 
-        const approvals = (await MonthlyApproval.find({ userId })
+        const approvals = await MonthlyApproval.find({ userId })
             .sort({ year: -1, month: -1 })
-            .lean()) as unknown as MonthlyApprovalRow[];
+            .lean<MonthlyApprovalRow[]>();
 
         res.status(200).json({
             success: true,

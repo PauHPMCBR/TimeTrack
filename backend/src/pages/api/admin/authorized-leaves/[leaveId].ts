@@ -12,7 +12,7 @@ import {
 import { recomputeWorkDayRecordsForRange } from '@/lib/work-day-records';
 
 const findLeave = (leaveId: string) =>
-    AuthorizedLeave.findById(leaveId).lean() as unknown as Promise<AuthorizedLeaveRow | null>;
+    AuthorizedLeave.findById(leaveId).lean<AuthorizedLeaveRow | null>();
 
 const putHandler = withApi(
     {

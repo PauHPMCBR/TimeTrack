@@ -37,7 +37,7 @@ function CalendarDayComponent({
                 <div
                     className={`text-xs ${isToday ? 'font-bold text-indigo-600' : 'text-zinc-500'}`}
                 >
-                    {date.getDate()}
+                    {Number(date.slice(8, 10))}
                 </div>
             </div>
 

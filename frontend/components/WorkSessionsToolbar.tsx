@@ -1,7 +1,6 @@
 'use client';
 
 import { useI18n } from '@/app/i18n';
-import { toLocalDateKey } from '@/lib/datetime';
 import StepperNav from '@/components/ui/StepperNav';
 import { sourceIconOf, statusDotClass } from '@/lib/workDayVisuals';
 import type { SourceKind } from '@/schemas/database';
@@ -27,8 +26,8 @@ const LEGEND_SOURCES: SourceKind[] = [
 interface WorkSessionsToolbarProps {
     period: Period;
     onPeriodChange: (period: Period) => void;
-    cursor: Date;
-    onCursorChange: (cursor: Date) => void;
+    cursor: string;
+    onCursorChange: (cursor: string) => void;
     onShift: (dir: -1 | 1) => void;
     anomalyOnly: boolean;
     onAnomalyOnlyChange: (value: boolean) => void;
@@ -79,11 +78,10 @@ export default function WorkSessionsToolbar({
                     utility classes). */}
                 <input
                     type="date"
-                    value={toLocalDateKey(cursor)}
+                    value={cursor}
                     onChange={(e) => {
                         if (!e.target.value) return;
-                        const d = new Date(e.target.value + 'T00:00:00');
-                        onCursorChange(d);
+                        onCursorChange(e.target.value);
                     }}
                     className="!w-auto rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                 />

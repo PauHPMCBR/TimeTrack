@@ -19,6 +19,7 @@ import {
     nonWorkingDaysOfWeek,
     resolveNonWorkingDays,
 } from 'shared/src/lib/vacation-days';
+import type { ElectiveVacationRow } from '@/lib/rows';
 
 export default withApi(
     { method: 'POST', body: ElectiveVacationRequestSchema },
@@ -70,14 +71,15 @@ export default withApi(
 
         // Balance: spent days of every live request this year (pending ones
         // included — they may still be approved).
-        const yearRequests = (await ElectiveVacation.find({
-            userId,
-            status: { $in: [VACATION_PENDING, VACATION_APPROVED] },
-            startDate: {
-                $gte: `${year}-01-01`,
-                $lte: `${year}-12-31`,
-            },
-        })) as unknown as Array<{ spentDays: number }>;
+        const yearRequests: Pick<ElectiveVacationRow, 'spentDays'>[] =
+            await ElectiveVacation.find({
+                userId,
+                status: { $in: [VACATION_PENDING, VACATION_APPROVED] },
+                startDate: {
+                    $gte: `${year}-01-01`,
+                    $lte: `${year}-12-31`,
+                },
+            });
         const usedDays = yearRequests.reduce(
             (sum, request) => sum + (request.spentDays ?? 0),
             0

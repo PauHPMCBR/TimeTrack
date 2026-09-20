@@ -1,12 +1,11 @@
 import { withApi } from '@/lib/api-handler';
-import { findActiveInRange } from '@/repositories/work-session-repository';
-import { dayRange } from '@/lib/date-range';
-import { dateKey } from '@/lib/date-key';
+import { findActiveDaySessions } from '@/repositories/work-day-sessions-repository';
 import {
     addDaysToKey,
     dateKeyFromParts,
     daysInMonth,
 } from 'shared/src/lib/day-key';
+import type { DateKey } from 'shared/src/lib/day-key';
 import {
     MonthlyWorkRecordResponse,
     YearMonthParamSchema,
@@ -15,7 +14,7 @@ import {
     computeDayHours,
     countCompletedSessions,
 } from 'shared/src/lib/work-hours';
-import { WorkSessionRow } from '@/lib/rows';
+import type { DaySessionRow } from '@/lib/rows';
 
 export default withApi(
     { method: 'GET', guard: 'selfOrAdmin', query: YearMonthParamSchema },
@@ -27,18 +26,16 @@ export default withApi(
         const month = parseInt(String(req.query.month));
 
         const firstKey = dateKeyFromParts(year, month, 1);
-        const nextMonthKey = addDaysToKey(firstKey, daysInMonth(year, month));
-        const startOfMonth = dayRange(firstKey).start;
-        const nextMonth = dayRange(nextMonthKey).start;
+        const lastKey = addDaysToKey(firstKey, daysInMonth(year, month) - 1);
 
-        const sessions = (await findActiveInRange(startOfMonth, nextMonth, {
+        const dayDocs = await findActiveDaySessions(firstKey, lastKey, {
             userId,
         })
-            .sort({ timestamp: 1 })
-            .lean()) as unknown as WorkSessionRow[];
+            .sort({ date: 1 })
+            .lean<{ date: DateKey; sessions: DaySessionRow[] }[]>();
 
         // Initialize arrays with 32 elements (index 0 unused, 1-31 for days)
-        const sessionsByDay: WorkSessionRow[][] = Array(32)
+        const sessionsByDay: DaySessionRow[][] = Array(32)
             .fill(null)
             .map(() => []);
         const dailyStats = Array(32)
@@ -52,39 +49,30 @@ export default withApi(
         let totalSessions = 0;
         const daysWithSessionsSet = new Set<number>();
 
-        sessions.forEach((session) => {
-            const dayOfMonth = Number(dateKey(session.timestamp).slice(8, 10));
-            sessionsByDay[dayOfMonth].push(session);
+        dayDocs.forEach((dayDoc) => {
+            const dayOfMonth = Number(dayDoc.date.slice(8, 10));
+            sessionsByDay[dayOfMonth] = dayDoc.sessions;
             daysWithSessionsSet.add(dayOfMonth);
-        });
 
-        for (let day = 1; day <= 31; day++) {
-            const daySessions = sessionsByDay[day];
-            if (daySessions.length === 0) continue;
-
-            // Sessions arrive globally sorted by timestamp, and grouping preserves
-            // that order per day, so no re-sort is needed here.
-
-            // An unmatched trailing check-in counts until end of day so forgotten
-            // check-outs don't undercount the day.
-            const endOfDay = dayRange(dateKeyFromParts(year, month, day)).end;
-            const dayHours = computeDayHours(daySessions, {
-                countOpenUntil: endOfDay,
+            // An unmatched trailing check-in counts until end of day so
+            // forgotten check-outs don't undercount the day.
+            const dayHours = computeDayHours(dayDoc.sessions, {
+                countOpenUntil: '24:00',
                 round: false,
             }).totalHours;
 
             // A "session" is a completed check-in/check-out pair; isolated
             // check-ins/outs (forgot check-out/in) are anomalies, not sessions.
-            const completedSessions = countCompletedSessions(daySessions);
+            const completedSessions = countCompletedSessions(dayDoc.sessions);
 
-            dailyStats[day] = {
+            dailyStats[dayOfMonth] = {
                 hoursWorked: Math.round(dayHours * 100) / 100,
                 sessions: completedSessions,
             };
 
             totalSessions += completedSessions;
             totalHoursWorked += dayHours;
-        }
+        });
 
         const response: MonthlyWorkRecordResponse = {
             userId,

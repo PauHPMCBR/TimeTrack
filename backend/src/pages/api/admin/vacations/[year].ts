@@ -15,18 +15,18 @@ export default withApi({ method: 'GET', guard: 'admin' }, async (_req, res) => {
         const activeUsers = await User.find(
             { deleted: { $ne: true } },
             '_id'
-        ).lean();
+        ).lean<{ _id: string }[]>();
         const activeUserIds = activeUsers.map((u) => u._id);
 
-        const [vacations, yearlyVacationDays] = (await Promise.all([
+        const [vacations, yearlyVacationDays] = await Promise.all([
             findOverlapping(`${year}-01-01`, `${year}-12-31`, {
                 // Intervals overlapping the requested year.
                 userId: { $in: activeUserIds },
             })
                 .sort({ startDate: 1 })
-                .lean(),
-            findGlobalTemplate(year).lean(),
-        ])) as unknown as [ElectiveVacationRow[], YearlyVacationRow | null];
+                .lean<ElectiveVacationRow[]>(),
+            findGlobalTemplate(year).lean<YearlyVacationRow | null>(),
+        ]);
 
         const response: YearlyVacationResponse = {
             year: year,

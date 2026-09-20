@@ -4,12 +4,12 @@ import {
     workedIntervalTone,
     workedIntervalVisuals,
 } from '@/lib/worked-intervals';
+import { formatDateKey } from '@/lib/datetime';
 import TimetableList from '@/components/autoTimetable/TimetableList';
-import { formatClockHM } from '@/lib/timezone';
 import { Clock } from 'lucide-react';
 
 interface CalendarTooltipProps {
-    date: Date;
+    date: string;
     vacationEvents: VacationEvent[];
     workEvent: WorkSessionEvent | null;
     position: { x: number; y: number };
@@ -53,7 +53,7 @@ export function CalendarTooltip({
         <>
             {/* Date Header */}
             <div className="font-semibold text-lg mb-3 text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-700 pb-2">
-                {date.toLocaleDateString(locale, {
+                {formatDateKey(date, locale, {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -136,8 +136,7 @@ export function CalendarTooltip({
                             </div>
                             <TimetableList
                                 timetable={workedIntervals(
-                                    workEvent.sessionsList,
-                                    locale
+                                    workEvent.sessionsList
                                 )}
                                 entryClassName={(entry) =>
                                     workedIntervalVisuals[
@@ -169,10 +168,7 @@ export function CalendarTooltip({
                                                 className="text-xs text-zinc-600 dark:text-zinc-300"
                                             >
                                                 <span className="font-medium tabular-nums">
-                                                    {formatClockHM(
-                                                        session.timestamp,
-                                                        locale
-                                                    )}
+                                                    {session.time}
                                                 </span>{' '}
                                                 <span className="italic">
                                                     {session.notes}

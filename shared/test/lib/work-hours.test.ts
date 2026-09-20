@@ -5,12 +5,14 @@ import {
     isCoherentSequence,
 } from '@/lib/work-hours';
 
+const hhmm = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
+
 const s = (
     type: 'check_in' | 'check_out',
     hour: number
-): { type: 'check_in' | 'check_out'; timestamp: Date } => ({
+): { type: 'check_in' | 'check_out'; time: string } => ({
     type,
-    timestamp: new Date(2024, 0, 15, hour, 0, 0),
+    time: hhmm(hour),
 });
 
 describe('countCompletedSessions', () => {

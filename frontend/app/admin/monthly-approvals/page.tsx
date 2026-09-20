@@ -11,6 +11,7 @@ import {
 } from '@/schemas/api';
 import { User } from '@/types';
 import { localeTag } from '@/lib/datetime';
+import { configuredTimezone } from '@/lib/timezone';
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges';
 import { useDirty } from '@/lib/useDirty';
 import { usePersistedState } from '@/lib/usePersistedState';
@@ -120,7 +121,8 @@ export default function AdminMonthlyApprovalsPage() {
         new Intl.DateTimeFormat(localeTag(lang), {
             month: 'long',
             year: 'numeric',
-        }).format(new Date(year, month - 1, 1));
+            timeZone: 'UTC',
+        }).format(new Date(Date.UTC(year, month - 1, 1)));
 
     const formatDate = (value?: string | Date | null) =>
         value
@@ -128,6 +130,7 @@ export default function AdminMonthlyApprovalsPage() {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
+                  timeZone: configuredTimezone(),
               })
             : '—';
 
@@ -198,6 +201,7 @@ export default function AdminMonthlyApprovalsPage() {
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: configuredTimezone(),
               })
             : '—';
 
@@ -363,7 +367,8 @@ export default function AdminMonthlyApprovalsPage() {
                                 <option key={m} value={m}>
                                     {new Intl.DateTimeFormat(localeTag(lang), {
                                         month: 'long',
-                                    }).format(new Date(2000, m - 1, 1))}
+                                        timeZone: 'UTC',
+                                    }).format(new Date(Date.UTC(2000, m - 1, 1)))}
                                 </option>
                             ))}
                         </select>

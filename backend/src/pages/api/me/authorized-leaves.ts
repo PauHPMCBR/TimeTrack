@@ -7,7 +7,7 @@ export default withApi({ method: 'GET' }, async (req, res) => {
     try {
         const yearParam = req.query.year as string | undefined;
         const year = yearParam ? Number(yearParam) : undefined;
-        const leaves = (await AuthorizedLeave.find({
+        const leaves = await AuthorizedLeave.find({
             userId: req.user!.userId,
             ...(year
                 ? {
@@ -17,7 +17,7 @@ export default withApi({ method: 'GET' }, async (req, res) => {
                 : {}),
         })
             .sort({ startDate: -1 })
-            .lean()) as unknown as AuthorizedLeaveRow[];
+            .lean<AuthorizedLeaveRow[]>();
 
         res.status(200).json({ success: true, data: { leaves } });
     } catch (error) {

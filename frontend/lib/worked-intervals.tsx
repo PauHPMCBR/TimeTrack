@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react';
 import { CHECK_IN } from 'shared/src/lib/constants';
-import { formatClockHM } from '@/lib/timezone';
-import type { TimetableEntry } from '@/lib/timetable';
+import type { TimeKey } from 'shared/src/lib/time-key';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 export const MISSING_TIME = '—';
 
-export interface WorkedInterval extends TimetableEntry {
+/** One end of a worked interval: a wall clock, or the missing-time marker. */
+export type WorkedIntervalEnd = TimeKey | typeof MISSING_TIME;
+
+export interface WorkedInterval {
+    checkIn: WorkedIntervalEnd;
+    checkOut: WorkedIntervalEnd;
     overtime: boolean;
     // One of the ends is missing (forgotten check-out/in, or a session
     // still in progress).
@@ -16,7 +20,7 @@ export interface WorkedInterval extends TimetableEntry {
 
 type WorkedSessionLike = {
     type: 'check_in' | 'check_out';
-    timestamp: Date | string;
+    time: TimeKey;
     overtime?: boolean;
 };
 
@@ -24,25 +28,20 @@ type WorkedSessionLike = {
 // of `computeDayHours` (shared/src/lib/work-hours.ts): an unmatched check-out
 // opens with a missing check-in, and a trailing open check-in stays unclosed.
 export function workedIntervals(
-    sessions: WorkedSessionLike[],
-    locale: string
+    sessions: WorkedSessionLike[]
 ): WorkedInterval[] {
-    const fmtTime = (ts: Date | string) => formatClockHM(ts, locale);
-    const sorted = [...sessions].sort(
-        (a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    const sorted = [...sessions].sort((a, b) => a.time.localeCompare(b.time));
 
     const raw: Array<{
-        checkIn: string;
-        checkOut: string;
+        checkIn: WorkedIntervalEnd;
+        checkOut: WorkedIntervalEnd;
         overtime: boolean;
         unclosed: boolean;
     }> = [];
-    let open: { checkIn: string; overtime: boolean } | null = null;
+    let open: { checkIn: TimeKey; overtime: boolean } | null = null;
 
     for (const s of sorted) {
-        const time = fmtTime(s.timestamp);
+        const time = s.time;
         if (s.type === CHECK_IN) {
             if (open) {
                 raw.push({

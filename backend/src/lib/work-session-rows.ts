@@ -19,14 +19,13 @@ import type {
 } from 'shared/src/schemas/database';
 import {
     UserRow,
-    WorkSessionRow,
+    DaySessionsRow,
     ElectiveVacationRow,
     YearlyVacationRow,
     AuthorizedLeaveRow,
     WorkDayRecordRow,
 } from '@/lib/rows';
-import { dateKeyInTz } from '@/lib/timezone';
-import type { WorkDaySourceRow } from '@/repositories/work-day-source-repository';
+import { nowWallClock } from '@/lib/timezone';
 
 /**
  * Expand a `period` + date/yeear/month selector into the calendar day keys
@@ -42,7 +41,7 @@ export function computeDaysForPeriod(    period: 'day' | 'week' | 'month' | 'yea
         const key: DateKey =
             date && isValidDateKey(date)
                 ? (date as DateKey)
-                : dateKeyInTz(new Date(date as string));
+                : nowWallClock().date;
         if (period === 'day') return [key];
         const diffToMonday = (dowFromDateKey(key) + 6) % 7;
         const monday = addDaysToKey(key, -diffToMonday);
@@ -67,8 +66,8 @@ export interface WorkSessionRowsContext {
     days: DateKey[];
     /** Users to report rows for (typically all, or a single one for personal view). */
     users: UserRow[];
-    /** All sessions within the period (active versions only). */
-    sessions: WorkSessionRow[];
+    /** Active day documents within the period. */
+    daySessions: DaySessionsRow[];
     /** Approved elective vacations within the period. */
     approvedVacations: ElectiveVacationRow[];
     /** Company-wide obligatory days for the relevant years. */
@@ -79,16 +78,6 @@ export interface WorkSessionRowsContext {
     defaultWeeklyExpectedHours: number[];
     toleranceMinutes: number;
     timetableToleranceMinutes: number;
-    /** Company IANA zone sessions are compared against (defaults to the configured one). */
-    timezone?: string;
-    /** Day-level sources keyed by `${userId}:${YYYY-MM-DD}`. */
-    daySources?: Map<string, WorkDaySourceRow>;
-}
-
-export function daySourceMap(
-    rows: WorkDaySourceRow[]
-): Map<string, WorkDaySourceRow> {
-    return new Map(rows.map((row) => [`${row.userId}:${row.date}`, row]));
 }
 
 export function workDayRecordMap(
@@ -134,7 +123,7 @@ export function buildWorkSessionRows(
     const {
         days,
         users,
-        sessions,
+        daySessions,
         approvedVacations,
         yearlyTemplates,
         authorizedLeaves,
@@ -142,19 +131,11 @@ export function buildWorkSessionRows(
         defaultWeeklyExpectedHours,
         toleranceMinutes,
         timetableToleranceMinutes,
-        timezone,
-        daySources,
     } = ctx;
 
-    const sessionsByUserDay = new Map<string, WorkSessionRow[]>();
-    for (const session of sessions) {
-        const key = `${session.userId}:${dateKeyInTz(
-            new Date(session.timestamp),
-            timezone
-        )}`;
-        const list = sessionsByUserDay.get(key) ?? [];
-        list.push(session);
-        sessionsByUserDay.set(key, list);
+    const dayDocByUserDay = new Map<string, DaySessionsRow>();
+    for (const dayDoc of daySessions) {
+        dayDocByUserDay.set(`${dayDoc.userId}:${dayDoc.date}`, dayDoc);
     }
 
     const sets = {
@@ -184,9 +165,10 @@ export function buildWorkSessionRows(
         const dow = dowFromDateKey(key);
 
         for (const user of users) {
-            const userSessions =
-                sessionsByUserDay.get(`${user._id}:${key}`) ?? [];
-            const record = records.get(`${user._id}:${key}`);
+            const userKey = `${user._id}:${key}`;
+            const dayDoc = dayDocByUserDay.get(userKey);
+            const userSessions = dayDoc?.sessions ?? [];
+            const record = records.get(userKey);
             const { totalHours, overtimeHours } = computeDayHours(userSessions);
 
             let status: WorkSessionRowStatus;
@@ -245,17 +227,11 @@ export function buildWorkSessionRows(
                 overtimeHours,
                 expectedHours,
                 ...(intervals.length > 0 ? { timetable: intervals } : {}),
-                ...(daySources?.has(`${user._id.toString()}:${key}`)
-                    ? {
-                          source: daySources.get(
-                              `${user._id.toString()}:${key}`
-                          )!.source,
-                      }
-                    : {}),
-                sessions: userSessions.map((s) => ({
-                    ...s,
-                    _id: s._id.toString(),
-                })),
+                ...(dayDoc ? { source: dayDoc.source } : {}),
+                ...(dayDoc?.editedBy ? { editedBy: dayDoc.editedBy } : {}),
+                ...(dayDoc?.editReason ? { editReason: dayDoc.editReason } : {}),
+                ...(dayDoc?.createdAt ? { createdAt: dayDoc.createdAt } : {}),
+                sessions: userSessions,
                 status,
                 dayClassification,
                 anomalies,

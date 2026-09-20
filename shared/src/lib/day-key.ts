@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TZDate } from '@date-fns/tz';
+import type { TimeKey } from './time-key';
 
 export const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -25,12 +26,17 @@ export function dateKeyField() {
         .refine(isValidDateKey, 'Invalid date');
 }
 
-export function dateKeyOfTodayRuntime(): DateKey {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}` as DateKey;
+export function dateKeyOfTodayRuntime(timeZone = 'Europe/Madrid'): DateKey {
+    return dateKeyInTz(Date.now(), timeZone);
+}
+
+/** Wall clock ("HH:MM") of a UTC instant in the given time-zone. */
+export function timeKeyInTz(utcMs: number | Date, timeZone?: string): TimeKey {
+    const ms = typeof utcMs === 'number' ? utcMs : utcMs.getTime();
+    const td = new TZDate(ms, timeZone);
+    const h = String(td.getHours()).padStart(2, '0');
+    const m = String(td.getMinutes()).padStart(2, '0');
+    return `${h}:${m}` as TimeKey;
 }
 
 export function dateKeyFromParts(y: number, m: number, d: number): DateKey {

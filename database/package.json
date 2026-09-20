@@ -8,6 +8,8 @@
     "migrate:vacation-intervals": "node migrations/004-migrate-vacation-intervals.cjs",
     "migrate:work-day-sources": "node migrations/005-migrate-work-day-sources.cjs",
     "migrate:user-schedule": "node migrations/006-migrate-user-schedule.cjs",
-    "migrate:vacation-day-keys": "node migrations/007-migrate-vacation-day-keys.cjs"
+    "migrate:vacation-day-keys": "node migrations/007-migrate-vacation-day-keys.cjs",
+    "migrate:work-session-date-time": "node migrations/008-migrate-work-session-date-time.cjs",
+    "migrate:work-day-sessions": "node migrations/009-migrate-work-day-sessions.cjs"
   }
 }

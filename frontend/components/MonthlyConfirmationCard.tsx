@@ -92,7 +92,8 @@ export default function MonthlyConfirmationCard({
         new Intl.DateTimeFormat(locale, {
             month: 'long',
             year: 'numeric',
-        }).format(new Date(year, month - 1, 1));
+            timeZone: 'UTC',
+        }).format(new Date(Date.UTC(year, month - 1, 1)));
 
     const handleCellClick = async (year: number, month: number) => {
         if (busyId) return;

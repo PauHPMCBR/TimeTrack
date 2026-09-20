@@ -10,6 +10,7 @@ import {
     computeDayHours,
     isWithinTolerance,
     DaySessionLike,
+    DayEndTime,
 } from './work-hours';
 import {
     computeTimetableAnomalies,
@@ -74,8 +75,7 @@ export function resolveDayExpectations(
 export function computeWorkDayAnomalies(
     sessions: DaySessionLike[],
     expectations: WorkDayExpectations,
-    timezone: string,
-    options: { countOpenUntil?: Date } = {}
+    options: { countOpenUntil?: DayEndTime } = {}
 ): WorkSessionAnomaly[] {
     if (expectations.classification !== 'workday') {
         return sessions.length > 0 ? ['work_on_non_working_day'] : [];
@@ -94,8 +94,7 @@ export function computeWorkDayAnomalies(
         for (const anomaly of computeTimetableAnomalies(
             sessions,
             expectations.timetableIntervals,
-            expectations.timetableToleranceMinutes,
-            timezone
+            expectations.timetableToleranceMinutes
         )) {
             anomalySet.add(anomaly);
         }

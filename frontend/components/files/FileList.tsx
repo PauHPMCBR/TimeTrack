@@ -3,6 +3,7 @@
 import { useI18n } from '@/app/i18n';
 import type { FileRow } from '@/schemas/api';
 import { localeTag } from '@/lib/datetime';
+import { configuredTimezone } from '@/lib/timezone';
 import {
     Download,
     File as FileIcon,
@@ -84,7 +85,8 @@ export default function FileList({
                             </div>
                             <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                                 {new Date(file.uploadedAt).toLocaleString(
-                                    localeTag(lang)
+                                    localeTag(lang),
+                                    { timeZone: configuredTimezone() }
                                 )}
                                 {' · '}
                                 {formatBytes(file.size)}

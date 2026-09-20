@@ -1,4 +1,5 @@
 import { User } from '@/models';
+import type { UserRow } from '@/lib/rows';
 
 export interface ResolvedUser {
     _id: string;
@@ -41,16 +42,12 @@ export async function resolveVacationNames<
 
     if (neededIds.size === 0) return vacations;
 
-    const users = (await User.find({
+    const users = await User.find({
         _id: { $in: Array.from(neededIds) },
         deleted: { $ne: true },
     })
         .select('name email emailEncrypted')
-        .lean()) as unknown as Array<{
-        _id: unknown;
-        name: string;
-        email: string;
-    }>;
+        .lean<(Pick<UserRow, 'name' | 'email'> & { _id: string })[]>();
 
     const byId: Record<string, ResolvedUser> = {};
     users.forEach((u) => {

@@ -28,7 +28,7 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/models', () => ({
     User: { syncIndexes },
-    WorkSession: { syncIndexes },
+    WorkDaySessions: { syncIndexes },
     ElectiveVacation: { syncIndexes },
     Group: { syncIndexes },
     YearlyVacationDays: { syncIndexes },

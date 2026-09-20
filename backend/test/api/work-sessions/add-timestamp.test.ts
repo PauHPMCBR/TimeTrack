@@ -32,54 +32,47 @@ vi.mock('@/lib/validation', () => ({
             next(),
 }));
 
-const { constructed } = vi.hoisted(() => ({
-    constructed: [] as any[],
+vi.mock('@/models', () => ({
+    WorkDaySessions: {
+        findOne: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({}),
+        updateOne: vi.fn().mockResolvedValue({}),
+    },
 }));
 
-vi.mock('@/models', () => {
-    class WorkSession {
-        static find = vi.fn().mockReturnValue({
-            sort: vi.fn().mockResolvedValue([]),
-        });
-        static countDocuments = vi.fn().mockResolvedValue(0);
-        static updateMany = vi.fn().mockResolvedValue({});
-        static updateOne = vi.fn().mockResolvedValue({});
-        constructor(doc: any) {
-            constructed.push(doc);
-        }
-        save = vi.fn().mockResolvedValue({
-            _id: 'session-123',
-            userId: 'user-123',
-            type: 'check_in',
-            timestamp: new Date(),
-            notes: null,
-        });
-    }
-    class User {
-        static updateOne = vi.fn().mockResolvedValue({});
-    }
-    class WorkDaySource {
-        static findOne = vi.fn().mockResolvedValue(null);
-        static updateOne = vi.fn().mockResolvedValue({});
-    }
-    return { WorkSession, User, WorkDaySource };
+import { WorkDaySessions } from '@/models';
+import addTimestampHandler from '@/pages/api/work-sessions/add-timestamp';
+import { dateKeyInTz, timeKeyInTz } from 'shared/src/lib/day-key';
+
+const PINNED_INSTANT = new Date('2024-06-10T10:00:00Z');
+const NOW_DATE = dateKeyInTz(PINNED_INSTANT, 'Europe/Madrid');
+const NOW_TIME = timeKeyInTz(PINNED_INSTANT, 'Europe/Madrid');
+
+const makeDayDoc = (
+    sessions: unknown[],
+    overrides: Record<string, unknown> = {}
+) => ({
+    _id: 'day-1',
+    version: 1,
+    source: 'userClick',
+    date: NOW_DATE,
+    sessions,
+    ...overrides,
 });
 
-import { WorkSession, WorkDaySource } from '@/models';
-import addTimestampHandler from '@/pages/api/work-sessions/add-timestamp';
-
 describe('POST /api/work-sessions/add-timestamp', () => {
-    let mockStaticFind: any;
+    let dateNowSpy: any;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        constructed.length = 0;
-        mockStaticFind = vi.spyOn(WorkSession, 'find').mockReturnValue({
-            sort: vi.fn().mockResolvedValue([]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(null);
+        dateNowSpy = vi
+            .spyOn(Date, 'now')
+            .mockReturnValue(PINNED_INSTANT.getTime());
     });
 
     afterEach(() => {
+        dateNowSpy.mockRestore();
         vi.resetModules();
     });
 
@@ -124,15 +117,9 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: new Date(),
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: NOW_TIME, overtime: false }])
+        );
 
         await addTimestampHandler(req, res);
 
@@ -154,10 +141,6 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([]),
-        } as any);
-
         await addTimestampHandler(req, res);
 
         expect(res.status).toHaveBeenCalledWith(400);
@@ -178,15 +161,9 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_out',
-                    timestamp: new Date(),
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_out', time: NOW_TIME, overtime: false }])
+        );
 
         await addTimestampHandler(req, res);
 
@@ -208,17 +185,41 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([]),
-        } as any);
-
         await addTimestampHandler(req, res);
+
+        expect(WorkDaySessions.findOne).toHaveBeenCalledWith(
+            {
+                userId: 'user-123',
+                date: NOW_DATE,
+                status: { $ne: 'replaced' },
+            },
+            undefined,
+            undefined
+        );
+
+        expect(WorkDaySessions.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                userId: 'user-123',
+                date: NOW_DATE,
+                sessions: [
+                    { type: 'check_in', time: NOW_TIME, overtime: false },
+                ],
+                source: 'userClick',
+                version: 1,
+                status: 'active',
+            })
+        );
 
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 data: expect.objectContaining({
                     message: 'CheckInRegistered',
+                    session: {
+                        type: 'check_in',
+                        time: NOW_TIME,
+                        overtime: false,
+                    },
                 }),
             })
         );
@@ -231,19 +232,10 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        const checkInTime = new Date();
-        checkInTime.setHours(8, 0, 0, 0);
-
         // The last session today is an open check-in, so a check-out is valid.
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: checkInTime,
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: '08:00', overtime: false }])
+        );
 
         await addTimestampHandler(req, res);
 
@@ -252,36 +244,43 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             expect.objectContaining({
                 data: expect.objectContaining({
                     message: 'CheckOutRegistered',
-                    hoursWorked: expect.any(Number),
+                    hoursWorked: 4,
+                    session: {
+                        type: 'check_out',
+                        time: NOW_TIME,
+                        overtime: false,
+                    },
                 }),
             })
         );
     });
 
-    it('should persist the overtime flag on the created session', async () => {
+    it('should persist the overtime flag on the appended session', async () => {
         const req = mockReq({
             method: 'POST',
             body: { type: 'check_out', notes: null, overtime: true },
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: new Date(),
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: NOW_TIME, overtime: false }])
+        );
 
         await addTimestampHandler(req, res);
 
-        expect(constructed).toHaveLength(1);
-        expect(constructed[0]).toMatchObject({
-            type: 'check_out',
-            overtime: true,
-        });
+        expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+            { _id: 'day-1' },
+            expect.objectContaining({
+                $push: {
+                    sessions: {
+                        type: 'check_out',
+                        time: NOW_TIME,
+                        notesEncrypted: '',
+                        overtime: true,
+                    },
+                },
+            })
+        );
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
@@ -292,17 +291,15 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([]),
-        } as any);
-
         await addTimestampHandler(req, res);
 
-        expect(constructed).toHaveLength(1);
-        expect(constructed[0]).toMatchObject({
-            type: 'check_in',
-            overtime: false,
-        });
+        expect(WorkDaySessions.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sessions: [
+                    { type: 'check_in', time: NOW_TIME, overtime: false },
+                ],
+            })
+        );
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
@@ -316,27 +313,20 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         // The check-in was punched with the overtime toggle on, but the
         // user unchecked it before leaving: the saved interval must not
         // end up overtime (interval overtime = either end flagged).
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: new Date(),
-                    overtime: true,
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: NOW_TIME, overtime: true }])
+        );
 
         await addTimestampHandler(req, res);
 
-        expect(WorkSession.updateOne).toHaveBeenCalledWith(
-            { _id: 'session-1' },
-            { $set: { overtime: false, updatedAt: expect.any(Date) } }
+        expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+            {
+                _id: 'day-1',
+                'sessions.time': NOW_TIME,
+                'sessions.type': 'check_in',
+            },
+            { $set: { 'sessions.$.overtime': false } }
         );
-        expect(constructed[0]).toMatchObject({
-            type: 'check_out',
-            overtime: false,
-        });
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
@@ -347,22 +337,19 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: new Date(),
-                    overtime: false,
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: NOW_TIME, overtime: false }])
+        );
 
         await addTimestampHandler(req, res);
 
-        expect(WorkSession.updateOne).toHaveBeenCalledWith(
-            { _id: 'session-1' },
-            { $set: { overtime: true, updatedAt: expect.any(Date) } }
+        expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+            {
+                _id: 'day-1',
+                'sessions.time': NOW_TIME,
+                'sessions.type': 'check_in',
+            },
+            { $set: { 'sessions.$.overtime': true } }
         );
         expect(res.status).toHaveBeenCalledWith(201);
     });
@@ -374,24 +361,18 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         });
         const res = mockRes();
 
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: new Date(),
-                    overtime: true,
-                },
-            ]),
-        } as any);
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: NOW_TIME, overtime: true }])
+        );
 
         await addTimestampHandler(req, res);
 
-        expect(WorkSession.updateOne).not.toHaveBeenCalled();
+        expect(WorkDaySessions.updateOne).toHaveBeenCalledTimes(1);
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
-    it('should join the day’s current version and record the actor', async () => {
+    it('should append to the day’s current version without creating a new one', async () => {
         const req = mockReq({
             method: 'POST',
             body: { type: 'check_out', notes: null },
@@ -399,49 +380,47 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         const res = mockRes();
 
         // The day was already superseded twice by admin corrections: its
-        // active documents are version 3, so a new punch joins version 3.
-        mockStaticFind.mockReturnValue({
-            sort: vi.fn().mockResolvedValue([
-                {
-                    _id: 'session-1',
-                    type: 'check_in',
-                    timestamp: new Date(),
-                    version: 3,
-                    status: 'active',
-                },
-            ]),
-        } as any);
+        // active document is version 3, so a new punch joins version 3.
+        (WorkDaySessions.findOne as any).mockResolvedValue(
+            makeDayDoc([{ type: 'check_in', time: NOW_TIME, overtime: false }], {
+                version: 3,
+                status: 'active',
+            })
+        );
 
         await addTimestampHandler(req, res);
 
-        expect(constructed).toHaveLength(1);
-        expect(constructed[0]).toMatchObject({
-            userId: 'user-123',
-            type: 'check_out',
-            version: 3,
-            status: 'active',
-        });
-        // The live punch sets the whole day's source.
-        expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-            { userId: 'user-123', date: expect.any(String) },
-            { $set: { source: 'userClick' } },
-            { upsert: true }
+        expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+            { _id: 'day-1' },
+            expect.objectContaining({
+                $set: expect.objectContaining({ source: 'userClick' }),
+                $push: {
+                    sessions: {
+                        type: 'check_out',
+                        time: NOW_TIME,
+                        notesEncrypted: '',
+                        overtime: false,
+                    },
+                },
+            })
         );
+        // The live punch appends to the current version; no new version.
+        expect(WorkDaySessions.create).not.toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
     it('should serialize concurrent requests for the same user', async () => {
-        let resolveFirst!: (v: any[]) => void;
-        const firstFindPromise = new Promise<any[]>((resolve) => {
+        let resolveFirst!: (v: unknown) => void;
+        const firstFindPromise = new Promise<unknown>((resolve) => {
             resolveFirst = resolve;
         });
         const findCalls: boolean[] = [];
-        mockStaticFind.mockImplementation(() => {
+        (WorkDaySessions.findOne as any).mockImplementation(() => {
             findCalls.push(true);
             if (findCalls.length === 1) {
-                return { sort: vi.fn().mockReturnValue(firstFindPromise) };
+                return firstFindPromise;
             }
-            return { sort: vi.fn().mockResolvedValue([]) };
+            return Promise.resolve(null);
         });
 
         const req1 = mockReq({ method: 'POST', body: { type: 'check_in' } });
@@ -460,7 +439,7 @@ describe('POST /api/work-sessions/add-timestamp', () => {
         // The second request must be blocked behind the lock, not yet querying.
         expect(findCalls.length).toBe(1);
 
-        resolveFirst!([]);
+        resolveFirst!(null);
         await Promise.all([p1, p2]);
 
         expect(res1.status).toHaveBeenCalledWith(201);
@@ -469,16 +448,18 @@ describe('POST /api/work-sessions/add-timestamp', () => {
     });
 
     describe('manual punch vs programmed automatic sessions', () => {
-        const past = (msAgo: number) => new Date(Date.now() - msAgo);
-        const future = (msAhead: number) => new Date(Date.now() + msAhead);
         const HOUR = 3_600_000;
+        const past = (msAgo: number) =>
+            timeKeyInTz(PINNED_INSTANT.getTime() - msAgo, 'Europe/Madrid');
+        const future = (msAhead: number) =>
+            timeKeyInTz(PINNED_INSTANT.getTime() + msAhead, 'Europe/Madrid');
 
         // The day's source is the self-applied auto timetable, so its
         // still-future sessions are "programmed" and punchable.
         beforeEach(() => {
-            (WorkDaySource.findOne as any).mockResolvedValue({
-                source: 'userAutomatic',
-            });
+            (WorkDaySessions.findOne as any).mockResolvedValue(
+                makeDayDoc([], { source: 'userAutomatic' })
+            );
         });
 
         it('should override the programmed auto check-in/out when checking in manually after auto-apply', async () => {
@@ -488,53 +469,49 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             });
             const res = mockRes();
 
-            // Auto timetable 09:00-17:00 applied earlier today: the check-out
+            // Auto timetable 10:00-18:00 applied earlier today: the check-out
             // is still in the future, so it must not block the real punch.
-            mockStaticFind.mockReturnValue({
-                sort: vi.fn().mockResolvedValue([
-                    {
-                        _id: 'auto-in',
-                        type: 'check_in',
-                        timestamp: past(2 * HOUR),
-                        source: 'userAutomatic',
-                        version: 2,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'auto-out',
-                        type: 'check_out',
-                        timestamp: future(6 * HOUR),
-                        source: 'userAutomatic',
-                        version: 2,
-                        status: 'active',
-                    },
-                ]),
-            } as any);
+            (WorkDaySessions.findOne as any).mockResolvedValue(
+                makeDayDoc(
+                    [
+                        {
+                            type: 'check_in',
+                            time: past(2 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: future(6 * HOUR),
+                            overtime: false,
+                        },
+                    ],
+                    { source: 'userAutomatic', version: 2 }
+                )
+            );
 
             await addTimestampHandler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(201);
-            expect(WorkSession.updateMany).toHaveBeenCalledTimes(1);
-            expect(WorkSession.updateMany).toHaveBeenCalledWith(
-                { _id: { $in: expect.arrayContaining(['auto-in', 'auto-out']) } },
-                {
+            // The old version is flagged replaced and the punch becomes the
+            // next version with only the effective sessions.
+            expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+                { _id: 'day-1' },
+                expect.objectContaining({
                     $set: expect.objectContaining({
                         status: 'replaced',
-                        replacedByVersion: 2,
+                        replacedByVersion: 3,
                     }),
-                }
+                })
             );
-            expect(constructed).toHaveLength(1);
-            expect(constructed[0]).toMatchObject({
-                type: 'check_in',
-                version: 2,
-                status: 'active',
-            });
-            // The manual punch overrides the auto-timetable day source.
-            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-                { userId: 'user-123', date: expect.any(String) },
-                { $set: { source: 'userClick' } },
-                { upsert: true }
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sessions: [
+                        { type: 'check_in', time: NOW_TIME, overtime: false },
+                    ],
+                    source: 'userClick',
+                    version: 3,
+                    status: 'active',
+                })
             );
         });
 
@@ -545,26 +522,23 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             });
             const res = mockRes();
 
-            mockStaticFind.mockReturnValue({
-                sort: vi.fn().mockResolvedValue([
-                    {
-                        _id: 'auto-in',
-                        type: 'check_in',
-                        timestamp: past(2 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'auto-out',
-                        type: 'check_out',
-                        timestamp: future(6 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                ]),
-            } as any);
+            (WorkDaySessions.findOne as any).mockResolvedValue(
+                makeDayDoc(
+                    [
+                        {
+                            type: 'check_in',
+                            time: past(2 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: future(6 * HOUR),
+                            overtime: false,
+                        },
+                    ],
+                    { source: 'userAutomatic', version: 1 }
+                )
+            );
 
             await addTimestampHandler(req, res);
 
@@ -573,13 +547,26 @@ describe('POST /api/work-sessions/add-timestamp', () => {
                 expect.objectContaining({
                     data: expect.objectContaining({
                         message: 'CheckOutRegistered',
-                        hoursWorked: expect.any(Number),
+                        hoursWorked: 2,
                     }),
                 })
             );
-            expect(WorkSession.updateMany).toHaveBeenCalledWith(
-                { _id: { $in: ['auto-out'] } },
-                expect.anything()
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sessions: [
+                        {
+                            type: 'check_in',
+                            time: past(2 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: NOW_TIME,
+                            overtime: false,
+                        },
+                    ],
+                    version: 2,
+                })
             );
         });
 
@@ -590,34 +577,28 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             });
             const res = mockRes();
 
-            mockStaticFind.mockReturnValue({
-                sort: vi.fn().mockResolvedValue([
-                    {
-                        _id: 'auto-in',
-                        type: 'check_in',
-                        timestamp: past(3 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'manual-in',
-                        type: 'check_in',
-                        timestamp: past(1 * HOUR),
-                        source: 'userClick',
-                        version: 1,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'auto-out',
-                        type: 'check_out',
-                        timestamp: future(6 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                ]),
-            } as any);
+            (WorkDaySessions.findOne as any).mockResolvedValue(
+                makeDayDoc(
+                    [
+                        {
+                            type: 'check_in',
+                            time: past(3 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_in',
+                            time: past(1 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: future(6 * HOUR),
+                            overtime: false,
+                        },
+                    ],
+                    { source: 'userAutomatic', version: 1 }
+                )
+            );
 
             await addTimestampHandler(req, res);
 
@@ -630,10 +611,14 @@ describe('POST /api/work-sessions/add-timestamp', () => {
                     reasons: ['AlreadyCheckedIn'],
                 },
             });
-            expect(WorkSession.updateMany).not.toHaveBeenCalled();
+            expect(WorkDaySessions.create).not.toHaveBeenCalled();
+            expect(WorkDaySessions.updateOne).not.toHaveBeenCalled();
         });
 
         it('should keep closed automatic intervals and replace the open one plus later programmed ones', async () => {
+            dateNowSpy.mockReturnValue(
+                new Date('2024-06-10T14:00:00Z').getTime()
+            );
             const req = mockReq({
                 method: 'POST',
                 body: { type: 'check_in', notes: null },
@@ -642,42 +627,17 @@ describe('POST /api/work-sessions/add-timestamp', () => {
 
             // Timetable 09:00-13:00 + 15:00-19:00, now ~16:00: the first
             // interval is closed, the second is open with a future check-out.
-            mockStaticFind.mockReturnValue({
-                sort: vi.fn().mockResolvedValue([
-                    {
-                        _id: 'in-09',
-                        type: 'check_in',
-                        timestamp: past(8 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'out-13',
-                        type: 'check_out',
-                        timestamp: past(4 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'in-15',
-                        type: 'check_in',
-                        timestamp: past(1 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'out-19',
-                        type: 'check_out',
-                        timestamp: future(2 * HOUR),
-                        source: 'userAutomatic',
-                        version: 1,
-                        status: 'active',
-                    },
-                ]),
-            } as any);
+            (WorkDaySessions.findOne as any).mockResolvedValue(
+                makeDayDoc(
+                    [
+                        { type: 'check_in', time: '09:00', overtime: false },
+                        { type: 'check_out', time: '13:00', overtime: false },
+                        { type: 'check_in', time: '15:00', overtime: false },
+                        { type: 'check_out', time: '19:00', overtime: false },
+                    ],
+                    { source: 'userAutomatic', version: 1 }
+                )
+            );
 
             await addTimestampHandler(req, res);
 
@@ -685,12 +645,36 @@ describe('POST /api/work-sessions/add-timestamp', () => {
             // The manual punch overrides the open auto check-in (15:00) and
             // the still-programmed 19:00 check-out; the closed 09-13 interval
             // stays untouched.
-            expect(WorkSession.updateMany).toHaveBeenCalledWith(
-                { _id: { $in: ['out-19', 'in-15'] } },
-                expect.anything()
+            expect(WorkDaySessions.updateOne).toHaveBeenCalledWith(
+                { _id: 'day-1' },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        status: 'replaced',
+                        replacedByVersion: 2,
+                    }),
+                })
             );
-            expect(constructed).toHaveLength(1);
-            expect(constructed[0]).toMatchObject({ type: 'check_in' });
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sessions: [
+                        {
+                            type: 'check_in',
+                            time: '09:00',
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: '13:00',
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_in',
+                            time: '16:00',
+                            overtime: false,
+                        },
+                    ],
+                })
+            );
         });
 
         it('overrides future sessions of a non-automatic day too (planned-ahead correction)', async () => {
@@ -702,46 +686,45 @@ describe('POST /api/work-sessions/add-timestamp', () => {
 
             // The day was admin-corrected with a planned future check-out;
             // a real punch must still override it.
-            (WorkDaySource.findOne as any).mockResolvedValue({
-                source: 'adminManual',
-            });
-            mockStaticFind.mockReturnValue({
-                sort: vi.fn().mockResolvedValue([
-                    {
-                        _id: 'manual-in',
-                        type: 'check_in',
-                        timestamp: past(2 * HOUR),
-                        source: 'adminManual',
-                        version: 3,
-                        status: 'active',
-                    },
-                    {
-                        _id: 'manual-out',
-                        type: 'check_out',
-                        timestamp: future(6 * HOUR),
-                        source: 'adminManual',
-                        version: 3,
-                        status: 'active',
-                    },
-                ]),
-            } as any);
+            (WorkDaySessions.findOne as any).mockResolvedValue(
+                makeDayDoc(
+                    [
+                        {
+                            type: 'check_in',
+                            time: past(2 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: future(6 * HOUR),
+                            overtime: false,
+                        },
+                    ],
+                    { source: 'adminManual', version: 3 }
+                )
+            );
 
             await addTimestampHandler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(201);
-            expect(WorkSession.updateMany).toHaveBeenCalledWith(
-                { _id: { $in: ['manual-out'] } },
-                expect.anything()
-            );
-            expect(constructed).toHaveLength(1);
-            expect(constructed[0]).toMatchObject({
-                type: 'check_out',
-                status: 'active',
-            });
-            expect(WorkDaySource.updateOne).toHaveBeenCalledWith(
-                { userId: 'user-123', date: expect.any(String) },
-                { $set: { source: 'userClick' } },
-                { upsert: true }
+            expect(WorkDaySessions.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sessions: [
+                        {
+                            type: 'check_in',
+                            time: past(2 * HOUR),
+                            overtime: false,
+                        },
+                        {
+                            type: 'check_out',
+                            time: NOW_TIME,
+                            overtime: false,
+                        },
+                    ],
+                    source: 'userClick',
+                    version: 4,
+                    status: 'active',
+                })
             );
         });
     });

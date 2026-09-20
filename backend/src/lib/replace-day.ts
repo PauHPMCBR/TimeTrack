@@ -1,12 +1,10 @@
-import { WorkSession } from '@/models';
-import { findActiveInRange } from '@/repositories/work-session-repository';
-import { upsertWorkDaySource } from '@/repositories/work-day-source-repository';
+import { WorkDaySessions } from '@/models';
+import { findActiveDay } from '@/repositories/work-day-sessions-repository';
 import { runInTransaction } from '@/lib/transaction';
 import { withUserLock } from '@/lib/user-lock';
 import { isMonthApproved } from '@/lib/monthly-approvals';
 import { recomputeWorkDayRecords } from '@/lib/work-day-records';
-import { isCoherentSequence } from 'shared/src/lib/work-hours';
-import { dayRange, dayTimestamp } from '@/lib/date-range';
+import { isCoherentSequence, timeToMinutes, type DaySessionLike } from 'shared/src/lib/work-hours';
 import { isValidDateKey, DateKey } from 'shared/src/lib/day-key';
 import {
     SOURCE_ADMIN_MANUAL,
@@ -17,6 +15,8 @@ import {
     SESSION_REASON_MANUAL_CORRECTION,
 } from 'shared/src/lib/constants';
 import type { WorkSessionType } from 'shared/src/schemas/database';
+import type { TimeKey } from 'shared/src/lib/time-key';
+import type { DaySessionsRow } from '@/lib/rows';
 
 export type ReplaceDayErrorCode =
     | 'MonthApprovedLocked'
@@ -26,12 +26,12 @@ export type ReplaceDayErrorCode =
 
 export interface ReplaceDayInput {
     userId: string;
-    /** Calendar day (company time-zone) the edited sessions belong to. */
+    /** Calendar day (company time-zone) being replaced. */
     date: DateKey;
     sessions: {
-        _id?: string;
         type: WorkSessionType;
-        time: string;
+        time: TimeKey;
+        notes?: string;
         overtime?: boolean;
     }[];
     /** Audit note persisted on the new version. */
@@ -43,13 +43,13 @@ export interface ReplaceDayInput {
 }
 
 export type ReplaceDayResult =
-    | { ok: true; workSessions: unknown[] }
+    | { ok: true; workDaySessions: DaySessionsRow }
     | { ok: false; code: ReplaceDayErrorCode; field: 'date' | 'time' | 'type' };
 
 /**
- * Replaces a day's sessions with an edited set, versioned and never deleting:
- * the current sessions are flagged 'replaced' and the edited set is stored as
- * the next version of that (user, day) sequence.
+ * Replaces a whole day with an edited session set, versioned and never
+ * deleting: the current day version is flagged 'replaced' and the edited set
+ * is stored as the next version of that (user, day) document.
  */
 export async function replaceDaySessions(
     input: ReplaceDayInput
@@ -72,29 +72,19 @@ export async function replaceDaySessions(
         return { ok: false, code: 'MonthApprovedLocked', field: 'date' };
     }
 
-    const { start: dayStart, end: dayEnd } = dayRange(date);
+    const parsed: (DaySessionLike & { notes?: string })[] = sessions.map(
+        (s) => ({
+            type: s.type,
+            time: s.time,
+            ...(s.notes !== undefined ? { notes: s.notes } : {}),
+            overtime: s.overtime === true,
+        })
+    );
 
-    const parsed = sessions.map((s) => ({
-        _id: s._id,
-        type: s.type,
-        timestamp: dayTimestamp(date, s.time),
-        overtime: s.overtime === true,
-    }));
-
-    for (const p of parsed) {
-        if (
-            isNaN(p.timestamp.getTime()) ||
-            p.timestamp < dayStart ||
-            p.timestamp >= dayEnd
-        ) {
-            return { ok: false, code: 'OutOfDay', field: 'time' };
-        }
-    }
-
-    parsed.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    parsed.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 
     for (let i = 1; i < parsed.length; i++) {
-        if (parsed[i].timestamp.getTime() <= parsed[i - 1].timestamp.getTime()) {
+        if (timeToMinutes(parsed[i].time) <= timeToMinutes(parsed[i - 1].time)) {
             return { ok: false, code: 'NotInOrder', field: 'time' };
         }
     }
@@ -111,30 +101,19 @@ export async function replaceDaySessions(
 
     // Serialized per user (same lock as the user-facing flows) so two
     // concurrent replacements can't compute the same next version.
-    const workSessions = await withUserLock(userId, () =>
+    const workDaySessions = await withUserLock(userId, () =>
         runInTransaction(async (session) => {
             const txOptions = session ? { session } : undefined;
-            const active = (await findActiveInRange(dayStart, dayEnd, {
-                userId,
-                endInclusive: true,
+            const active: Pick<
+                DaySessionsRow,
+                '_id' | 'version'
+            > | null = await findActiveDay(userId, date, {
                 session: session ?? undefined,
-            })) as unknown as {
-                _id: unknown;
-                version?: number;
-                notes?: string;
-                notesEncrypted?: string;
-            }[];
-            const notesByOriginalId = new Map(
-                active.map((s) => [
-                    String(s._id),
-                    { notes: s.notes, notesEncrypted: s.notesEncrypted },
-                ])
-            );
-            const nextVersion =
-                active.reduce((max, s) => Math.max(max, s.version ?? 1), 0) + 1;
-            if (active.length > 0) {
-                await WorkSession.updateMany(
-                    { _id: { $in: active.map((s) => s._id) } },
+            });
+            const nextVersion = (active?.version ?? 0) + 1;
+            if (active) {
+                await WorkDaySessions.updateOne(
+                    { _id: active._id },
                     {
                         $set: {
                             status: SESSION_REPLACED,
@@ -146,36 +125,28 @@ export async function replaceDaySessions(
                     txOptions
                 );
             }
-            const docs = parsed.map((p) => {
-                const carried =
-                    p._id !== undefined
-                        ? notesByOriginalId.get(p._id)
-                        : undefined;
-                return {
-                    userId,
-                    type: p.type,
-                    timestamp: p.timestamp,
-                    source,
-                    overtime: p.overtime,
-                    version: nextVersion,
-                    status: SESSION_ACTIVE,
-                    notes: carried?.notes,
-                    notesEncrypted: carried?.notesEncrypted,
-                    editReason: reason ?? defaultReason,
-                    // Actor attribution: who produced this version (F1).
-                    editedBy,
-                    createdAt: now,
-                };
-            });
-            return session
-                ? WorkSession.insertMany(docs, { session })
-                : WorkSession.insertMany(docs);
+            const [created] = await WorkDaySessions.create(
+                [
+                    {
+                        userId,
+                        date,
+                        sessions: parsed,
+                        source,
+                        version: nextVersion,
+                        status: SESSION_ACTIVE,
+                        editReason: reason ?? defaultReason,
+                        // Actor attribution: who produced this version (F1).
+                        editedBy,
+                        createdAt: now,
+                    },
+                ],
+                txOptions
+            );
+            return created;
         })
     );
 
-    await upsertWorkDaySource(userId, date, source);
-
     await recomputeWorkDayRecords(userId, [date]);
 
-    return { ok: true, workSessions };
+    return { ok: true, workDaySessions };
 }

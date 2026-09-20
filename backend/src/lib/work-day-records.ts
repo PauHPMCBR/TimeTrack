@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/mongodb';
+import type { z } from 'zod';
 import { AppSettings, User, YearlyVacationDays } from '@/models';
-import { findActiveInRange } from '@/repositories/work-session-repository';
+import { findActiveDaySessions } from '@/repositories/work-day-sessions-repository';
 import { findOverlapping } from '@/repositories/vacation-repository';
 import { findLeavesOverlapping } from '@/repositories/authorized-leave-repository';
 import {
@@ -9,9 +10,7 @@ import {
     type WorkDayRecordDoc,
 } from '@/repositories/work-day-record-repository';
 import { getAppSettings, invalidateAppSettingsCache } from '@/lib/settings';
-import { dateKeyInTz } from '@/lib/timezone';
-import { dayRange, dayTimestamp } from '@/lib/date-range';
-import { dateKey } from '@/lib/date-key';
+import { dateKey, timeKeyInTz } from '@/lib/date-key';
 import {
     computeWorkDayAnomalies,
     resolveDayExpectations,
@@ -23,17 +22,12 @@ import type {
     WorkDayCheckMode,
     WorkDayClassification,
     WorkSessionAnomaly,
+    AppSettingsSchema,
 } from 'shared/src/schemas/database';
 import type { DateKey } from 'shared/src/lib/day-key';
 import { addDaysToKey, dowFromDateKey } from 'shared/src/lib/day-key';
 import { VACATION_APPROVED } from 'shared/src/lib/constants';
-import { DEFAULT_TIMEZONE } from 'shared/src/lib/defaults';
-import type { WorkDayRecordRow } from '@/lib/rows';
-
-type Settings = Awaited<ReturnType<typeof getAppSettings>>;
-
-const timezoneOf = (settings: Settings): string =>
-    settings.timezone ?? DEFAULT_TIMEZONE;
+import type { UserRow, WorkDayRecordRow, YearlyVacationRow } from '@/lib/rows';
 
 const USER_PROJECTION =
     'scheduleMode timetable weeklyExpectedHours trackingStartDate';
@@ -45,13 +39,8 @@ const USER_PROJECTION =
 export async function lastClosedDayKey(now: Date = new Date()): Promise<DateKey> {
     const todayKey = dateKey(now);
     const settings = await getAppSettings();
-    const endOfDay = dayTimestamp(
-        todayKey,
-        `${String(settings.endOfDayHour).padStart(2, '0')}:00`
-    );
-    return now.getTime() >= endOfDay.getTime()
-        ? todayKey
-        : addDaysToKey(todayKey, -1);
+    const endOfDay = `${String(settings.endOfDayHour).padStart(2, '0')}:00`;
+    return timeKeyInTz(now) >= endOfDay ? todayKey : addDaysToKey(todayKey, -1);
 }
 
 interface NonWorkdaySets {
@@ -89,66 +78,58 @@ function expandKeys(fromKey: DateKey, toKey: DateKey): DateKey[] {
     return keys;
 }
 
-function bucketSessionsByDay(
-    sessions: (DaySessionLike & { timestamp: Date })[],
-    timezone: string
+function daySessionsByDay(
+    dayDocs: { date: DateKey; sessions: DaySessionLike[] }[]
 ): Map<DateKey, DaySessionLike[]> {
     const byDay = new Map<DateKey, DaySessionLike[]>();
-    for (const session of sessions) {
-        const key = dateKeyInTz(new Date(session.timestamp), timezone);
-        const list = byDay.get(key) ?? [];
-        list.push(session);
-        byDay.set(key, list);
+    for (const dayDoc of dayDocs) {
+        byDay.set(dayDoc.date, dayDoc.sessions);
     }
     return byDay;
+}
+
+async function findUserSchedule(
+    userId: string
+): Promise<
+    Pick<UserRow, 'scheduleMode' | 'timetable' | 'weeklyExpectedHours'> | null
+> {
+    return User.findById(userId, USER_PROJECTION);
 }
 
 async function loadRangeData(
     userId: string,
     fromKey: DateKey,
-    toKey: DateKey,
-    settings: Settings
+    toKey: DateKey
 ) {
-    const { start } = dayRange(fromKey);
-    const { end } = dayRange(addDaysToKey(toKey, 1));
-
     const [user, sessions, approvedVacations, templates, leaves, existing] =
         await Promise.all([
-            User.findById(userId, USER_PROJECTION) as Promise<
-                Record<string, unknown> | null
-            >,
-            findActiveInRange(start, end, { userId })
-                .sort({ timestamp: 1 })
-                .lean() as unknown as Promise<
-                (DaySessionLike & { timestamp: Date })[]
-            >,
+            findUserSchedule(userId),
+            findActiveDaySessions(fromKey, toKey, { userId })
+                .sort({ date: 1 })
+                .lean<{ date: DateKey; sessions: DaySessionLike[] }[]>(),
             findOverlapping(fromKey, toKey, {
                 userId,
                 statuses: VACATION_APPROVED,
-            }).lean() as unknown as Promise<
-                { startDate: DateKey; endDate: DateKey }[]
-            >,
+            }).lean<{ startDate: DateKey; endDate: DateKey }[]>(),
             YearlyVacationDays.find({
                 userId: { $exists: false },
                 year: {
                     $gte: Number(fromKey.slice(0, 4)),
                     $lte: Number(toKey.slice(0, 4)),
                 },
-            }).lean() as unknown as Promise<{ obligatoryDays?: DateKey[] }[]>,
+            }).lean<Pick<YearlyVacationRow, 'obligatoryDays'>[]>(),
             findLeavesOverlapping(fromKey, toKey, {
                 userId,
-            }).lean() as unknown as Promise<
-                { startDate: DateKey; endDate: DateKey }[]
-            >,
-            findUserWorkDayRecords(userId, fromKey, toKey).lean() as unknown as Promise<
+            }).lean<{ startDate: DateKey; endDate: DateKey }[]>(),
+            findUserWorkDayRecords(userId, fromKey, toKey).lean<
                 WorkDayRecordRow[]
-            >,
+            >(),
         ]);
     if (!user) return null;
 
     return {
         user,
-        sessionsByDay: bucketSessionsByDay(sessions, timezoneOf(settings)),
+        sessionsByDay: daySessionsByDay(sessions),
         sets: expandSets(approvedVacations, templates, leaves),
         existing: new Map(existing.map((r) => [r.date, r])),
     };
@@ -182,14 +163,12 @@ function dayDoc(
     userId: string,
     key: DateKey,
     expectations: WorkDayExpectations,
-    sessions: DaySessionLike[],
-    settings: Settings
+    sessions: DaySessionLike[]
 ): WorkDayRecordDoc {
     const anomalies: WorkSessionAnomaly[] = computeWorkDayAnomalies(
         sessions,
         expectations,
-        timezoneOf(settings),
-        { countOpenUntil: dayRange(key).end }
+        { countOpenUntil: '24:00' }
     );
     return {
         userId,
@@ -242,8 +221,7 @@ async function writeWorkDayRecords(
     const data = await loadRangeData(
         userId,
         writable[0],
-        writable[writable.length - 1],
-        settings
+        writable[writable.length - 1]
     );
     if (!data) return 0;
 
@@ -266,7 +244,7 @@ async function writeWorkDayRecords(
             };
         } else if (options.overrides) {
             const base = resolveDayExpectations(
-                data.user as Parameters<typeof resolveDayExpectations>[0],
+                data.user,
                 settings,
                 dowFromDateKey(key)
             );
@@ -287,7 +265,7 @@ async function writeWorkDayRecords(
         } else {
             expectations = classificationFor(
                 resolveDayExpectations(
-                    data.user as Parameters<typeof resolveDayExpectations>[0],
+                    data.user,
                     settings,
                     dowFromDateKey(key)
                 ),
@@ -301,8 +279,7 @@ async function writeWorkDayRecords(
                 userId,
                 key,
                 expectations,
-                data.sessionsByDay.get(key) ?? [],
-                settings
+                data.sessionsByDay.get(key) ?? []
             ),
             ...(adminFrozen
                 ? {
@@ -365,14 +342,14 @@ export async function ensureWorkDayRecordsForDay(todayKey: DateKey): Promise<num
 
 async function ensureAllUserRecords(toKey: DateKey): Promise<number> {
     await dbConnect();
-    const eligible = (await User.find(
+    const eligible = await User.find(
         {
             registered: true,
             deleted: { $ne: true },
             checkInRequired: { $ne: false },
         },
         '_id trackingStartDate'
-    ).lean()) as unknown as { _id: string; trackingStartDate?: DateKey }[];
+    ).lean<(Pick<UserRow, 'trackingStartDate'> & { _id: string })[]>();
 
     let created = 0;
     for (const user of eligible) {
@@ -392,10 +369,12 @@ async function ensureAllUserRecords(toKey: DateKey): Promise<number> {
  */
 export async function backfillAllWorkDayRecords(): Promise<number> {
     await dbConnect();
-    const flagDoc = (await AppSettings.findOne(
+    const flagDoc = await AppSettings.findOne(
         {},
         'dayRecordBackfillDone'
-    ).lean()) as unknown as { dayRecordBackfillDone?: boolean } | null;
+    ).lean<
+        Pick<z.infer<typeof AppSettingsSchema>, 'dayRecordBackfillDone'> | null
+    >();
     if (flagDoc?.dayRecordBackfillDone) return 0;
 
     const created = await ensureAllUserRecords(await lastClosedDayKey());
@@ -417,12 +396,9 @@ export async function backfillUserWorkDayRecordsFromTrackingStart(
     userId: string
 ): Promise<number> {
     await dbConnect();
-    const user = (await User.findById(
-        userId,
-        USER_PROJECTION
-    ).lean()) as unknown as
-        | ({ _id: unknown; trackingStartDate?: DateKey } & Record<string, unknown>)
-        | null;
+    const user = await User.findById(userId, USER_PROJECTION).lean<
+        (Pick<UserRow, 'trackingStartDate'> & { _id: string }) | null
+    >();
     if (!user) return 0;
     const toKey = await lastClosedDayKey();
     const from = user.trackingStartDate ?? toKey;

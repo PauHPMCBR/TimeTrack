@@ -4,6 +4,7 @@ import { responseErrorEntryNotFound } from '@/lib/response-error-generator';
 import { UserIdParamSchema } from 'shared/src/schemas/api';
 import { toPublicUser } from '@/lib/sanitize';
 import { notDeleted } from '@/repositories/user-repository';
+import type { UserRow } from '@/lib/rows';
 
 export default withApi(
     { method: 'GET', guard: 'sameGroupOrAdmin', query: UserIdParamSchema },
@@ -13,7 +14,7 @@ export default withApi(
             ...notDeleted,
         })
             .populate('groups', 'name description')
-            .lean();
+            .lean<UserRow>();
 
         if (!userDoc) {
             return responseErrorEntryNotFound(res, 'User');
@@ -22,7 +23,7 @@ export default withApi(
         res.status(200).json({
             success: true,
             data: {
-                user: toPublicUser(userDoc as unknown as Record<string, unknown>),
+                user: toPublicUser(userDoc),
             },
         });
     }

@@ -3,7 +3,7 @@ import { withApi } from '@/lib/api-handler';
 import { responseErrorPost } from '@/lib/response-error-generator';
 import {
     User,
-    WorkSession,
+    WorkDaySessions,
     ElectiveVacation,
     Group,
     YearlyVacationDays,
@@ -30,7 +30,7 @@ const syncHandler = async (
         const results: Record<string, unknown> = {};
         for (const [name, model] of Object.entries({
             User,
-            WorkSession,
+            WorkDaySessions,
             ElectiveVacation,
             Group,
             YearlyVacationDays,

@@ -12,12 +12,7 @@ const entry = (checkIn: string, checkOut: string) => ({ checkIn, checkOut });
 
 const s = (type: 'check_in' | 'check_out', hour: number, minute = 0) => ({
     type,
-    timestamp: new Date(2024, 0, 15, hour, minute, 0),
-});
-
-const s2 = (type: 'check_in' | 'check_out', timestamp: Date) => ({
-    type,
-    timestamp,
+    time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
 });
 
 describe('dayTimetable', () => {
@@ -135,25 +130,14 @@ describe('computeTimetableAnomalies', () => {
         expect(computeTimetableAnomalies([s('check_in', 9)], [], 10)).toEqual([]);
     });
 
-    it('resolves punch clock times in the given zone, not the runtime zone', () => {
-        const utcIn = new Date('2024-01-15T08:00:00Z');
-        const utcOut = new Date('2024-01-15T16:00:00Z');
+    it('sorts sessions by time before pairing', () => {
         expect(
             computeTimetableAnomalies(
-                [s2('check_in', utcIn), s2('check_out', utcOut)],
+                [s('check_out', 17), s('check_in', 9)],
                 [entry('09:00', '17:00')],
-                10,
-                'Europe/Madrid'
+                10
             )
         ).toEqual([]);
-        expect(
-            computeTimetableAnomalies(
-                [s2('check_in', utcIn), s2('check_out', utcOut)],
-                [entry('09:00', '17:00')],
-                10,
-                'UTC'
-            )
-        ).toEqual(['timetable_check_in_early', 'timetable_check_out_early']);
     });
 });
 

@@ -14,17 +14,29 @@ import {
     dateKeyField,
     dateKeyOfTodayRuntime,
 } from '../lib/day-key';
+import { timeKeyField } from '../lib/time-key';
+
+const timestampsShape = {
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+};
+
+const notesShape = {
+    notes: z.string().max(1000).optional(),
+    notesEncrypted: z.string().default('').optional(),
+};
+
+const editReasonShape = {
+    editReason: z.string().optional(),
+    editReasonEncrypted: z.string().default('').optional(),
+};
 
 // Automatic timetable: a list of check-in/check-out intervals (clock times
 // "HH:MM"). A day can have more than one interval (e.g. split shifts). Every
 // user has one from creation; DEFAULT_AUTO_TIMETABLE is applied on creation.
 export const AutoScheduleEntrySchema = z.object({
-    checkIn: z
-        .string()
-        .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Invalid time, expected HH:MM'),
-    checkOut: z
-        .string()
-        .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Invalid time, expected HH:MM'),
+    checkIn: timeKeyField(),
+    checkOut: timeKeyField(),
 });
 export type AutoScheduleEntry = z.infer<typeof AutoScheduleEntrySchema>;
 
@@ -109,19 +121,16 @@ export const UserSchema = z.object({
         .array(AutoScheduleEntrySchema)
         .default(DEFAULT_AUTO_TIMETABLE),
     notifyNewFile: z.boolean().default(true),
-    // Employee preference for inconsistency-reminder emails, only effective
-    // when the company mode is 'user_choice'.
+    // Only effective when the company mode is 'user_choice'.
     notifyInconsistency: z.boolean().default(true),
-    // Date key (YYYY-MM-DD, local) of the last inconsistency-reminder email.
-    // Empty string = never reminded yet.
-    lastInconsistencyReminder: z.string().default('').optional(),
+    // Date key (YYYY-MM-DD, company zone) of the last inconsistency-reminder email.
+    lastInconsistencyReminder: dateKeyField().optional(),
     checkInRequired: z.boolean().default(true),
     trackingStartDate: dateKeyField().default(() => dateKeyOfTodayRuntime()),
     // When the worker acknowledged the privacy notice in-app (RGPD arts.
     // 13-14). Absent = not acknowledged yet.
     privacyNoticeAcknowledgedAt: z.date().optional(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 // Company-wide configuration. Stored as a single document (no _id filter).
@@ -171,16 +180,14 @@ export const AppSettingsSchema = z.object({
     // establishing the time-registration system (art. 34.9 LT obligation).
     workerConsultationAcknowledged: z.boolean().default(false),
     dayRecordBackfillDone: z.boolean().default(false),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const GroupSchema = z.object({
-    name: z.string().min(1, 'Group name is required'),
+    name: z.string().min(1, 'Group name is required').max(100),
     description: z.string().max(500).optional(),
     members: z.array(z.string()).default([]),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const WorkSessionTypeSchema = z.enum(['check_in', 'check_out']);
@@ -198,19 +205,11 @@ export const SourceKindSchema = z.enum([
     'adminManual',
 ]);
 export type SourceKind = z.infer<typeof SourceKindSchema>;
-// Day versioning: replacing a day's sessions never deletes the old ones — they
-// are flagged as 'replaced' and kept for audit (registro de jornada requires a
-// non-manipulable, traceable record; CT 101/2019).
+// Day versioning: replacing a day's sessions never deletes the old ones — the
+// whole day version is flagged as 'replaced' and kept for audit (registro de
+// jornada requires a non-manipulable, traceable record; CT 101/2019).
 export const WorkSessionStatusSchema = z.enum(['active', 'replaced']);
 export type WorkSessionStatus = z.infer<typeof WorkSessionStatusSchema>;
-// Per-(user, day) record. Days are derived from sessions, so this document
-// only carries day-level metadata; `date` is the local "YYYY-MM-DD" key.
-export const WorkDaySourceSchema = z.object({
-    userId: z.string(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
-    source: SourceKindSchema.default('userClick'),
-});
-export type WorkDaySource = z.infer<typeof WorkDaySourceSchema>;
 export const WorkSessionReasonSchema = z.object({
     type: WorkSessionTypeSchema,
     reasonId: z.string(),
@@ -218,29 +217,28 @@ export const WorkSessionReasonSchema = z.object({
     spanishText: z.string(),
     catalanText: z.string(),
 });
-export const WorkSessionSchema = z.object({
-    userId: z.string(),
+
+export const DaySessionSchema = z.object({
     type: WorkSessionTypeSchema,
-    timestamp: z.date().default(() => new Date()),
-    // Decrypted view of notesEncrypted, hydrated by the backend read hooks.
-    notes: z.string().optional(),
-    notesEncrypted: z.string().default('').optional(),
-    // Why this version was produced by a manual day edit (admin correction or
-    // worker self-edit). Decrypted view of editReasonEncrypted, hydrated by
-    // the backend read hooks. Absent on punches and auto-timetable sessions.
-    editReason: z.string().optional(),
-    editReasonEncrypted: z.string().default('').optional(),
+    time: timeKeyField(),
+    ...notesShape,
     overtime: z.boolean().default(false),
-    // Version of the (user, day) sequence this document belongs to. Documents
-    // created before versioning have no version field: treat them as v1.
+});
+export type DaySession = z.infer<typeof DaySessionSchema>;
+
+export const WorkDaySessionsSchema = z.object({
+    userId: z.string(),
+    date: dateKeyField(),
+    sessions: z.array(DaySessionSchema),
+    source: SourceKindSchema.default('userClick'),
     version: z.number().int().min(1).default(1),
     status: WorkSessionStatusSchema.default('active'),
     editedBy: z.string().default('').optional(),
+    ...editReasonShape,
     // Set on superseded documents: which version replaced them, and when.
     replacedByVersion: z.number().int().min(1).optional(),
     replacedAt: z.date().optional(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const VacationStatusSchema = z.enum([
@@ -270,15 +268,13 @@ export const ElectiveVacationSchema = DateKeyIntervalSchema.extend({
     approvedBy: z.string().optional(),
     approvedAt: z.date().optional(),
     notesEncrypted: z.string().default('').optional(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const AuthorizedLeaveSchema = DateKeyIntervalSchema.extend({
     userId: z.string(),
     createdBy: z.string().optional(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 export type AuthorizedLeave = z.infer<typeof AuthorizedLeaveSchema>;
 
@@ -287,8 +283,7 @@ export const YearlyVacationDaysSchema = z.object({
     year: z.number(),
     obligatoryDays: z.array(dateKeyField()),
     electiveDaysTotalCount: z.number().gte(0),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const WorkSessionAnomalySchema = z.enum([
@@ -334,11 +329,9 @@ export const WorkDayRecordSchema = z.object({
     anomalies: z.array(WorkSessionAnomalySchema),
     source: WorkDayRecordSourceSchema,
     editedBy: z.string().optional(),
-    editReason: z.string().optional(),
-    editReasonEncrypted: z.string().default('').optional(),
+    ...editReasonShape,
     computedAt: z.date(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 export type WorkDayRecord = z.infer<typeof WorkDayRecordSchema>;
 
@@ -361,8 +354,7 @@ export const MonthlyApprovalSchema = z.object({
     approvedAt: z.date().optional(),
     // Set once the (single) X-days reminder has been sent.
     reminderSentAt: z.date().optional(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const MonthlyApprovalEventActionSchema = z.enum([
@@ -381,8 +373,7 @@ export const MonthlyApprovalEventSchema = z.object({
     // Actor: the admin for opened/revoked, the worker themself for confirmed.
     actorId: z.string(),
     timestamp: z.date().default(() => new Date()),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 // Append-only security/audit log (RGPD art. 32 accountability + LISOS
@@ -419,8 +410,7 @@ export const AuditEventSchema = z.object({
     // schema storage-friendly; readers parse it on demand.
     metadata: z.string().default('').optional(),
     timestamp: z.date().default(() => new Date()),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });
 
 export const UserFileSchema = z.object({
@@ -432,6 +422,5 @@ export const UserFileSchema = z.object({
     size: z.number().int().gte(0),
     uploadedBy: z.string(),
     uploadedAt: z.date().default(() => new Date()),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    ...timestampsShape,
 });

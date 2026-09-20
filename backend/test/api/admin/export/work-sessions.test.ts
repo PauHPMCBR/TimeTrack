@@ -39,10 +39,7 @@ vi.mock('@/models', () => ({
     User: {
         find: vi.fn(),
     },
-    WorkSession: {
-        find: vi.fn(),
-    },
-    WorkDaySource: {
+    WorkDaySessions: {
         find: vi.fn(),
     },
     MonthlyApproval: {
@@ -53,16 +50,8 @@ vi.mock('@/models', () => ({
     },
 }));
 
-import {
-    User,
-    WorkSession,
-    WorkDaySource,
-    MonthlyApproval,
-    AuditEvent,
-} from '@/models';
+import { User, WorkDaySessions, MonthlyApproval, AuditEvent } from '@/models';
 import exportHandler from '@/pages/api/admin/export/work-sessions';
-import { dayRange } from '@/lib/date-range';
-import type { DateKey } from 'shared/src/lib/day-key';
 
 const mockExportRes = () => {
     const res: any = {
@@ -101,7 +90,7 @@ describe('GET /api/admin/export/work-sessions', () => {
         });
     });
 
-    it('should return CSV with sessions sorted by timestamp', async () => {
+    it('should return CSV with sessions sorted by date and time', async () => {
         const mockUsers = [
             {
                 _id: 'user-1',
@@ -116,21 +105,29 @@ describe('GET /api/admin/export/work-sessions', () => {
                 dni: '22222222B',
             },
         ];
-        const mockSessions = [
+        const mockDaySessions = [
             {
-                _id: 's2',
-                userId: 'user-2',
-                type: 'check_in',
-                timestamp: new Date('2024-01-15T08:00:00Z'),
-                source: 'userClick',
-                notes: 'note',
+                _id: 'day-1',
+                userId: 'user-1',
+                date: '2024-01-14',
+                source: 'adminManual',
+                sessions: [
+                    { type: 'check_out', time: '17:00', overtime: false },
+                ],
             },
             {
-                _id: 's1',
-                userId: 'user-1',
-                type: 'check_out',
-                timestamp: new Date('2024-01-14T17:00:00Z'),
-                source: 'adminManual',
+                _id: 'day-2',
+                userId: 'user-2',
+                date: '2024-01-15',
+                source: 'userClick',
+                sessions: [
+                    {
+                        type: 'check_in',
+                        time: '08:00',
+                        notes: 'note',
+                        overtime: false,
+                    },
+                ],
             },
         ];
         const mockApprovals = [
@@ -144,44 +141,15 @@ describe('GET /api/admin/export/work-sessions', () => {
         vi.mocked(User.find).mockReturnValue({
             lean: vi.fn().mockResolvedValue(mockUsers),
         } as any);
-        vi.mocked(WorkSession.find).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                sort: vi.fn().mockReturnValue({
-                    lean: vi
-                        .fn()
-                        .mockResolvedValue(
-                            [...mockSessions].sort(
-                                (a, b) =>
-                                    new Date(a.timestamp).getTime() -
-                                    new Date(b.timestamp).getTime()
-                            )
-                        ),
-                }),
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
+            sort: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue(mockDaySessions),
             }),
         } as any);
         vi.mocked(MonthlyApproval.find).mockReturnValue({
             select: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue(mockApprovals),
             }),
-        } as any);
-        // Day-level sources: the CSV Source column now comes from them.
-        vi.mocked(WorkDaySource.find).mockReturnValue({
-            lean: vi
-                .fn()
-                .mockResolvedValue([
-                    {
-                        _id: 'd1',
-                        userId: 'user-1',
-                        date: '2024-01-14',
-                        source: 'adminManual',
-                    },
-                    {
-                        _id: 'd2',
-                        userId: 'user-2',
-                        date: '2024-01-15',
-                        source: 'userClick',
-                    },
-                ]),
         } as any);
 
         const req = mockReq({
@@ -192,7 +160,7 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         await exportHandler(req, res);
 
-        expect(WorkSession.find).toHaveBeenCalledWith({
+        expect(WorkDaySessions.find).toHaveBeenCalledWith({
             userId: { $in: ['user-1', 'user-2'] },
             status: { $ne: 'replaced' },
         });
@@ -208,13 +176,13 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         const csv = res.send.mock.calls[0][0] as string;
         expect(csv).toContain(
-            'Name,DNI,Email,Timestamp,Type,Source,Notes,Overtime,Confirmed'
+            'Name,DNI,Email,Date,Time,Type,Source,Notes,Overtime,Confirmed'
         );
         expect(csv).toContain(
-            'Alice,11111111A,alice@example.com,2024-01-14T17:00:00.000Z,check_out,adminManual,,No,Yes'
+            'Alice,11111111A,alice@example.com,2024-01-14,17:00,check_out,adminManual,,No,Yes'
         );
         expect(csv).toContain(
-            'Bob,22222222B,bob@example.com,2024-01-15T08:00:00.000Z,check_in,userClick,note,No,No'
+            'Bob,22222222B,bob@example.com,2024-01-15,08:00,check_in,userClick,note,No,No'
         );
         expect(csv).toContain('note');
         expect(csv.indexOf('2024-01-14')).toBeLessThan(
@@ -236,11 +204,9 @@ describe('GET /api/admin/export/work-sessions', () => {
         vi.mocked(User.find).mockReturnValue({
             lean: vi.fn().mockResolvedValue([]),
         } as any);
-        vi.mocked(WorkSession.find).mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                sort: vi.fn().mockReturnValue({
-                    lean: vi.fn().mockResolvedValue([]),
-                }),
+        vi.mocked(WorkDaySessions.find).mockReturnValue({
+            sort: vi.fn().mockReturnValue({
+                lean: vi.fn().mockResolvedValue([]),
             }),
         } as any);
         vi.mocked(MonthlyApproval.find).mockReturnValue({
@@ -257,12 +223,9 @@ describe('GET /api/admin/export/work-sessions', () => {
 
         await exportHandler(req, res);
 
-        expect(WorkSession.find).toHaveBeenCalledWith({
+        expect(WorkDaySessions.find).toHaveBeenCalledWith({
             userId: { $in: ['user-1'] },
-            timestamp: {
-                $gte: dayRange('2024-01-01' as DateKey).start,
-                $lt: dayRange('2024-01-31' as DateKey).end,
-            },
+            date: { $gte: '2024-01-01', $lte: '2024-01-31' },
             status: { $ne: 'replaced' },
         });
     });

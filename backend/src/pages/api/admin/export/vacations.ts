@@ -5,6 +5,7 @@ import { findOverlapping } from '@/repositories/vacation-repository';
 import { responseErrorGet } from '@/lib/response-error-generator';
 import { notDeleted } from '@/repositories/user-repository';
 import { AdminExportVacationsQuerySchema } from 'shared/src/schemas/api';
+import type { ElectiveVacationRow, UserRow } from '@/lib/rows';
 
 
 export default withApi(
@@ -19,16 +20,19 @@ export default withApi(
         const userIdsParam = _req.query.userIds as string | undefined;
         const userIds = userIdsParam?.split(',').filter(Boolean);
 
-        const [vacations, users, allActiveUsers] = (await Promise.all([
+        const [vacations, users, allActiveUsers] = await Promise.all([
             findOverlapping(
                 yearStart,
                 yearEnd,
                 userIds ? { userId: { $in: userIds } } : {}
             )
                 .sort({ startDate: 1 })
-                .lean(),
+                .lean<ElectiveVacationRow[]>(),
             userIds
-                ? User.find({ _id: { $in: userIds } }, 'name email emailEncrypted dni dniEncrypted').lean()
+                ? User.find(
+                      { _id: { $in: userIds } },
+                      'name email emailEncrypted dni dniEncrypted'
+                  ).lean<UserRow[]>()
                 : [],
             User.find(
                 {
@@ -37,20 +41,8 @@ export default withApi(
                     ...notDeleted,
                 },
                 'name email emailEncrypted dni dniEncrypted'
-            ).lean(),
-        ])) as unknown as [
-            Array<{
-                userId: string;
-                startDate: string;
-                endDate: string;
-                spentDays: number;
-                status: string;
-                reason?: string;
-                notes?: string;
-            }>,
-            Array<{ _id: { toString(): string }; name: string; email: string; dni: string }>,
-            Array<{ _id: { toString(): string }; name: string; email: string; dni: string }>,
-        ];
+            ).lean<UserRow[]>(),
+        ]);
 
         // When exporting every employee (no explicit selection) only include
         // active (registered, non-blocked) users' vacations.
