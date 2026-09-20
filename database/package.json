@@ -11,6 +11,7 @@
     "migrate:vacation-day-keys": "node migrations/007-migrate-vacation-day-keys.cjs",
     "migrate:work-session-date-time": "node migrations/008-migrate-work-session-date-time.cjs",
     "migrate:work-day-sessions": "node migrations/009-migrate-work-day-sessions.cjs",
-    "migrate:obligatory-intervals": "node migrations/010-migrate-obligatory-intervals.cjs"
+    "migrate:obligatory-intervals": "node migrations/010-migrate-obligatory-intervals.cjs",
+    "migrate:recompute-anomalies": "node migrations/011-recompute-work-day-anomalies.cjs"
   }
 }
