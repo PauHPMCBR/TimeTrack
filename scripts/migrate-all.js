@@ -37,7 +37,7 @@ const migrationsDir = join(repoRoot, "database", "migrations");
 function usage() {
   console.error(
     "Usage: node scripts/migrate-all.js [<from> <to>] [--dir <companies-dir>] [--yes]\n" +
-      "  <from>/<to>: migration numbers (1..9), e.g. `1 5` runs 001..005;\n" +
+      "  <from>/<to>: migration numbers (1..99), e.g. `1 5` runs 001..005;\n" +
       "  a single number runs just that migration; no numbers = all."
   );
   process.exit(1);
@@ -49,7 +49,7 @@ const numbers = [];
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--dir") args.companiesDir = argv[++i];
   else if (argv[i] === "--yes") args.yes = true;
-  else if (/^[1-9]$/.test(argv[i])) numbers.push(Number(argv[i]));
+  else if (/^[1-9]\d?$/.test(argv[i])) numbers.push(Number(argv[i]));
   else usage();
 }
 if (numbers.length > 2) usage();
