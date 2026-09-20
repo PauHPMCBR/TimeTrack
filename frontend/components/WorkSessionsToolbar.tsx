@@ -145,6 +145,7 @@ export default function WorkSessionsToolbar({
                         ></span>
                         {t('admin.events.status.nonWorkingDay')}
                     </span>
+
                     <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
                     {LEGEND_SOURCES.map((source) => {
                         const Icon = sourceIconOf(source);

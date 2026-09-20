@@ -109,7 +109,7 @@ export default function FitxatgesTable({
                 : [];
 
         let closedOrder = -1;
-        return intervals.map((interval, i) => {
+        const mapped = intervals.map((interval, i) => {
             const closed =
                 interval.checkIn !== MISSING_TIME &&
                 interval.checkOut !== MISSING_TIME;
@@ -128,6 +128,15 @@ export default function FitxatgesTable({
                 problem: interval.unclosed || !!deviates,
             };
         });
+
+        if (
+            row.status === 'anomaly' &&
+            mapped.length > 0 &&
+            !mapped.some((interval) => interval.problem)
+        ) {
+            return mapped.map((interval) => ({ ...interval, problem: true }));
+        }
+        return mapped;
     };
 
     const renderWorkedIntervals = (row: AdminWorkSessionRow) => {

@@ -586,7 +586,7 @@
                 "electiveVacation": "Vacaciones de libre elección",
                 "obligatoryVacation": "Festivo obligatorio",
                 "authorizedLeave": "Permiso autorizado",
-                "planned": "Pendiente de cierre",
+                "planned": "Aún no cerrado",
                 "nonWorkingDay": "Día no laborable",
                 "confirmed": "Confirmado"
             },

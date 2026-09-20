@@ -586,7 +586,7 @@
                 "electiveVacation": "Elective vacation",
                 "obligatoryVacation": "Obligatory holiday",
                 "authorizedLeave": "Authorized leave",
-                "planned": "Awaiting day close",
+                "planned": "Not closed yet",
                 "nonWorkingDay": "Non-working day",
                 "confirmed": "Confirmed"
             },

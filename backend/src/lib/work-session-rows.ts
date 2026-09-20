@@ -170,6 +170,11 @@ export function buildWorkSessionRows(
         const dow = dowFromDateKey(key);
 
         for (const user of users) {
+            // Workers only appear from the day their tracking starts.
+            if (user.trackingStartDate && key < user.trackingStartDate) {
+                continue;
+            }
+
             const userKey = `${user._id}:${key}`;
             const dayDoc = dayDocByUserDay.get(userKey);
             const userSessions = dayDoc?.sessions ?? [];
@@ -228,11 +233,8 @@ export function buildWorkSessionRows(
 
                 const isClosed =
                     closedThrough !== undefined && key <= closedThrough;
-                const afterTrackingStart =
-                    !user.trackingStartDate ||
-                    key >= user.trackingStartDate;
 
-                if (isClosed && afterTrackingStart) {
+                if (isClosed) {
                     // The day closed but its record is missing (e.g. the
                     // day-close job never ran): judge it live instead of
                     // showing it as "awaiting close" forever.

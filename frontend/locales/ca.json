@@ -586,7 +586,7 @@
                 "electiveVacation": "Vacances de lliure elecció",
                 "obligatoryVacation": "Festiu obligatori",
                 "authorizedLeave": "Permís autoritzat",
-                "planned": "Pendent de tancament",
+                "planned": "Encara no tancat",
                 "nonWorkingDay": "Dia no laborable",
                 "confirmed": "Confirmat"
             },
