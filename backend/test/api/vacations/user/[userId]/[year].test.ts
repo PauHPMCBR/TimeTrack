@@ -92,7 +92,9 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
         const mockYearlyVacation = {
             year: 2024,
             userId: 'user-456',
-            obligatoryDays: ['2024-01-01'],
+            obligatoryIntervals: [
+                { startDate: '2024-01-01', endDate: '2024-01-01' },
+            ],
             electiveDaysTotalCount: 22,
         };
 
@@ -108,7 +110,7 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             .mockResolvedValueOnce({
                 year: 2024,
                 electiveDaysTotalCount: 22,
-                obligatoryDays: [],
+                obligatoryIntervals: [],
             } as any); // global template
 
         const req = mockReq({
@@ -157,13 +159,13 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             .mockResolvedValueOnce({
                 year: 2024,
                 userId: 'user-456',
-                obligatoryDays: [],
+                obligatoryIntervals: [],
                 electiveDaysTotalCount: 22,
             } as any) // per-user config
             .mockResolvedValueOnce({
                 year: 2024,
                 electiveDaysTotalCount: 22,
-                obligatoryDays: [],
+                obligatoryIntervals: [],
             } as any); // global template
 
         vi.mocked(User.find).mockReturnValue({
@@ -204,13 +206,17 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
             .mockResolvedValueOnce({
                 year: 2024,
                 electiveDaysTotalCount: 22,
-                obligatoryDays: ['2024-01-01'],
+                obligatoryIntervals: [
+                    { startDate: '2024-01-01', endDate: '2024-01-01' },
+                ],
             } as any); // global template
 
         vi.mocked(YearlyVacationDays.create as any).mockResolvedValue({
             year: 2024,
             userId: 'user-456',
-            obligatoryDays: ['2024-01-01'],
+            obligatoryIntervals: [
+                { startDate: '2024-01-01', endDate: '2024-01-01' },
+            ],
             electiveDaysTotalCount: 22,
         });
 
@@ -225,7 +231,9 @@ describe('GET /api/vacations/user/[userId]/[year]', () => {
         expect(YearlyVacationDays.create).toHaveBeenCalledWith({
             userId: 'user-456',
             year: 2024,
-            obligatoryDays: ['2024-01-01'],
+            obligatoryIntervals: [
+                { startDate: '2024-01-01', endDate: '2024-01-01' },
+            ],
             electiveDaysTotalCount: 22,
         });
 

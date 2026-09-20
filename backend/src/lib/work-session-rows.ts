@@ -16,6 +16,7 @@ import {
     computeWorkDayAnomalies,
     resolveDayExpectations,
 } from 'shared/src/lib/day-record';
+import { expandIntervalsToDayKeys } from 'shared/src/lib/vacation-days';
 import type {
     WorkDayClassification,
     WorkSessionAnomaly,
@@ -144,26 +145,24 @@ export function buildWorkSessionRows(
         dayDocByUserDay.set(`${dayDoc.userId}:${dayDoc.date}`, dayDoc);
     }
 
-    const sets = {
-        elective: new Set<string>(),
-        obligatory: new Set<DateKey>(),
-        leave: new Set<string>(),
-    };
-    for (const v of approvedVacations) {
-        for (let key = v.startDate; key <= v.endDate; key = addDaysToKey(key, 1)) {
-            sets.elective.add(`${v.userId}:${key}`);
+    const elective = new Set<string>();
+    for (const vacation of approvedVacations) {
+        for (const key of expandIntervalsToDayKeys([vacation])) {
+            elective.add(`${vacation.userId}:${key}`);
         }
     }
-    for (const template of yearlyTemplates) {
-        for (const day of template.obligatoryDays ?? []) {
-            sets.obligatory.add(day);
+    const obligatory = new Set(
+        yearlyTemplates.flatMap((template) =>
+            expandIntervalsToDayKeys(template.obligatoryIntervals ?? [])
+        )
+    );
+    const leave = new Set<string>();
+    for (const authorizedLeave of authorizedLeaves) {
+        for (const key of expandIntervalsToDayKeys([authorizedLeave])) {
+            leave.add(`${authorizedLeave.userId}:${key}`);
         }
     }
-    for (const leave of authorizedLeaves) {
-        for (let key = leave.startDate; key <= leave.endDate; key = addDaysToKey(key, 1)) {
-            sets.leave.add(`${leave.userId}:${key}`);
-        }
-    }
+    const sets = { elective, obligatory, leave };
 
     const rows: AdminWorkSessionRow[] = [];
 

@@ -11,19 +11,30 @@ import { ADMIN_YEARLY_VACATIONS_YEAR } from '@/lib/storage';
 import AdminBackButton from '../../../components/AdminBackButton';
 import { YearlyVacationAdminRequest } from '@/schemas/api';
 import { YearlyVacationDays } from '@/types';
-import { formatDateKey } from '@/lib/datetime';
-import type { DateKey } from 'shared/src/lib/day-key';
+import { formatDateKey, localeTag } from '@/lib/datetime';
+import type { DateKey, DateKeyInterval } from 'shared/src/lib/day-key';
 import { DateKeySchema, dowFromDateKey } from 'shared/src/lib/day-key';
+import { expandIntervalsToDayKeys } from 'shared/src/lib/vacation-days';
 import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
-import { X, Copy, TriangleAlert, CalendarOff } from 'lucide-react';
+import TextAreaField from '@/components/ui/TextAreaField';
+import OptionPicker from '@/components/ui/OptionPicker';
+import Modal from '@/components/Modal';
+import {
+    X,
+    Copy,
+    TriangleAlert,
+    CalendarOff,
+    Plus,
+    Pencil,
+} from 'lucide-react';
 import StepperNav from '@/components/ui/StepperNav';
 import EmptyState from '@/components/ui/EmptyState';
 import { defaultWeeklyExpectedHours } from 'shared/src/lib/defaults';
 
 export default function AdminObligatoryVacationsPage() {
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
 
     const [year, setYear] = usePersistedState<number>(
         ADMIN_YEARLY_VACATIONS_YEAR,
@@ -37,13 +48,26 @@ export default function AdminObligatoryVacationsPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const [obligatoryDays, setObligatoryDays] = useState<DateKey[]>([]);
+    const [obligatoryIntervals, setObligatoryIntervals] = useState<
+        DateKeyInterval[]
+    >([]);
     const [electiveDaysTotalCount, setElectiveDaysTotalCount] =
         useState<number>(0);
-    const [newDate, setNewDate] = useState<string>('');
     const [copying, setCopying] = useState(false);
     const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [mode, setMode] = useState<'day' | 'interval'>('day');
+    const [modalStart, setModalStart] = useState<string>('');
+    const [modalEnd, setModalEnd] = useState<string>('');
+    const [modalNotes, setModalNotes] = useState<string>('');
+    const [modalError, setModalError] = useState<string | null>(null);
     const { dirty, markDirty, resetDirty } = useDirty();
+    const {
+        dirty: modalDirty,
+        markDirty: markModalDirty,
+        resetDirty: resetModalDirty,
+    } = useDirty();
 
     useUnsavedChanges(dirty);
 
@@ -57,7 +81,7 @@ export default function AdminObligatoryVacationsPage() {
             if (res.error) {
                 if (res.error === 'EntryNotFound') {
                     setVacationDays(null);
-                    setObligatoryDays([]);
+                    setObligatoryIntervals([]);
                     setElectiveDaysTotalCount(0);
                 } else {
                     setError(
@@ -68,7 +92,9 @@ export default function AdminObligatoryVacationsPage() {
                 }
             } else if (res.data?.vacations) {
                 setVacationDays(res.data.vacations);
-                setObligatoryDays(res.data.vacations.obligatoryDays);
+                setObligatoryIntervals(
+                    res.data.vacations.obligatoryIntervals ?? []
+                );
                 setElectiveDaysTotalCount(
                     res.data.vacations.electiveDaysTotalCount
                 );
@@ -104,34 +130,102 @@ export default function AdminObligatoryVacationsPage() {
         setYear(newYear);
     };
 
-    const handleAddDate = () => {
-        if (!newDate) return;
+    const openAddModal = () => {
+        setEditingIndex(null);
+        setMode('day');
+        setModalStart('');
+        setModalEnd('');
+        setModalNotes('');
+        setModalError(null);
+        resetModalDirty();
+        setModalOpen(true);
+    };
 
-        const parsed = DateKeySchema.safeParse(newDate);
-        if (!parsed.success) {
-            setError(t('admin.vacationsSetup.invalidDate') || 'Invalid date');
+    const openEditModal = (index: number) => {
+        const interval = obligatoryIntervals[index];
+        setEditingIndex(index);
+        setMode(interval.startDate === interval.endDate ? 'day' : 'interval');
+        setModalStart(interval.startDate);
+        setModalEnd(interval.endDate);
+        setModalNotes(interval.notes ?? '');
+        setModalError(null);
+        resetModalDirty();
+        setModalOpen(true);
+    };
+
+    const requestCloseModal = () => {
+        if (
+            modalDirty &&
+            !window.confirm(t('common.unsavedChangesConfirm'))
+        ) {
             return;
         }
-        const dayKey = parsed.data;
+        setModalOpen(false);
+        setEditingIndex(null);
+        resetModalDirty();
+    };
 
-        if (obligatoryDays.includes(dayKey)) {
-            setError(
+    const handleSaveInterval = () => {
+        const end = mode === 'day' ? modalStart : modalEnd;
+        const startParsed = DateKeySchema.safeParse(modalStart);
+        const endParsed = DateKeySchema.safeParse(end);
+
+        if (!startParsed.success || !endParsed.success) {
+            setModalError(
+                t('admin.vacationsSetup.invalidDate') || 'Invalid date'
+            );
+            return;
+        }
+
+        const startDate = startParsed.data;
+        const endDate = endParsed.data;
+
+        if (endDate < startDate) {
+            setModalError(
+                t('admin.vacationsSetup.invalidInterval') || 'Invalid interval'
+            );
+            return;
+        }
+
+        if (
+            obligatoryIntervals.some(
+                (interval, index) =>
+                    index !== editingIndex &&
+                    interval.startDate === startDate &&
+                    interval.endDate === endDate
+            )
+        ) {
+            setModalError(
                 t('admin.vacationsSetup.dateExists') || 'Date already exists'
             );
             return;
         }
 
-        const newDays = [...obligatoryDays, dayKey].sort();
-        setObligatoryDays(newDays);
+        const notes = modalNotes.trim();
+        const entry: DateKeyInterval = {
+            startDate,
+            endDate,
+            ...(notes ? { notes } : {}),
+        };
+        const next = [...obligatoryIntervals];
+        if (editingIndex === null) {
+            next.push(entry);
+        } else {
+            next[editingIndex] = entry;
+        }
+        next.sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+        setObligatoryIntervals(next);
         markDirty();
-        setNewDate('');
-        setError(null);
+        setModalOpen(false);
+        setEditingIndex(null);
+        resetModalDirty();
     };
 
-    const handleRemoveDate = (index: number) => {
-        const newDays = [...obligatoryDays];
-        newDays.splice(index, 1);
-        setObligatoryDays(newDays);
+    const handleRemoveInterval = (index: number) => {
+        const next = [...obligatoryIntervals];
+        next.splice(index, 1);
+        setObligatoryIntervals(next);
         markDirty();
     };
 
@@ -143,7 +237,7 @@ export default function AdminObligatoryVacationsPage() {
 
             const vacationData: YearlyVacationAdminRequest = {
                 year,
-                obligatoryDays,
+                obligatoryIntervals,
                 electiveDaysTotalCount,
             };
 
@@ -167,7 +261,7 @@ export default function AdminObligatoryVacationsPage() {
                 setVacationDays({
                     _id: vacationDays?._id ?? '',
                     year,
-                    obligatoryDays: obligatoryDays,
+                    obligatoryIntervals,
                     electiveDaysTotalCount,
                 });
                 resetDirty();
@@ -200,8 +294,8 @@ export default function AdminObligatoryVacationsPage() {
                     )
                 );
             } else {
-                setObligatoryDays(
-                    res.data.vacations.obligatoryDays
+                setObligatoryIntervals(
+                    res.data.vacations.obligatoryIntervals ?? []
                 );
                 setElectiveDaysTotalCount(
                     res.data.vacations.electiveDaysTotalCount
@@ -223,7 +317,7 @@ export default function AdminObligatoryVacationsPage() {
     };
 
     const formatDate = (key: string) => {
-        return formatDateKey(key, 'en-US', {
+        return formatDateKey(key, localeTag(lang), {
             weekday: 'short',
             year: 'numeric',
             month: 'long',
@@ -234,28 +328,14 @@ export default function AdminObligatoryVacationsPage() {
     const isNonWorkingDay = (key: string) =>
         nonWorkingDays.includes(dowFromDateKey(key as DateKey));
 
+    const countLabel = (count: number, singular: string, plural: string) =>
+        `${count} ${t(count === 1 ? singular : plural)}`;
+
+    const obligatoryDays = expandIntervalsToDayKeys(obligatoryIntervals);
+
     const realObligatoryCount = obligatoryDays.filter(
         (key) => !isNonWorkingDay(key)
     ).length;
-
-    const datesByMonth = () => {
-        const groups: Record<string, string[]> = {};
-
-        obligatoryDays.forEach((key) => {
-            const [y, m] = key.split('-').map(Number);
-            const monthYear = new Intl.DateTimeFormat('en-US', {
-                month: 'long',
-                year: 'numeric',
-                timeZone: 'UTC',
-            }).format(new Date(Date.UTC(y, m - 1, 1)));
-            if (!groups[monthYear]) {
-                groups[monthYear] = [];
-            }
-            groups[monthYear].push(key);
-        });
-
-        return groups;
-    };
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -410,121 +490,244 @@ export default function AdminObligatoryVacationsPage() {
                                 </div>
                             </div>
 
-                            {/* Add new date form */}
-                            <div className="mb-6 flex flex-col sm:flex-row gap-3">
-                                <div className="flex-1">
-                                    <TextField
-                                        label={t(
-                                            'admin.vacationsSetup.addDate'
-                                        )}
-                                        type="date"
-                                        value={newDate}
-                                        onChange={(e) =>
-                                            setNewDate(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="flex items-end">
-                                    <Button
-                                        onClick={handleAddDate}
-                                        disabled={!newDate || saving}
-                                        variant="primary"
-                                    >
-                                        {t('admin.vacationsSetup.addButton')}
-                                    </Button>
-                                </div>
+                            {/* Add new obligatory entry */}
+                            <div className="mb-6 flex justify-end">
+                                <Button
+                                    onClick={openAddModal}
+                                    disabled={saving}
+                                    variant="primary"
+                                >
+                                    <Plus size={16} />
+                                    {t('admin.vacationsSetup.addButton')}
+                                </Button>
                             </div>
 
-                            {/* Dates list */}
-                            {obligatoryDays.length === 0 ? (
+                            {/* Obligatory entries list */}
+                            {obligatoryIntervals.length === 0 ? (
                                 <EmptyState
                                     icon={<CalendarOff size={24} />}
                                     title={t('admin.vacationsSetup.noDates')}
                                 />
                             ) : (
-                                <div className="space-y-4">
-                                    {Object.entries(datesByMonth()).map(
-                                        ([monthYear, dates]) => (
-                                            <div
-                                                key={monthYear}
-                                                className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
-                                            >
-                                                <div className="bg-zinc-100 dark:bg-zinc-800 px-4 py-3">
-                                                    <h3 className="font-medium text-zinc-900 dark:text-white">
-                                                        {monthYear}{' '}
-                                                        <span className="text-sm text-zinc-500">
-                                                            ({dates.length}{' '}
-                                                            days)
-                                                        </span>
-                                                    </h3>
-                                                </div>
-                                                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                                                    {dates.map((key) => {
-                                                        const nonWorking =
-                                                            isNonWorkingDay(
-                                                                key
-                                                            );
-                                                        return (
-                                                            <div
-                                                                key={key}
-                                                                className={`flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${nonWorking ? 'bg-red-50/60 dark:bg-red-950/20' : ''}`}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div
-                                                                        className={`flex h-8 w-8 items-center justify-center rounded-full ${nonWorking ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}
-                                                                    >
-                                                                        <span className="text-sm font-medium">
-                                                                            {Number(key.slice(8, 10))}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="text-sm font-medium text-zinc-900 dark:text-white">
-                                                                            {formatDate(
-                                                                                key
-                                                                            )}
-                                                                        </div>
-                                                                        <div
-                                                                            className={`text-xs ${nonWorking ? 'text-red-500 dark:text-red-400' : 'text-zinc-500'}`}
-                                                                        >
-                                                                            {formatDateKey(
-                                                                                key,
-                                                                                'en-US',
-                                                                                {
-                                                                                    weekday:
-                                                                                        'long',
-                                                                                }
-                                                                            )}
-                                                                            {nonWorking
-                                                                                ? ` · ${t('admin.vacationsSetup.nonWorkingDay')}`
-                                                                                : ''}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleRemoveDate(
-                                                                            obligatoryDays.indexOf(
-                                                                                key as DateKey
-                                                                            )
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        saving
-                                                                    }
-                                                                    className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                                                >
-                                                                    <X className="h-4 w-4" />
-                                                                </button>
+                                <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+                                    {obligatoryIntervals.map(
+                                        (interval, index) => {
+                                            const singleDay =
+                                                interval.startDate ===
+                                                interval.endDate;
+                                            const days =
+                                                expandIntervalsToDayKeys([
+                                                    interval,
+                                                ]);
+                                            const realDays = days.filter(
+                                                (key) => !isNonWorkingDay(key)
+                                            ).length;
+                                            const hasNonWorkingDay =
+                                                realDays < days.length;
+                                            return (
+                                                <div
+                                                    key={`${interval.startDate}-${interval.endDate}-${index}`}
+                                                    className={`flex items-center justify-between gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${hasNonWorkingDay ? 'bg-red-50/60 dark:bg-red-950/20' : ''}`}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            openEditModal(index)
+                                                        }
+                                                        className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                                                                {singleDay
+                                                                    ? formatDate(
+                                                                          interval.startDate
+                                                                      )
+                                                                    : `${formatDate(interval.startDate)} - ${formatDate(interval.endDate)}`}
                                                             </div>
-                                                        );
-                                                    })}
+                                                            {interval.notes && (
+                                                                <div className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                                                                    {
+                                                                        interval.notes
+                                                                    }
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="shrink-0 text-right">
+                                                            <div
+                                                                className={`text-sm font-semibold tabular-nums ${hasNonWorkingDay ? 'text-red-600 dark:text-red-400' : 'text-zinc-900 dark:text-white'}`}
+                                                            >
+                                                                {countLabel(
+                                                                    days.length,
+                                                                    'admin.vacationsSetup.day',
+                                                                    'admin.vacationsSetup.days'
+                                                                )}
+                                                            </div>
+                                                            {!singleDay ? (
+                                                                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                                    {countLabel(
+                                                                        realDays,
+                                                                        'admin.vacationsSetup.realDay',
+                                                                        'admin.vacationsSetup.realDays'
+                                                                    )}
+                                                                </div>
+                                                            ) : hasNonWorkingDay ? (
+                                                                <div className="text-xs text-red-500 dark:text-red-400">
+                                                                    {t(
+                                                                        'admin.vacationsSetup.nonWorkingDay'
+                                                                    )}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    </button>
+                                                    <div className="flex shrink-0 gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                openEditModal(
+                                                                    index
+                                                                )
+                                                            }
+                                                            disabled={saving}
+                                                            title={t(
+                                                                'common.edit'
+                                                            )}
+                                                            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleRemoveInterval(
+                                                                    index
+                                                                )
+                                                            }
+                                                            disabled={saving}
+                                                            title={t(
+                                                                'common.delete'
+                                                            )}
+                                                            className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )
+                                            );
+                                        }
                                     )}
                                 </div>
                             )}
                         </section>
+
+                        {modalOpen && typeof document !== 'undefined' && (
+                            <Modal
+                                open
+                                title={
+                                    editingIndex === null
+                                        ? t('admin.vacationsSetup.addTitle')
+                                        : t('admin.vacationsSetup.editTitle')
+                                }
+                                onClose={requestCloseModal}
+                                footer={
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            onClick={requestCloseModal}
+                                            variant="secondary"
+                                            disabled={saving}
+                                        >
+                                            {t('common.cancel')}
+                                        </Button>
+                                        <Button
+                                            onClick={handleSaveInterval}
+                                            variant="primary"
+                                            disabled={saving}
+                                        >
+                                            {t('common.save')}
+                                        </Button>
+                                    </div>
+                                }
+                            >
+                                {modalError && (
+                                    <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                                        {modalError}
+                                    </div>
+                                )}
+                                <div className="space-y-3">
+                                    <OptionPicker
+                                        value={mode}
+                                        onChange={(value) => {
+                                            setMode(value);
+                                            setModalEnd('');
+                                            setModalError(null);
+                                            markModalDirty();
+                                        }}
+                                        options={[
+                                            {
+                                                value: 'day',
+                                                label: t(
+                                                    'admin.vacationsSetup.modeDay'
+                                                ),
+                                            },
+                                            {
+                                                value: 'interval',
+                                                label: t(
+                                                    'admin.vacationsSetup.modeInterval'
+                                                ),
+                                            },
+                                        ]}
+                                    />
+                                    <TextField
+                                        label={
+                                            mode === 'day'
+                                                ? t(
+                                                      'admin.vacationsSetup.addDate'
+                                                  )
+                                                : t(
+                                                      'admin.vacationsSetup.startDate'
+                                                  )
+                                        }
+                                        type="date"
+                                        value={modalStart}
+                                        disabled={saving}
+                                        onChange={(e) => {
+                                            setModalStart(e.target.value);
+                                            markModalDirty();
+                                        }}
+                                    />
+                                    {mode === 'interval' && (
+                                        <TextField
+                                            label={t(
+                                                'admin.vacationsSetup.endDate'
+                                            )}
+                                            type="date"
+                                            min={modalStart}
+                                            value={modalEnd}
+                                            disabled={saving}
+                                            onChange={(e) => {
+                                                setModalEnd(e.target.value);
+                                                markModalDirty();
+                                            }}
+                                        />
+                                    )}
+                                    <TextAreaField
+                                        label={t(
+                                            'admin.vacationsSetup.notes'
+                                        )}
+                                        value={modalNotes}
+                                        maxLength={1000}
+                                        rows={2}
+                                        disabled={saving}
+                                        placeholder={t(
+                                            'admin.vacationsSetup.notesPlaceholder'
+                                        )}
+                                        onChange={(e) => {
+                                            setModalNotes(e.target.value);
+                                            markModalDirty();
+                                        }}
+                                    />
+                                </div>
+                            </Modal>
+                        )}
 
                         {/* --- ELECTIVE DAYS SETTINGS --- */}
                         <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

@@ -39,6 +39,21 @@ export const findGlobalTemplates = (years: number | number[]) =>
         year: Array.isArray(years) ? { $in: years } : years,
     });
 
+// Mongo appends an `_id` to every embedded interval, so compare only the
+// semantic fields when checking whether a per-user config drifted.
+const intervalSignature = (
+    intervals:
+        | { startDate: string; endDate: string; notes?: string }[]
+        | undefined
+) =>
+    JSON.stringify(
+        (intervals ?? []).map(({ startDate, endDate, notes }) => ({
+            startDate,
+            endDate,
+            notes: notes ?? '',
+        }))
+    );
+
 // Creates the per-user yearly config from the global template when missing.
 // With `sync`, an existing row is updated when it drifted from the template
 // (elective total or obligatory days changed). Returns null when the year has
@@ -57,7 +72,7 @@ export const ensureUserYearConfig = async (
         return await YearlyVacationDays.create({
             userId,
             year: globalConfig.year,
-            obligatoryDays: globalConfig.obligatoryDays,
+            obligatoryIntervals: globalConfig.obligatoryIntervals,
             electiveDaysTotalCount: globalConfig.electiveDaysTotalCount,
         });
     }
@@ -77,10 +92,11 @@ export const ensureUserYearConfig = async (
             }
 
             if (
-                JSON.stringify(userConfig.obligatoryDays) !==
-                JSON.stringify(globalConfig.obligatoryDays)
+                intervalSignature(userConfig.obligatoryIntervals) !==
+                intervalSignature(globalConfig.obligatoryIntervals)
             ) {
-                userConfig.obligatoryDays = globalConfig.obligatoryDays;
+                userConfig.obligatoryIntervals =
+                    globalConfig.obligatoryIntervals;
                 hasChanges = true;
             }
 
@@ -90,7 +106,7 @@ export const ensureUserYearConfig = async (
                     {
                         electiveDaysTotalCount:
                             userConfig.electiveDaysTotalCount,
-                        obligatoryDays: userConfig.obligatoryDays,
+                        obligatoryIntervals: userConfig.obligatoryIntervals,
                     }
                 );
             }

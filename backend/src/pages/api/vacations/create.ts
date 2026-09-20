@@ -60,7 +60,7 @@ export default withApi(
             startDate,
             endDate,
             nonWorkingDays,
-            yearlyVacationDays.obligatoryDays
+            yearlyVacationDays.obligatoryIntervals
         );
 
         // A period made up only of non-working and obligatory days costs

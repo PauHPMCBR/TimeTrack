@@ -85,7 +85,9 @@ describe('GET /api/admin/vacations/[year]', () => {
 
         const mockYearlyVacation = {
             year: 2024,
-            obligatoryDays: ['2024-01-01'],
+            obligatoryIntervals: [
+                { startDate: '2024-01-01', endDate: '2024-01-01' },
+            ],
             electiveDaysTotalCount: 22,
         };
 

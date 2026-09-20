@@ -9,7 +9,7 @@ import {
     AuthorizedLeaveSchema,
     WorkDayRecordSchema,
 } from 'shared/src/schemas/database';
-import type { DateKey } from 'shared/src/lib/day-key';
+import type { DateKey, DateKeyInterval } from 'shared/src/lib/day-key';
 import type { TimeKey } from 'shared/src/lib/time-key';
 
 export type UserRow = Omit<z.infer<typeof UserSchema>, 'trackingStartDate'> & {
@@ -31,26 +31,20 @@ export type DaySessionsRow = Omit<
 export type ElectiveVacationRow = Omit<
     z.infer<typeof ElectiveVacationSchema>,
     'startDate' | 'endDate'
-> & {
-    _id: string;
-    startDate: DateKey;
-    endDate: DateKey;
-};
+> &
+    DateKeyInterval & { _id: string };
 export type YearlyVacationRow = Omit<
     z.infer<typeof YearlyVacationDaysSchema>,
-    'obligatoryDays'
+    'obligatoryIntervals'
 > & {
     _id: string;
-    obligatoryDays: DateKey[];
+    obligatoryIntervals: DateKeyInterval[];
 };
 export type AuthorizedLeaveRow = Omit<
     z.infer<typeof AuthorizedLeaveSchema>,
     'startDate' | 'endDate'
-> & {
-    _id: string;
-    startDate: DateKey;
-    endDate: DateKey;
-};
+> &
+    DateKeyInterval & { _id: string };
 export type WorkDayRecordRow = Omit<
     z.infer<typeof WorkDayRecordSchema>,
     'date'

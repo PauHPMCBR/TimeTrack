@@ -24,7 +24,10 @@ import {
 } from 'shared/src/lib/constants';
 import { DEFAULT_WEEKLY_EXPECTED_HOURS } from 'shared/src/lib/defaults';
 import { nonWorkingDaysOfWeek } from 'shared/src/lib/user-overrides';
-import { keyIsWithinInterval } from 'shared/src/lib/vacation-days';
+import {
+    keyIsWithinAnyInterval,
+    keyIsWithinInterval,
+} from 'shared/src/lib/vacation-days';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
@@ -108,10 +111,10 @@ export function Calendar({
 
             const events: VacationEvent[] = [];
 
-            const isObligatory =
-                vacations.yearlyVacationDays?.obligatoryDays?.includes(
-                    dayKey
-                ) || false;
+            const isObligatory = keyIsWithinAnyInterval(
+                dayKey,
+                vacations.yearlyVacationDays?.obligatoryIntervals ?? []
+            );
 
             if (isObligatory) {
                 events.push({

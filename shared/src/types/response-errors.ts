@@ -38,7 +38,7 @@ export type IncorrectParameter =
     | 'month'
     | 'type'
     | 'userId'
-    | 'obligatoryDays'
+    | 'obligatoryIntervals'
     | 'status'
     | 'members'
     | 'avatar'

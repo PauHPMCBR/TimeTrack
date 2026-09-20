@@ -14,6 +14,7 @@ import { usePersistedState } from '@/lib/usePersistedState';
 import { ADMIN_VACATIONS_USER, ADMIN_VACATIONS_YEAR } from '@/lib/storage';
 import { formatDateKey, localeTag } from '@/lib/datetime';
 import type { DateKey } from 'shared/src/lib/day-key';
+import { expandIntervalsToDayKeys } from 'shared/src/lib/vacation-days';
 import { Check, X, Download, CalendarOff } from 'lucide-react';
 import StepperNav from '@/components/ui/StepperNav';
 import EmptyState from '@/components/ui/EmptyState';
@@ -107,8 +108,10 @@ export default function AdminVacationsPage() {
             ) {
                 setRequests(resVacations.value.data.electives || []);
                 setObligatoryDays(
-                    resVacations.value.data.yearlyVacationDays
-                        ?.obligatoryDays || []
+                    expandIntervalsToDayKeys(
+                        resVacations.value.data.yearlyVacationDays
+                            ?.obligatoryIntervals || []
+                    )
                 );
             } else if (resVacations.status === 'rejected') {
                 console.error('Error loading vacations:', resVacations.reason);

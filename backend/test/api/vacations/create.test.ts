@@ -67,7 +67,7 @@ const MON = '2024-06-17';
 const mockUserConfig = (overrides: Record<string, unknown> = {}) => ({
     year: 2024,
     userId: 'user-123',
-    obligatoryDays: [],
+    obligatoryIntervals: [],
     electiveDaysTotalCount: 10,
     ...overrides,
 });
@@ -164,7 +164,9 @@ describe('POST /api/vacations/create', () => {
 
     it('should not discount obligatory days when computing spent days', async () => {
         vi.mocked(YearlyVacationDays.findOne).mockResolvedValue(
-            mockUserConfig({ obligatoryDays: [THU] })
+            mockUserConfig({
+                obligatoryIntervals: [{ startDate: THU, endDate: THU }],
+            })
         );
         vi.mocked(ElectiveVacation.create as any).mockResolvedValue({
             _id: 'vacation-123',
@@ -340,7 +342,7 @@ describe('POST /api/vacations/create', () => {
             .mockResolvedValueOnce({
                 year: 2024,
                 userId: undefined,
-                obligatoryDays: [],
+                obligatoryIntervals: [],
                 electiveDaysTotalCount: 22,
             } as any);
 
@@ -362,7 +364,7 @@ describe('POST /api/vacations/create', () => {
         expect(YearlyVacationDays.create).toHaveBeenCalledWith({
             userId: 'user-123',
             year: 2024,
-            obligatoryDays: [],
+            obligatoryIntervals: [],
             electiveDaysTotalCount: 22,
         });
         expect(res.status).toHaveBeenCalledWith(201);

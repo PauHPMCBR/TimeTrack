@@ -249,13 +249,12 @@ export const VacationStatusSchema = z.enum([
 ]);
 
 // Inclusive day-key interval with optional free text; the shared base of
-// elective vacations and authorized leaves.
+// elective vacations, authorized leaves and obligatory vacation intervals.
 export const DateKeyIntervalSchema = z.object({
     startDate: dateKeyField(),
     endDate: dateKeyField(),
     notes: z.string().max(1000).optional(),
 });
-export type DateKeyInterval = z.infer<typeof DateKeyIntervalSchema>;
 
 export const ElectiveVacationSchema = DateKeyIntervalSchema.extend({
     userId: z.string(),
@@ -281,7 +280,7 @@ export type AuthorizedLeave = z.infer<typeof AuthorizedLeaveSchema>;
 export const YearlyVacationDaysSchema = z.object({
     userId: z.string().optional(), // if userId is not set, it's the template for all users
     year: z.number(),
-    obligatoryDays: z.array(dateKeyField()),
+    obligatoryIntervals: z.array(DateKeyIntervalSchema),
     electiveDaysTotalCount: z.number().gte(0),
     ...timestampsShape,
 });

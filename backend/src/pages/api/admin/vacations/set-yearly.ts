@@ -8,6 +8,7 @@ import {
 import { YearlyVacationAdminRequestSchema } from 'shared/src/schemas/api';
 import { recomputeWorkDayRecords } from '@/lib/work-day-records';
 import { dateKey } from '@/lib/date-key';
+import { expandIntervalsToDayKeys } from 'shared/src/lib/vacation-days';
 import type { DateKey } from 'shared/src/lib/day-key';
 import type { YearlyVacationRow } from '@/lib/rows';
 
@@ -19,24 +20,26 @@ export default withApi(
     },
     async (_req, res, { body }) => {
     try {
-        const { year, obligatoryDays, electiveDaysTotalCount } = body;
+        const { year, obligatoryIntervals, electiveDaysTotalCount } = body;
 
-        const invalidObligatoryDays = obligatoryDays.filter(
-            (day: string) => day.slice(0, 4) !== String(year)
+        const invalidObligatoryIntervals = obligatoryIntervals.filter(
+            (interval) =>
+                interval.startDate.slice(0, 4) !== String(year) ||
+                interval.endDate.slice(0, 4) !== String(year)
         );
 
-        if (invalidObligatoryDays.length > 0) {
-            return responseErrorIncorrectParameter(res, 'obligatoryDays', [
+        if (invalidObligatoryIntervals.length > 0) {
+            return responseErrorIncorrectParameter(res, 'obligatoryIntervals', [
                 'DatesNotInYear',
             ]);
         }
 
         const existingVacation: YearlyVacationRow | null =
             await findGlobalTemplate(year);
-        const previousObligatory = existingVacation?.obligatoryDays ?? [];
+        const previousIntervals = existingVacation?.obligatoryIntervals ?? [];
 
         const update = {
-            obligatoryDays,
+            obligatoryIntervals,
             electiveDaysTotalCount,
             updatedAt: new Date(),
         };
@@ -51,9 +54,10 @@ export default withApi(
         }
 
         const affected = new Set<string>(
-            [...obligatoryDays, ...previousObligatory].filter(
-                (day) => day <= dateKey(new Date())
-            )
+            expandIntervalsToDayKeys([
+                ...obligatoryIntervals,
+                ...previousIntervals,
+            ]).filter((day) => day <= dateKey(new Date()))
         );
         if (affected.size > 0) {
             const users = await User.find(

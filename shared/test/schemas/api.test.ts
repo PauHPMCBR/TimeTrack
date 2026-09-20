@@ -228,16 +228,30 @@ describe('API Schemas', () => {
         it('should validate correct yearly vacation config', () => {
             const result = YearlyVacationAdminRequestSchema.safeParse({
                 year: 2024,
-                obligatoryDays: ['2024-01-01', '2024-12-25'],
+                obligatoryIntervals: [
+                    { startDate: '2024-01-01', endDate: '2024-01-01' },
+                    { startDate: '2024-12-24', endDate: '2024-12-25' },
+                ],
                 electiveDaysTotalCount: 22,
             });
             expect(result.success).toBe(true);
         });
 
+        it('should reject an inverted obligatory interval', () => {
+            const result = YearlyVacationAdminRequestSchema.safeParse({
+                year: 2024,
+                obligatoryIntervals: [
+                    { startDate: '2024-12-25', endDate: '2024-12-24' },
+                ],
+                electiveDaysTotalCount: 22,
+            });
+            expect(result.success).toBe(false);
+        });
+
         it('should reject year outside valid range', () => {
             const result = YearlyVacationAdminRequestSchema.safeParse({
                 year: 1999,
-                obligatoryDays: [],
+                obligatoryIntervals: [],
                 electiveDaysTotalCount: 22,
             });
             expect(result.success).toBe(false);
@@ -246,7 +260,7 @@ describe('API Schemas', () => {
         it('should reject negative elective days', () => {
             const result = YearlyVacationAdminRequestSchema.safeParse({
                 year: 2024,
-                obligatoryDays: [],
+                obligatoryIntervals: [],
                 electiveDaysTotalCount: -1,
             });
             expect(result.success).toBe(false);

@@ -91,7 +91,9 @@ describe('POST /api/admin/vacations/set-yearly', () => {
             method: 'POST',
             body: {
                 year: 2024,
-                obligatoryDays: ['2024-01-01'],
+                obligatoryIntervals: [
+                    { startDate: '2024-01-01', endDate: '2024-01-01' },
+                ],
                 electiveDaysTotalCount: 22,
                 userId: 'some-user-id',
             },
@@ -120,7 +122,9 @@ describe('POST /api/admin/vacations/set-yearly', () => {
             method: 'POST',
             body: {
                 year: 2024,
-                obligatoryDays: ['2025-01-01'], // Not in 2024
+                obligatoryIntervals: [
+                    { startDate: '2025-01-01', endDate: '2025-01-01' },
+                ], // Not in 2024
                 electiveDaysTotalCount: 22,
             },
         });
@@ -133,7 +137,7 @@ describe('POST /api/admin/vacations/set-yearly', () => {
             success: false,
             error: 'IncorrectParameter',
             details: {
-                incorrectParameter: 'obligatoryDays',
+                incorrectParameter: 'obligatoryIntervals',
                 reasons: ['DatesNotInYear'],
             },
         });
@@ -143,7 +147,7 @@ describe('POST /api/admin/vacations/set-yearly', () => {
         vi.mocked(YearlyVacationDays.findOne).mockResolvedValue({
             _id: 'existing-vacation',
             year: 2024,
-            obligatoryDays: [],
+            obligatoryIntervals: [],
             electiveDaysTotalCount: 20,
         });
 
@@ -153,7 +157,9 @@ describe('POST /api/admin/vacations/set-yearly', () => {
             method: 'POST',
             body: {
                 year: 2024,
-                obligatoryDays: ['2024-01-01'],
+                obligatoryIntervals: [
+                    { startDate: '2024-01-01', endDate: '2024-01-01' },
+                ],
                 electiveDaysTotalCount: 22,
             },
         });
@@ -179,7 +185,9 @@ describe('POST /api/admin/vacations/set-yearly', () => {
             method: 'POST',
             body: {
                 year: 2025,
-                obligatoryDays: ['2025-01-01'],
+                obligatoryIntervals: [
+                    { startDate: '2025-01-01', endDate: '2025-01-01' },
+                ],
                 electiveDaysTotalCount: 22,
             },
         });
@@ -206,7 +214,9 @@ describe('POST /api/admin/vacations/set-yearly', () => {
             method: 'POST',
             body: {
                 year: 2024,
-                obligatoryDays: ['2024-01-01'],
+                obligatoryIntervals: [
+                    { startDate: '2024-01-01', endDate: '2024-01-01' },
+                ],
                 electiveDaysTotalCount: 22,
             },
         });

@@ -33,7 +33,10 @@ import {
     nonWorkingDaysOfWeek,
     resolveNonWorkingDays,
 } from 'shared/src/lib/user-overrides';
-import { countSpentVacationDays } from 'shared/src/lib/vacation-days';
+import {
+    countSpentVacationDays,
+    expandIntervalsToDayKeys,
+} from 'shared/src/lib/vacation-days';
 import { DateKeySchema } from 'shared/src/lib/day-key';
 import type { DateKey } from 'shared/src/lib/day-key';
 
@@ -141,6 +144,11 @@ export default function MyVacationsPage() {
             }));
     }, [vacations]);
 
+    const obligatoryDays = useMemo(
+        () => expandIntervalsToDayKeys(stats?.obligatoryIntervals ?? []),
+        [stats]
+    );
+
     const requestPreview = useMemo(() => {
         const start = DateKeySchema.safeParse(date);
         const end = DateKeySchema.safeParse(endDate);
@@ -153,7 +161,7 @@ export default function MyVacationsPage() {
                 start.data,
                 end.data,
                 nonWorkingDays,
-                stats?.obligatoryDays ?? []
+                stats?.obligatoryIntervals ?? []
             ),
         };
     }, [date, endDate, nonWorkingDays, stats]);
@@ -474,7 +482,7 @@ export default function MyVacationsPage() {
                         {t('vacations.obligatoryDesc')}
                     </p>
 
-                    {(stats?.obligatoryDays ?? []).length === 0 ? (
+                    {obligatoryDays.length === 0 ? (
                         <EmptyState
                             icon={<CalendarOff size={24} />}
                             title={t('vacations.obligatoryEmpty')}
@@ -482,7 +490,7 @@ export default function MyVacationsPage() {
                     ) : (
                         <Card className="p-5">
                             <VacationMonthsTable
-                                days={stats?.obligatoryDays ?? []}
+                                days={obligatoryDays}
                                 locale={localeTag(lang)}
                             />
                         </Card>

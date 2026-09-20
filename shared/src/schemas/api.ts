@@ -219,9 +219,19 @@ export type ElectiveVacationRequest = z.infer<
     typeof ElectiveVacationRequestSchema
 >;
 
+export const ObligatoryVacationIntervalSchema = DateKeyIntervalSchema.extend({
+    startDate: DateKeySchema,
+    endDate: DateKeySchema,
+}).refine((data) => data.endDate >= data.startDate, {
+    message: 'endDate must be on or after startDate',
+});
+export type ObligatoryVacationInterval = z.infer<
+    typeof ObligatoryVacationIntervalSchema
+>;
+
 export const YearlyVacationAdminRequestSchema = z.object({
     year: z.number().int().gte(MIN_VALID_YEAR).lte(MAX_VALID_YEAR),
-    obligatoryDays: z.array(DateKeySchema),
+    obligatoryIntervals: z.array(ObligatoryVacationIntervalSchema),
     electiveDaysTotalCount: z.number().gte(0),
 });
 export type YearlyVacationAdminRequest = z.infer<
@@ -415,7 +425,7 @@ export const YearlyVacationsResponseSchema = z.object({
     ),
     yearlyVacationDays: YearlyVacationDaysSchema.extend({
         _id: z.string(),
-        obligatoryDays: z.array(DateKeySchema),
+        obligatoryIntervals: z.array(ObligatoryVacationIntervalSchema),
     }).nullable(),
 });
 export type YearlyVacationResponse = z.infer<

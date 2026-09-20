@@ -623,9 +623,13 @@ if (process.env.SEED_DEMO === '1') {
   print(`Vacations created (${vacations.length} interval requests across ${prevYear} and ${seedYear})`);
 
   for (const [year, days] of Object.entries(obligatoryDaysByYear)) {
+    const obligatoryIntervals = days.map((day) => {
+      const key = dateKeyOf(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate());
+      return { startDate: key, endDate: key };
+    });
     db.yearlyvacationdays.insertOne({
       year: Number(year),
-      obligatoryDays: days,
+      obligatoryIntervals,
       electiveDaysTotalCount: 22,
       createdAt: now,
       updatedAt: now

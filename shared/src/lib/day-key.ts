@@ -17,6 +17,14 @@ export const DateKeySchema = z
     .brand<'DateKey'>();
 export type DateKey = z.infer<typeof DateKeySchema>;
 
+// Inclusive day-key interval with optional free text; the shared base of
+// elective vacations, authorized leaves and obligatory vacation intervals.
+export type DateKeyInterval = {
+    startDate: DateKey;
+    endDate: DateKey;
+    notes?: string;
+};
+
 // @zodyac/zod-mongoose cannot map branded types: database schemas use this
 // unbranded equivalent and the row types re-brand the fields to `DateKey`.
 export function dateKeyField() {

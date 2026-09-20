@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
     countSpentVacationDays,
+    expandIntervalsToDayKeys,
+    keyIsWithinAnyInterval,
     keyIsWithinInterval,
     resolveNonWorkingDays,
 } from '../../src/lib/vacation-days';
@@ -72,9 +74,11 @@ describe('countSpentVacationDays', () => {
         ).toBe(2);
     });
 
-    it('excludes obligatory days', () => {
+    it('excludes days covered by obligatory intervals', () => {
         expect(
-            countSpentVacationDays('2024-06-12', '2024-06-13', [], ['2024-06-13'])
+            countSpentVacationDays('2024-06-12', '2024-06-13', [], [
+                { startDate: '2024-06-13', endDate: '2024-06-13' },
+            ])
         ).toBe(1);
     });
 
@@ -93,5 +97,36 @@ describe('keyIsWithinInterval', () => {
         expect(keyIsWithinInterval('2024-06-12', '2024-06-13', '2024-06-14')).toBe(false);
         expect(keyIsWithinInterval('2024-06-12', '2024-06-12', '2024-06-12')).toBe(true);
         expect(keyIsWithinInterval('2024-06-15', '2024-06-12', '2024-06-14')).toBe(false);
+    });
+});
+
+describe('keyIsWithinAnyInterval', () => {
+    const intervals = [
+        { startDate: '2024-06-12', endDate: '2024-06-13' },
+        { startDate: '2024-12-25', endDate: '2024-12-25' },
+    ];
+
+    it('matches a key covered by any interval', () => {
+        expect(keyIsWithinAnyInterval('2024-06-13', intervals)).toBe(true);
+        expect(keyIsWithinAnyInterval('2024-12-25', intervals)).toBe(true);
+        expect(keyIsWithinAnyInterval('2024-06-14', intervals)).toBe(false);
+        expect(keyIsWithinAnyInterval('2024-06-12', [])).toBe(false);
+    });
+});
+
+describe('expandIntervalsToDayKeys', () => {
+    it('expands every interval to its inclusive day keys', () => {
+        expect(
+            expandIntervalsToDayKeys([
+                { startDate: '2024-06-12', endDate: '2024-06-14' },
+                { startDate: '2024-12-25', endDate: '2024-12-25' },
+            ])
+        ).toEqual([
+            '2024-06-12',
+            '2024-06-13',
+            '2024-06-14',
+            '2024-12-25',
+        ]);
+        expect(expandIntervalsToDayKeys([])).toEqual([]);
     });
 });

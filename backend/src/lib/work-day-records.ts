@@ -24,10 +24,15 @@ import type {
     WorkSessionAnomaly,
     AppSettingsSchema,
 } from 'shared/src/schemas/database';
-import type { DateKey } from 'shared/src/lib/day-key';
+import type { DateKey, DateKeyInterval } from 'shared/src/lib/day-key';
 import { addDaysToKey, dowFromDateKey } from 'shared/src/lib/day-key';
+import { expandIntervalsToDayKeys } from 'shared/src/lib/vacation-days';
 import { VACATION_APPROVED } from 'shared/src/lib/constants';
-import type { UserRow, WorkDayRecordRow, YearlyVacationRow } from '@/lib/rows';
+import type {
+    UserRow,
+    WorkDayRecordRow,
+    YearlyVacationRow,
+} from '@/lib/rows';
 
 const USER_PROJECTION =
     'scheduleMode timetable weeklyExpectedHours trackingStartDate';
@@ -117,7 +122,7 @@ async function loadRangeData(
                     $gte: Number(fromKey.slice(0, 4)),
                     $lte: Number(toKey.slice(0, 4)),
                 },
-            }).lean<Pick<YearlyVacationRow, 'obligatoryDays'>[]>(),
+            }).lean<Pick<YearlyVacationRow, 'obligatoryIntervals'>[]>(),
             findLeavesOverlapping(fromKey, toKey, {
                 userId,
             }).lean<{ startDate: DateKey; endDate: DateKey }[]>(),
@@ -136,27 +141,19 @@ async function loadRangeData(
 }
 
 function expandSets(
-    vacations: { startDate: DateKey; endDate: DateKey }[],
-    templates: { obligatoryDays?: DateKey[] }[],
-    leaves: { startDate: DateKey; endDate: DateKey }[]
+    vacations: DateKeyInterval[],
+    templates: { obligatoryIntervals?: DateKeyInterval[] }[],
+    leaves: DateKeyInterval[]
 ): NonWorkdaySets {
-    const elective = new Set<DateKey>();
-    for (const v of vacations) {
-        for (let key = v.startDate; key <= v.endDate; key = addDaysToKey(key, 1)) {
-            elective.add(key);
-        }
-    }
-    const obligatory = new Set<DateKey>();
-    for (const template of templates) {
-        for (const day of template.obligatoryDays ?? []) obligatory.add(day);
-    }
-    const leave = new Set<DateKey>();
-    for (const l of leaves) {
-        for (let key = l.startDate; key <= l.endDate; key = addDaysToKey(key, 1)) {
-            leave.add(key);
-        }
-    }
-    return { elective, obligatory, leave };
+    return {
+        elective: new Set(expandIntervalsToDayKeys(vacations)),
+        obligatory: new Set(
+            templates.flatMap((template) =>
+                expandIntervalsToDayKeys(template.obligatoryIntervals ?? [])
+            )
+        ),
+        leave: new Set(expandIntervalsToDayKeys(leaves)),
+    };
 }
 
 function dayDoc(

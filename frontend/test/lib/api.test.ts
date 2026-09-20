@@ -436,7 +436,7 @@ describe('apiClient', () => {
             const mockResponse = {
                 data: {
                     year: 2024,
-                    obligatoryDays: [],
+                    obligatoryIntervals: [],
                     electiveDaysTotalCount: 22,
                 },
             };
@@ -477,7 +477,12 @@ describe('apiClient', () => {
 
             const result = await apiClient.setYearlyVacationsAdmin({
                 year: 2024,
-                obligatoryDays: ['2024-01-01' as DateKey],
+                obligatoryIntervals: [
+                    {
+                        startDate: '2024-01-01' as DateKey,
+                        endDate: '2024-01-01' as DateKey,
+                    },
+                ],
                 electiveDaysTotalCount: 22,
             });
 
@@ -523,7 +528,11 @@ describe('apiClient', () => {
     describe('getUserVacations', () => {
         it('should fetch user vacations', async () => {
             const mockResponse = {
-                data: { year: 2024, obligatoryDays: [], electiveDaysTotalCount: 0 },
+                data: {
+                    year: 2024,
+                    obligatoryIntervals: [],
+                    electiveDaysTotalCount: 0,
+                },
             };
             mockFetchSuccess(mockResponse);
 
