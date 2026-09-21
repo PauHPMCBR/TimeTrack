@@ -239,4 +239,88 @@ describe('POST /api/auth/login', () => {
             })
         );
     });
+
+    it('persists the auth cookie when remember is true', async () => {
+        const user = {
+            _id: { toString: () => 'user-id-123' },
+            email: 'test@example.com',
+            password: 'hashedpassword',
+            role: 'employee',
+            blocked: false,
+            failedLoginAttempts: 0,
+            comparePassword: vi.fn().mockResolvedValue(true),
+            toObject: function () {
+                return this;
+            },
+        };
+
+        const { User } = await import('@/models');
+        vi.mocked(User.findOne).mockResolvedValue(user);
+        vi.mocked(User.findByIdAndUpdate).mockResolvedValue({
+            _id: { toString: () => 'user-id-123' },
+            email: 'test@example.com',
+            role: 'employee',
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                email: 'test@example.com',
+                password: 'correctpassword',
+                remember: true,
+            },
+        });
+        const res = mockRes();
+
+        await loginHandler(req, res);
+
+        const cookies = res.setHeader.mock.calls
+            .filter((c: any[]) => c[0] === 'Set-Cookie')
+            .flatMap((c: any[]) => c[1]);
+        expect(
+            cookies.some((c: any) => String(c).includes('Max-Age='))
+        ).toBe(true);
+    });
+
+    it('sets a session-only auth cookie when remember is false', async () => {
+        const user = {
+            _id: { toString: () => 'user-id-123' },
+            email: 'test@example.com',
+            password: 'hashedpassword',
+            role: 'employee',
+            blocked: false,
+            failedLoginAttempts: 0,
+            comparePassword: vi.fn().mockResolvedValue(true),
+            toObject: function () {
+                return this;
+            },
+        };
+
+        const { User } = await import('@/models');
+        vi.mocked(User.findOne).mockResolvedValue(user);
+        vi.mocked(User.findByIdAndUpdate).mockResolvedValue({
+            _id: { toString: () => 'user-id-123' },
+            email: 'test@example.com',
+            role: 'employee',
+        });
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                email: 'test@example.com',
+                password: 'correctpassword',
+                remember: false,
+            },
+        });
+        const res = mockRes();
+
+        await loginHandler(req, res);
+
+        const cookies = res.setHeader.mock.calls
+            .filter((c: any[]) => c[0] === 'Set-Cookie')
+            .flatMap((c: any[]) => c[1]);
+        expect(
+            cookies.some((c: any) => String(c).includes('Max-Age='))
+        ).toBe(false);
+    });
 });

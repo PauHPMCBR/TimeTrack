@@ -1,9 +1,37 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import LoginForm from '@/components/LoginForm';
 
 export default function LoginPage() {
+    const router = useRouter();
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        apiClient.getCurrentUser().then((user) => {
+            if (cancelled) return;
+            if (user) {
+                // Ignore `next` here: it is only set when RequireAuth bounced
+                // the user, so following it could loop (e.g. a non-admin sent
+                // away from an admin page).
+                router.replace('/dashboard');
+                return;
+            }
+            setChecking(false);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [router]);
+
+    if (checking) return null;
+
     return (
         <div className="min-h-svh bg-gradient-to-b from-zinc-50 to-white text-zinc-900 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100">
             {/* TOP BAR: sense contenidor i sense padding */}

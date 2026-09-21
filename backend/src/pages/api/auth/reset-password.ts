@@ -76,11 +76,14 @@ export default withRateLimit(
                 }
             );
 
-            const jwt = signToken({
-                userId: user._id.toString(),
-                email: user.email,
-                role: user.role,
-            });
+            const jwt = signToken(
+                {
+                    userId: user._id.toString(),
+                    email: user.email,
+                    role: user.role,
+                },
+                { persist: true }
+            );
 
             setAuthCookie(res, jwt, true, {
                 secure: isHttpsRequest(req),

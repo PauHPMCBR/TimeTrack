@@ -135,15 +135,19 @@ export default withRateLimit(
                     { new: true }
                 );
 
-                const token = signToken({
-                    userId: updatedUser!._id.toString(),
-                    email: updatedUser!.email,
-                    role: updatedUser!.role,
-                });
+                const persist = remember === true;
+                const token = signToken(
+                    {
+                        userId: updatedUser!._id.toString(),
+                        email: updatedUser!.email,
+                        role: updatedUser!.role,
+                    },
+                    { persist }
+                );
 
                 // Set the JWT as an httpOnly cookie. `remember` controls whether it
                 // survives a browser restart (persistent 30d) or is session-only.
-                setAuthCookie(res, token, remember === true, {
+                setAuthCookie(res, token, persist, {
                     secure: isHttpsRequest(req),
                 });
 

@@ -501,7 +501,7 @@ describe('authenticateToken sliding expiration', () => {
         );
     });
 
-    it('refresh preserves the original sessionStart and re-issues a 96h token', async () => {
+    it('refresh preserves the original sessionStart and re-issues a 96h session token', async () => {
         vi.mocked(User.findById).mockResolvedValue({
             deleted: false,
         } as any);
@@ -512,6 +512,7 @@ describe('authenticateToken sliding expiration', () => {
                 email: 'a@b.c',
                 role: 'employee',
                 sessionStart,
+                persist: false,
             },
             'test-secret-for-testing',
             { expiresIn: '1h' }
@@ -534,6 +535,46 @@ describe('authenticateToken sliding expiration', () => {
             96 * 3600,
             -2
         ); // ~96h
+    });
+
+    it('refresh of a remembered session keeps it persistent and issues a 30d token', async () => {
+        vi.mocked(User.findById).mockResolvedValue({
+            deleted: false,
+        } as any);
+        const nearExpiry = jwt.sign(
+            {
+                userId: 'user-1',
+                email: 'a@b.c',
+                role: 'employee',
+                persist: true,
+            },
+            'test-secret-for-testing',
+            { expiresIn: '1h' }
+        );
+
+        const req: any = mockReq({
+            headers: { cookie: `auth_token=${nearExpiry}` },
+        });
+        const res = mockRes();
+
+        await authenticateToken(handler)(req, res);
+
+        expect(handler).toHaveBeenCalled();
+        const refreshed = res.setHeader.mock.calls.find(
+            (c: any[]) => c[0] === REFRESH_TOKEN_HEADER
+        )?.[1];
+        const decoded = jwt.verify(refreshed, 'test-secret-for-testing') as any;
+        expect(decoded.persist).toBe(true);
+        expect(decoded.exp - Math.floor(Date.now() / 1000)).toBeCloseTo(
+            30 * 24 * 3600,
+            -2
+        ); // ~30d
+        const cookies = res.setHeader.mock.calls
+            .filter((c: any[]) => c[0] === 'Set-Cookie')
+            .flatMap((c: any[]) => c[1]);
+        expect(cookies.some((c: any) => String(c).includes('Max-Age='))).toBe(
+            true
+        );
     });
 
     it('denies a soft-deleted user even with a valid token', async () => {

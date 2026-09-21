@@ -88,11 +88,14 @@ export default withRateLimit(
                 // Reflect the new state on the in-memory doc used for the response.
                 user.registered = true;
 
-                const token = signToken({
-                    userId: user._id.toString(),
-                    email: user.email,
-                    role: user.role,
-                });
+                const token = signToken(
+                    {
+                        userId: user._id.toString(),
+                        email: user.email,
+                        role: user.role,
+                    },
+                    { persist: true }
+                );
 
                 setAuthCookie(res, token, true, {
                     secure: isHttpsRequest(req),

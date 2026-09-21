@@ -129,18 +129,20 @@ const getLiveUser = async (req: AuthRequest): Promise<AuthUserDoc | null> => {
 
 export const getJwtSecret = (): string | null => process.env.JWT_SECRET ?? null;
 
-// Rolling session: tokens are valid 96h, and get re-issued (extended by another
-// 96h) whenever an authenticated request arrives with less than REFRESH_AFTER_MS
-// left. Active users therefore never get logged out; idle sessions die ~96h
-// after their last action. The new token is returned in the X-Auth-Token header.
-// An absolute cap forces a re-login after ABSOLUTE_MAX_MS even with activity.
-const TOKEN_TTL = '96h';
+// Rolling session: session tokens are valid 96h and "remember me" tokens last
+// as long as the persistent cookie (30d), and both get re-issued whenever an
+// authenticated request arrives with less than REFRESH_AFTER_MS left. Active
+// users therefore never get logged out; idle sessions die after their TTL. The
+// new token is returned in the X-Auth-Token header. An absolute cap forces a
+// re-login after ABSOLUTE_MAX_MS even with activity.
+const SESSION_TOKEN_TTL = '96h';
+const REMEMBERED_TOKEN_TTL = '30d';
 const REFRESH_AFTER_MS = MS_PER_DAY;
 const ABSOLUTE_MAX_MS = 30 * MS_PER_DAY;
 
 export const signToken = (
     user: AuthRequest['user'],
-    options?: { sessionStart?: number }
+    options?: { sessionStart?: number; persist?: boolean }
 ): string => {
     const JWT_SECRET = getJwtSecret();
     if (!JWT_SECRET) {
@@ -148,17 +150,21 @@ export const signToken = (
     }
     // `sessionStart` anchors the 30-day cap to the first login; it is carried
     // across refreshes while `iat`/`exp` keep reflecting each issue, so a
-    // refreshed token stays valid 96h from *now*, not from the original login.
+    // refreshed token stays valid for a full TTL from *now*, not from the
+    // original login. `persist` records whether the cookie should survive a
+    // browser restart, so refreshes can preserve that choice.
+    const persist = options?.persist ?? false;
     return jwt.sign(
         {
             userId: user!.userId,
             email: user!.email,
             role: user!.role,
+            persist,
             sessionStart:
                 options?.sessionStart ?? Math.floor(Date.now() / 1000),
         },
         JWT_SECRET,
-        { expiresIn: TOKEN_TTL }
+        { expiresIn: persist ? REMEMBERED_TOKEN_TTL : SESSION_TOKEN_TTL }
     );
 };
 
@@ -166,7 +172,6 @@ export const authenticateToken = (handler: Handler) => {
     return async (req: AuthRequest, res: NextApiResponse) => {
         const extracted = extractToken(req);
         const token = extracted?.token ?? null;
-        const persist = extracted?.persist ?? false;
 
         if (!token) {
             return responseError(res, 401, 'TokenRequired');
@@ -186,8 +191,12 @@ export const authenticateToken = (handler: Handler) => {
                 exp?: number;
                 iat?: number;
                 sessionStart?: number;
+                persist?: boolean;
             };
             req.user = user;
+            // Tokens issued before `persist` existed belonged to cookies, which
+            // were always treated as persistent — keep that for them.
+            const persist = user.persist ?? true;
 
             // Deleted users must not pass with a still-valid token; the
             // fetched doc is cached on the request for the guards below.
@@ -218,7 +227,7 @@ export const authenticateToken = (handler: Handler) => {
                 user.exp &&
                 user.exp * 1000 - Date.now() < REFRESH_AFTER_MS
             ) {
-                const refreshed = signToken(user, { sessionStart });
+                const refreshed = signToken(user, { sessionStart, persist });
                 res.setHeader(REFRESH_TOKEN_HEADER, refreshed);
                 if (persist) {
                     setAuthCookie(res, refreshed, true, {
