@@ -1,6 +1,6 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
-import type { EmailLanguage } from './types';
+import { LANGUAGES, type Language } from 'shared/src/lib/constants';
 import { RESET_TOKEN_TTL_HOURS } from 'shared/src/lib/defaults';
 import {
     buildRegistrationMessage,
@@ -18,17 +18,16 @@ import {
 import {
     buildAdminMonthlyReviewMessage,
     buildWorkerMonthlyApprovalMessage,
-    MonthlyApprovalPeriod,
 } from './templates/monthlyApprovals';
 import { buildNewFileMessage, NewFileVars } from './templates/fileNotification';
+import type { YearMonth } from 'shared/src/lib/day-key';
 
-export type { EmailLanguage };
+export type { Language, YearMonth };
 export type {
     RegistrationVars,
     PasswordResetVars,
     InconsistencyReminderVars,
     ReminderSessionTime,
-    MonthlyApprovalPeriod,
     NewFileVars,
 };
 
@@ -41,13 +40,12 @@ export type EmailKind =
     | 'monthlyApprovalReminder'
     | 'newFile';
 
-const SUPPORTED_LANGUAGES: EmailLanguage[] = ['ca', 'en', 'es'];
-const DEFAULT_LANGUAGE: EmailLanguage = 'ca';
+const DEFAULT_LANGUAGE: Language = 'ca';
 
-export function getCompanyLanguage(): EmailLanguage {
+export function getCompanyLanguage(): Language {
     const raw = process.env.COMPANY_LANGUAGE?.trim().toLowerCase();
-    return (SUPPORTED_LANGUAGES as string[]).includes(raw ?? '')
-        ? (raw as EmailLanguage)
+    return (LANGUAGES as readonly string[]).includes(raw ?? '')
+        ? (raw as Language)
         : DEFAULT_LANGUAGE;
 }
 
@@ -56,7 +54,7 @@ export function getCompanyName(): string {
 }
 
 /** "<Company> Registre Jornada" — translated sender display name for the From header. */
-const SENDER_TAGLINES: Record<EmailLanguage, string> = {
+const SENDER_TAGLINES: Record<Language, string> = {
     ca: 'Registre Jornada',
     es: 'Registro Jornada',
     en: 'Time tracking',
@@ -76,7 +74,7 @@ type AnyVars =
 
 export function buildMessage(
     kind: EmailKind,
-    lang: EmailLanguage,
+    lang: Language,
     vars: AnyVars
 ): { subject: string; text: string; html: string } {
     switch (kind) {
@@ -265,20 +263,20 @@ export function sendInconsistencyReminder(
 
 export interface AdminMonthlyReviewVars {
     companyName: string;
-    period: MonthlyApprovalPeriod;
+    period: YearMonth;
     reviewUrl: string;
 }
 
 export interface WorkerMonthlyApprovalVars {
     companyName: string;
     name: string;
-    period: MonthlyApprovalPeriod;
+    period: YearMonth;
     approveUrl: string;
 }
 
 export interface AdminMonthlyReviewInput {
     to: string;
-    period: MonthlyApprovalPeriod;
+    period: YearMonth;
     reviewUrl: string;
     companyName?: string;
 }
@@ -298,7 +296,7 @@ export function sendAdminMonthlyReview(
 export interface MonthlyApprovalRequestInput {
     to: string;
     name: string;
-    period: MonthlyApprovalPeriod;
+    period: YearMonth;
     approveUrl: string;
     companyName?: string;
 }

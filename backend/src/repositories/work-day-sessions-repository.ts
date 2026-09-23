@@ -15,12 +15,12 @@ export const findActiveDaySessions = (
     from: DateKey,
     to: DateKey,
     options: {
-        userId?: string;
+        userId?: string | { $in: string[] };
         session?: ClientSession;
     } = {}
 ) => {
     const filter = {
-        ...(options.userId ? { userId: options.userId } : {}),
+        ...(options.userId !== undefined ? { userId: options.userId } : {}),
         date: { $gte: from, $lte: to },
         ...notReplaced,
     };
@@ -48,3 +48,16 @@ export const findActiveDay = (
 // superseded one, ascending.
 export const findDayVersions = (userId: string, date: DateKey) =>
     WorkDaySessions.find({ userId, date }).sort({ version: 1 });
+
+// Every version (active and replaced) of the day documents in an inclusive
+// day range, optionally scoped to a set of users. Used by the export's edit
+// history so corrections stay visible.
+export const findDayVersionRange = (
+    from: DateKey,
+    to: DateKey,
+    options: { userId?: string | { $in: string[] } } = {}
+) =>
+    WorkDaySessions.find({
+        ...(options.userId !== undefined ? { userId: options.userId } : {}),
+        date: { $gte: from, $lte: to },
+    }).sort({ date: 1, version: 1 });

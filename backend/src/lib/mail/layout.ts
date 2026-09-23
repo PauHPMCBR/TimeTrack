@@ -1,12 +1,12 @@
 import { escapeHtml } from './helpers';
-import type { EmailLanguage } from './types';
+import type { Language } from 'shared/src/lib/constants';
 
 /**
  * Shared email shell. Each template provides its own body HTML; this wrapper
  * adds the outer table, language attribute and the branded footer line.
  */
 export function renderEmailLayout(opts: {
-    lang: EmailLanguage;
+    lang: Language;
     companyName: string;
     bodyHtml: string;
 }): string {

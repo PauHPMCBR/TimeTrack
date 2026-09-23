@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
-import { DaySession, User } from '@/types';
+import { DaySessionRow, User } from '@/types';
 import { formatHM } from '@/lib/datetime';
 import { nowWallTime, todayKey } from '@/lib/timezone';
 import { applyTheme, DEFAULT_THEME_FLAVOR, ThemeFlavor } from '@/lib/theme';
@@ -16,13 +16,15 @@ import PrivacyNoticeCard from '@/components/PrivacyNoticeCard';
 import { NOW_REFRESH_INTERVAL_MS } from '@/lib/constants';
 import {
     AVATAR_MAX_BYTES,
-    CHECK_IN,
-    CHECK_OUT,
     MS_PER_HOUR,
     MS_PER_MINUTE,
 } from 'shared/src/lib/constants';
-import { timeToMinutes } from 'shared/src/lib/work-hours';
-import type { TimeKey } from 'shared/src/lib/time-key';
+import {
+    isCurrentlyWorking,
+    openCheckIn,
+    pairSessions,
+    timeToMinutes,
+} from 'shared/src/lib/work-hours';
 import type { InconsistencyReminderMode } from 'shared/src/schemas/database';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -105,7 +107,7 @@ export default function ProfilePage() {
     const router = useRouter();
 
     const [user, setUser] = useState<User | null>(null);
-    const [sessions, setSessions] = useState<DaySession[]>([]);
+    const [sessions, setSessions] = useState<DaySessionRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [theme, setTheme] = useState<ThemeFlavor>(DEFAULT_THEME_FLAVOR);
@@ -180,10 +182,10 @@ export default function ProfilePage() {
         return [...sessions].sort((a, b) => a.time.localeCompare(b.time));
     }, [sessions]);
 
-    const isCheckedIn = useMemo(() => {
-        if (sessions.length === 0) return false;
-        return sortedSessions[sortedSessions.length - 1].type === CHECK_IN;
-    }, [sessions, sortedSessions]);
+    const isCheckedIn = useMemo(
+        () => isCurrentlyWorking(sortedSessions),
+        [sortedSessions]
+    );
 
     useEffect(() => {
         if (!isCheckedIn) return;
@@ -345,35 +347,38 @@ export default function ProfilePage() {
 
     const workedHoursToday = useMemo(() => {
         let totalMinutes = 0;
-        let lastIn: TimeKey | null = null;
+        const pairs = pairSessions(sortedSessions);
 
-        const todaySessions = sortedSessions;
-
-        todaySessions.forEach((s) => {
-            if (s.type === CHECK_IN) lastIn = s.time;
-            else if (s.type === CHECK_OUT && lastIn) {
-                totalMinutes += timeToMinutes(s.time) - timeToMinutes(lastIn);
-                lastIn = null;
+        pairs.forEach((pair, index) => {
+            if (!pair.entry) return;
+            if (pair.leave) {
+                totalMinutes +=
+                    timeToMinutes(pair.leave.time) -
+                    timeToMinutes(pair.entry.time);
+                return;
+            }
+            // Only the trailing open check-in counts up to now.
+            if (index === pairs.length - 1) {
+                totalMinutes += Math.max(
+                    0,
+                    timeToMinutes(nowWallTime()) -
+                        timeToMinutes(pair.entry.time)
+                );
             }
         });
 
-        if (lastIn)
-            totalMinutes += Math.max(
-                0,
-                timeToMinutes(nowWallTime()) - timeToMinutes(lastIn)
-            );
         return totalMinutes / 60;
     }, [sortedSessions, now]);
 
     const checkedInDuration = useMemo(() => {
-        if (!isCheckedIn || sessions.length === 0) return '';
-        const last = sortedSessions[sortedSessions.length - 1];
+        const open = openCheckIn(sortedSessions);
+        if (!open) return '';
         const minutes = Math.max(
             0,
-            timeToMinutes(nowWallTime()) - timeToMinutes(last.time)
+            timeToMinutes(nowWallTime()) - timeToMinutes(open.time)
         );
         return formatHM(minutes * MS_PER_MINUTE, t);
-    }, [isCheckedIn, sortedSessions, t, now]);
+    }, [sortedSessions, t, now]);
 
     if (loading) return <LoadingState />;
     if (!user)

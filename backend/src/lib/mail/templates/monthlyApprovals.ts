@@ -6,14 +6,10 @@ import {
     interpolate,
     paragraph,
 } from '../helpers';
-import type { EmailLanguage } from '../types';
+import type { Language } from 'shared/src/lib/constants';
+import type { YearMonth } from 'shared/src/lib/day-key';
 
-export interface MonthlyApprovalPeriod {
-    year: number;
-    month: number; // 1-12
-}
-
-const MONTH_NAMES: Record<EmailLanguage, string[]> = {
+const MONTH_NAMES: Record<Language, string[]> = {
     ca: [
         'gener',
         'febrer',
@@ -59,7 +55,7 @@ const MONTH_NAMES: Record<EmailLanguage, string[]> = {
 };
 
 /** "agost 2026" / "agosto 2026" / "August 2026". */
-export function periodLabel(lang: EmailLanguage, period: MonthlyApprovalPeriod): string {
+export function periodLabel(lang: Language, period: YearMonth): string {
     const names = MONTH_NAMES[lang] ?? MONTH_NAMES.ca;
     const name = names[period.month - 1] ?? String(period.month);
     return `${name} ${period.year}`;
@@ -67,7 +63,7 @@ export function periodLabel(lang: EmailLanguage, period: MonthlyApprovalPeriod):
 
 interface BaseVars {
     companyName: string;
-    period: MonthlyApprovalPeriod;
+    period: YearMonth;
 }
 
 interface AdminReviewVars extends BaseVars {
@@ -82,7 +78,7 @@ interface WorkerApprovalVars extends BaseVars {
 // --- Admin monthly review -------------------------------------------------
 
 const ADMIN_REVIEW_COPY: Record<
-    EmailLanguage,
+    Language,
     { subject: string; greeting: string; intro: string; cta: string; outro: string; signature: string }
 > = {
     ca: {
@@ -118,7 +114,7 @@ const ADMIN_REVIEW_COPY: Record<
 };
 
 export function buildAdminMonthlyReviewMessage(
-    lang: EmailLanguage,
+    lang: Language,
     vars: AdminReviewVars
 ): { subject: string; text: string; html: string } {
     const copy = ADMIN_REVIEW_COPY[lang] ?? ADMIN_REVIEW_COPY.ca;
@@ -168,7 +164,7 @@ interface WorkerCopy {
     signature: string;
 }
 
-const APPROVAL_REQUEST_COPY: Record<EmailLanguage, WorkerCopy> = {
+const APPROVAL_REQUEST_COPY: Record<Language, WorkerCopy> = {
     ca: {
         subject: 'Registre de jornada: confirma el teu registre de {period}',
         greeting: 'Hola {name},',
@@ -201,7 +197,7 @@ const APPROVAL_REQUEST_COPY: Record<EmailLanguage, WorkerCopy> = {
     },
 };
 
-const APPROVAL_REMINDER_COPY: Record<EmailLanguage, WorkerCopy> = {
+const APPROVAL_REMINDER_COPY: Record<Language, WorkerCopy> = {
     ca: {
         subject: 'Recordatori: confirma el teu registre de {period}',
         greeting: 'Hola {name},',
@@ -236,7 +232,7 @@ const APPROVAL_REMINDER_COPY: Record<EmailLanguage, WorkerCopy> = {
 
 export function buildWorkerMonthlyApprovalMessage(
     kind: 'request' | 'reminder',
-    lang: EmailLanguage,
+    lang: Language,
     vars: WorkerApprovalVars
 ): { subject: string; text: string; html: string } {
     const copy =

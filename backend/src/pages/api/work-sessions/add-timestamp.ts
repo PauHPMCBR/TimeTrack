@@ -2,7 +2,7 @@ import { WorkDaySessions } from '@/models';
 import { responseErrorIncorrectParameter, responseErrorPost } from '@/lib/response-error-generator';
 import { WorkSessionRequestSchema } from 'shared/src/schemas/api';
 import { withApi } from '@/lib/api-handler';
-import { computeDayHours } from 'shared/src/lib/work-hours';
+import { computeDayHours, openCheckIn } from 'shared/src/lib/work-hours';
 import { CheckInIncorrectParameterReason } from 'shared/src/types/response-errors';
 import { withUserLock } from '@/lib/user-lock';
 import { nowWallClock } from '@/lib/timezone';
@@ -137,12 +137,12 @@ export default withApi(
                     return { session: punch, hoursWorked: null };
                 }
 
-                const openCheckIn =
-                    type === CHECK_OUT ? effective[effective.length - 1] : undefined;
-                const openCheckInOvertimeChanged =
-                    !!openCheckIn && openCheckIn.overtime !== punch.overtime;
-                if (openCheckInOvertimeChanged) {
-                    openCheckIn.overtime = punch.overtime === true;
+                const openPunch =
+                    type === CHECK_OUT ? openCheckIn(effective) : null;
+                const openPunchOvertimeChanged =
+                    !!openPunch && openPunch.overtime !== punch.overtime;
+                if (openPunchOvertimeChanged) {
+                    openPunch.overtime = punch.overtime === true;
                 }
 
                 // Programmed sessions are superseded (whole-day versioning):
@@ -188,12 +188,12 @@ export default withApi(
                             },
                         }
                     );
-                    if (openCheckInOvertimeChanged) {
+                    if (openPunchOvertimeChanged) {
                         await WorkDaySessions.updateOne(
                             {
                                 _id: day._id,
-                                'sessions.time': openCheckIn!.time,
-                                'sessions.type': openCheckIn!.type,
+                                'sessions.time': openPunch!.time,
+                                'sessions.type': openPunch!.type,
                             },
                             { $set: { 'sessions.$.overtime': punch.overtime } }
                         );

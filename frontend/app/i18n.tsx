@@ -12,16 +12,16 @@ import ca from '../locales/ca.json';
 import es from '../locales/es.json';
 import en from '../locales/en.json';
 import { LANG_KEY } from '@/lib/storage';
+import { LANGUAGES, type Language } from 'shared/src/lib/constants';
 
-type Lang = 'ca' | 'es' | 'en';
 type DictValue = string | { [k: string]: DictValue };
 type Dict = Record<string, DictValue>;
 
-const dictionaries: Record<Lang, Dict> = { ca, es, en };
-const DEFAULT_LANG: Lang = 'ca';
+const dictionaries: Record<Language, Dict> = { ca, es, en };
+const DEFAULT_LANG: Language = 'ca';
 
-function isLang(value: string | null): value is Lang {
-    return value === 'ca' || value === 'es' || value === 'en';
+function isLang(value: string | null): value is Language {
+    return value !== null && (LANGUAGES as readonly string[]).includes(value);
 }
 
 // Resolve a dot-separated key ("vacations.submit") through a nested dictionary.
@@ -35,8 +35,8 @@ function lookup(dict: Dict, key: string): string | undefined {
 }
 
 type I18nContextType = {
-    lang: Lang;
-    setLang: (l: Lang) => void;
+    lang: Language;
+    setLang: (l: Language) => void;
     t: (key: string, params?: Record<string, string | number>) => string;
 };
 
@@ -49,7 +49,7 @@ export default function I18nProvider({
 }) {
     // Start with the default so server and client render identically,
     // then load the persisted language after mount (avoids hydration mismatch).
-    const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
+    const [lang, setLangState] = useState<Language>(DEFAULT_LANG);
 
     useEffect(() => {
         const saved = localStorage.getItem(LANG_KEY);
@@ -62,7 +62,7 @@ export default function I18nProvider({
         document.documentElement.lang = lang;
     }, [lang]);
 
-    const setLang = useCallback((l: Lang) => {
+    const setLang = useCallback((l: Language) => {
         setLangState(l);
         if (typeof window !== 'undefined') localStorage.setItem(LANG_KEY, l);
     }, []);

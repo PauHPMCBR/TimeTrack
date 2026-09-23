@@ -30,12 +30,14 @@ import type {
     UserLoginResponse,
     WorkSessionAnomaly,
     WorkSessionRequest,
+    WorkSessionsResponse,
     YearlyVacationAdminRequest,
     YearlyVacationResponse,
     AuthorizedLeaveRow,
+    DaySessionRow,
+    DaySessionsRow,
 } from '@/schemas/api';
 import {
-    AdminWorkSessionsResponse,
     AdminDashboardResponse,
     AppSettings,
     DeletedUserRow,
@@ -44,12 +46,11 @@ import {
     GroupMember,
     TeamVacation,
     User,
-    DaySession,
-    WorkDaySessions,
     WorksessionReason,
     YearlyVacationDays,
 } from '@/types';
 import { TeamAuthorizedLeave } from '@/types/calendar';
+import type { ExportRequest } from '@/schemas/export';
 import { ApiResponse, ErrorDetails } from '@/types/apiErrors';
 import type { ErrorCode } from 'shared/src/types/response-errors';
 import type { DateKey } from 'shared/src/lib/day-key';
@@ -250,7 +251,7 @@ class ApiClient {
         input?: ApplyAutoScheduleRequest
     ): Promise<
         ApiResponse<{
-            workDaySessions: WorkDaySessions;
+            workDaySessions: DaySessionsRow;
             totalHours: number;
             anomalies: WorkSessionAnomaly[];
         }>
@@ -490,7 +491,7 @@ class ApiClient {
 
     async getAdminWorkSessions(
         params: AdminWorkSessionsQueryWithPagination
-    ): Promise<ApiResponse<AdminWorkSessionsResponse>> {
+    ): Promise<ApiResponse<WorkSessionsResponse['data']>> {
         const search = new URLSearchParams();
         search.set('period', params.period);
         if (params.date) search.set('date', params.date);
@@ -506,7 +507,7 @@ class ApiClient {
 
     async getMyWorkSessions(
         params: AdminWorkSessionsQueryWithPagination
-    ): Promise<ApiResponse<AdminWorkSessionsResponse>> {
+    ): Promise<ApiResponse<WorkSessionsResponse['data']>> {
         const search = new URLSearchParams();
         search.set('period', params.period);
         if (params.date) search.set('date', params.date);
@@ -525,7 +526,7 @@ class ApiClient {
         date: DateKey,
         sessions: AdminWorkSessionInput[],
         reason: string
-    ): Promise<ApiResponse<{ workDaySessions: WorkDaySessions }>> {
+    ): Promise<ApiResponse<{ workDaySessions: DaySessionsRow }>> {
         const body: AdminReplaceDayWorkSessionsRequest = {
             userId,
             date,
@@ -542,7 +543,7 @@ class ApiClient {
         date: DateKey,
         sessions: AdminWorkSessionInput[],
         reason: string
-    ): Promise<ApiResponse<{ workDaySessions: WorkDaySessions }>> {
+    ): Promise<ApiResponse<{ workDaySessions: DaySessionsRow }>> {
         return this.request(`/api/me/work-sessions`, {
             method: 'PUT',
             body: JSON.stringify({
@@ -707,7 +708,7 @@ class ApiClient {
     async addWorkRecordTimestamp(info: WorkSessionRequest): Promise<
         ApiResponse<{
             message: string;
-            session: DaySession;
+            session: DaySessionRow;
             hoursWorked: number | null;
         }>
     > {
@@ -720,7 +721,7 @@ class ApiClient {
     async getDailyRecords(
         userId: string,
         dateKey: string
-    ): Promise<ApiResponse<{ workSessions: DaySession[] }>> {
+    ): Promise<ApiResponse<{ workSessions: DaySessionRow[] }>> {
         return this.request(
             `/api/work-sessions/${userId}/day/${dateKey}`
         );
@@ -730,7 +731,7 @@ class ApiClient {
         userId: string,
         from: string,
         to: string
-    ): Promise<ApiResponse<{ daySessions: WorkDaySessions[] }>> {
+    ): Promise<ApiResponse<{ daySessions: DaySessionsRow[] }>> {
         return this.request(
             `/api/work-sessions/${userId}/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
         );
@@ -857,6 +858,79 @@ class ApiClient {
                 blob,
                 `work_sessions_${toLocalDateKey(new Date())}.csv`
             );
+            return { data: null };
+        } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                const result: ApiResponse<null> = { error: 'NetworkTimeout' };
+                if (this.errorListener && result.error) {
+                    this.errorListener(result.error);
+                }
+                return result;
+            }
+
+            const result: ApiResponse<null> = { error: 'NetworkError' };
+            if (this.errorListener && result.error) {
+                this.errorListener(result.error);
+            }
+            return result;
+        } finally {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
+        }
+    }
+
+    async exportData(
+        request: ExportRequest,
+        options?: { self?: boolean }
+    ): Promise<ApiResponse<null>> {
+        const endpoint = options?.self ? '/api/me/export' : '/api/admin/export';
+
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+        try {
+            timeoutId = setTimeout(
+                () => controller.abort(),
+                FILE_REQUEST_TIMEOUT_MS
+            );
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+
+            if (!response.ok) {
+                let data: { error?: string; details?: unknown } = {};
+                try {
+                    data = await response.json();
+                } catch {
+                    data = {};
+                }
+                const error = (data.error ||
+                    response.statusText ||
+                    'Request failed') as ErrorCode;
+                const result: ApiResponse<null> = {
+                    error,
+                    details: (data.details ?? {}) as ErrorDetails,
+                };
+                if (this.errorListener) {
+                    this.errorListener(
+                        result.error ?? 'Request failed',
+                        result.details
+                    );
+                }
+                return result;
+            }
+
+            const extension = request.format === 'csv' ? 'zip' : request.format;
+            const month = String(request.month).padStart(2, '0');
+            const blob = await response.blob();
+            triggerDownload(blob, `export_${request.year}-${month}.${extension}`);
             return { data: null };
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {

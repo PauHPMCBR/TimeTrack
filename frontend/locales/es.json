@@ -182,6 +182,33 @@
             "tooltipNotApplicable": "Sin registro de jornada en este período"
         }
     },
+    "export": {
+        "title": "Exportar datos",
+        "year": "Año",
+        "month": "Mes",
+        "users": "Personas",
+        "selectAll": "Seleccionar todo",
+        "selectedCount": "{count} seleccionadas",
+        "documents": "Qué exportar",
+        "document": {
+            "daily": "Resumen diario",
+            "detailed": "Fichajes detallados",
+            "overtime": "Horas extra",
+            "monthly": "Estadísticas mensuales",
+            "history": "Historial de ediciones"
+        },
+        "formatLabel": "Formato",
+        "format": {
+            "csv": "CSV (ZIP)",
+            "json": "JSON",
+            "xlsx": "Excel"
+        },
+        "button": "Exportar",
+        "exporting": "Exportando...",
+        "error": "La exportación ha fallado.",
+        "noDocuments": "Selecciona al menos un tipo de datos.",
+        "noUsers": "Selecciona al menos una persona."
+    },
     "calendar": {
         "approvedBy": "Aprovado por",
         "authorizedLeave": "Permiso autorizado",

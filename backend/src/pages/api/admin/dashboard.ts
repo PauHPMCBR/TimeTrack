@@ -1,9 +1,9 @@
 import { withApi } from '@/lib/api-handler';
 import {
     APPROVAL_PENDING,
-    CHECK_IN,
     VACATION_PENDING,
 } from 'shared/src/lib/constants';
+import { openCheckIn } from 'shared/src/lib/work-hours';
 import { User, Group, WorkDaySessions, ElectiveVacation, MonthlyApproval, WorkDayRecord } from '@/models';
 import {
     notReplaced,
@@ -62,7 +62,7 @@ export default withApi(
 
         const workingUserIds = new Set(
             latestSessions
-                .filter((s) => s.latest.sessions.at(-1)?.type === CHECK_IN)
+                .filter((s) => openCheckIn(s.latest.sessions) !== null)
                 .map((s) => s._id)
         );
 

@@ -13,13 +13,13 @@ import {
     isValidDateKey,
     type DateKey,
 } from 'shared/src/lib/day-key';
-import { toCsv, downloadCsv } from '@/lib/csv';
 import { Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import FitxatgesTable from '@/components/FitxatgesTable';
 import WorkSessionsToolbar from '@/components/WorkSessionsToolbar';
 import MonthlyConfirmationCard from '@/components/MonthlyConfirmationCard';
 import SessionEditorModal from '@/components/SessionEditorModal';
+import ExportModal from '@/components/ExportModal';
 import { usePersistedState } from '@/lib/usePersistedState';
 import {
     AdminReportPeriod,
@@ -66,6 +66,7 @@ export default function HistoryPage() {
     const [editingRow, setEditingRow] = useState<AdminWorkSessionRow | null>(
         null
     );
+    const [exportOpen, setExportOpen] = useState(false);
     const PAGE_SIZE = 200;
 
     const loadRows = useCallback(async () => {
@@ -148,44 +149,15 @@ export default function HistoryPage() {
         setPeriod(p);
     };
 
-    const handleExport = useCallback(() => {
-        const headers = [
-            t('history.export.date'),
-            t('history.export.hours'),
-            t('history.export.overtime'),
-            t('history.export.status'),
-            t('history.export.confirmed'),
-        ];
-        const dayRows = (anomalyOnly
-            ? rows.filter((r) => r.status === 'anomaly')
-            : rows
-        ).map((r) => {
-            const monthKey = r.date.slice(0, 7);
-            const userMonthKey = `${r.userId}:${monthKey}`;
-            const isConfirmed = approvedMonths?.has(userMonthKey) ?? false;
-            return [
-                r.date,
-                r.totalHours.toFixed(2),
-                (r.overtimeHours ?? 0).toFixed(2),
-                t(`admin.events.status.${r.status}`),
-                isConfirmed ? t('common.yes') : t('common.no'),
-            ];
-        });
-        downloadCsv(
-            toCsv(headers, dayRows),
-            `history_${period}_${toLocalDateKey(new Date())}.csv`
-        );
-    }, [rows, anomalyOnly, t, period, approvedMonths]);
-
     return (
         <section className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                     {t('tabs.history')}
                 </h2>
-                <Button variant="soft" onClick={handleExport}>
+                <Button variant="soft" onClick={() => setExportOpen(true)}>
                     <Download size={16} />
-                    {t('history.export.label')}
+                    {t('export.button')}
                 </Button>
             </div>
 
@@ -242,6 +214,12 @@ export default function HistoryPage() {
                         return next;
                     })
                 }
+            />
+
+            <ExportModal
+                open={exportOpen}
+                onClose={() => setExportOpen(false)}
+                self
             />
         </section>
     );

@@ -2,12 +2,9 @@ import {
     YearlyVacationResponse,
     MonthlyWorkRecordResponse,
     AuthorizedLeaveRow,
+    DaySessionRow,
 } from '@/schemas/api';
-import {
-    ElectiveVacation,
-    TeamVacation,
-    DaySession,
-} from '.';
+import { ElectiveVacation, TeamVacation } from '.';
 import type { DateKey } from 'shared/src/lib/day-key';
 
 export type TeamAuthorizedLeave = AuthorizedLeaveRow & {
@@ -33,7 +30,7 @@ export type VacationEvent = {
 export type WorkSessionEvent = {
     hoursWorked: number;
     sessions: number;
-    sessionsList?: DaySession[];
+    sessionsList?: DaySessionRow[];
 };
 
 export interface CalendarDayData {

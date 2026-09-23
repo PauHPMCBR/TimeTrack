@@ -11,7 +11,6 @@ import {
     addDaysToKey,
     dateKeyFromParts,
     daysInMonth,
-    dowFromDateKey,
     isValidDateKey,
     type DateKey,
 } from 'shared/src/lib/day-key';
@@ -21,6 +20,7 @@ import SessionEditorModal from '@/components/SessionEditorModal';
 import AdminBackButton from '../../../components/AdminBackButton';
 import FitxatgesTable from '@/components/FitxatgesTable';
 import WorkSessionsToolbar from '@/components/WorkSessionsToolbar';
+import ExportModal from '@/components/ExportModal';
 import { usePersistedState } from '@/lib/usePersistedState';
 import {
     ADMIN_REPORT_PERIODS,
@@ -85,8 +85,7 @@ function AdminEventsInner() {
         ADMIN_EVENTS_USER,
         'all'
     );
-    const [exporting, setExporting] = useState(false);
-    const [exportError, setExportError] = useState<string | null>(null);
+    const [exportOpen, setExportOpen] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -200,45 +199,6 @@ function AdminEventsInner() {
         setPeriod(p);
     };
 
-    const exportRange = (): { from: string; to: string } => {
-        const [y, m] = cursor.split('-').map(Number);
-        if (period === 'week') {
-            const monday = addDaysToKey(cursor, -((dowFromDateKey(cursor) + 6) % 7));
-            return { from: monday, to: addDaysToKey(monday, 6) };
-        }
-        if (period === 'month') {
-            return {
-                from: dateKeyFromParts(y, m, 1),
-                to: dateKeyFromParts(y, m, daysInMonth(y, m)),
-            };
-        }
-        if (period === 'year') {
-            return {
-                from: dateKeyFromParts(y, 1, 1),
-                to: dateKeyFromParts(y, 12, 31),
-            };
-        }
-        return { from: cursor, to: cursor };
-    };
-
-    const handleExport = async () => {
-        setExporting(true);
-        setExportError(null);
-        const res = await apiClient.getCompanyUsers();
-        if (res.error || !res.data?.users) {
-            setExporting(false);
-            setExportError(res.error ?? 'GetError');
-            return;
-        }
-        const userIds = res.data.users.map((u: User) => u._id);
-        const exportRes = await apiClient.exportWorkSessions(
-            userIds,
-            exportRange()
-        );
-        setExporting(false);
-        if (exportRes.error) setExportError(exportRes.error);
-    };
-
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
             <div className="mx-auto max-w-6xl px-4 py-6">
@@ -253,26 +213,17 @@ function AdminEventsInner() {
                         </p>
                     </div>
                     <Button
-                        onClick={handleExport}
-                        disabled={exporting}
+                        onClick={() => setExportOpen(true)}
                         variant="soft"
                     >
                         <Download size={16} />
-                        {exporting
-                            ? t('common.loading')
-                            : t('admin.export.button')}
+                        {t('export.button')}
                     </Button>
                 </div>
 
                 {error && (
                     <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                         {error}
-                    </div>
-                )}
-
-                {exportError && (
-                    <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                        {t('admin.export.error')} ({exportError})
                     </div>
                 )}
 
@@ -316,6 +267,15 @@ function AdminEventsInner() {
                         onSaved={loadRows}
                     />
                 )}
+
+                <ExportModal
+                    open={exportOpen}
+                    onClose={() => setExportOpen(false)}
+                    users={users}
+                    initialUserIds={
+                        userFilter !== 'all' ? [userFilter] : undefined
+                    }
+                />
             </div>
         </div>
     );

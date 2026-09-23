@@ -1,5 +1,5 @@
 import { withApi } from '@/lib/api-handler';
-import { CHECK_IN } from 'shared/src/lib/constants';
+import { openCheckIn } from 'shared/src/lib/work-hours';
 import { WorkDaySessions, User } from '@/models';
 import { notReplaced } from '@/repositories/work-day-sessions-repository';
 import { notDeleted } from '@/repositories/user-repository';
@@ -25,7 +25,7 @@ export default withApi(
             ]);
 
             const activeUserIds = dayDocs
-                .filter((d) => d.sessions.at(-1)?.type === CHECK_IN)
+                .filter((d) => openCheckIn(d.sessions) !== null)
                 .map((d) => d.userId);
 
             const activeUsers = await User.find(

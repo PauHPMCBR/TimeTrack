@@ -1,17 +1,26 @@
 import { z } from 'zod';
 import {
     AppSettingsSchema,
-    DaySessionSchema,
     ElectiveVacationSchema,
     GroupSchema,
     UserSchema,
-    WorkDaySessionsSchema,
     WorkSessionReasonSchema,
     YearlyVacationDaysSchema,
 } from '@/schemas/database';
-import type { AdminWorkSessionRow } from '@/schemas/api';
-import type { DateKey, DateKeyInterval } from 'shared/src/lib/day-key';
-import type { TimeKey } from 'shared/src/lib/time-key';
+import type {
+    AdminWorkSessionRow,
+    DaySessionRow,
+    DaySessionsRow,
+    UserRef,
+} from '@/schemas/api';
+import type { DateKeyInterval } from 'shared/src/lib/day-key';
+
+export type {
+    AdminWorkSessionRow,
+    DaySessionRow,
+    DaySessionsRow,
+    UserRef,
+};
 
 export type User = z.infer<typeof UserSchema> & { _id: string };
 export type Group = z.infer<typeof GroupSchema> & { _id: string };
@@ -26,17 +35,6 @@ export type GroupMember = {
 };
 export type WorksessionReason = z.infer<typeof WorkSessionReasonSchema> & {
     _id: string;
-};
-export type DaySession = Omit<z.infer<typeof DaySessionSchema>, 'time'> & {
-    time: TimeKey;
-};
-export type WorkDaySessions = Omit<
-    z.infer<typeof WorkDaySessionsSchema>,
-    'date' | 'sessions'
-> & {
-    _id: string;
-    date: DateKey;
-    sessions: DaySession[];
 };
 export type ElectiveVacation = Omit<
     z.infer<typeof ElectiveVacationSchema>,
@@ -54,13 +52,11 @@ export type YearlyVacationDays = Omit<
     obligatoryIntervals: DateKeyInterval[];
 };
 export type AppSettings = z.infer<typeof AppSettingsSchema> & { _id: string };
-export type { AdminWorkSessionRow };
 
 export type DeletedUserRow = User & { deletedAt: string };
 
-export type PopulatedUserRef = { _id: string; name: string; email: string };
 export type TeamVacation = Omit<ElectiveVacation, 'userId'> & {
-    userId: string | PopulatedUserRef;
+    userId: string | UserRef;
 };
 
 export type AdminDashboardUser = User & { workingNow: boolean };
@@ -74,13 +70,4 @@ export type AdminDashboardResponse = {
     pendingApprovals: number;
     currentlyWorking: number;
     anomalyCount: number;
-};
-
-export type AdminWorkSessionsResponse = {
-    rows: AdminWorkSessionRow[];
-    total?: number;
-    limit?: number;
-    offset?: number;
-    approvedMonths?: string[];
-    timetableToleranceMinutes?: number;
 };

@@ -1,6 +1,6 @@
 import { renderEmailLayout } from '../layout';
 import { button, escapeHtml, fallbackLink, interpolate, paragraph, smallLine } from '../helpers';
-import type { EmailLanguage } from '../types';
+import type { Language } from 'shared/src/lib/constants';
 
 export interface RegistrationVars {
     name: string;
@@ -18,7 +18,7 @@ interface Copy {
     signature: string;
 }
 
-const COPY: Record<EmailLanguage, Copy> = {
+const COPY: Record<Language, Copy> = {
     ca: {
         subject: 'Has estat convidat/da al registre de jornada de {companyName}',
         greeting: 'Hola {name},',
@@ -53,7 +53,7 @@ const COPY: Record<EmailLanguage, Copy> = {
 };
 
 export function buildRegistrationMessage(
-    lang: EmailLanguage,
+    lang: Language,
     vars: RegistrationVars
 ): { subject: string; text: string; html: string } {
     const copy = COPY[lang] ?? COPY.ca;

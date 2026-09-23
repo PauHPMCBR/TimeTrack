@@ -28,14 +28,10 @@ import {
     dateKeyFromParts,
     daysInMonth,
     DateKey,
+    YearMonth,
 } from 'shared/src/lib/day-key';
 import { dateKey } from '@/lib/date-key';
 import type { UserRow, WorkDayRecordRow } from '@/lib/rows';
-
-export interface MonthPeriod {
-    year: number;
-    month: number; // 1-12
-}
 
 /** "YYYY-MM" key of a Date (company time-zone). */
 export function monthKeyOf(d: Date): string {
@@ -43,7 +39,7 @@ export function monthKeyOf(d: Date): string {
 }
 
 /** The calendar month before the month of `d` (company time-zone). */
-export function previousMonthOf(d: Date): MonthPeriod {
+export function previousMonthOf(d: Date): YearMonth {
     const [year, month] = dateKey(d)
         .split('-')
         .slice(0, 2)
@@ -233,7 +229,7 @@ export async function runMonthlyApprovalReminders(
  */
 export async function openMonthForUser(
     userId: string,
-    period: MonthPeriod,
+    period: YearMonth,
     openedBy: string,
     now: Date = new Date()
 ): Promise<{ doc: MonthlyApprovalRow | null; emailSent: boolean }> {

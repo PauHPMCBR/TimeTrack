@@ -1,6 +1,6 @@
 import { renderEmailLayout } from '../layout';
 import { button, escapeHtml, fallbackLink, interpolate, paragraph, smallLine } from '../helpers';
-import type { EmailLanguage } from '../types';
+import type { Language } from 'shared/src/lib/constants';
 
 export interface PasswordResetVars {
     name: string;
@@ -20,7 +20,7 @@ interface Copy {
     signature: string;
 }
 
-const COPY: Record<EmailLanguage, Copy> = {
+const COPY: Record<Language, Copy> = {
     ca: {
         subject: 'Restableix la contrasenya del registre de jornada de {companyName}',
         greeting: 'Hola {name},',
@@ -58,7 +58,7 @@ const COPY: Record<EmailLanguage, Copy> = {
 };
 
 export function buildPasswordResetMessage(
-    lang: EmailLanguage,
+    lang: Language,
     vars: PasswordResetVars
 ): { subject: string; text: string; html: string } {
     const copy = COPY[lang] ?? COPY.ca;

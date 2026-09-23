@@ -17,6 +17,9 @@ export const DateKeySchema = z
     .brand<'DateKey'>();
 export type DateKey = z.infer<typeof DateKeySchema>;
 
+/** A calendar month, 1-indexed. */
+export type YearMonth = { year: number; month: number };
+
 // Inclusive day-key interval with optional free text; the shared base of
 // elective vacations, authorized leaves and obligatory vacation intervals.
 export type DateKeyInterval = {

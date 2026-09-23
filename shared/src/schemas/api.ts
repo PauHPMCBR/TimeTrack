@@ -18,6 +18,7 @@ import {
     AuthorizedLeaveSchema,
     WorkDayClassificationSchema,
     WorkDayCheckModeSchema,
+    WorkDaySessionsSchema,
     WorkSessionAnomalySchema,
     AppSettingsSchema,
 } from './database';
@@ -304,6 +305,21 @@ export const DaySessionRowSchema = DaySessionSchema.extend({
     time: TimeKeySchema,
 });
 export type DaySessionRow = z.infer<typeof DaySessionRowSchema>;
+
+export const DaySessionsRowSchema = WorkDaySessionsSchema.extend({
+    _id: z.string(),
+    date: DateKeySchema,
+    sessions: z.array(DaySessionRowSchema),
+});
+export type DaySessionsRow = z.infer<typeof DaySessionsRowSchema>;
+
+// A user reduced to the fields other rows need to display (populated refs).
+export const UserRefSchema = z.object({
+    _id: z.string(),
+    name: z.string(),
+    email: z.string(),
+});
+export type UserRef = z.infer<typeof UserRefSchema>;
 
 export const AdminWorkSessionRowSchema = z.object({
     userId: z.string(),

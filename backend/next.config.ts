@@ -1,7 +1,7 @@
 import path from 'path';
 
 const nextConfig: import('next').NextConfig = {
-    serverExternalPackages: ['mongoose'],
+    serverExternalPackages: ['mongoose', 'exceljs', 'jszip'],
     turbopack: {
         root: path.join(__dirname, '..'),
     },

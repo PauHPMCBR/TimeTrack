@@ -1,11 +1,6 @@
 import { User } from '@/models';
+import type { UserRef } from 'shared/src/schemas/api';
 import type { UserRow } from '@/lib/rows';
-
-export interface ResolvedUser {
-    _id: string;
-    name: string;
-    email: string;
-}
 
 interface VacationLike {
     userId?: string;
@@ -49,7 +44,7 @@ export async function resolveVacationNames<
         .select('name email emailEncrypted')
         .lean<(Pick<UserRow, 'name' | 'email'> & { _id: string })[]>();
 
-    const byId: Record<string, ResolvedUser> = {};
+    const byId: Record<string, UserRef> = {};
     users.forEach((u) => {
         const id = String(u._id);
         byId[id] = { _id: id, name: u.name, email: u.email };

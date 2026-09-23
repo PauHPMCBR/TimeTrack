@@ -1,13 +1,10 @@
 import { renderEmailLayout } from '../layout';
 import { button, escapeHtml, interpolate, paragraph, smallLine } from '../helpers';
-import type { EmailLanguage } from '../types';
+import type { Language } from 'shared/src/lib/constants';
 import type { WorkSessionAnomaly } from 'shared/src/schemas/api';
-import type { WorkSessionType } from 'shared/src/schemas/database';
+import type { DaySession } from 'shared/src/schemas/database';
 
-export interface ReminderSessionTime {
-    time: string; // "HH:MM" (local wall-clock)
-    type: WorkSessionType;
-}
+export type ReminderSessionTime = Pick<DaySession, 'time' | 'type'>;
 
 export interface InconsistencyReminderVars {
     name: string;
@@ -33,7 +30,7 @@ interface Copy {
     anomalies: Record<WorkSessionAnomaly, string>;
 }
 
-const COPY: Record<EmailLanguage, Copy> = {
+const COPY: Record<Language, Copy> = {
     ca: {
         subject: "Recordatori del registre de jornada: fitxatge inconsistent",
         greeting: 'Hola {name},',
@@ -145,7 +142,7 @@ function timeRow(time: ReminderSessionTime, copy: Copy): string {
 }
 
 export function buildInconsistencyReminderMessage(
-    lang: EmailLanguage,
+    lang: Language,
     vars: InconsistencyReminderVars
 ): { subject: string; text: string; html: string } {
     const copy = COPY[lang] ?? COPY.ca;

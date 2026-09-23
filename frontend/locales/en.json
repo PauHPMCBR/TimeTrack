@@ -182,6 +182,33 @@
             "tooltipNotApplicable": "No time record for this period"
         }
     },
+    "export": {
+        "title": "Export data",
+        "year": "Year",
+        "month": "Month",
+        "users": "People",
+        "selectAll": "Select all",
+        "selectedCount": "{count} selected",
+        "documents": "What to export",
+        "document": {
+            "daily": "Daily summary",
+            "detailed": "Detailed sessions",
+            "overtime": "Overtime",
+            "monthly": "Monthly stats",
+            "history": "Edit history"
+        },
+        "formatLabel": "Format",
+        "format": {
+            "csv": "CSV (ZIP)",
+            "json": "JSON",
+            "xlsx": "Excel"
+        },
+        "button": "Export",
+        "exporting": "Exporting...",
+        "error": "Export failed.",
+        "noDocuments": "Select at least one data type.",
+        "noUsers": "Select at least one person."
+    },
     "calendar": {
         "approvedBy": "Approved by",
         "authorizedLeave": "Authorized leave",

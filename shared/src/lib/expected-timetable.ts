@@ -1,8 +1,7 @@
 import { WorkSessionAnomaly } from '../schemas/api';
 import type { AutoScheduleEntry, WeekTimetable } from '../schemas/database';
-import { CHECK_IN, CHECK_OUT } from './constants';
 import type { DaySessionLike } from './work-hours';
-import { timeToMinutes } from './work-hours';
+import { pairSessions, timeToMinutes } from './work-hours';
 import type { TimeKey } from './time-key';
 
 export { timeToMinutes };
@@ -85,19 +84,12 @@ export function computeTimetableAnomalies(
 ): WorkSessionAnomaly[] {
     const anomalies: WorkSessionAnomaly[] = [];
     const sorted = [...sessions].sort((a, b) => a.time.localeCompare(b.time));
-    const pairs: TimetablePair[] = [];
-    let pendingCheckIn: number | null = null;
-    for (const session of sorted) {
-        if (session.type === CHECK_IN) {
-            pendingCheckIn = timeToMinutes(session.time);
-        } else if (session.type === CHECK_OUT && pendingCheckIn !== null) {
-            pairs.push({
-                checkIn: pendingCheckIn,
-                checkOut: timeToMinutes(session.time),
-            });
-            pendingCheckIn = null;
-        }
-    }
+    const pairs: TimetablePair[] = pairSessions(sorted)
+        .filter((pair) => pair.entry && pair.leave)
+        .map((pair) => ({
+            checkIn: timeToMinutes(pair.entry!.time),
+            checkOut: timeToMinutes(pair.leave!.time),
+        }));
 
     for (const deviation of computePairDeviations(
         pairs,

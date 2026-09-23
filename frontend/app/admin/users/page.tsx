@@ -22,6 +22,7 @@ import AdminBackButton from '../../../components/AdminBackButton';
 import Avatar from '@/components/Avatar';
 import UserEditModal from '../../../components/UserEditModal';
 import UserCreateModal from '../../../components/UserCreateModal';
+import ExportModal from '@/components/ExportModal';
 
 type DashboardUser = User & { workingNow?: boolean };
 
@@ -31,10 +32,7 @@ export default function UsersListPage() {
     const [users, setUsers] = useState<DashboardUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const [exporting, setExporting] = useState(false);
-    const [exportError, setExportError] = useState<string | null>(null);
-    const [exportFrom, setExportFrom] = useState('');
-    const [exportTo, setExportTo] = useState('');
+    const [exportOpen, setExportOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [creating, setCreating] = useState(false);
     const [total, setTotal] = useState(0);
@@ -110,18 +108,6 @@ export default function UsersListPage() {
         else setSelected(new Set(users.map((u) => u._id)));
     };
 
-    const handleExport = async () => {
-        if (selected.size === 0) return;
-        setExporting(true);
-        setExportError(null);
-        const res = await apiClient.exportWorkSessions([...selected], {
-            from: exportFrom || undefined,
-            to: exportTo || undefined,
-        });
-        setExporting(false);
-        if (res.error) setExportError(res.error);
-    };
-
     return (
         <div className="space-y-6">
             <AdminBackButton />
@@ -168,45 +154,16 @@ export default function UsersListPage() {
                             count: selected.size,
                         })}
                     </span>
-                    <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700"></span>
-                    <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-300">
-                        {t('admin.export.from')}
-                        <input
-                            type="date"
-                            value={exportFrom}
-                            max={exportTo || undefined}
-                            onChange={(e) => setExportFrom(e.target.value)}
-                            className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                        />
-                    </label>
-                    <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-300">
-                        {t('admin.export.to')}
-                        <input
-                            type="date"
-                            value={exportTo}
-                            min={exportFrom || undefined}
-                            onChange={(e) => setExportTo(e.target.value)}
-                            className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-                        />
-                    </label>
                     <Button
-                        onClick={handleExport}
-                        disabled={selected.size === 0 || exporting}
+                        onClick={() => setExportOpen(true)}
+                        disabled={selected.size === 0}
                         variant="soft"
                     >
                         <Download size={16} />
-                        {exporting
-                            ? t('common.loading')
-                            : t('admin.export.button')}
+                        {t('export.button')}
                     </Button>
                 </div>
             </div>
-
-            {exportError && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                    {t('admin.export.error')} ({exportError})
-                </div>
-            )}
 
             <Card className="overflow-hidden">
                 {loading ? (
@@ -415,6 +372,13 @@ export default function UsersListPage() {
                 open={creating}
                 onClose={() => setCreating(false)}
                 onCreated={fetchUsers}
+            />
+
+            <ExportModal
+                open={exportOpen}
+                onClose={() => setExportOpen(false)}
+                users={users}
+                initialUserIds={[...selected]}
             />
         </div>
     );

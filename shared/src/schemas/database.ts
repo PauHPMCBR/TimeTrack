@@ -47,8 +47,8 @@ export const WeekTimetableSchema = z
     .array(z.array(AutoScheduleEntrySchema))
     .length(7);
 export type WeekTimetable = z.infer<typeof WeekTimetableSchema>;
-export type ScheduleMode = 'hours' | 'timetable';
 export const ScheduleModeSchema = z.enum(['hours', 'timetable']);
+export type ScheduleMode = z.infer<typeof ScheduleModeSchema>;
 
 export const ValidWeekTimetableSchema = WeekTimetableSchema.refine(
     (week) => week.every(isValidDayTimetable),

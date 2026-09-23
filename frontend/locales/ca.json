@@ -182,6 +182,33 @@
             "tooltipNotApplicable": "Sense registre de jornada en aquest període"
         }
     },
+    "export": {
+        "title": "Exporta dades",
+        "year": "Any",
+        "month": "Mes",
+        "users": "Persones",
+        "selectAll": "Selecciona-ho tot",
+        "selectedCount": "{count} seleccionades",
+        "documents": "Què vols exportar",
+        "document": {
+            "daily": "Resum diari",
+            "detailed": "Fitxatges detallats",
+            "overtime": "Hores extra",
+            "monthly": "Estadístiques mensuals",
+            "history": "Historial d'edicions"
+        },
+        "formatLabel": "Format",
+        "format": {
+            "csv": "CSV (ZIP)",
+            "json": "JSON",
+            "xlsx": "Excel"
+        },
+        "button": "Exporta",
+        "exporting": "Exportant...",
+        "error": "Ha fallat l'exportació.",
+        "noDocuments": "Selecciona com a mínim un tipus de dades.",
+        "noUsers": "Selecciona com a mínim una persona."
+    },
     "calendar": {
         "approvedBy": "Aprovat per",
         "authorizedLeave": "Permís autoritzat",

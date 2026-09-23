@@ -1,24 +1,19 @@
 'use client';
 
 import { useI18n } from '@/app/i18n';
-
-const langs = [
-    { code: 'ca' as const, label: 'CA' },
-    { code: 'es' as const, label: 'ES' },
-    { code: 'en' as const, label: 'EN' },
-];
+import { LANGUAGES } from 'shared/src/lib/constants';
 
 export default function LanguageSwitcher() {
     const { lang, setLang } = useI18n();
 
     return (
         <div className="flex items-center gap-1">
-            {langs.map((l) => {
-                const active = lang === l.code;
+            {LANGUAGES.map((code) => {
+                const active = lang === code;
                 return (
                     <button
-                        key={l.code}
-                        onClick={() => setLang(l.code)}
+                        key={code}
+                        onClick={() => setLang(code)}
                         aria-pressed={active}
                         className={`flex h-8 min-w-9 items-center justify-center rounded-md px-1.5 text-xs font-semibold transition-colors ${
                             active
@@ -26,7 +21,7 @@ export default function LanguageSwitcher() {
                                 : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                         }`}
                     >
-                        {l.label}
+                        {code.toUpperCase()}
                     </button>
                 );
             })}

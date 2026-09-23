@@ -6,7 +6,7 @@ import {
     interpolate,
     paragraph,
 } from '../helpers';
-import type { EmailLanguage } from '../types';
+import type { Language } from 'shared/src/lib/constants';
 
 export interface NewFileVars {
     companyName: string;
@@ -25,7 +25,7 @@ interface Copy {
     signature: string;
 }
 
-const COPY: Record<EmailLanguage, Copy> = {
+const COPY: Record<Language, Copy> = {
     ca: {
         subject: 'Registre de jornada: un nou fitxer compartit amb tu',
         greeting: 'Hola {name},',
@@ -55,7 +55,7 @@ const COPY: Record<EmailLanguage, Copy> = {
 };
 
 export function buildNewFileMessage(
-    lang: EmailLanguage,
+    lang: Language,
     vars: NewFileVars
 ): { subject: string; text: string; html: string } {
     const copy = COPY[lang] ?? COPY.ca;

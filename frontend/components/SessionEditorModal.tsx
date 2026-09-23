@@ -10,19 +10,20 @@ import { formatDateKey, localeTag } from '@/lib/datetime';
 import { configuredTimezone } from '@/lib/timezone';
 import {
     CHECK_IN,
-    CHECK_OUT,
     HOUR_MINUTE_KEY_REGEX,
 } from 'shared/src/lib/constants';
-import { timeToMinutes } from 'shared/src/lib/expected-timetable';
+import {
+    isCoherentSequence,
+    nextSessionType,
+    timeToMinutes,
+} from 'shared/src/lib/work-hours';
 import type { TimeKey } from 'shared/src/lib/time-key';
 import {
     DEFAULT_CHECK_IN_TIME,
     DEFAULT_CHECK_OUT_TIME,
 } from 'shared/src/lib/defaults';
-import type {
-    WorkSessionType,
-    WorkDayClassification,
-} from 'shared/src/schemas/database';
+import type { WorkDayClassification } from 'shared/src/schemas/database';
+import type { DaySessionRow } from '@/schemas/api';
 import Modal from '@/components/Modal';
 import Button from '@/components/ui/Button';
 import { LogIn, LogOut, Plus, Trash2, Loader2, Clock } from 'lucide-react';
@@ -48,34 +49,11 @@ type Props = {
     onSaved: () => void;
 };
 
-type EditableSession = {
-    type: WorkSessionType;
-    time: TimeKey;
-    overtime: boolean;
-    notes?: string;
-};
-
 function addOneHourToWallTime(hm: TimeKey): TimeKey {
     const [h, m] = hm.split(':').map(Number);
     const total = Math.min((h || 0) * 60 + (m || 0) + 60, 23 * 60 + 59);
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(Math.floor(total / 60))}:${pad(total % 60)}` as TimeKey;
-}
-
-function nextExpectedType(sessions: EditableSession[]): WorkSessionType {
-    if (sessions.length === 0) return CHECK_IN;
-    return sessions[sessions.length - 1].type === CHECK_IN
-        ? CHECK_OUT
-        : CHECK_IN;
-}
-
-function isCoherent(sessions: EditableSession[]): boolean {
-    let expected: WorkSessionType = CHECK_IN;
-    for (const s of sessions) {
-        if (s.type !== expected) return false;
-        expected = s.type === CHECK_IN ? CHECK_OUT : CHECK_IN;
-    }
-    return true;
 }
 
 /**
@@ -93,7 +71,7 @@ export default function SessionEditorModal({
     const locale = localeTag(lang);
     const isAdminPanel = usePathname().startsWith('/admin');
 
-    const [sessions, setSessions] = useState<EditableSession[]>(
+    const [sessions, setSessions] = useState<DaySessionRow[]>(
         row.sessions.map((s) => ({
             type: s.type,
             time: s.time,
@@ -121,7 +99,7 @@ export default function SessionEditorModal({
               [...row.sessions].reverse().find((s) => s.notes)?.notes)
             : undefined;
 
-    const expected = nextExpectedType(sessions);
+    const expected = nextSessionType(sessions);
 
     const validate = (): string | null => {
         for (const session of sessions) {
@@ -137,7 +115,7 @@ export default function SessionEditorModal({
                 return t('error.IncorrectParameter.reason.NotInOrder');
             }
         }
-        if (!isCoherent(sessions)) {
+        if (!isCoherentSequence(sessions)) {
             return t('error.IncorrectParameter.reason.NotInOrder');
         }
         return null;
@@ -356,7 +334,7 @@ export default function SessionEditorModal({
                 )}
 
                 {sessions.map((session, idx) => {
-                    const removable = isCoherent(
+                    const removable = isCoherentSequence(
                         sessions.filter((_, i) => i !== idx)
                     );
                     return (

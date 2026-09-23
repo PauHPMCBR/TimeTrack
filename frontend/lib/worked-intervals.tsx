@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
-import { CHECK_IN } from 'shared/src/lib/constants';
+import {
+    pairSessions,
+    type DaySessionLike,
+} from 'shared/src/lib/work-hours';
 import type { TimeKey } from 'shared/src/lib/time-key';
 import { Clock, AlertTriangle } from 'lucide-react';
 
@@ -18,67 +21,21 @@ export interface WorkedInterval {
     problem: boolean;
 }
 
-type WorkedSessionLike = {
-    type: 'check_in' | 'check_out';
-    time: TimeKey;
-    overtime?: boolean;
-};
-
-// Pairs a day's punches into worked intervals, mirroring the pairing rules
-// of `computeDayHours` (shared/src/lib/work-hours.ts): an unmatched check-out
-// opens with a missing check-in, and a trailing open check-in stays unclosed.
 export function workedIntervals(
-    sessions: WorkedSessionLike[]
+    sessions: DaySessionLike[]
 ): WorkedInterval[] {
     const sorted = [...sessions].sort((a, b) => a.time.localeCompare(b.time));
 
-    const raw: Array<{
-        checkIn: WorkedIntervalEnd;
-        checkOut: WorkedIntervalEnd;
-        overtime: boolean;
-        unclosed: boolean;
-    }> = [];
-    let open: { checkIn: TimeKey; overtime: boolean } | null = null;
-
-    for (const s of sorted) {
-        const time = s.time;
-        if (s.type === CHECK_IN) {
-            if (open) {
-                raw.push({
-                    checkIn: open.checkIn,
-                    checkOut: MISSING_TIME,
-                    overtime: open.overtime,
-                    unclosed: true,
-                });
-            }
-            open = { checkIn: time, overtime: s.overtime === true };
-        } else if (open) {
-            raw.push({
-                checkIn: open.checkIn,
-                checkOut: time,
-                overtime: open.overtime || s.overtime === true,
-                unclosed: false,
-            });
-            open = null;
-        } else {
-            raw.push({
-                checkIn: MISSING_TIME,
-                checkOut: time,
-                overtime: s.overtime === true,
-                unclosed: true,
-            });
-        }
-    }
-    if (open) {
-        raw.push({
-            checkIn: open.checkIn,
-            checkOut: MISSING_TIME,
-            overtime: open.overtime,
-            unclosed: true,
-        });
-    }
-
-    return raw.map((interval) => ({ ...interval, problem: interval.unclosed }));
+    return pairSessions(sorted).map((pair) => {
+        const unclosed = !pair.entry || !pair.leave;
+        return {
+            checkIn: pair.entry?.time ?? MISSING_TIME,
+            checkOut: pair.leave?.time ?? MISSING_TIME,
+            overtime: pair.overtime,
+            unclosed,
+            problem: unclosed,
+        };
+    });
 }
 
 export type WorkedIntervalTone = 'ok' | 'overtime' | 'problem';

@@ -87,3 +87,7 @@ export { DATE_KEY_REGEX } from './day-key';
 export const HOUR_MINUTE_KEY_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const MIN_VALID_YEAR = 2000;
 export const MAX_VALID_YEAR = 2100;
+
+// UI/export languages supported by the app (single source of truth).
+export const LANGUAGES = ['ca', 'es', 'en'] as const;
+export type Language = (typeof LANGUAGES)[number];

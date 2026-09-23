@@ -1,6 +1,7 @@
-import type { WeekTimetable } from '@/schemas/database';
+import { z } from 'zod';
+import { AutoScheduleEntrySchema, type WeekTimetable } from '@/schemas/database';
 
-export type TimetableEntry = { checkIn: string; checkOut: string };
+export type TimetableEntry = z.input<typeof AutoScheduleEntrySchema>;
 
 export function timetableText(timetable: TimetableEntry[]): string {
     return timetable.map((e) => `${e.checkIn ?? ''} – ${e.checkOut ?? ''}`).join(', ');

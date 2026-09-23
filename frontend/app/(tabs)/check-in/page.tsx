@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { WorkSessionRequest } from '@/schemas/api';
-import { DaySession, WorksessionReason, User } from '@/types';
+import { DaySessionRow, WorksessionReason, User } from '@/types';
 import { formatHM } from '@/lib/datetime';
 import { nowWallTime, todayKey } from '@/lib/timezone';
 import type { DateKey } from 'shared/src/lib/day-key';
-import { computeDayHours, timeToMinutes } from 'shared/src/lib/work-hours';
+import { computeDayHours, openCheckIn, timeToMinutes } from 'shared/src/lib/work-hours';
 import {
     workedIntervals as sessionsToWorkedIntervals,
     workedIntervalTone,
@@ -41,7 +41,7 @@ export default function CheckInPage() {
     const searchParams = useSearchParams();
 
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [workSessions, setWorkSessions] = useState<DaySession[]>([]);
+    const [workSessions, setWorkSessions] = useState<DaySessionRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [isChecking, setIsChecking] = useState(false);
@@ -112,18 +112,10 @@ export default function CheckInPage() {
         [workSessions]
     );
 
-    const activeSession = useMemo(() => {
-        let lastCheckIn: DaySession | null = null;
-
-        for (const session of todaySessions) {
-            if (session.type === CHECK_IN) {
-                lastCheckIn = session;
-            } else if (session.type === CHECK_OUT && lastCheckIn) {
-                lastCheckIn = null;
-            }
-        }
-        return lastCheckIn;
-    }, [todaySessions]);
+    const activeSession = useMemo(
+        () => openCheckIn(todaySessions),
+        [todaySessions]
+    );
 
     const isActiveSession = Boolean(activeSession);
     useEffect(() => {

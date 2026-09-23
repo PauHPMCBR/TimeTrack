@@ -13,7 +13,6 @@ import { dateKey } from '@/lib/date-key';
 import { isMonthApproved } from '@/lib/monthly-approvals';
 import { recomputeWorkDayRecords } from '@/lib/work-day-records';
 import { getCompanyLanguage } from '@/lib/mail';
-import type { EmailLanguage } from '@/lib/mail/types';
 import {
     getAutoTimetable,
 } from '@/lib/auto-schedule';
@@ -28,10 +27,11 @@ import {
     SOURCE_USER_AUTOMATIC,
     SESSION_ACTIVE,
     SESSION_REPLACED,
+    type Language,
 } from 'shared/src/lib/constants';
 
 type AutoScheduleUser = Pick<UserRow, 'autoTimetable'>;
-const AUTO_TIMETABLE_NOTES: Record<EmailLanguage, string> = {
+const AUTO_TIMETABLE_NOTES: Record<Language, string> = {
     ca: 'Horari automàtic aplicat',
     en: 'Automatic timetable applied',
     es: 'Horario automático aplicado',
