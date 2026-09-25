@@ -62,6 +62,7 @@ export interface BuildExportInput {
     documents: ExportDocumentId[];
     generatedBy: string;
     language: Language;
+    logo?: string;
 }
 
 function round2(value: number): number {
@@ -100,7 +101,11 @@ function toDailyRow(row: AdminWorkSessionRow): ExportDailyRow {
     };
 }
 
-function toHistoryRow(doc: DaySessionsRow, userName: string): ExportHistoryRow {
+function toHistoryRow(
+    doc: DaySessionsRow,
+    userName: string,
+    editorName: string | undefined
+): ExportHistoryRow {
     const editedAt = doc.replacedAt ?? doc.updatedAt ?? doc.createdAt;
     return {
         userId: String(doc.userId),
@@ -110,6 +115,7 @@ function toHistoryRow(doc: DaySessionsRow, userName: string): ExportHistoryRow {
         status: doc.status,
         source: doc.source,
         ...(doc.editedBy ? { editedBy: doc.editedBy } : {}),
+        ...(editorName ? { editedByName: editorName } : {}),
         ...(doc.editReason ? { editReason: doc.editReason } : {}),
         ...(doc.replacedByVersion !== undefined
             ? { replacedByVersion: doc.replacedByVersion }
@@ -231,7 +237,7 @@ function buildMonthlyRows(
 export async function buildExportPayload(
     input: BuildExportInput
 ): Promise<ExportPayload> {
-    const { userIds, year, month, generatedBy, language } = input;
+    const { userIds, year, month, generatedBy, language, logo } = input;
     const documents = Array.from(new Set(input.documents));
 
     const days = computeDaysForPeriod('month', undefined, year, month);
@@ -311,6 +317,26 @@ export async function buildExportPayload(
         approvalDocs.map((doc) => [String(doc.userId), doc.approvedAt])
     );
 
+    const editorNames = new Map<string, string>();
+    if (documents.includes('history')) {
+        const editorIds = Array.from(
+            new Set(
+                versionDocs
+                    .map((doc) => doc.editedBy)
+                    .filter((value): value is string => Boolean(value))
+            )
+        );
+        if (editorIds.length > 0) {
+            const editors = await User.find(
+                { _id: { $in: editorIds } },
+                'name'
+            ).lean<{ _id: string; name: string }[]>();
+            for (const editor of editors) {
+                editorNames.set(String(editor._id), editor.name);
+            }
+        }
+    }
+
     const result: ExportDocumentRows = {
         daily: [],
         detailed: [],
@@ -337,10 +363,29 @@ export async function buildExportPayload(
         );
     }
     if (documents.includes('history')) {
+        // Only days that were actually edited (more than the initial version)
+        // belong in the edit history.
+        const versionCounts = new Map<string, number>();
+        for (const doc of versionDocs) {
+            const key = `${doc.userId}:${doc.date}`;
+            versionCounts.set(key, (versionCounts.get(key) ?? 0) + 1);
+        }
         result.history = versionDocs
-            .filter((doc) => userMap.has(String(doc.userId)))
+            .filter((doc) => {
+                const key = `${doc.userId}:${doc.date}`;
+                return (
+                    userMap.has(String(doc.userId)) &&
+                    (versionCounts.get(key) ?? 0) >= 2
+                );
+            })
             .map((doc) =>
-                toHistoryRow(doc, userMap.get(String(doc.userId))!.name)
+                toHistoryRow(
+                    doc,
+                    userMap.get(String(doc.userId))!.name,
+                    doc.editedBy
+                        ? editorNames.get(String(doc.editedBy))
+                        : undefined
+                )
             )
             .sort(
                 (a, b) =>
@@ -367,6 +412,7 @@ export async function buildExportPayload(
         timezone: settings.timezone ?? DEFAULT_TIMEZONE,
         integrity,
         language,
+        ...(logo ? { logo } : {}),
     };
 
     return { manifest, documents: result };

@@ -36,14 +36,14 @@ describe('Export Schemas', () => {
 
     describe('ExportFormatSchema', () => {
         it('should accept the supported formats', () => {
-            for (const format of ['csv', 'json', 'xlsx']) {
+            for (const format of ['csv', 'json', 'xlsx', 'pdf']) {
                 expect(ExportFormatSchema.safeParse(format).success).toBe(true);
             }
         });
 
         it('should reject an unsupported format', () => {
             expect(ExportFormatSchema.safeParse('ods').success).toBe(false);
-            expect(ExportFormatSchema.safeParse('pdf').success).toBe(false);
+            expect(ExportFormatSchema.safeParse('docx').success).toBe(false);
         });
     });
 
@@ -112,6 +112,7 @@ describe('Export Schemas', () => {
                 rowCounts: { daily: 3 },
                 timezone: 'Europe/Madrid',
                 integrity: { daily: 'abc123' },
+                logo: 'data:image/png;base64,AAAA',
             });
             expect(result.success).toBe(true);
         });
@@ -236,6 +237,8 @@ describe('Export Schemas', () => {
                 status: 'replaced',
                 source: 'adminManual',
                 replacedByVersion: 3,
+                editedBy: 'admin1',
+                editedByName: 'Admin One',
                 editedAt: new Date(),
                 sessions: [{ type: 'check_in', time: '08:00' }],
             });

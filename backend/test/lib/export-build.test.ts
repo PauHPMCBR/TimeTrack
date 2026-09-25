@@ -136,6 +136,15 @@ const versionDocs = [
             { type: 'check_out', time: '16:00' },
         ],
     },
+    {
+        userId: 'u1',
+        date: '2025-07-05',
+        version: 1,
+        status: 'active',
+        source: 'userClick',
+        createdAt: new Date('2025-07-05T10:00:00.000Z'),
+        sessions: [{ type: 'check_in', time: '08:00' }],
+    },
 ];
 
 beforeEach(() => {
@@ -217,6 +226,9 @@ describe('buildExportPayload', () => {
             status: 'replaced',
             replacedByVersion: 2,
         });
+        expect(
+            payload.documents.history.some((row) => row.date === '2025-07-05')
+        ).toBe(false);
 
         expect(payload.manifest).toMatchObject({
             year: 2025,

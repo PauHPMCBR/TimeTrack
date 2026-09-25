@@ -23,7 +23,7 @@ export const ExportDocumentIdSchema = z.enum([
 ]);
 export type ExportDocumentId = z.infer<typeof ExportDocumentIdSchema>;
 
-export const ExportFormatSchema = z.enum(['csv', 'json', 'xlsx']);
+export const ExportFormatSchema = z.enum(['csv', 'json', 'xlsx', 'pdf']);
 export type ExportFormat = z.infer<typeof ExportFormatSchema>;
 
 export const ExportLanguageSchema = z.enum(LANGUAGES);
@@ -36,6 +36,8 @@ export const ExportRequestSchema = z.object({
     documents: z.array(ExportDocumentIdSchema).min(1),
     format: ExportFormatSchema,
     language: ExportLanguageSchema.default('ca'),
+    // Optional company logo (data URI) sent by the frontend for the PDF header.
+    logo: z.string().max(3_000_000).optional(),
 });
 export type ExportRequest = z.infer<typeof ExportRequestSchema>;
 
@@ -50,6 +52,7 @@ export const ExportManifestSchema = z.object({
     timezone: z.string(),
     integrity: z.record(ExportDocumentIdSchema, z.string()),
     language: ExportLanguageSchema.default('ca'),
+    logo: z.string().optional(),
 });
 export type ExportManifest = z.infer<typeof ExportManifestSchema>;
 
@@ -121,6 +124,7 @@ export const ExportHistoryRowSchema = z.object({
     status: z.enum(['active', 'replaced']),
     source: SourceKindSchema,
     editedBy: z.string().optional(),
+    editedByName: z.string().optional(),
     editReason: z.string().optional(),
     replacedByVersion: z.number().int().min(1).optional(),
     editedAt: z.date().optional(),

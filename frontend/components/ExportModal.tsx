@@ -5,6 +5,9 @@ import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { todayKey } from '@/lib/timezone';
 import { useDirty } from '@/lib/useDirty';
+import { usePersistedState } from '@/lib/usePersistedState';
+import { EXPORT_DOCUMENTS, EXPORT_FORMAT } from '@/lib/storage';
+import { APP_ICON_URL } from '@/lib/brand';
 import {
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
@@ -28,7 +31,59 @@ const DOCUMENTS: ExportDocumentId[] = [
     'monthly',
     'history',
 ];
-const FORMATS: ExportFormat[] = ['csv', 'json', 'xlsx'];
+const FORMATS: ExportFormat[] = ['pdf', 'csv', 'json', 'xlsx'];
+
+// The company logo comes from the frontend build (APP_ICON_URL); fetch it once
+// and inline it as a data URI so the backend does not need to know branding.
+let logoPromise: Promise<string | null> | null = null;
+
+function fetchLogoDataUri(): Promise<string | null> {
+    if (!APP_ICON_URL) return Promise.resolve(null);
+    if (!logoPromise) {
+        logoPromise = (async () => {
+            try {
+                const response = await fetch(APP_ICON_URL, {
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) return null;
+                const blob = await response.blob();
+                return await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(String(reader.result));
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsDataURL(blob);
+                });
+            } catch {
+                logoPromise = null;
+                return null;
+            }
+        })();
+    }
+    return logoPromise;
+}
+
+function deserializeDocuments(raw: string): ExportDocumentId[] {
+    try {
+        const parsed = JSON.parse(raw);
+        const valid = Array.isArray(parsed)
+            ? parsed.filter((value): value is ExportDocumentId =>
+                  DOCUMENTS.includes(value)
+              )
+            : [];
+        return valid.length > 0 ? valid : ['daily'];
+    } catch {
+        return ['daily'];
+    }
+}
+
+function deserializeFormat(raw: string): ExportFormat {
+    try {
+        const parsed = JSON.parse(raw);
+        return FORMATS.includes(parsed) ? parsed : 'csv';
+    } catch {
+        return 'csv';
+    }
+}
 
 export default function ExportModal({
     open,
@@ -48,8 +103,16 @@ export default function ExportModal({
 
     const [year, setYear] = useState(() => Number(todayKey().slice(0, 4)));
     const [month, setMonth] = useState(() => Number(todayKey().slice(5, 7)));
-    const [documents, setDocuments] = useState<ExportDocumentId[]>(['daily']);
-    const [format, setFormat] = useState<ExportFormat>('csv');
+    const [documents, setDocuments] = usePersistedState<ExportDocumentId[]>(
+        EXPORT_DOCUMENTS,
+        ['daily'],
+        { deserialize: deserializeDocuments }
+    );
+    const [format, setFormat] = usePersistedState<ExportFormat>(
+        EXPORT_FORMAT,
+        'csv',
+        { deserialize: deserializeFormat }
+    );
     const [selectedUsers, setSelectedUsers] = useState<string[]>(
         initialUserIds ?? []
     );
@@ -110,6 +173,7 @@ export default function ExportModal({
         }
         setExporting(true);
         setError(null);
+        const logo = format === 'pdf' ? await fetchLogoDataUri() : null;
         const res = await apiClient.exportData(
             {
                 year,
@@ -117,6 +181,7 @@ export default function ExportModal({
                 documents,
                 format,
                 language: lang,
+                ...(logo ? { logo } : {}),
                 ...(self ? {} : { userIds: selectedUsers }),
             },
             { self }

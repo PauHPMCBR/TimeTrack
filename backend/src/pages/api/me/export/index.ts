@@ -34,6 +34,7 @@ export default withApi(
                 documents: body.documents,
                 generatedBy: req.user!.userId as string,
                 language: body.language,
+                logo: body.logo,
             });
 
             ctx.auditExtra.rows = Object.values(

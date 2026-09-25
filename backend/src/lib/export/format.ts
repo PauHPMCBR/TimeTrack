@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import { toCsv } from 'shared/src/lib/csv';
 import { buildExportSheet } from 'shared/src/lib/export-sheets';
 import { EXPORT_TERMS } from 'shared/src/lib/export-i18n';
+import { buildPdf } from '@/lib/export/pdf';
 import type {
     ExportDocumentId,
     ExportFormat,
@@ -20,12 +21,14 @@ const CONTENT_TYPES: Record<ExportFormat, string> = {
     csv: 'application/zip',
     json: 'application/json; charset=utf-8',
     xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    pdf: 'application/pdf',
 };
 
 const EXTENSIONS: Record<ExportFormat, string> = {
     csv: 'zip',
     json: 'json',
     xlsx: 'xlsx',
+    pdf: 'pdf',
 };
 
 function csvFor(document: ExportDocumentId, payload: ExportPayload): string {
@@ -103,8 +106,10 @@ export async function formatExport(
         body = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
     } else if (format === 'csv') {
         body = await buildCsvZip(payload);
-    } else {
+    } else if (format === 'xlsx') {
         body = await buildXlsx(payload);
+    } else {
+        body = await buildPdf(payload);
     }
 
     return { filename, contentType: CONTENT_TYPES[format], body };

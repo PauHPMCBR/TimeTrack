@@ -135,11 +135,13 @@ function monthlySheet(
     language: Language
 ): ExportSheet {
     const terms = EXPORT_TERMS[language];
+    const confirmedOf = (row: ExportMonthlyRow) =>
+        row.confirmed
+            ? [terms.yes, isoOrEmpty(row.approvedAt)].filter(Boolean).join(' · ')
+            : terms.no;
     return {
         headers: headersFor(language, [
             'user',
-            'year',
-            'month',
             'daysWithSessions',
             'totalHours',
             'overtimeHours',
@@ -149,12 +151,9 @@ function monthlySheet(
             'authorizedLeaveDays',
             'anomalyCount',
             'confirmed',
-            'approvedAt',
         ]),
         rows: rows.map((row) => [
             row.userName,
-            row.year,
-            row.month,
             row.daysWithSessions,
             row.totalHours,
             row.overtimeHours,
@@ -163,8 +162,7 @@ function monthlySheet(
             row.obligatoryVacationDays,
             row.authorizedLeaveDays,
             row.anomalyCount,
-            row.confirmed ? terms.yes : terms.no,
-            isoOrEmpty(row.approvedAt),
+            confirmedOf(row),
         ]),
     };
 }
@@ -193,7 +191,7 @@ function historySheet(
             row.version,
             terms.versionStatus[row.status],
             terms.source[row.source],
-            row.editedBy ?? '',
+            row.editedByName ?? row.editedBy ?? '',
             row.editReason ?? '',
             row.replacedByVersion ?? '',
             isoOrEmpty(row.editedAt),

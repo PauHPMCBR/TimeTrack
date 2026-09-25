@@ -26,6 +26,7 @@ function payload(
             timezone: 'Europe/Madrid',
             integrity: { daily: 'a', monthly: 'b', history: 'c' },
             language: 'en',
+            logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
         },
         documents: {
             daily: [
@@ -180,6 +181,41 @@ describe('formatExport', () => {
                 'monthly',
                 'manifest',
             ]);
+        });
+    });
+
+    describe('pdf', () => {
+        it('renders a pdf with a page per selected document', async () => {
+            const result = await formatExport(
+                'pdf',
+                payload(['daily', 'monthly'])
+            );
+            expect(result.contentType).toBe('application/pdf');
+            expect(result.filename).toMatch(/^export_2025-07_.*\.pdf$/);
+            expect(result.body.subarray(0, 5).toString('utf-8')).toBe('%PDF-');
+            expect(result.body.length).toBeGreaterThan(500);
+
+            const pageCount = (
+                result.body.toString('latin1').match(/\/Type \/Page\b/g) ?? []
+            ).length;
+            expect(pageCount).toBeGreaterThanOrEqual(2);
+        });
+
+        it('paginates long documents', async () => {
+            const many = payload(['daily']);
+            const base = many.documents.daily[0];
+            many.documents.daily = Array.from({ length: 150 }, (_, index) => ({
+                ...base,
+                userName: `User ${index}`,
+            }));
+
+            const result = await formatExport('pdf', many);
+            expect(result.body.subarray(0, 5).toString('utf-8')).toBe('%PDF-');
+
+            const pageCount = (
+                result.body.toString('latin1').match(/\/Type \/Page\b/g) ?? []
+            ).length;
+            expect(pageCount).toBeGreaterThanOrEqual(3);
         });
     });
 });

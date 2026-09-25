@@ -30,3 +30,5 @@ export const CALENDAR_ALL_USERS = 'calendar_all_users';
 export const HISTORY_PERIOD = 'history_period';
 export const HISTORY_CURSOR = 'history_cursor';
 export const HISTORY_ANOMALY_ONLY = 'history_anomaly_only';
+export const EXPORT_DOCUMENTS = 'export_documents';
+export const EXPORT_FORMAT = 'export_format';

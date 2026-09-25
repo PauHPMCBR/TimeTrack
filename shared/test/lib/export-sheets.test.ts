@@ -198,7 +198,8 @@ describe('buildExportSheet', () => {
     it('builds the monthly sheet', () => {
         const sheet = buildExportSheet('monthly', documents, 'en');
         expect(sheet.rows[0][0]).toBe('John');
-        expect(sheet.rows[0][11]).toBe('No');
+        expect(sheet.rows[0][1]).toBe(20);
+        expect(sheet.rows[0][9]).toBe('No');
     });
 
     it('builds the history sheet sorted around editedAt', () => {

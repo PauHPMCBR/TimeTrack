@@ -6,6 +6,7 @@ import type {
     WorkSessionType,
 } from '../schemas/database';
 import type { Language } from './constants';
+import type { ExportDocumentId } from '../schemas/export';
 
 export type ExportHeaderKey =
     | 'user'
@@ -20,6 +21,7 @@ export type ExportHeaderKey =
     | 'totalHours'
     | 'overtimeHours'
     | 'expectedHours'
+    | 'difference'
     | 'anomalies'
     | 'source'
     | 'overtime'
@@ -53,6 +55,7 @@ export type ExportHeaderKey =
     | 'integrity';
 
 interface ExportTerms {
+    title: string;
     headers: Record<ExportHeaderKey, string>;
     status: Record<WorkSessionRowStatus, string>;
     versionStatus: Record<'active' | 'replaced', string>;
@@ -62,10 +65,14 @@ interface ExportTerms {
     anomaly: Record<WorkSessionAnomaly, string>;
     yes: string;
     no: string;
+    noData: string;
+    problem: string;
+    documents: Record<ExportDocumentId, string>;
 }
 
 export const EXPORT_TERMS: Record<Language, ExportTerms> = {
     ca: {
+        title: 'Registre de jornada',
         headers: {
             user: 'Persona',
             date: 'Data',
@@ -79,6 +86,7 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             totalHours: 'Hores totals',
             overtimeHours: 'Hores extra',
             expectedHours: 'Hores previstes',
+            difference: 'Diferència',
             anomalies: 'Anomalies',
             source: 'Origen',
             overtime: 'Extra',
@@ -155,8 +163,18 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         },
         yes: 'Sí',
         no: 'No',
+        noData: 'Sense dades',
+        problem: 'Incidència',
+        documents: {
+            daily: 'Resum diari',
+            detailed: 'Fitxatges detallats',
+            overtime: 'Hores extra',
+            monthly: 'Estadístiques mensuals',
+            history: "Historial d'edicions",
+        },
     },
     es: {
+        title: 'Registro de jornada',
         headers: {
             user: 'Persona',
             date: 'Fecha',
@@ -170,6 +188,7 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             totalHours: 'Horas totales',
             overtimeHours: 'Horas extra',
             expectedHours: 'Horas previstas',
+            difference: 'Diferencia',
             anomalies: 'Anomalías',
             source: 'Origen',
             overtime: 'Extra',
@@ -246,8 +265,18 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         },
         yes: 'Sí',
         no: 'No',
+        noData: 'Sin datos',
+        problem: 'Incidencia',
+        documents: {
+            daily: 'Resumen diario',
+            detailed: 'Fichajes detallados',
+            overtime: 'Horas extra',
+            monthly: 'Estadísticas mensuales',
+            history: 'Historial de ediciones',
+        },
     },
     en: {
+        title: 'Time record',
         headers: {
             user: 'User',
             date: 'Date',
@@ -261,6 +290,7 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             totalHours: 'Total hours',
             overtimeHours: 'Overtime hours',
             expectedHours: 'Expected hours',
+            difference: 'Difference',
             anomalies: 'Anomalies',
             source: 'Source',
             overtime: 'Overtime',
@@ -337,5 +367,14 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         },
         yes: 'Yes',
         no: 'No',
+        noData: 'No data',
+        problem: 'Issue',
+        documents: {
+            daily: 'Daily summary',
+            detailed: 'Detailed sessions',
+            overtime: 'Overtime',
+            monthly: 'Monthly stats',
+            history: 'Edit history',
+        },
     },
 };

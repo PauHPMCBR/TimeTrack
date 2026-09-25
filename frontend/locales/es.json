@@ -201,7 +201,8 @@
         "format": {
             "csv": "CSV (ZIP)",
             "json": "JSON",
-            "xlsx": "Excel"
+            "xlsx": "Excel",
+            "pdf": "PDF"
         },
         "button": "Exportar",
         "exporting": "Exportando...",
