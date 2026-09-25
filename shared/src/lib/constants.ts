@@ -51,9 +51,34 @@ export const APPROVAL_EVENT_REVOKED = MONTHLY_APPROVAL_EVENT_ACTIONS.revoked;
 export const AUDIT_ACTIONS = AuditActionSchema.enum;
 
 // Audit "why" recorded in `editReason` on documents created by the replacement
-// flows (kept as fixed, non-localized strings: they are part of the record).
-export const SESSION_REASON_ADMIN_CORRECTION = 'Admin day correction';
-export const SESSION_REASON_MANUAL_CORRECTION = 'Worker day correction';
+// flows. Stored as stable, language-neutral codes; localized only at display.
+export const SESSION_REASON_KEYS = [
+    'adminCorrection',
+    'workerCorrection',
+] as const;
+export type SessionReasonKey = (typeof SESSION_REASON_KEYS)[number];
+
+export const SESSION_REASON_ADMIN_CORRECTION: SessionReasonKey =
+    'adminCorrection';
+export const SESSION_REASON_MANUAL_CORRECTION: SessionReasonKey =
+    'workerCorrection';
+
+// English defaults written before the codes existed; recognized so records
+// created earlier are still localized.
+const LEGACY_SESSION_REASONS: Record<string, SessionReasonKey> = {
+    'Admin day correction': 'adminCorrection',
+    'Worker day correction': 'workerCorrection',
+};
+
+export function sessionReasonKey(
+    value: string | undefined
+): SessionReasonKey | null {
+    if (!value) return null;
+    if ((SESSION_REASON_KEYS as readonly string[]).includes(value)) {
+        return value as SessionReasonKey;
+    }
+    return LEGACY_SESSION_REASONS[value] ?? null;
+}
 
 // Admin report periods, shared by the query schemas and the admin UI.
 export const ADMIN_REPORT_PERIODS = ['day', 'week', 'month', 'year'] as const;

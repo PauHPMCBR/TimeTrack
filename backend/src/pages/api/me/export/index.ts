@@ -33,6 +33,7 @@ export default withApi(
                 month: body.month,
                 documents: body.documents,
                 generatedBy: req.user!.userId as string,
+                generatedByName: req.dbUser?.name,
                 language: body.language,
                 logo: body.logo,
                 appName: body.appName,

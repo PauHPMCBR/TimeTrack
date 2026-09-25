@@ -824,7 +824,7 @@ describe('GET /api/admin/work-sessions', () => {
             expect(WorkDaySessions.create).toHaveBeenCalledWith(
                 [
                     expect.objectContaining({
-                        editReason: 'Admin day correction',
+                        editReason: 'adminCorrection',
                     }),
                 ],
                 undefined

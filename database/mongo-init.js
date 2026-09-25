@@ -386,7 +386,7 @@ if (process.env.SEED_DEMO === '1') {
       status: 'replaced', replacedByVersion: 2, replacedAt: now
     });
     shift(ids.anna, 24, 9, 17, 0, 0, {
-      version: 2, editReason: 'Admin day correction', editedBy: ids.admin.toString()
+      version: 2, editReason: 'adminCorrection', editedBy: ids.admin.toString()
     });
     workDays.set(augKey(ids.anna, 24), 'adminManual');
     // Worker self-edit of Aug 28.

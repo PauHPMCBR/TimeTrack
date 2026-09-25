@@ -46,6 +46,7 @@ export type ExportRequest = z.infer<typeof ExportRequestSchema>;
 export const ExportManifestSchema = z.object({
     generatedAt: z.date(),
     generatedBy: z.string(),
+    generatedByName: z.string().optional(),
     year: z.number().int(),
     month: z.number().int(),
     userIds: z.array(z.string()),

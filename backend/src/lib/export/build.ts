@@ -61,6 +61,7 @@ export interface BuildExportInput {
     month: number;
     documents: ExportDocumentId[];
     generatedBy: string;
+    generatedByName?: string;
     language: Language;
     logo?: string;
     appName?: string;
@@ -238,7 +239,7 @@ function buildMonthlyRows(
 export async function buildExportPayload(
     input: BuildExportInput
 ): Promise<ExportPayload> {
-    const { userIds, year, month, generatedBy, language, logo, appName } =
+    const { userIds, year, month, generatedBy, generatedByName, language, logo, appName } =
         input;
     const documents = Array.from(new Set(input.documents));
 
@@ -406,6 +407,7 @@ export async function buildExportPayload(
     const manifest: ExportManifest = {
         generatedAt: new Date(),
         generatedBy,
+        ...(generatedByName ? { generatedByName } : {}),
         year,
         month,
         userIds: users.map((user) => user._id.toString()),

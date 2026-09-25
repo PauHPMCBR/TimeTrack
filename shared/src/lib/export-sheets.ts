@@ -10,6 +10,7 @@ import type {
 import type { DaySessionRow } from '../schemas/api';
 import {
     EXPORT_TERMS,
+    localizeEditReason,
     type ExportHeaderKey,
 } from './export-i18n';
 import type { Language } from './constants';
@@ -192,7 +193,7 @@ function historySheet(
             terms.versionStatus[row.status],
             terms.source[row.source],
             row.editedByName ?? row.editedBy ?? '',
-            row.editReason ?? '',
+            localizeEditReason(row.editReason, language),
             row.replacedByVersion ?? '',
             isoOrEmpty(row.editedAt),
             sessionsToText(row.sessions),

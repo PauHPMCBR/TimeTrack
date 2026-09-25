@@ -81,6 +81,7 @@ const documents = ExportDocumentRowsSchema.parse({
             version: 2,
             status: 'replaced',
             source: 'adminManual',
+            editReason: 'adminCorrection',
             replacedByVersion: 3,
             editedAt: new Date('2025-07-02T09:00:00.000Z'),
             sessions: [{ type: 'check_in', time: '08:00' }],
@@ -214,5 +215,27 @@ describe('buildExportSheet', () => {
         expect(sheet.headers[0]).toBe('Persona');
         expect(sheet.rows[0][2]).toBe('Laborable');
         expect(sheet.rows[0][7]).toBe('Hores excessives');
+    });
+
+    it('localizes system edit reasons', () => {
+        expect(buildExportSheet('history', documents, 'en').rows[0][6]).toBe(
+            'Admin correction'
+        );
+        expect(buildExportSheet('history', documents, 'ca').rows[0][6]).toBe(
+            "Correcció de l'administració"
+        );
+    });
+
+    it('localizes legacy English edit reasons and keeps free text', () => {
+        const legacy = ExportDocumentRowsSchema.parse({
+            ...documents,
+            history: [
+                { ...documents.history[0], editReason: 'Admin day correction' },
+                { ...documents.history[0], editReason: 'Shifted schedule' },
+            ],
+        });
+        const sheet = buildExportSheet('history', legacy, 'es');
+        expect(sheet.rows[0][6]).toBe('Corrección de la administración');
+        expect(sheet.rows[1][6]).toBe('Shifted schedule');
     });
 });

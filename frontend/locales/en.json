@@ -538,6 +538,10 @@
             "title": "Edit events",
             "classificationLabel": "Day classification",
             "anomalies": "Detected anomalies",
+            "editReasons": {
+                "adminCorrection": "Admin correction",
+                "workerCorrection": "Worker correction"
+            },
             "classification": {
                 "workday": "Working day (check punches)",
                 "nonWorkingWeekday": "Non-working day",

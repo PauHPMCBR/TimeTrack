@@ -97,6 +97,7 @@ export function isHttpsRequest(req: NextApiRequest): boolean {
 // Minimal shape of the live User document used by the auth guards.
 export interface AuthUserDoc {
     _id?: { toString(): string };
+    name?: string;
     role: UserRole;
     deleted?: boolean;
     groups?: Types.ObjectId[];

@@ -93,6 +93,7 @@ describe('POST /api/admin/export', () => {
             month: 7,
             documents: ['daily'],
             generatedBy: 'admin-123',
+            generatedByName: undefined,
             language: 'en',
         });
         expect(formatExport).toHaveBeenCalledWith(

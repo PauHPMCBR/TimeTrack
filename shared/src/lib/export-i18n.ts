@@ -5,7 +5,8 @@ import type {
     WorkSessionAnomaly,
     WorkSessionType,
 } from '../schemas/database';
-import type { Language } from './constants';
+import { sessionReasonKey } from './constants';
+import type { Language, SessionReasonKey } from './constants';
 import type { ExportDocumentId } from '../schemas/export';
 
 export type ExportHeaderKey =
@@ -69,6 +70,8 @@ interface ExportTerms {
     problem: string;
     workedHours: string;
     vacations: string;
+    manifest: string;
+    reason: Record<SessionReasonKey, string>;
     documents: Record<ExportDocumentId, string>;
 }
 
@@ -169,6 +172,11 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         problem: 'Incidència',
         workedHours: 'Treballades',
         vacations: 'Vacances',
+        manifest: 'Metadades',
+        reason: {
+            adminCorrection: "Correcció de l'administració",
+            workerCorrection: "Correcció de l'empleat",
+        },
         documents: {
             daily: 'Resum diari',
             detailed: 'Fitxatges detallats',
@@ -273,6 +281,11 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         problem: 'Incidencia',
         workedHours: 'Trabajadas',
         vacations: 'Vacaciones',
+        manifest: 'Metadatos',
+        reason: {
+            adminCorrection: 'Corrección de la administración',
+            workerCorrection: 'Corrección del empleado',
+        },
         documents: {
             daily: 'Resumen diario',
             detailed: 'Fichajes detallados',
@@ -377,6 +390,11 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         problem: 'Issue',
         workedHours: 'Worked',
         vacations: 'Vacations',
+        manifest: 'Metadata',
+        reason: {
+            adminCorrection: 'Admin correction',
+            workerCorrection: 'Worker correction',
+        },
         documents: {
             daily: 'Daily summary',
             detailed: 'Detailed sessions',
@@ -386,3 +404,13 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         },
     },
 };
+
+/** Localizes a system edit reason; free-text reasons pass through unchanged. */
+export function localizeEditReason(
+    reason: string | undefined,
+    language: Language
+): string {
+    if (!reason) return '';
+    const key = sessionReasonKey(reason);
+    return key ? EXPORT_TERMS[language].reason[key] : reason;
+}

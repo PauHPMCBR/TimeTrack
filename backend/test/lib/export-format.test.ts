@@ -18,6 +18,7 @@ function payload(
         manifest: {
             generatedAt: new Date('2025-08-01T10:00:00.000Z'),
             generatedBy: 'admin1',
+            generatedByName: 'Admin One',
             year: 2025,
             month: 7,
             userIds: ['u1'],
@@ -161,16 +162,19 @@ describe('formatExport', () => {
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(result.body as unknown as ArrayBuffer);
             expect(workbook.worksheets.map((ws) => ws.name)).toEqual([
-                'daily',
-                'monthly',
-                'history',
-                'manifest',
+                'Daily summary',
+                'Monthly stats',
+                'Edit history',
+                'Metadata',
             ]);
 
-            const daily = workbook.getWorksheet('daily')!;
+            const daily = workbook.getWorksheet('Daily summary')!;
             expect(daily.getRow(1).getCell(1).value).toBe('User');
             expect(daily.getRow(2).getCell(1).value).toBe('John');
             expect(daily.getRow(2).getCell(4).value).toBe('(08:00-17:00)');
+
+            const metadata = workbook.getWorksheet('Metadata')!;
+            expect(metadata.getRow(3).getCell(2).value).toBe('Admin One');
         });
 
         it('omits documents that were not selected', async () => {
@@ -178,8 +182,8 @@ describe('formatExport', () => {
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(result.body as unknown as ArrayBuffer);
             expect(workbook.worksheets.map((ws) => ws.name)).toEqual([
-                'monthly',
-                'manifest',
+                'Monthly stats',
+                'Metadata',
             ]);
         });
     });

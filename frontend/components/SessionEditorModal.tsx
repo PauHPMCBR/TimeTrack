@@ -11,6 +11,7 @@ import { configuredTimezone } from '@/lib/timezone';
 import {
     CHECK_IN,
     HOUR_MINUTE_KEY_REGEX,
+    sessionReasonKey,
 } from 'shared/src/lib/constants';
 import {
     isCoherentSequence,
@@ -98,6 +99,12 @@ export default function SessionEditorModal({
             ? (row.editReason ??
               [...row.sessions].reverse().find((s) => s.notes)?.notes)
             : undefined;
+    const lastEditReasonKey = lastEditReason
+        ? sessionReasonKey(lastEditReason)
+        : null;
+    const lastEditReasonLabel = lastEditReasonKey
+        ? t(`admin.sessionEditor.editReasons.${lastEditReasonKey}`)
+        : lastEditReason;
 
     const expected = nextSessionType(sessions);
 
@@ -322,7 +329,7 @@ export default function SessionEditorModal({
                               hour12: false,
                           })}`
                         : null}
-                    : {lastEditReason}
+                    : {lastEditReasonLabel}
                 </div>
             )}
 

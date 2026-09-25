@@ -538,6 +538,10 @@
             "title": "Editar fichajes",
             "classificationLabel": "Clasificación del día",
             "anomalies": "Anomalías detectadas",
+            "editReasons": {
+                "adminCorrection": "Corrección de la administración",
+                "workerCorrection": "Corrección del empleado"
+            },
             "classification": {
                 "workday": "Día laborable (comprueba fichajes)",
                 "nonWorkingWeekday": "Día no laborable",

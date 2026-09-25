@@ -110,7 +110,9 @@ export async function buildPdf(payload: ExportPayload): Promise<Buffer> {
     const element = (
         <Document
             title={`${title} ${monthYear}`}
-            author={payload.manifest.generatedBy}
+            author={
+                payload.manifest.generatedByName ?? payload.manifest.generatedBy
+            }
             creator="TimeTrack"
         >
             {groups.map((group, index) => (

@@ -85,6 +85,7 @@ describe('POST /api/me/export', () => {
             month: 7,
             documents: ['daily'],
             generatedBy: 'user-123',
+            generatedByName: undefined,
             language: 'ca',
         });
         expect(res.status).toHaveBeenCalledWith(200);

@@ -190,6 +190,7 @@ describe('buildExportPayload', () => {
             month: 7,
             documents: ['daily', 'monthly', 'history'],
             generatedBy: 'admin1',
+            generatedByName: 'Admin One',
             language: 'en',
         });
 
@@ -234,6 +235,7 @@ describe('buildExportPayload', () => {
             year: 2025,
             month: 7,
             userIds: ['u1', 'u2'],
+            generatedByName: 'Admin One',
             documents: ['daily', 'monthly', 'history'],
             rowCounts: { daily: 3, monthly: 2, history: 2 },
             timezone: 'Europe/Madrid',

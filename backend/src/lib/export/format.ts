@@ -49,21 +49,39 @@ async function buildCsvZip(payload: ExportPayload): Promise<Buffer> {
 }
 
 function manifestRows(manifest: ExportManifest): (string | number)[][] {
-    const headers = EXPORT_TERMS[manifest.language].headers;
+    const terms = EXPORT_TERMS[manifest.language];
+    const headers = terms.headers;
+    const localizeKeys = (
+        record: Partial<Record<ExportDocumentId, unknown>>
+    ): string =>
+        JSON.stringify(
+            Object.fromEntries(
+                Object.entries(record).map(([document, value]) => [
+                    terms.documents[document as ExportDocumentId] ?? document,
+                    value,
+                ])
+            )
+        );
     return [
         [headers.generatedAt, manifest.generatedAt.toISOString()],
-        [headers.generatedBy, manifest.generatedBy],
+        [headers.generatedBy, manifest.generatedByName ?? manifest.generatedBy],
         [headers.year, manifest.year],
         [headers.month, manifest.month],
         [headers.users, manifest.userIds.length],
-        [headers.documents, manifest.documents.join(', ')],
+        [
+            headers.documents,
+            manifest.documents
+                .map((document) => terms.documents[document])
+                .join(', '),
+        ],
         [headers.timezone, manifest.timezone],
-        [headers.rowCounts, JSON.stringify(manifest.rowCounts)],
-        [headers.integrity, JSON.stringify(manifest.integrity)],
+        [headers.rowCounts, localizeKeys(manifest.rowCounts)],
+        [headers.integrity, localizeKeys(manifest.integrity)],
     ];
 }
 
 async function buildXlsx(payload: ExportPayload): Promise<Buffer> {
+    const terms = EXPORT_TERMS[payload.manifest.language];
     const workbook = new ExcelJS.Workbook();
     for (const document of payload.manifest.documents) {
         const sheet = buildExportSheet(
@@ -71,18 +89,15 @@ async function buildXlsx(payload: ExportPayload): Promise<Buffer> {
             payload.documents,
             payload.manifest.language
         );
-        const worksheet = workbook.addWorksheet(document);
+        const worksheet = workbook.addWorksheet(terms.documents[document]);
         worksheet.addRow(sheet.headers);
         for (const row of sheet.rows) {
             worksheet.addRow(row);
         }
         worksheet.getRow(1).font = { bold: true };
     }
-    const manifestSheet = workbook.addWorksheet('manifest');
-    manifestSheet.addRow([
-        EXPORT_TERMS[payload.manifest.language].headers.field,
-        EXPORT_TERMS[payload.manifest.language].headers.value,
-    ]);
+    const manifestSheet = workbook.addWorksheet(terms.manifest);
+    manifestSheet.addRow([terms.headers.field, terms.headers.value]);
     for (const row of manifestRows(payload.manifest)) {
         manifestSheet.addRow(row);
     }

@@ -91,7 +91,7 @@ describe('GET /api/work-sessions/[userId]/day/[date]/versions', () => {
                 version: 2,
                 status: 'active',
                 source: 'adminManual',
-                editReason: 'Admin day correction',
+                editReason: 'adminCorrection',
                 sessions: [
                     { type: 'check_in', time: '09:00', overtime: false },
                     { type: 'check_out', time: '17:30', overtime: false },

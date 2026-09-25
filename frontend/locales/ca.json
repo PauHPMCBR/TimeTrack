@@ -538,6 +538,10 @@
             "title": "Editar fitxatges",
             "classificationLabel": "Classificació del dia",
             "anomalies": "Anomalies detectades",
+            "editReasons": {
+                "adminCorrection": "Correcció de l'administració",
+                "workerCorrection": "Correcció de l'empleat"
+            },
             "classification": {
                 "workday": "Dia laborable (comprova fitxatges)",
                 "nonWorkingWeekday": "Dia no laborable",

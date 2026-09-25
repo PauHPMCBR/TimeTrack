@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { View, Text } from '@react-pdf/renderer';
-import { EXPORT_TERMS } from 'shared/src/lib/export-i18n';
+import { EXPORT_TERMS, localizeEditReason } from 'shared/src/lib/export-i18n';
 import type {
     ExportDailyRow,
     ExportDetailedRow,
@@ -482,7 +482,7 @@ export function HistorySection({
                 />,
                 terms.source[row.source],
                 row.editedByName ?? row.editedBy ?? '',
-                row.editReason ?? '',
+                localizeEditReason(row.editReason, language),
                 row.replacedByVersion ?? '',
                 dateTimeText(row.editedAt),
                 <SessionChips key="sessions" sessions={row.sessions} />,
