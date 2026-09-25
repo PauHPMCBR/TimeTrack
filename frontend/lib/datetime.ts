@@ -82,5 +82,5 @@ export function formatPeriodLabel(
         month: 'short',
         year: 'numeric',
     });
-    return `${start} — ${end}`;
+    return `${start} - ${end}`;
 }

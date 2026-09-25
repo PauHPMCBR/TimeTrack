@@ -167,7 +167,7 @@ export function buildInconsistencyReminderMessage(
     const timeText = vars.times
         .map(
             (t) =>
-                `${t.time} — ${
+                `${t.time} - ${
                     t.type === 'check_in'
                         ? copy.checkInLabel
                         : copy.checkOutLabel

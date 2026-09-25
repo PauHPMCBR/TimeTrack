@@ -173,7 +173,7 @@ export default function FitxatgesTable({
         );
 
     const renderDaySource = (row: AdminWorkSessionRow) => {
-        if (!row.source) return <span className="text-zinc-400">—</span>;
+        if (!row.source) return <span className="text-zinc-400">-</span>;
         const Icon = sourceIconOf(row.source);
         const label = t(`admin.events.source.${row.source}`);
         return (

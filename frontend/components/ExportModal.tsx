@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
 import { todayKey } from '@/lib/timezone';
 import { useDirty } from '@/lib/useDirty';
 import { usePersistedState } from '@/lib/usePersistedState';
 import { EXPORT_DOCUMENTS, EXPORT_FORMAT } from '@/lib/storage';
-import { APP_ICON_URL } from '@/lib/brand';
+import { APP_ICON_URL, APP_NAME } from '@/lib/brand';
 import {
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
@@ -25,11 +25,11 @@ import type {
 } from '@/schemas/export';
 
 const DOCUMENTS: ExportDocumentId[] = [
-    'daily',
-    'detailed',
-    'overtime',
     'monthly',
+    'overtime',
+    'daily',
     'history',
+    'detailed',
 ];
 const FORMATS: ExportFormat[] = ['pdf', 'csv', 'json', 'xlsx'];
 
@@ -182,6 +182,7 @@ export default function ExportModal({
                 format,
                 language: lang,
                 ...(logo ? { logo } : {}),
+                ...(format === 'pdf' ? { appName: APP_NAME } : {}),
                 ...(self ? {} : { userIds: selectedUsers }),
             },
             { self }
@@ -282,17 +283,19 @@ export default function ExportModal({
                     <Label className="mb-1.5">{t('export.documents')}</Label>
                     <div className="space-y-1">
                         {DOCUMENTS.map((document) => (
-                            <label
-                                key={document}
-                                className="flex items-center gap-2 text-sm"
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={documents.includes(document)}
-                                    onChange={() => toggleDocument(document)}
-                                />
-                                {t(`export.document.${document}`)}
-                            </label>
+                            <Fragment key={document}>
+                                {document === 'history' && (
+                                    <div className="my-1 border-t border-zinc-200 dark:border-zinc-800" />
+                                )}
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={documents.includes(document)}
+                                        onChange={() => toggleDocument(document)}
+                                    />
+                                    {t(`export.document.${document}`)}
+                                </label>
+                            </Fragment>
                         ))}
                     </div>
                 </div>

@@ -63,6 +63,7 @@ export interface BuildExportInput {
     generatedBy: string;
     language: Language;
     logo?: string;
+    appName?: string;
 }
 
 function round2(value: number): number {
@@ -237,7 +238,8 @@ function buildMonthlyRows(
 export async function buildExportPayload(
     input: BuildExportInput
 ): Promise<ExportPayload> {
-    const { userIds, year, month, generatedBy, language, logo } = input;
+    const { userIds, year, month, generatedBy, language, logo, appName } =
+        input;
     const documents = Array.from(new Set(input.documents));
 
     const days = computeDaysForPeriod('month', undefined, year, month);
@@ -413,6 +415,7 @@ export async function buildExportPayload(
         integrity,
         language,
         ...(logo ? { logo } : {}),
+        ...(appName ? { appName } : {}),
     };
 
     return { manifest, documents: result };

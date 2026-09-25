@@ -6,7 +6,7 @@ import {
 import type { TimeKey } from 'shared/src/lib/time-key';
 import { Clock, AlertTriangle } from 'lucide-react';
 
-export const MISSING_TIME = '—';
+export const MISSING_TIME = '-';
 
 /** One end of a worked interval: a wall clock, or the missing-time marker. */
 export type WorkedIntervalEnd = TimeKey | typeof MISSING_TIME;

@@ -94,7 +94,7 @@ export default function AdminAuditPage() {
                   minute: '2-digit',
                   timeZone: configuredTimezone(),
               })
-            : '—';
+            : '-';
 
     const actionLabel = (action: string) => {
         const key = `admin.audit.action.${action}`;
@@ -222,7 +222,7 @@ export default function AdminAuditPage() {
                                         {actionLabel(event.action)}
                                     </span>
                                     <span className="truncate text-zinc-500">
-                                        {event.actorName ?? '—'}
+                                        {event.actorName ?? '-'}
                                         {event.targetId
                                             ? ` · ${event.targetId}`
                                             : ''}

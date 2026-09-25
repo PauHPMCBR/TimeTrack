@@ -82,8 +82,6 @@ export const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     logo: {
-        width: 18,
-        height: 18,
         marginRight: 6,
         objectFit: 'contain',
     },
@@ -151,10 +149,23 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 5,
     },
     tableHeaderText: {
-        fontSize: 7.5,
+        fontSize: 7,
         fontFamily: 'Helvetica-Bold',
         color: colors.textMuted,
         letterSpacing: 0.4,
+    },
+    tableCaption: {
+        fontSize: 9,
+        fontFamily: 'Helvetica-Bold',
+        color: colors.textMuted,
+        marginBottom: 4,
+    },
+    tableCaptionSpaced: {
+        fontSize: 9,
+        fontFamily: 'Helvetica-Bold',
+        color: colors.textMuted,
+        marginBottom: 4,
+        marginTop: 10,
     },
     eventRow: {
         flexDirection: 'row',
@@ -168,7 +179,7 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 5,
     },
     eventCellTight: {
-        paddingLeft: 2,
+        paddingLeft: 0,
     },
     dateText: {
         fontSize: 8.5,
@@ -220,11 +231,6 @@ export const styles = StyleSheet.create({
         fontSize: 8.5,
         fontFamily: 'Helvetica-Bold',
         color: colors.primaryDark,
-    },
-    dot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
     },
     chipRow: {
         flexDirection: 'row',

@@ -132,7 +132,7 @@ export default function AdminMonthlyApprovalsPage() {
                   year: 'numeric',
                   timeZone: configuredTimezone(),
               })
-            : '—';
+            : '-';
 
     const handleOpen = async (force: boolean = false) => {
         setOpening(true);
@@ -163,7 +163,7 @@ export default function AdminMonthlyApprovalsPage() {
     const handleRevoke = async (row: MonthlyApprovalRow) => {
         if (
             !window.confirm(
-                `${t('monthlyApprovals.confirmRevoke')} ${row.userName ?? ''} — ${formatPeriod(row.year, row.month)}?`
+                `${t('monthlyApprovals.confirmRevoke')} ${row.userName ?? ''} - ${formatPeriod(row.year, row.month)}?`
             )
         )
             return;
@@ -203,7 +203,7 @@ export default function AdminMonthlyApprovalsPage() {
                   minute: '2-digit',
                   timeZone: configuredTimezone(),
               })
-            : '—';
+            : '-';
 
     const openHistory = async (row: MonthlyApprovalRow) => {
         setHistoryRow(row);
@@ -604,7 +604,7 @@ export default function AdminMonthlyApprovalsPage() {
                 title={t('monthlyApprovals.historyTitle')}
                 subtitle={
                     historyRow
-                        ? `${historyRow.userName ?? ''} — ${formatPeriod(historyRow.year, historyRow.month)}`
+                        ? `${historyRow.userName ?? ''} - ${formatPeriod(historyRow.year, historyRow.month)}`
                         : undefined
                 }
                 onClose={() => setHistoryRow(null)}

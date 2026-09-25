@@ -17,7 +17,7 @@ import {
     EditIcon,
     SectionTitle,
     SessionChips,
-    StatusDot,
+    StatusIcon,
     Table,
     type Column,
 } from './components';
@@ -137,10 +137,10 @@ export function DailySection({
     return (
         <View style={styles.table}>
             <View style={styles.tableHeader} wrap={false}>
-                <EventCell flex={0.18} tight>
+                <EventCell flex={0.14} tight>
                     <Text style={styles.tableHeaderText}> </Text>
                 </EventCell>
-                <EventCell flex={0.55} tight>
+                <EventCell flex={0.385} tight>
                     <Text style={styles.tableHeaderText}>
                         {header(terms.headers.date)}
                     </Text>
@@ -172,7 +172,7 @@ export function DailySection({
                         {header(terms.headers.sessions)}
                     </Text>
                 </EventCell>
-                <EventCell flex={0.95}>
+                <EventCell flex={1.235}>
                     <Text style={styles.tableHeaderText}>
                         {header(terms.headers.source)}
                     </Text>
@@ -205,10 +205,10 @@ export function DailySection({
                                 },
                             ]}
                         >
-                            <EventCell flex={0.18} tight>
-                                <StatusDot color={tint.border} />
+                            <EventCell flex={0.14} tight>
+                                <StatusIcon status={status} />
                             </EventCell>
-                            <EventCell flex={0.55} tight>
+                            <EventCell flex={0.385} tight>
                                 <Text style={styles.dateText}>
                                     {formatDayKey(row.date, language)}
                                 </Text>
@@ -229,7 +229,7 @@ export function DailySection({
                                 <Text style={styles.hoursText}>
                                     {row.totalHours > 0
                                         ? formatHM(row.totalHours)
-                                        : '—'}
+                                        : '-'}
                                 </Text>
                             </EventCell>
                             <EventCell flex={0.7} align="right">
@@ -246,10 +246,10 @@ export function DailySection({
                                 {row.sessions.length > 0 ? (
                                     <SessionChips sessions={row.sessions} />
                                 ) : (
-                                    <Text style={styles.mutedText}>—</Text>
+                                    <Text style={styles.mutedText}>-</Text>
                                 )}
                             </EventCell>
-                            <EventCell flex={0.95}>
+                            <EventCell flex={1.235}>
                                 <View
                                     style={{
                                         flexDirection: 'row',
@@ -265,7 +265,7 @@ export function DailySection({
                                     >
                                         {row.source
                                             ? terms.source[row.source]
-                                            : '—'}
+                                            : '-'}
                                     </Text>
                                     {row.edited && <EditIcon />}
                                 </View>
@@ -360,29 +360,28 @@ export function MonthlySection({
     language: Language;
 }) {
     const terms = EXPORT_TERMS[language];
-    const columns: Column[] = [
-        { label: terms.headers.user, flex: nameFlex(rows.map((row) => row.userName)) },
+    const nameColumn: Column = {
+        label: terms.headers.user,
+        flex: nameFlex(rows.map((row) => row.userName)),
+    };
+    const hoursColumns: Column[] = [
+        nameColumn,
         { label: terms.headers.daysWithSessions, flex: 0.7, align: 'right' },
         { label: terms.headers.totalHours, flex: 0.8, align: 'right' },
         { label: terms.headers.overtimeHours, flex: 0.8, align: 'right' },
         { label: terms.headers.expectedHours, flex: 0.8, align: 'right' },
-        {
-            label: terms.headers.electiveVacationDays,
-            flex: 0.7,
-            align: 'right',
-        },
-        {
-            label: terms.headers.obligatoryVacationDays,
-            flex: 0.7,
-            align: 'right',
-        },
-        {
-            label: terms.headers.authorizedLeaveDays,
-            flex: 0.7,
-            align: 'right',
-        },
         { label: terms.headers.anomalyCount, flex: 0.6, align: 'right' },
         { label: terms.headers.confirmed, flex: 1.1 },
+    ];
+    const vacationColumns: Column[] = [
+        nameColumn,
+        { label: terms.headers.electiveVacationDays, flex: 1, align: 'right' },
+        {
+            label: terms.headers.obligatoryVacationDays,
+            flex: 1,
+            align: 'right',
+        },
+        { label: terms.headers.authorizedLeaveDays, flex: 1, align: 'right' },
     ];
     const sum = (selector: (row: ExportMonthlyRow) => number) =>
         rows.reduce((total, row) => total + selector(row), 0);
@@ -396,38 +395,53 @@ export function MonthlySection({
                 </Text>
             </View>
         ) : (
-            <Text style={styles.tableCellText}>—</Text>
+            <Text style={styles.tableCellText}>-</Text>
         );
 
     return (
-        <Table
-            columns={columns}
-            emptyLabel={terms.noData}
-            rows={rows.map((row) => [
-                row.userName,
-                row.daysWithSessions,
-                formatHM(row.totalHours),
-                formatHM(row.overtimeHours),
-                formatHM(row.expectedHours),
-                row.electiveVacationDays,
-                row.obligatoryVacationDays,
-                row.authorizedLeaveDays,
-                row.anomalyCount,
-                confirmation(row),
-            ])}
-            totals={[
-                '',
-                sum((row) => row.daysWithSessions),
-                formatHM(sum((row) => row.totalHours)),
-                formatHM(sum((row) => row.overtimeHours)),
-                formatHM(sum((row) => row.expectedHours)),
-                sum((row) => row.electiveVacationDays),
-                sum((row) => row.obligatoryVacationDays),
-                sum((row) => row.authorizedLeaveDays),
-                sum((row) => row.anomalyCount),
-                '',
-            ]}
-        />
+        <View>
+            <Text style={styles.tableCaption}>{terms.workedHours}</Text>
+            <Table
+                columns={hoursColumns}
+                emptyLabel={terms.noData}
+                rows={rows.map((row) => [
+                    row.userName,
+                    row.daysWithSessions,
+                    formatHM(row.totalHours),
+                    formatHM(row.overtimeHours),
+                    formatHM(row.expectedHours),
+                    row.anomalyCount,
+                    confirmation(row),
+                ])}
+                totals={[
+                    '',
+                    sum((row) => row.daysWithSessions),
+                    formatHM(sum((row) => row.totalHours)),
+                    formatHM(sum((row) => row.overtimeHours)),
+                    formatHM(sum((row) => row.expectedHours)),
+                    sum((row) => row.anomalyCount),
+                    '',
+                ]}
+            />
+
+            <Text style={styles.tableCaptionSpaced}>{terms.vacations}</Text>
+            <Table
+                columns={vacationColumns}
+                emptyLabel={terms.noData}
+                rows={rows.map((row) => [
+                    row.userName,
+                    row.electiveVacationDays,
+                    row.obligatoryVacationDays,
+                    row.authorizedLeaveDays,
+                ])}
+                totals={[
+                    '',
+                    sum((row) => row.electiveVacationDays),
+                    sum((row) => row.obligatoryVacationDays),
+                    sum((row) => row.authorizedLeaveDays),
+                ]}
+            />
+        </View>
     );
 }
 

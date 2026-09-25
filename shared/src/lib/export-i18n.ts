@@ -67,6 +67,8 @@ interface ExportTerms {
     no: string;
     noData: string;
     problem: string;
+    workedHours: string;
+    vacations: string;
     documents: Record<ExportDocumentId, string>;
 }
 
@@ -79,13 +81,13 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             time: 'Hora',
             entry: 'Entrada',
             leave: 'Sortida',
-            worked: 'Temps treballat',
+            worked: 'Treballat',
             type: 'Tipus',
             classification: 'Classificació',
             sessions: 'Sessions',
-            totalHours: 'Hores totals',
-            overtimeHours: 'Hores extra',
-            expectedHours: 'Hores previstes',
+            totalHours: 'Treballat',
+            overtimeHours: 'Extra',
+            expectedHours: 'Previstes',
             difference: 'Diferència',
             anomalies: 'Anomalies',
             source: 'Origen',
@@ -143,7 +145,7 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             userClick: 'Fitxatge',
             userAutomatic: 'Automàtic',
             userManual: 'Edició pròpia',
-            adminManual: "Correcció d'administració",
+            adminManual: 'Administració',
         },
         sessionType: {
             check_in: 'Entrada',
@@ -165,6 +167,8 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         no: 'No',
         noData: 'Sense dades',
         problem: 'Incidència',
+        workedHours: 'Treballades',
+        vacations: 'Vacances',
         documents: {
             daily: 'Resum diari',
             detailed: 'Fitxatges detallats',
@@ -181,13 +185,13 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             time: 'Hora',
             entry: 'Entrada',
             leave: 'Salida',
-            worked: 'Tiempo trabajado',
+            worked: 'Trabajado',
             type: 'Tipo',
             classification: 'Clasificación',
             sessions: 'Sesiones',
-            totalHours: 'Horas totales',
-            overtimeHours: 'Horas extra',
-            expectedHours: 'Horas previstas',
+            totalHours: 'Trabajado',
+            overtimeHours: 'Extra',
+            expectedHours: 'Previstas',
             difference: 'Diferencia',
             anomalies: 'Anomalías',
             source: 'Origen',
@@ -245,7 +249,7 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             userClick: 'Fichaje',
             userAutomatic: 'Automático',
             userManual: 'Edición propia',
-            adminManual: 'Corrección de administración',
+            adminManual: 'Administración',
         },
         sessionType: {
             check_in: 'Entrada',
@@ -267,6 +271,8 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         no: 'No',
         noData: 'Sin datos',
         problem: 'Incidencia',
+        workedHours: 'Trabajadas',
+        vacations: 'Vacaciones',
         documents: {
             daily: 'Resumen diario',
             detailed: 'Fichajes detallados',
@@ -283,13 +289,13 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             time: 'Time',
             entry: 'Entry',
             leave: 'Leave',
-            worked: 'Time worked',
+            worked: 'Worked',
             type: 'Type',
             classification: 'Classification',
             sessions: 'Sessions',
-            totalHours: 'Total hours',
-            overtimeHours: 'Overtime hours',
-            expectedHours: 'Expected hours',
+            totalHours: 'Worked',
+            overtimeHours: 'Extra',
+            expectedHours: 'Expected',
             difference: 'Difference',
             anomalies: 'Anomalies',
             source: 'Source',
@@ -347,7 +353,7 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
             userClick: 'Check-in',
             userAutomatic: 'Automatic',
             userManual: 'Self edit',
-            adminManual: 'Admin correction',
+            adminManual: 'Admin',
         },
         sessionType: {
             check_in: 'Check-in',
@@ -369,6 +375,8 @@ export const EXPORT_TERMS: Record<Language, ExportTerms> = {
         no: 'No',
         noData: 'No data',
         problem: 'Issue',
+        workedHours: 'Worked',
+        vacations: 'Vacations',
         documents: {
             daily: 'Daily summary',
             detailed: 'Detailed sessions',

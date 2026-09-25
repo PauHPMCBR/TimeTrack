@@ -28,6 +28,31 @@ function sanitizeLogo(logo: string | undefined): string | null {
         : null;
 }
 
+// Logo height matches the brand font size; width follows the PNG aspect ratio.
+const LOGO_HEIGHT = 16;
+
+function logoDimensions(dataUri: string): { width: number; height: number } {
+    const match = /^data:image\/png;base64,(.+)$/.exec(dataUri);
+    if (match) {
+        try {
+            const buffer = Buffer.from(match[1], 'base64');
+            if (buffer.length >= 24) {
+                const width = buffer.readUInt32BE(16);
+                const height = buffer.readUInt32BE(20);
+                if (width > 0 && height > 0) {
+                    return {
+                        width: (width / height) * LOGO_HEIGHT,
+                        height: LOGO_HEIGHT,
+                    };
+                }
+            }
+        } catch {
+            // fall through to the square default
+        }
+    }
+    return { width: LOGO_HEIGHT, height: LOGO_HEIGHT };
+}
+
 function monthYearLabel(payload: ExportPayload): string {
     const { year, month } = payload.manifest;
     const date = new Date(Date.UTC(year, month - 1, 1));
@@ -71,16 +96,20 @@ function pageGroups(selected: ExportDocumentId[]): PageGroup[] {
 
 export async function buildPdf(payload: ExportPayload): Promise<Buffer> {
     const terms = EXPORT_TERMS[payload.manifest.language];
+    const title = payload.manifest.appName
+        ? `${terms.title} - ${payload.manifest.appName}`
+        : terms.title;
     const monthYear = monthYearLabel(payload);
     const generated = `${terms.headers.generatedAt} ${payload.manifest.generatedAt
         .toISOString()
         .slice(0, 10)}`;
     const logo = sanitizeLogo(payload.manifest.logo);
+    const logoSize = logo ? logoDimensions(logo) : null;
     const groups = pageGroups(payload.manifest.documents);
 
     const element = (
         <Document
-            title={`${terms.title} ${monthYear}`}
+            title={`${title} ${monthYear}`}
             author={payload.manifest.generatedBy}
             creator="TimeTrack"
         >
@@ -93,10 +122,12 @@ export async function buildPdf(payload: ExportPayload): Promise<Buffer> {
                     wrap
                 >
                     <PageChrome
-                        title={terms.title}
+                        title={title}
                         monthYear={monthYear}
                         generated={generated}
                         logo={logo}
+                        logoWidth={logoSize?.width}
+                        logoHeight={logoSize?.height}
                     />
                     <Footer />
                     {group.legend && (

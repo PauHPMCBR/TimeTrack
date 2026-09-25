@@ -35,6 +35,7 @@ export default withApi(
                 generatedBy: req.user!.userId as string,
                 language: body.language,
                 logo: body.logo,
+                appName: body.appName,
             });
 
             ctx.auditExtra.rows = Object.values(

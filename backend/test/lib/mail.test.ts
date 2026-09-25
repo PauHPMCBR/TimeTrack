@@ -194,7 +194,7 @@ describe('mail (email sending)', () => {
             expect(caOut).toBeLessThan(caIn);
             expect(message.html).toContain('Check-in');
             expect(message.html).toContain('Check-out');
-            expect(message.text).toContain('09:02 — Check-in');
+            expect(message.text).toContain('09:02 - Check-in');
         });
 
         it('translates anomaly + auto times and links to the check-in page', () => {

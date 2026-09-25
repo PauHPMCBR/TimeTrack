@@ -12,7 +12,7 @@ export function renderEmailLayout(opts: {
 }): string {
     const tagline = opts.lang === 'en' ? 'Time tracking' : 'Registre de jornada';
     const brand = escapeHtml(opts.companyName || 'TimeTrack360');
-    const footer = escapeHtml(`${brand} — ${tagline}`);
+    const footer = escapeHtml(`${brand} - ${tagline}`);
 
     // Company logo in the footer (fixed height, width follows aspect ratio).
     // Set EMAIL_LOGO_URL to a publicly reachable logo URL (e.g. the baked

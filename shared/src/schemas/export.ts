@@ -38,6 +38,8 @@ export const ExportRequestSchema = z.object({
     language: ExportLanguageSchema.default('ca'),
     // Optional company logo (data URI) sent by the frontend for the PDF header.
     logo: z.string().max(3_000_000).optional(),
+    // Optional company/app name sent by the frontend for the PDF title.
+    appName: z.string().max(200).optional(),
 });
 export type ExportRequest = z.infer<typeof ExportRequestSchema>;
 
@@ -53,6 +55,7 @@ export const ExportManifestSchema = z.object({
     integrity: z.record(ExportDocumentIdSchema, z.string()),
     language: ExportLanguageSchema.default('ca'),
     logo: z.string().optional(),
+    appName: z.string().optional(),
 });
 export type ExportManifest = z.infer<typeof ExportManifestSchema>;
 
