@@ -583,13 +583,10 @@ if (process.env.SEED_DEMO === '1') {
 
   const vacations = [];
   const addVacation = (userId, startDateStr, endDateStr, status, reason = '') => {
-    const [y1, m1, d1] = startDateStr.split('-').map(Number);
-    const [y2, m2, d2] = endDateStr.split('-').map(Number);
     const doc = {
       userId: userId.toString(),
-      // Same convention as the create endpoint: 'YYYY-MM-DD' → UTC midnight.
-      startDate: new Date(Date.UTC(y1, m1 - 1, d1)),
-      endDate: new Date(Date.UTC(y2, m2 - 1, d2)),
+      startDate: startDateStr,
+      endDate: endDateStr,
       spentDays: spentDaysBetween(startDateStr, endDateStr),
       status,
       reason,

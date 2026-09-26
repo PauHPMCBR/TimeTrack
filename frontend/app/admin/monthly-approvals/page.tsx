@@ -540,7 +540,7 @@ export default function AdminMonthlyApprovalsPage() {
                                                     )}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
                                                 {row.status === 'approved' ? (
                                                     <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
                                                         <CheckCircle2

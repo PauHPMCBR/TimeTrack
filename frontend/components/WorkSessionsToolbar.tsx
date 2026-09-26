@@ -114,7 +114,10 @@ export default function WorkSessionsToolbar({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-600 dark:text-zinc-300">
+                {/* Compact on mobile: smaller text and tighter gaps keep
+                    the legend from eating several screenfuls of vertical
+                    space before the first day card. */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-zinc-600 sm:gap-4 sm:text-sm dark:text-zinc-300">
                     <span className="flex items-center gap-1.5">
                         <span
                             className={`h-2.5 w-2.5 rounded-full ${statusDotClass('ok')}`}

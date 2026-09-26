@@ -46,12 +46,22 @@ function CalendarDayComponent({
                 {vacationEvents.map((event, eventIdx) => (
                     <div
                         key={eventIdx}
+                        title={event.label}
                         className={`text-xs rounded px-1 py-0.5 flex items-center gap-1 ${getVacationClass(event.type)}`}
                     >
                         {event.type === 'team-elective-pending' && (
                             <Clock size={10} className="shrink-0" />
                         )}
-                        <div className="truncate">{event.label}</div>
+                        {/* Narrow cells cannot fit readable text: show a
+                            compact color bar on mobile (details stay one tap
+                            away via the day modal) and the label from sm up. */}
+                        <span
+                            aria-hidden
+                            className="h-1 min-w-3 flex-1 rounded-full bg-current opacity-60 sm:hidden"
+                        />
+                        <div className="hidden truncate sm:block">
+                            {event.label}
+                        </div>
                     </div>
                 ))}
             </div>
