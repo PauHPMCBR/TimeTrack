@@ -2,8 +2,8 @@
 #set text(font: "New Computer Modern", size: 11pt)
 #set heading(numbering: "1.")
 #set page(numbering: "1 / 1")
-#let img = (source) => align(center)[
-  #box(image(source, width: 95%), stroke: color.black)
+#let img = (source, width: 95%) => align(center)[
+  #box(image(source, width: width), stroke: color.black)
 ]
 
 #align(center)[
@@ -36,6 +36,14 @@ L'enllaç porta a la pàgina de registre, on s'estableix la contrassenya del com
 
 Existeix el mètode clàssic d'enviar un correu electrònic per restablir la contrassenya. Aquesta acció també desbloqueja un compte que ha quedat bloquejat per haver intentat iniciar sessió amb la contrassenya incorrecta massa vegades seguides.
 
+== Afegir l'eina com a aplicació de mòbil
+
+Per poder accedir ràpidament a l'eina de fitxatge, els navegadors de mòbil tenen l'opció d'afegir una pàgina web com una aplicació a la pantalla d'inici. Només cal navegar a la pàgina desitjada (en aquest cas, `nom-empresa.registrejornada.fyi`), obrir el menú (en el cas de la imatge, els 3 punts verticals a dalt a la dreta del tot obren el menú) i buscar l'opció subratllada a la imatge o similar.
+
+#img("pic/afegir_shortcut.jpeg", width: 40%)
+
+El procés pot ser una mica diferent en altres navegadors, com per exemple haver de clicar "compartir" perquè apareixi l'opció d'afegir la web a la pantalla d'inici.
+
 = Empleats
 
 == Fitxar entrada i sortida
@@ -48,9 +56,11 @@ L'obligació legal de fitxar afecta gairebé totes les persones treballadores (a
 
 == Detecció d'anomalies i fitxatge automàtic
 
-En cas d'haver oblidat de fitxar correctament (fitxar entrada però no sortida, o no complir amb les hores de feina esperades o passar-se, dintre d'un marge), s'envia (si es té configurat a la configuració de l'empresa, sí per defecte) un correu avisant de l'anomalia.
+En cas d'haver oblidat de fitxar correctament (fitxar entrada però no sortida, o desviar-se de l'horari esperat), s'envia (si es té configurat a la configuració de l'empresa, sí per defecte) un correu avisant de l'anomalia.
 
 #img("pic/mail_auto.png")
+
+El recompte de l'horari no té en compte les hores extra.
 
 Aquest correu inclou un enllaç per aplicar ràpidament el fitxatge automàtic. El fitxatge automàtic *substitueix* els temps d'entrada i sortida amb uns intervals de temps configurables pel propi empleat (a la primera pàgina), deixant marcat al registre que els temps guardats s'han generat d'aquesta manera i no marcant el botó d'entrada i sortida manualment. La intenció d'aquesta funció és poder arreglar ràpidament despistades pròpies.
 
