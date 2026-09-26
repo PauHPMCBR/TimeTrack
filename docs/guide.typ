@@ -20,6 +20,7 @@ Durant tot el document, hi ha una separació de tipus d'usuaris de l'eina segons
 - *Administrador* (o cap o responsable): normalment cap de l'empresa o similar. Té control de les dades de l'eina i no ha de fitxar registres.
 - *Empleat* (o usuari "normal"): està obligat a fitxar per llei, no té permisos elevats a l'aplicació.
 
+
 = Part comuna
 
 == Activar un compte
@@ -30,11 +31,11 @@ Un administrador pot crear un nou compte per un nou usuari (administrador o empl
 
 Alternativament, també es pot compartir l'enllaç que es mostra al panell d'administració (és el mateix).
 
-L'enllaç porta a la pàgina de registre, on s'estableix la contrassenya del compte, que fa que quedi activat. A partir d'aquest moment, es pot accedir a l'eina iniciant sessió amb el correu + contrassenya.
+L'enllaç porta a la pàgina de registre, on s'estableix la contrasenya del compte, que fa que quedi activat. A partir d'aquest moment, es pot accedir a l'eina iniciant sessió amb el correu + contrasenya.
 
-== Reinici de contrassenya
+== Reinici de contrasenya
 
-Existeix el mètode clàssic d'enviar un correu electrònic per restablir la contrassenya. Aquesta acció també desbloqueja un compte que ha quedat bloquejat per haver intentat iniciar sessió amb la contrassenya incorrecta massa vegades seguides.
+Existeix el mètode clàssic d'enviar un correu electrònic per restablir la contrasenya. Aquesta acció també desbloqueja un compte que ha quedat bloquejat per haver intentat iniciar sessió amb la contrasenya incorrecta massa vegades seguides.
 
 == Afegir l'eina com a aplicació de mòbil
 
@@ -43,6 +44,8 @@ Per poder accedir ràpidament a l'eina de fitxatge, els navegadors de mòbil ten
 #img("pic/afegir_shortcut.jpeg", width: 40%)
 
 El procés pot ser una mica diferent en altres navegadors, com per exemple haver de clicar "compartir" perquè apareixi l'opció d'afegir la web a la pantalla d'inici.
+
+#pagebreak()
 
 = Empleats
 
@@ -53,6 +56,10 @@ La utilitat principal de l'eina és el fitxatge d'entrada i sortida de la feina.
 L'obligació legal de fitxar afecta gairebé totes les persones treballadores (art. 34.9 ET): només l'alta direcció (fora de l'àmbit de l'art. 1.3.c ET) n'està exempta.
 
 #img("pic/fitxar.png")
+
+Per diferenciar hores extra, cal que el botó estigui marcat abans de tancar la sessió.
+
+#img("pic/hores_extra.png")
 
 == Detecció d'anomalies i fitxatge automàtic
 
@@ -66,7 +73,7 @@ Aquest correu inclou un enllaç per aplicar ràpidament el fitxatge automàtic. 
 
 #img("pic/horari_auto.png")
 
-L'aplicació de fitxatge automàtic és compatible amb la llei: els sistemes d'auto-declaració són vàlids sempre que el registre continuï sent objectiu, fiable i accessible (STS 41/2023), i aquesta eina garanteix els tres requisits: les marques són generades i datades pel servidor, les modificacions queden versionades sense esborrar res, i la persona treballadora pot consultar el seu historial complet. Cal recordar que és possible modificar les hores que aplica el fitxatge automàtic abans d'aplicar-lo al dia corresponent.
+L'aplicació de fitxatge automàtic és compatible amb la llei: els sistemes d'auto-declaració són vàlids sempre que el registre continuï sent objectiu, fiable i accessible, i aquesta eina garanteix els tres requisits: les marques són generades i datades pel servidor, les modificacions queden versionades sense esborrar res, i la persona treballadora pot consultar el seu historial complet. Cal recordar que és possible modificar les hores que aplica el fitxatge automàtic abans d'aplicar-lo al dia corresponent.
 
 == Historial i validació de dades mensuals
 
@@ -82,7 +89,11 @@ Al final del mes, un cop un administrador hagi revisat els fitxatges, els emplea
 
 Es recomana revisar les dades utilitzant la pàgina d'historial. Si s'està desacord amb alguna dada, cal comentar-ho amb responsables a través de medis de comunicació externs a l'eina.
 
-Es pot confirmar des de la pàgina inicial (de fitxatge) quan hi ha un mes pendent per confirmar, i també es pot veure l'estat de confirmacions mensuals al final de la pàgina d'historial:
+Es pot confirmar des de la pàgina inicial (de fitxatge) quan hi ha un mes pendent per confirmar:
+
+#img("pic/confirm.png")
+
+L'estat de confirmacions mensuals es pot consultar al final de la pàgina d'historial:
 
 #img("pic/history_confirm.png")
 
@@ -94,11 +105,11 @@ Un cop confirmats, no es poden modificar (a no ser que un administrador invalidi
 
 Els administradors són responsables d'assignar els dies de vacances comuns de l'empresa (festius, vacances obligatòries) de cada any. A la pàgina de vacances es mostren tals dies com a "Festes de l'empresa".
 
-A la pàgina de vacances és on es creen les sol·licituds de vacances de lliure elecció. Primer cal assegurar-se que l'any sel·leccionat és el correcte. Es mostren els dies de lliure elecció disponibles, gastats i totals de l'any, i hi ha un formulari per demanar un interval nou de vacances. Un cop especificat l'interval, apareix un indicador del nombre de vacances de lliure el·lecció que "costa" la sol·licitud, tenint en compte festius i dies no laborables.
+A la pàgina de vacances és on es creen les sol·licituds de vacances de lliure elecció. Primer cal assegurar-se que l'any seleccionat és el correcte. Es mostren els dies de lliure elecció disponibles, gastats i totals de l'any, i hi ha un formulari per demanar un interval nou de vacances. Un cop especificat l'interval, apareix un indicador del nombre de vacances de lliure elecció que "costa" la sol·licitud, tenint en compte festius i dies no laborables.
 
 #img("pic/solicitud_vacances.png")
 
-L'estat de sol·licituds es pot veure al final de la pàgina, on també es poden cancel·lar les sol·licituds pendents. La negociació de vacances de lliure el·lecció s'ha de fer a través d'un medi extern a l'eina.
+L'estat de sol·licituds es pot veure al final de la pàgina, on també es poden cancel·lar les sol·licituds pendents. La negociació de vacances de lliure elecció s'ha de fer a través d'un medi extern a l'eina.
 
 == Calendari i grups
 
@@ -114,29 +125,85 @@ Es pot accedir a la pàgina de fitxers de l'empleat a través de la pàgina de p
 
 Un possible ús d'aquesta funció és compartir les nòmines mensuals.
 
-= Administrador
+#pagebreak()
+
+= Administració
 
 == Configuració global de l'empresa
 
-Explicació de camps que poden causar certa confusió:
+Aquí es defineixen els valors generals de l'empresa, que els usuaris nous hereten en crear-se. Explicació de camps que poden causar certa confusió:
 
-- *Tolerància*: Es detecta com a anomalia (fitxatge incorrecte) quan la suma d'hores treballades per un empleat difereix de les hores de treball esperades per un temps més gran al valor de "Tolerància". Per exemple, per un empleat que ha de treballar 8h, si la tolerància és 1h, "6h 30m" de treball és una anomalia, però "7h" no (i "8h 30m" tampoc, i "9h 01m" sí).
+- *Tolerància*: marge (en minuts) abans de marcar una anomalia, un per a cada mode d'expectativa. La d'*hores esperades* compara el total d'hores treballades amb les esperades; la d'*horari per dies* compara cada fitxatge amb l'horari esperat. Per exemple, per a un empleat que ha de treballar 8h i una tolerància d'1h, "6h 30m" de treball és una anomalia, però "7h" no (i "8h 30m" tampoc, i "9h 01m" sí).
 
-- *Hora de fi de dia*: Moment en què s'envien correus avisant d'anomalies als empleats. 
+- *Hora de fi de dia*: hora límit a partir de la qual s'avisa per correu els empleats amb fitxatges inconsistents.
+
+- *Consulta prèvia a la representació dels treballadors*: cal marcar-la un cop consultada la representació abans d'implantar el registre de jornada (art. 34.9 ET).
+
+També s'hi configura l'*avís de privadesa* (RGPD) que veuen els empleats en registrar-se i des del seu perfil.
 
 == Gestió d'usuaris i grups
 
-A la pàgina d'empleats també es mostren els administradors (és a dir, es mostren tots els usuaris).
+A la pàgina d'empleats es mostren tots els usuaris (empleats i administradors) amb el seu estat (treballant ara, registrat, activació pendent o compte bloquejat). Des d'aquí es creen usuaris, s'editen, es restableix la contrasenya i s'exporten dades.
 
-En aquesta pàgina d'usuaris es poden crear nous usuaris i editar els existents. // TODO delete
-A més, també permet exportar els temps de fitxatge dels usuaris sel·leccionats i interval de temps sel·leccionat. // TODO invalidar contrassenya desbloqueja usuari?
+Un compte bloquejat es desbloqueja restablint-ne la contrasenya (botó *Invalidar contrasenya*), cosa que obliga l'empleat a recuperar-la pel procediment de contrasenya oblidada.
+
+Els usuaris eliminats perden l'accés a l'eina, pero les seves dades no s'esborren. Es poden restaurar usuaris eliminats sempre que no hi hagi col·lisió amb altres usuaris actius. Els administradors no es poden eliminar.
 
 Aneu en compte en elevar el rol d'un usuari a administrador: aquest canvi no el pot desfer un administrador, per tant cal contactar amb suport tècnic per desfer-lo si es tracta d'una errada.
 
+Els *grups* (o departaments) agrupen empleats i determinen la visibilitat: un empleat pot veure les vacances i el perfil dels usuaris amb qui comparteix grup.
+
 == Resoldre anomalies de fitxatges i petició de confirmació mensual
+
+La pàgina de fitxatges de l'administrador mostra els registres de tots els empleats amb detecció d'anomalies, amb el mateix format que la pàgina "Historial" d'un empleat, però amb les dades de tots els usuaris.
+
+Es detecta com a "anomalia" qualsevol temps de fitxatge que es desvii de l'horari esperat (equivalent amb temps i temps esperat) per més de la tolerància especificada. També es detecta com a anomalia si el nombre de sessions no correspon amb l'esperat (de més o de menys). En particular, treballar durant un dia no laborable (incloent vacances o baixes) es considera anomalia.
+
+Clicant un dia s'obre l'editor de sessions, on es pot fer qualsevol canvi i indicar el motiu de la correcció. Cada correcció substitueix el dia sencer, i els canvis de l'edició es guarden a l'historial d'edicions (aquestes dades es poden exportar).
+
+A la pàgina de confirmació mensual es pot obrir un mes perquè cada empleat confirmi el seu registre. Només es poden obrir mesos passats i sense anomalies pendents (tret que s'usi *Forçar obertura*). En confirmar, el mes queda bloquejat; per corregir-lo, un administrador ha de *revocar* la confirmació, i tornar a fer el procés de confirmació per tornar-lo a bloquejar.
+
+Cal remarcar que la detecció d'anomalies existeix per facilitar el reconeixement de possibles problemes, i l'únic impacte funcional que té és (a part de mostrar coses en vermell) que cal marcar "Forçar obertura" per obrir la confirmació d'un mes.
+
 
 == Vacances anuals de l'empresa
 
+Aquí es configura, per any, el patró comú de vacances que s'aplica a tots els empleats:
+
+- *Festius obligatoris*: dies o intervals de festa de tota l'empresa. El sistema avisa si un interval inclou dies no laborables.
+- *Dies electius*: nombre màxim de dies de vacances de lliure elecció que pot demanar cada empleat.
+
+És possible copiar la configuració de l'any anterior. Cal anar en compte amb aquesta acció perquè sobreescriu la configuració de l'any actual!
+
 == Gestió de sol·licituds de vacances d'empleats
 
+Des d'aquí l'administració revisa les sol·licituds de vacances de lliure elecció i les aprova o rebutja. Aprovar una sol·licitud és el que la fa efectiva al calendari i als registres.
+
+== Permisos autoritzats
+
+Els permisos (permís retribuït, baixa mèdica...) funcionen de manera similar a les vacances de lliure el·lecció, excepte que s'han de crear directament des del panell d'administració (els empleats no formen part del procés).
+
+Aclariment: pels càlculs interns de jornades i anomalies, qualsevol cosa que no sigui un dia laborable (dia de setmana no laborable, vacances de l'empresa, vacances de lliure el·lecció i permisos autoritzats) es tracta de la mateixa manera.
+
+== Fitxers compartits
+
+L'administració pot penjar fitxers (per exemple, nòmines) per a cada empleat; només el propi empleat i l'administració els poden veure. Editar-ne el nom o la descripció actualitza la data del fitxer.
+
+== Registre d'activitat
+
+Registre de seguretat de només lectura: recull qui ha fet què i quan (inicis de sessió, canvis d'usuaris, exportacions, fitxers...).
+
+#pagebreak()
+
 = Dades emmagatzemades
+
+L'eina conserva:
+
+- *Dades d'usuari* encriptant camps relacionats amb dades personals (correu electrònic i DNI).
+- *Fitxatges* amb l'origen, l'estat i l'historial de versions; les correccions no esborren mai la versió anterior.
+- *Vacances i permisos*: sol·licituds, estats i la configuració anual de festius i dies electius.
+- *Confirmacions mensuals* i el seu historial (obertura, confirmació i revocació).
+- *Fitxers* compartits i el registre de descàrregues.
+- *Registre d'activitat*: qui ha fet què i quan.
+
+Els usuaris eliminats no s'esborren de la base de dades: perden l'accés i deixen de ser visibles, però les seves dades es conserven i es poden restaurar.
