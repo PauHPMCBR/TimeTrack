@@ -5,6 +5,8 @@
 #let img = (source, width: 95%) => align(center)[
   #box(image(source, width: width), stroke: color.black)
 ]
+#show link: underline
+#show link: text.with(blue.darken(60%))
 
 #align(center)[
   #text(20pt, weight: "bold")[
@@ -39,11 +41,28 @@ Existeix el mètode clàssic d'enviar un correu electrònic per restablir la con
 
 == Afegir l'eina com a aplicació de mòbil
 
-Per poder accedir ràpidament a l'eina de fitxatge, els navegadors de mòbil tenen l'opció d'afegir una pàgina web com una aplicació a la pantalla d'inici. Només cal navegar a la pàgina desitjada (en aquest cas, `nom-empresa.registrejornada.fyi`), obrir el menú (en el cas de la imatge, els 3 punts verticals a dalt a la dreta del tot obren el menú) i buscar l'opció subratllada a la imatge o similar.
+Per poder accedir ràpidament a l'eina de fitxatge, els navegadors de mòbil tenen 
+l'opció d'afegir una pàgina web com una aplicació a la pantalla d'inici.
+El primer pas, comú en tots els casos, és navegar a la pàgina desitjada
+(en aquest cas, `nom-empresa.registrejornada.fyi`).
 
-#img("pic/afegir_shortcut.jpeg", width: 40%)
+A la majoria de navegadors (Firefox, Chrome... exemple a la imatge de l'esquerra)
+s'han de clicar els 3 punts verticals a dalt (o baix) a la dreta del tot per obrir
+el menú que es veu, i buscar l'opció subratllada a la imatge o similar.
 
-El procés pot ser una mica diferent en altres navegadors, com per exemple haver de clicar "compartir" perquè apareixi l'opció d'afegir la web a la pantalla d'inici.
+Pel cas de Safari (exemple a la imatge de la dreta), en comptes del menú de 3 punts,
+s'ha d'obrir el menú de compartir la pàgina (encerclat en vermell). Allà apareixerà
+l'opció per afegir la pàgina web com a aplicació/drecera a la pantalla d'inici.
+
+#figure(
+    grid(
+        columns: 2,
+        gutter: 2mm,
+        img("pic/afegir_shortcut.jpeg", width: 90%),
+        img("pic/afegir_shortcut_safari.jpeg", width: 90%),
+    )
+)
+
 
 #pagebreak()
 
@@ -139,7 +158,19 @@ Aquí es defineixen els valors generals de l'empresa, que els usuaris nous heret
 
 - *Consulta prèvia a la representació dels treballadors*: cal marcar-la un cop consultada la representació abans d'implantar el registre de jornada (art. 34.9 ET).
 
-També s'hi configura l'*avís de privadesa* (RGPD) que veuen els empleats en registrar-se i des del seu perfil.
+=== Avís de privadesa
+
+A la mateixa pàgina de configuració, al final, hi ha dos camps sobre reglament:
+
+- *Avís de privadesa* (RGPD) que veuen els empleats en registrar-se i des del seu perfil.
+ És necessari omplir-lo perquè els empleats el puguin veure i acceptar per utilitzar
+ l'eina. Es pot trobar un exemple de contingut a https://registrejornada.fyi/avis_privadesa.txt.
+
+- *Consulta prèvia a la representació de treballadors*: Com el seu nom indica,
+ cal marcar explícitament que s'ha pactat l'ús d'aquesta eina amb la representació
+ de treballadors.
+
+
 
 == Gestió d'usuaris i grups
 
