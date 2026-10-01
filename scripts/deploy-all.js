@@ -93,6 +93,15 @@ if (existsSync(guidePdf)) {
   console.warn("== guide.pdf: docs/guide.pdf missing — apex copy not refreshed ==");
 }
 
+const adminGuidePdf = join(repoRoot, "docs", "guide_admin.pdf");
+if (existsSync(adminGuidePdf)) {
+  console.log("== guide_admin.pdf: baked into each frontend image ==");
+} else {
+  console.warn(
+    "== guide_admin.pdf: docs/guide_admin.pdf missing — admin guide link will be hidden =="
+  );
+}
+
 const composeFiles = readdirSync(args.companiesDir)
   .map((name) => join(args.companiesDir, name, "compose.yml"))
   .filter((p) => existsSync(p))

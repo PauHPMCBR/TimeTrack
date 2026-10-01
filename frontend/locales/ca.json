@@ -432,6 +432,7 @@
                 "count": "grups"
             },
             "subtitle": "Selecciona què vols gestionar avui.",
+            "adminGuide": "Guia d'administració",
             "title": "Panell d'Administració",
             "users": {
                 "desc": "Veure l'equip, estat actual i nous registres.",

@@ -432,6 +432,7 @@
                 "count": "groups"
             },
             "subtitle": "Select what you want to manage today.",
+            "adminGuide": "Administration guide",
             "title": "Admin Panel",
             "users": {
                 "desc": "View team, current status, and new registrations.",

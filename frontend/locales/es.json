@@ -432,6 +432,7 @@
                 "count": "grupos"
             },
             "subtitle": "Selecciona qué quieres gestionar hoy.",
+            "adminGuide": "Guía de administración",
             "title": "Panel de Administración",
             "users": {
                 "desc": "Ver el equipo, estado actual y nuevos registros.",

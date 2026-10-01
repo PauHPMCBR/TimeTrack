@@ -17,8 +17,8 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY shared ./shared
 COPY frontend ./frontend
 
-# Usage guide source (docs/guide.pdf is compiled from guide.typ and committed;
-# absent => guide links are hidden).
+# Usage guide sources (docs/guide.pdf and docs/guide_admin.pdf are compiled from
+# guide.typ / guide_admin.typ and committed; absent => guide links are hidden).
 COPY docs ./docs
 
 # Optional per-company branding. The folder is always
@@ -46,6 +46,7 @@ ENV NEXT_PUBLIC_APP_ICON_URL=
 ENV NEXT_PUBLIC_APP_ICON_TOOLBAR_URL=
 ENV NEXT_PUBLIC_FAVICON_URL=
 ENV NEXT_PUBLIC_GUIDE_URL=
+ENV NEXT_PUBLIC_ADMIN_GUIDE_URL=
 
 WORKDIR /app/frontend
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -69,6 +70,10 @@ RUN mkdir -p public/brand && rm -f /app/brand.env && { \
       if [ -f /app/docs/guide.pdf ]; then \
         cp /app/docs/guide.pdf public/guide.pdf && \
         echo "NEXT_PUBLIC_GUIDE_URL=/guide.pdf" >> /app/brand.env; \
+      fi; \
+      if [ -f /app/docs/guide_admin.pdf ]; then \
+        cp /app/docs/guide_admin.pdf public/guide_admin.pdf && \
+        echo "NEXT_PUBLIC_ADMIN_GUIDE_URL=/guide_admin.pdf" >> /app/brand.env; \
       fi; \
     }
 

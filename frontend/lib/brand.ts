@@ -15,5 +15,16 @@ export const FAVICON_URL = process.env.NEXT_PUBLIC_FAVICON_URL || null;
 
 // Usage guide PDF, compiled from docs/guide.typ and baked into public/ at
 // build time (NEXT_PUBLIC_GUIDE_URL=/guide.pdf). See frontend/Dockerfile.
-// Null in dev (no compiled PDF) => guide links are hidden.
-export const GUIDE_URL = process.env.NEXT_PUBLIC_GUIDE_URL || null;
+// In dev the PDFs are copied into public/ by scripts/sync-guides.mjs (run
+// before `next dev`). Null when absent => guide links are hidden.
+const isDev = process.env.NODE_ENV === 'development';
+
+export const GUIDE_URL =
+    process.env.NEXT_PUBLIC_GUIDE_URL || (isDev ? '/guide.pdf' : null);
+
+// Administration guide PDF, compiled from docs/guide_admin.typ and baked into
+// public/ at build time (NEXT_PUBLIC_ADMIN_GUIDE_URL=/guide_admin.pdf). Only
+// linked from the admin panel. Null when absent => the link is hidden.
+export const ADMIN_GUIDE_URL =
+    process.env.NEXT_PUBLIC_ADMIN_GUIDE_URL ||
+    (isDev ? '/guide_admin.pdf' : null);

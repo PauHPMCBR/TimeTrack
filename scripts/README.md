@@ -26,5 +26,5 @@ companies continue. Destructive migrations (004) prompt for confirmation —
 `--yes` skips the prompt. Run BEFORE `deploy-all.js` when the release includes
 schema changes (guide 10).
 
-The usage guide PDF (`docs/guide.pdf`) is compiled from `docs/guide.typ` and
-committed; the frontend Dockerfile bakes it into every image as `/guide.pdf`.
+The guide PDFs are compiled from typst files and
+committed; the frontend Dockerfile bakes it into every image as `/guide_X.pdf`.

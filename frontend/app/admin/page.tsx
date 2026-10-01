@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/app/i18n';
 import { apiClient } from '@/lib/api';
+import { ADMIN_GUIDE_URL } from '@/lib/brand';
 import { AdminDashboardResponse } from '@/types';
 import Card from '@/components/ui/Card';
 import LoadingState from '@/components/ui/LoadingState';
@@ -226,10 +227,20 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-6">
-            <div>
+            <div className="flex items-center justify-between gap-3">
                 <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
                     {t('admin.menu.title')}
                 </h1>
+                {ADMIN_GUIDE_URL && (
+                    <a
+                        href={ADMIN_GUIDE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                        {t('admin.menu.adminGuide')}
+                    </a>
+                )}
             </div>
 
             {loading ? (

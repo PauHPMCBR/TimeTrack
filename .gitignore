@@ -27,6 +27,8 @@
 # production
 /build
 
+/frontend/public/*.pdf
+
 # misc
 .DS_Store
 *.pem
