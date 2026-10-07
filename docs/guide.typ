@@ -25,18 +25,20 @@ Un administrador pot crear un nou compte per un nou usuari (administrador o empl
 
 Alternativament, també es pot compartir l'enllaç que es mostra al panell d'administració (és el mateix).
 
-L'enllaç porta a la pàgina de registre, on s'estableix la contrasenya del compte, que fa que quedi activat. A partir d'aquest moment, es pot accedir a l'eina iniciant sessió amb el correu + contrasenya.
+L'enllaç porta a la pàgina de registre, on s'estableix la contrasenya del compte, que fa que quedi activat. Aquest enllaç no s'ha de reutilitzar. A partir d'aquest moment, es pot accedir a l'eina iniciant sessió amb el correu + contrasenya.
 
 == Reinici de contrasenya
 
 Existeix el mètode clàssic d'enviar un correu electrònic per restablir la contrasenya. Aquesta acció també desbloqueja un compte que ha quedat bloquejat per haver intentat iniciar sessió amb la contrasenya incorrecta massa vegades seguides.
+
+Es pot demanar restabliment de contrassenya des de la pàgina d'iniciar sessió.
 
 == Afegir l'eina com a aplicació de mòbil
 
 Per poder accedir ràpidament a l'eina de fitxatge, els navegadors de mòbil tenen 
 l'opció d'afegir una pàgina web com una aplicació a la pantalla d'inici.
 El primer pas, comú en tots els casos, és navegar a la pàgina desitjada
-(en aquest cas, `nom-empresa.registrejornada.fyi`).
+(en aquest cas, `nom-empresa.registrejornada.fyi`). Cal posar l'adreça del domini de la pàgina web completa al buscador (amb punts, sense espais. Mateix format que l'exemple que hi ha a la imatge següent), la pàgina web no surt a resultats de Google o similars.
 
 A la majoria de navegadors (Firefox, Chrome... exemple a la imatge de l'esquerra)
 s'han de clicar els 3 punts verticals a dalt (o baix) a la dreta del tot per obrir

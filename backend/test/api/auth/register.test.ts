@@ -52,6 +52,33 @@ describe('POST /api/auth/register', () => {
         });
     });
 
+    it('should exclude soft-deleted users from the activation lookup', async () => {
+        const { User } = await import('@/models');
+        vi.mocked(User.findOne).mockResolvedValue(null);
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                registrationToken: 'valid-token',
+                email: 'test@example.com',
+                name: 'Test User',
+                password: 'SecurePass123!',
+            },
+        });
+        const res = mockRes();
+
+        await registerHandler(req, res);
+
+        // A soft-deleted account is locked out; a pending invite must not
+        // resurrect it.
+        expect(User.findOne).toHaveBeenCalledWith({
+            registrationToken: 'valid-token',
+            registered: false,
+            deleted: { $ne: true },
+        });
+        expect(res.status).toHaveBeenCalledWith(400);
+    });
+
     it('should return 400 if registration token is invalid', async () => {
         const { User } = await import('@/models');
         vi.mocked(User.findOne).mockResolvedValue(null);
@@ -410,6 +437,46 @@ describe('POST /api/auth/register', () => {
                     token: expect.any(String),
                     user: expect.any(Object),
                 }),
+            })
+        );
+    });
+
+    it('should clear the registration token on successful registration', async () => {
+        const user = {
+            _id: { toString: () => 'user-id-123' },
+            email: 'test@example.com',
+            registrationToken: 'valid-token',
+            registered: false,
+            name: 'Test User',
+            role: 'employee',
+            save: vi.fn().mockResolvedValue({}),
+        };
+
+        const { User } = await import('@/models');
+        vi.mocked(User.findOne)
+            .mockResolvedValueOnce(user)
+            .mockResolvedValueOnce(null);
+
+        const req = mockReq({
+            method: 'POST',
+            body: {
+                registrationToken: 'valid-token',
+                email: 'test@example.com',
+                name: 'Test User',
+                password: 'SecurePass123!',
+            },
+        });
+        const res = mockRes();
+
+        await registerHandler(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        // The invite link is single-use: dropping the secret means the token
+        // can never be matched again, even for a probe.
+        expect(User.updateOne).toHaveBeenCalledWith(
+            { _id: user._id },
+            expect.objectContaining({
+                $unset: expect.objectContaining({ registrationToken: 1 }),
             })
         );
     });

@@ -14,7 +14,10 @@ import { toPublicUser } from '@/lib/sanitize';
 import { withRateLimit } from '@/lib/rate-limit';
 import { withApi } from '@/lib/api-handler';
 import { validatePassword } from '@/lib/password';
-import { findActiveByEmail } from '@/repositories/user-repository';
+import {
+    findActiveByEmail,
+    notDeleted,
+} from '@/repositories/user-repository';
 
 export default withRateLimit(
     withApi(
@@ -25,9 +28,12 @@ export default withRateLimit(
                 // Emails are stored lowercased; compare case-insensitively.
                 const emailLower = String(email).toLowerCase();
 
+                // A soft-deleted account is locked out and hidden from every listing, so a
+                // still-pending invite must not be able to activate it.
                 const user = await User.findOne({
                     registrationToken,
                     registered: false,
+                    ...notDeleted,
                 });
 
                 if (!user) {
@@ -81,12 +87,16 @@ export default withRateLimit(
                             trackingStartDate: dateKey(new Date()),
                             updatedAt: new Date(),
                         },
-                        $unset: { blockedSince: 1 },
+                        $unset: {
+                            blockedSince: 1,
+                            registrationToken: 1,
+                        },
                     }
                 );
 
                 // Reflect the new state on the in-memory doc used for the response.
                 user.registered = true;
+                user.registrationToken = undefined;
 
                 const token = signToken(
                     {

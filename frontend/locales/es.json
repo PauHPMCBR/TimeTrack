@@ -74,7 +74,8 @@
         "remember": "Recuérdame",
         "submit": "Entrar",
         "title": "Inicia sesión",
-        "forgot": "¿Has olvidado tu contraseña?"
+        "forgot": "¿Has olvidado tu contraseña?",
+        "alreadyRegistered": "La cuenta ya está activada. Inicia sesión con tu correo y tu contraseña."
     },
     "forgotPassword": {
         "backLogin": "Volver al inicio de sesión",

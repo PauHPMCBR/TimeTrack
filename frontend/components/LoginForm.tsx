@@ -97,6 +97,12 @@ export default function LoginForm() {
                 {t('login.title')}
             </h1>
 
+            {searchParams.get('alreadyRegistered') === '1' && (
+                <Alert variant="info" className="mb-3">
+                    {t('login.alreadyRegistered')}
+                </Alert>
+            )}
+
             <div className="space-y-3">
                 <input
                     type="email"

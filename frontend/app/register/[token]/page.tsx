@@ -10,6 +10,8 @@ import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
 import PasswordField from '@/components/ui/PasswordField';
 
+type LinkState = 'checking' | 'usable' | 'invalid';
+
 export default function CompleteRegistrationPage() {
     const { t } = useI18n();
     const params = useParams();
@@ -27,6 +29,43 @@ export default function CompleteRegistrationPage() {
         password: '',
         confirmPassword: '',
     });
+
+    const [linkState, setLinkState] = useState<LinkState>('checking');
+
+    // An invite link is single-use, but it stays in history, bookmarks and
+    // restored tabs. Resolve what it means before rendering a form that would
+    // only fail on submit.
+    useEffect(() => {
+        let cancelled = false;
+
+        const resolveLink = async () => {
+            const user = await apiClient.getCurrentUser();
+            if (cancelled) return;
+            if (user) {
+                router.replace('/dashboard');
+                return;
+            }
+
+            const res = await apiClient.getRegisterStatus(token, urlEmail);
+            if (cancelled) return;
+            if (res.error || !res.data) {
+                // Fail open: the submit is the real gate, and claiming the
+                // link is invalid would be wrong when the probe itself failed.
+                setLinkState('usable');
+                return;
+            }
+            if (res.data.status === 'alreadyRegistered') {
+                router.replace('/?alreadyRegistered=1');
+                return;
+            }
+            setLinkState(res.data.status === 'pending' ? 'usable' : 'invalid');
+        };
+
+        void resolveLink();
+        return () => {
+            cancelled = true;
+        };
+    }, [token, urlEmail, router]);
 
     useEffect(() => {
         if (urlEmail || urlName) {
@@ -159,6 +198,10 @@ export default function CompleteRegistrationPage() {
         }
     };
 
+    // Hold the form back until the link's fate is known, so a session that is
+    // about to bounce never flashes a password box first.
+    if (linkState === 'checking') return null;
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col">
             {/* HEADER WITH LANGUAGE SWITCHER (LEFT) */}
@@ -178,7 +221,12 @@ export default function CompleteRegistrationPage() {
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    {linkState === 'invalid' ? (
+                        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                            {t('error.InvalidRegisterToken')}
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
                         <TextField
                             label={t('register.name')}
                             type="text"
@@ -269,7 +317,8 @@ export default function CompleteRegistrationPage() {
                         >
                             {loading ? t('register.saving') : t('register.btn')}
                         </Button>
-                    </form>
+                        </form>
+                    )}
                 </Card>
             </div>
         </div>

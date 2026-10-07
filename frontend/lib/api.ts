@@ -24,6 +24,7 @@ import type {
     MonthlyWorkRecordResponse,
     MyFilesQuery,
     RegisterRequest,
+    RegisterTokenStatus,
     ResetPasswordRequest,
     UpdateProfileRequest,
     UpdateUserRequest,
@@ -212,6 +213,20 @@ class ApiClient {
             method: 'POST',
             body: JSON.stringify(credentials),
         });
+    }
+
+    async getRegisterStatus(
+        token: string,
+        email?: string
+    ): Promise<ApiResponse<{ status: RegisterTokenStatus }>> {
+        const params = new URLSearchParams();
+        if (email) params.set('email', email);
+        const query = params.toString();
+        return this.request(
+            `/api/auth/register/${encodeURIComponent(token)}${
+                query ? `?${query}` : ''
+            }`
+        );
     }
 
     async forgotPassword(

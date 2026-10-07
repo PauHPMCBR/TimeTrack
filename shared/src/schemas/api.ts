@@ -65,6 +65,28 @@ export const RegisterRequestSchema = z.object({
 });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 
+export const RegisterTokenStatusSchema = z.enum([
+    'pending',
+    'alreadyRegistered',
+    'invalid',
+]);
+export type RegisterTokenStatus = z.infer<typeof RegisterTokenStatusSchema>;
+
+// Query-string values are `string | string[]` in Next; keep blanks as absent.
+const optionalTrimmedQueryField = () =>
+    z.preprocess(
+        (value) =>
+            typeof value === 'string' && value.trim() ? value.trim() : undefined,
+        z.string().max(320).optional()
+    );
+
+export const RegisterStatusQuerySchema = z.object({
+    token: z.string().min(1, 'Registration token is required'),
+    // Carried by the invite link. Absent when the link lost its query string.
+    email: optionalTrimmedQueryField(),
+});
+export type RegisterStatusQuery = z.infer<typeof RegisterStatusQuerySchema>;
+
 export const ForgotPasswordRequestSchema = z.object({
     email: z.string().email('Invalid email format'),
 });

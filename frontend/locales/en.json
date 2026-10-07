@@ -74,7 +74,8 @@
         "remember": "Remember me",
         "submit": "Sign in",
         "title": "Sign in",
-        "forgot": "Forgot your password?"
+        "forgot": "Forgot your password?",
+        "alreadyRegistered": "This account is already active. Sign in with your email and password."
     },
     "forgotPassword": {
         "backLogin": "Back to sign in",

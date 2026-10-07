@@ -120,6 +120,51 @@ describe('apiClient', () => {
         });
     });
 
+    describe('getRegisterStatus', () => {
+        it('should send the token and email as query params', async () => {
+            mockFetchSuccess({ data: { status: 'pending' } });
+
+            const result = await apiClient.getRegisterStatus(
+                'abc123',
+                'anna@example.com'
+            );
+
+            expect(result.data).toEqual({ status: 'pending' });
+            expect(fetch).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    '/api/auth/register/abc123?email=anna%40example.com'
+                ),
+                expect.any(Object)
+            );
+        });
+
+        it('should omit the email param when there is none', async () => {
+            mockFetchSuccess({ data: { status: 'invalid' } });
+
+            await apiClient.getRegisterStatus('abc123');
+
+            expect(fetch).toHaveBeenCalledWith(
+                expect.stringContaining('/api/auth/register/abc123'),
+                expect.any(Object)
+            );
+            expect(fetch).not.toHaveBeenCalledWith(
+                expect.stringContaining('?'),
+                expect.any(Object)
+            );
+        });
+
+        it('should return the alreadyRegistered status', async () => {
+            mockFetchSuccess({ data: { status: 'alreadyRegistered' } });
+
+            const result = await apiClient.getRegisterStatus(
+                'abc123',
+                'anna@example.com'
+            );
+
+            expect(result.data).toEqual({ status: 'alreadyRegistered' });
+        });
+    });
+
     describe('getProfile', () => {
         it('should fetch current user profile', async () => {
             const mockResponse = { data: { user: { id: '1', name: 'Test' } } };

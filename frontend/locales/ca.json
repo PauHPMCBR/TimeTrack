@@ -74,7 +74,8 @@
         "remember": "Recorda'm",
         "submit": "Entrar",
         "title": "Inicia sessió",
-        "forgot": "Has oblidat la contrasenya?"
+        "forgot": "Has oblidat la contrasenya?",
+        "alreadyRegistered": "El compte ja està activat. Inicia la sessió amb el teu correu i la teva contrasenya."
     },
     "forgotPassword": {
         "backLogin": "Torna a l'inici de sessió",
