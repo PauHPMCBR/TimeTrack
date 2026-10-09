@@ -75,7 +75,7 @@ export default function HeaderBar() {
                                 {t('header.user')}
                             </p>
                             <p className="text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                                {email ?? t('header.noSession')}
+                                {user?.name ?? t('header.noSession')}
                             </p>
                         </div>
 

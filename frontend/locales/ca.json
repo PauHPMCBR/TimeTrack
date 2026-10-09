@@ -378,7 +378,7 @@
             "dniPlaceholder": "Ex: 12345678A",
             "email": "Correu electrònic",
             "trackingStartDate": "Inici de registre de jornada",
-            "checkInRequired": "Requerir fitxatge diari",
+            "checkInRequired": "Requerir fitxatge",
             "checkInRequiredHelp": "Quan està desactivat, el sistema no marcarà com a anomalia els dies sense fitxatge.",
             "name": "Nom complet",
             "role": {

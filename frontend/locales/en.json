@@ -378,7 +378,7 @@
             "dniPlaceholder": "e.g. 12345678A",
             "email": "Email address",
             "trackingStartDate": "Time-tracking start date",
-            "checkInRequired": "Require daily check-in",
+            "checkInRequired": "Require check-in",
             "checkInRequiredHelp": "When off, missing check-in/out days won't be flagged as anomalies.",
             "name": "Full name",
             "role": {

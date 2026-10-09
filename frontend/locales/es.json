@@ -378,7 +378,7 @@
             "dniPlaceholder": "Ej: 12345678A",
             "email": "Correo electrónico",
             "trackingStartDate": "Inicio del registro de jornada",
-            "checkInRequired": "Requerir fichaje diario",
+            "checkInRequired": "Requerir fichaje",
             "checkInRequiredHelp": "Cuando está desactivado, los días sin fichaje no se marcarán como anomalías.",
             "name": "Nombre completo",
             "role": {

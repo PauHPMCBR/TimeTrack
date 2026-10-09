@@ -21,7 +21,7 @@
 
 Un administrador pot crear un nou compte per un nou usuari (administrador o empleat). Durant la creació, cal especificar el correu, nom i DNI (instruccions per a administrador més endavant). Després d'especificar aquests camps, s'envia un correu a l'adreça indicada automàticament anunciant que han sigut convidats a l'eina:
 
-#img("pic/mail_reg.png")
+#img("pic/mail_reg.png", width: 80%)
 
 Alternativament, també es pot compartir l'enllaç que es mostra al panell d'administració (és el mateix).
 
@@ -40,6 +40,8 @@ l'opció d'afegir una pàgina web com una aplicació a la pantalla d'inici.
 El primer pas, comú en tots els casos, és navegar a la pàgina desitjada
 (en aquest cas, `nom-empresa.registrejornada.fyi`). Cal posar l'adreça del domini de la pàgina web completa al buscador (amb punts, sense espais. Mateix format que l'exemple que hi ha a la imatge següent), la pàgina web no surt a resultats de Google o similars.
 
+#img("pic/url.png")
+
 A la majoria de navegadors (Firefox, Chrome... exemple a la imatge de l'esquerra)
 s'han de clicar els 3 punts verticals a dalt (o baix) a la dreta del tot per obrir
 el menú que es veu, i buscar l'opció subratllada a la imatge o similar.
@@ -52,8 +54,8 @@ l'opció per afegir la pàgina web com a aplicació/drecera a la pantalla d'inic
     grid(
         columns: 2,
         gutter: 2mm,
-        img("pic/afegir_shortcut.jpeg", width: 90%),
-        img("pic/afegir_shortcut_safari.jpeg", width: 90%),
+        img("pic/afegir_shortcut.jpeg", width: 80%),
+        img("pic/afegir_shortcut_safari.jpeg", width: 80%),
     )
 )
 
